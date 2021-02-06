@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -20,10 +21,10 @@ namespace RESTable.Results
         public MessageType MessageType => Result.MessageType;
 
         /// <inheritdoc />
-        public string LogMessage => Result.LogMessage;
+        public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
 
         /// <inheritdoc />
-        public string LogContent => Result.LogContent;
+        public ValueTask<string> GetLogContent() => Result.GetLogContent();
 
         /// <inheritdoc />
         public Headers Headers => Result.Headers;
@@ -60,7 +61,7 @@ namespace RESTable.Results
         public bool IsSerialized => Result.IsSerialized;
 
         /// <inheritdoc />
-        public ISerializedResult Serialize(ContentType? contentType = null) => Result.Serialize();
+        public ISerializedResult Serialize() => Result.Serialize();
 
         /// <inheritdoc />
         public void ThrowIfError() => Result.ThrowIfError();
@@ -74,8 +75,10 @@ namespace RESTable.Results
         /// <inheritdoc />
         public string Metadata => Result.Metadata;
 
-        /// <inheritdoc />
-        public void Dispose() => Result.Dispose();
+        public async ValueTask DisposeAsync()
+        {
+            await Result.DisposeAsync();
+        }
 
         /// <summary>
         /// The wrapped result

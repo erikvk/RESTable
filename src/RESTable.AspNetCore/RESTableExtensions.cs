@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.NetworkProviders;
@@ -11,16 +9,6 @@ namespace RESTable.AspNetCore
 {
     public static class RESTableExtensions
     {
-        internal static async Task<byte[]> ReadInputStream(this Stream input)
-        {
-            var buffer = new byte[16 * 1024];
-            await using var ms = new MemoryStream();
-            int read;
-            while ((read = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                await ms.WriteAsync(buffer, 0, read);
-            return ms.ToArray();
-        }
-
         public static IApplicationBuilder UseRESTable
         (
             this IApplicationBuilder builder,

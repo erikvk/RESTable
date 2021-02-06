@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace RESTable.Results
+﻿namespace RESTable.Results
 {
     /// <inheritdoc cref="ResultWrapper" />
     /// <inheritdoc cref="ISerializedResult" />
@@ -23,10 +21,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public Stream Body
-        {
-            get => SerializedResult.Body;
-            set => SerializedResult.Body = value;
-        }
+        public Body Body => SerializedResult.Body;
     }
 }

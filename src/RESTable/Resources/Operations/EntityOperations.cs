@@ -109,7 +109,7 @@ namespace RESTable.Resources.Operations
             try
             {
                 request.EntitiesProducer = () =>
-                    (request.GetSelector() ?? (() => request.GetBody().Deserialize<T>()))()?
+                    (request.GetSelector() ?? (() => request.Body.Deserialize<T>()))()?
                     .InputLimit(limit)?
                     .Validate(request.EntityResource) ?? throw new MissingDataSource(request);
                 return request.EntityResource.Insert(request);
@@ -125,7 +125,7 @@ namespace RESTable.Resources.Operations
             try
             {
                 request.EntitiesProducer = () =>
-                    (request.GetUpdater() ?? (e => request.GetBody().PopulateTo(e)))(
+                    (request.GetUpdater() ?? (e => request.Body.PopulateTo(e)))(
                         (request.GetSelector() ?? (() => TrySelectFilter(request) ?? new T[0]))
                         .Invoke()?
                         .UnsafeLimit(!request.MetaConditions.Unsafe))?
@@ -197,7 +197,7 @@ namespace RESTable.Resources.Operations
                 {
                     case null:
                     case 0: return new InsertedEntities(request, Insert(request));
-                    case 1 when request.GetUpdater() == null && !request.GetBody().HasContent:
+                    case 1 when request.GetUpdater() == null && !request.Body.HasContent:
                         return new UpdatedEntities(request, 0);
                     default:
                         request.Selector = () => source;
@@ -248,14 +248,17 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static (List<JObject> ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(IEntityRequest<T> request,
-            IEntityRequest<T> innerRequest)
+        private static (List<JObject> ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks
+        (
+            IEntityRequest<T> request,
+            IEntityRequest<T> innerRequest
+        )
         {
             var toInsert = new List<JObject>();
             var toUpdate = new List<(JObject json, T source)>();
             try
             {
-                var body = request.GetBody();
+                var body = request.Body;
                 if (!body.HasContent) return (toInsert, toUpdate);
                 var conditions = request.MetaConditions.SafePost
                     .Split(',')
@@ -265,7 +268,7 @@ namespace RESTable.Resources.Operations
                 {
                     conditions.ForEach(cond => cond.Value = entity.SafeSelect(cond.Term.Evaluate));
                     innerRequest.Conditions = conditions;
-                    var results = innerRequest.Evaluate().ToEntities<T>().ToList();
+                    var results = innerRequest.Evaluate().Result.ToEntities<T>().ToList();
                     switch (results.Count)
                     {
                         case 0:

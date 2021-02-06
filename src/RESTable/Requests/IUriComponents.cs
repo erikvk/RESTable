@@ -58,7 +58,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The body of the macro, as byte array
         /// </summary>
-        byte[] Body { get; }
+        Body Body { get; }
 
         /// <summary>
         /// The content type of the body of the macro

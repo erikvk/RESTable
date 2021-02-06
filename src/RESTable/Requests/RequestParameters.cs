@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
+using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -17,18 +17,20 @@ namespace RESTable.Requests
     /// way to talk about the input to request evaluation, regardless of protocol
     /// and web technologies.
     /// </summary>
-    internal class RequestParameters : ILogable, ITraceable
+    internal class RequestParameters : ILogable, IHeaderHolder, IProtocolHolder, ITraceable
     {
         /// <inheritdoc />
         public string TraceId { get; }
 
-        /// <inheritdoc />
+        /// <inheritdoc /> 
         public RESTableContext Context { get; }
+
+        public string ProtocolIdentifier { get; }
 
         /// <summary>
         /// The method to perform
         /// </summary>
-        public Method Method { get; }
+        public Method Method { get; set; }
 
         private URI Uri { get; }
 
@@ -40,12 +42,22 @@ namespace RESTable.Requests
         /// <summary>
         /// Did the request contain a body?
         /// </summary>
-        public bool HasBody { get; }
+        public bool HasBody => Body != null && Body.HasContent;
+
+        private Body _body;
 
         /// <summary>
-        /// The byte array of the request body
+        /// The object that should form the request body
         /// </summary>
-        public byte[] BodyBytes { get; }
+        public Body Body
+        {
+            get => _body;
+            set
+            {
+                _body?.DisposeAsync().AsTask().Wait();
+                _body = value;
+            }
+        }
 
         /// <inheritdoc />
         public Headers Headers { get; }
@@ -64,32 +76,73 @@ namespace RESTable.Requests
 
         #region Private and internal
 
-        internal CachedProtocolProvider CachedProtocolProvider { get; }
         private string UnparsedUri { get; }
         internal IResource iresource;
         internal IResource IResource => iresource ??= Resource.Find(Uri.ResourceSpecifier);
         internal Exception Error { get; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
-        bool ILogable.ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
-        MessageType ILogable.MessageType { get; } = MessageType.HttpInput;
-        string ILogable.LogMessage => $"{Method} {UnparsedUri}{(HasBody ? $" ({BodyBytes.Length} bytes)" : "")}";
-        DateTime ILogable.LogTime { get; } = DateTime.Now;
-        string ILogable.HeadersStringCache { get; set; }
-        private string _contentString;
+        bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true} e;
+        public MessageType MessageType { get; } = MessageType.HttpInput;
 
-        string ILogable.LogContent
+        public CachedProtocolProvider CachedProtocolProvider { get; set; }
+
+        ValueTask<string> ILogable.GetLogMessage()
         {
-            get
-            {
-                if (!HasBody) return null;
-                return _contentString ??= Encoding.UTF8.GetString(BodyBytes);
-            }
+            var message = $"{Method} {UnparsedUri}";
+            if (HasBody)
+                return new ValueTask<string>(message + Body.GetLengthLogString());
+            return new ValueTask<string>(message);
         }
+
+        DateTime ILogable.LogTime { get; } = DateTime.Now;
+        public string HeadersStringCache { get; set; }
+
+        async ValueTask<string> ILogable.GetLogContent()
+        {
+            if (!HasBody) return null;
+            return await Body.ToStringAsync();
+        }
+
+        internal async Task<RequestParameters> GetCopy() => new(
+            iresource: iresource,
+            context: Context,
+            method: Method,
+            uri: Uri,
+            bodyCopy: await Body.GetCopy(),
+            headers: Headers,
+            isWebSocketUpgrade: IsWebSocketUpgrade,
+            unparsedUri: UnparsedUri,
+            error: Error,
+            messageType: MessageType,
+            cachedProtocolProvider: CachedProtocolProvider,
+            protocolIdentifier: ProtocolIdentifier,
+            headersStringCache: HeadersStringCache
+        );
 
         #endregion
 
+        private RequestParameters(IResource iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, bool isWebSocketUpgrade, string unparsedUri, Exception error, MessageType messageType,
+            CachedProtocolProvider cachedProtocolProvider, string protocolIdentifier, string headersStringCache)
+        {
+            this.iresource = iresource;
+            Context = context;
+            Method = method;
+            Uri = uri;
+            Body = bodyCopy;
+            Headers = headers;
+            IsWebSocketUpgrade = isWebSocketUpgrade;
+            UnparsedUri = unparsedUri;
+            Error = error;
+            MessageType = messageType;
+            CachedProtocolProvider = cachedProtocolProvider;
+            ProtocolIdentifier = protocolIdentifier;
+            HeadersStringCache = headersStringCache;
+        }
+
+        internal void SetBody(object bodyObject) => Body = new Body(this, bodyObject);
+
         /// <summary>
-        /// Used when creating generic requests
+        /// Used when creating generic requests through the .NET API
         /// </summary>
         internal RequestParameters(RESTableContext context, Method method, IResource resource, string protocolIdentifier = null, string viewName = null)
         {
@@ -100,13 +153,14 @@ namespace RESTable.Requests
             iresource = resource;
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = new URI(resourceSpecifier: resource.Name, viewName: viewName);
+            ProtocolIdentifier = protocolIdentifier?.ToLower() ?? ProtocolController.DefaultProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             CachedProtocolProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
         }
 
         /// <summary>
         /// Used when creating parsed requests
         /// </summary>
-        internal RequestParameters(RESTableContext context, Method method, string uri, byte[] body, Headers headers)
+        internal RequestParameters(RESTableContext context, Method method, string uri, Headers headers)
         {
             TraceId = context.InitialTraceId;
             Context = context;
@@ -114,6 +168,7 @@ namespace RESTable.Requests
             Headers = headers ?? new Headers();
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
+            ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             var hasMacro = Uri?.Macro != null;
             if (hasMacro)
             {
@@ -151,22 +206,19 @@ namespace RESTable.Requests
                 {
                     if (Uri.Macro.HasBody)
                     {
-                        BodyBytes = Uri.Macro.Body;
+                        Body = Uri.Macro.Body;
                         Headers.ContentType = Providers.Json.ContentType;
                     }
                 }
                 else
                 {
-                    if (!(body?.Length > 0) && Uri.Macro.HasBody)
+                    if (!HasBody && Uri.Macro.HasBody)
                     {
-                        BodyBytes = Uri.Macro.Body;
+                        Body = Uri.Macro.Body;
                         Headers.ContentType = Providers.Json.ContentType;
                     }
-                    else BodyBytes = body;
                 }
             }
-            else BodyBytes = body;
-            HasBody = BodyBytes?.Length > 0;
         }
 
         /// <summary>
@@ -178,6 +230,7 @@ namespace RESTable.Requests
             Context = context;
             Headers = headers ?? new Headers();
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
+            ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             var hasMacro = Uri?.Macro != null;
             if (hasMacro)
             {

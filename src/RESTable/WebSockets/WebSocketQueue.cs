@@ -63,7 +63,7 @@ namespace RESTable.WebSockets
             ActionQueue.Enqueue(() => ToQueueFor.SendBinary(d, o, l));
             return Task.CompletedTask;
         }
-
+        
         public Task SendJson(object i, bool a = false, bool? p = null, bool ig = false)
         {
             ActionQueue.Enqueue(() => ToQueueFor.SendJson(i, a, p, ig));

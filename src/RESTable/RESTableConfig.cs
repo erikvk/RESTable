@@ -201,7 +201,7 @@ namespace RESTable
             }
 
             var parts = makeResourceParts(toAdd);
-            parts.ForEach((item, index) =>
+            parts.ForEach((_, index) =>
             {
                 var key = string.Join(".", parts.Skip(index));
                 if (finder.ContainsKey(key))
@@ -287,7 +287,7 @@ namespace RESTable
                                     {
                                         switch (resourceToken)
                                         {
-                                            case JValue value when value.Value is string resourceString:
+                                            case JValue {Value: string resourceString} value:
                                                 var iresources = Meta.Resource.SafeFindMany(resourceString);
                                                 var includingInner = iresources.Union(iresources
                                                     .Cast<IResourceInternal>()

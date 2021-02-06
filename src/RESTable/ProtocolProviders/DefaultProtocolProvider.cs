@@ -235,8 +235,9 @@ namespace RESTable.ProtocolProviders
                             var serializedEntities = SerializeEntities();
                             if (!(serializedEntities is Content content))
                                 return serializedEntities;
-                            internalRequest.SetBody(content.Body);
-                            return internalRequest.Evaluate().Serialize();
+                            internalRequest.Body = content.Body;
+                            var internalResult = internalRequest.Evaluate().Result;
+                            return internalResult.Serialize();
                         }
                         var serialized = SerializeEntities();
                         var externalRequest = new HttpRequest(serialized, parameters, serialized.Body);

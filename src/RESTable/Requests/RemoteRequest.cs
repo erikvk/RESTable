@@ -14,43 +14,47 @@ using RESTable.Linq;
 
 namespace RESTable.Requests
 {
+    internal static class HttpClientManager
+    {
+        internal static readonly HttpClient HttpClient;
+        static HttpClientManager() => HttpClient = new HttpClient();
+    }
+
     internal class RemoteRequest : IRequest, IRequestInternal
     {
-        private static readonly HttpClient HttpClient;
-        static RemoteRequest() => HttpClient = new HttpClient();
-
-        private Uri URI { get; }
-        public string TraceId { get; }
+        public string TraceId => ProtocolHolder.TraceId;
         RESTableContext ITraceable.Context => RemoteContext;
+        public Headers Headers => ProtocolHolder.Headers;
+        public string ProtocolIdentifier => ProtocolHolder.ProtocolIdentifier;
+        public IResource Resource => RemoteResource;
+        public bool HasConditions => false;
+        public bool ExcludeHeaders => false;
+        public bool IsValid => true;
+        public bool IsWebSocketUpgrade => false;
+        public CachedProtocolProvider CachedProtocolProvider => ProtocolHolder.CachedProtocolProvider;
+        public MessageType MessageType => MessageType.HttpInput;
+        public Cookies Cookies => RemoteContext.Client.Cookies;
+        public IUriComponents UriComponents => null;
+
+        private IProtocolHolder ProtocolHolder { get; }
+        private Uri URI { get; }
         private RemoteContext RemoteContext { get; }
-        public Headers Headers { get; }
         public Method Method { get; set; }
-        private Body body;
-        public Body GetBody() => body;
-        private void SetBody(Body value) => body = value;
         private RemoteResource RemoteResource { get; set; }
         private IDictionary<Type, object> Services { get; }
-        private static string ErrorMessage(string propertyName) => $"Cannot get {propertyName} for a remote request";
-
-        public void SetBody(object content, ContentType? contentType = null) => SetBody(new Body
-        (
-            stream: content.ToStream(contentType, this),
-            protocolProvider: CachedProtocolProvider
-        ));
-
-        public IResource Resource => RemoteResource;
+        public Body Body { get; set; }
         public Type TargetType => null;
-        public bool HasConditions => false;
         private MetaConditions _metaConditions;
         public MetaConditions MetaConditions => _metaConditions ??= new MetaConditions();
         private Headers _responseHeaders;
         public Headers ResponseHeaders => _responseHeaders ??= new Headers();
-        public Cookies Cookies => RemoteContext.Client.Cookies;
-        public IUriComponents UriComponents => null;
+        public TimeSpan TimeElapsed { get; private set; }
+        public ValueTask<string> GetLogMessage() => new($"{Method} {URI}{Body.GetLengthLogString()}");
+        public async ValueTask<string> GetLogContent() => await Body.ToStringAsync();
+        public string HeadersStringCache { get; set; }
+        public DateTime LogTime { get; }
 
-        public IResult Evaluate() => _GetResult().Result;
-
-        private async Task<IResult> _GetResult()
+        public async Task<IResult> Evaluate()
         {
             try
             {
@@ -62,9 +66,9 @@ namespace RESTable.Requests
                     case Method.POST:
                     case Method.PATCH:
                     case Method.PUT:
-                        if (GetBody().HasContent)
+                        if (Body.HasContent)
                         {
-                            message.Content = new StreamContent(GetBody().Stream);
+                            message.Content = new StreamContent(Body);
                             message.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(Headers.ContentType.ToString());
                         }
                         break;
@@ -72,7 +76,7 @@ namespace RESTable.Requests
                 Headers.Metadata = "full";
                 Headers.ContentType = null;
                 Headers.ForEach(header => message.Headers.Add(header.Key, header.Value));
-                var response = await HttpClient.SendAsync(message);
+                using var response = await HttpClientManager.HttpClient.SendAsync(message);
                 switch (response?.StatusCode)
                 {
                     case null:
@@ -90,27 +94,31 @@ namespace RESTable.Requests
                 if (string.IsNullOrWhiteSpace(resultType))
                     return new ExternalServiceNotRESTable(URI).AsResultOf(this);
                 RemoteResource = new RemoteResource(resourceName);
-                var stream = default(RESTableStream);
-                if (response.Content != null)
-                {
-                    if (!(responseHeaders.ContentType is ContentType contentType))
-                        return new ExternalServiceNotRESTable(URI).AsResultOf(this);
-                    var _stream = new RESTableStream(contentType);
-                    await response.Content.CopyToAsync(_stream);
-                    stream = _stream.Rewind();
-                }
-
-                IResult getResult()
+                
+                async Task<IResult> getResult()
                 {
                     int nr;
                     ErrorCodes ec;
                     switch (resultType)
                     {
                         case nameof(Entities<object>) when ulong.TryParse(responseHeaders.EntityCount, out var count):
-                            return new RemoteEntities(this, stream, count);
+                        {
+                            var entitiesResult = new RemoteEntities(this, count);
+                            using var responseStream = response.Content;
+                            if (responseStream != null)     
+                                await response.Content.CopyToAsync(entitiesResult.Body);
+                            return entitiesResult;
+                        }
                         case nameof(Head) when int.TryParse(data, out nr): return new Head(this, nr);
                         case nameof(Report) when int.TryParse(data, out nr): return new Report(this, nr);
-                        case nameof(Binary): return new Binary(this, stream, responseHeaders.ContentType ?? ContentType.DefaultOutput);
+                        case nameof(Binary):
+                        {
+                            var binaryResult = new Binary(this, responseHeaders.ContentType.GetValueOrDefault());
+                            using var responseStream = response.Content;
+                            if (responseStream != null)     
+                                await response.Content.CopyToAsync(binaryResult.Body);
+                            return binaryResult;
+                        }
                         case nameof(NoContent): return new NoContent(this);
                         case nameof(InsertedEntities) when int.TryParse(data, out nr): return new InsertedEntities(this, nr);
                         case nameof(UpdatedEntities) when int.TryParse(data, out nr): return new UpdatedEntities(this, nr);
@@ -135,7 +143,7 @@ namespace RESTable.Requests
                     }
                 }
 
-                var result = getResult();
+                var result = await getResult();
                 if (result is Error error)
                     result = error.AsResultOf(this);
                 responseHeaders.ForEach(result.Headers.Put);
@@ -147,18 +155,6 @@ namespace RESTable.Requests
                 return new ExternalServiceNotRESTable(URI, e).AsResultOf(this);
             }
         }
-
-        public bool IsValid { get; }
-        public TimeSpan TimeElapsed { get; private set; }
-        public bool IsWebSocketUpgrade { get; }
-        public CachedProtocolProvider CachedProtocolProvider { get; }
-
-        public MessageType MessageType { get; }
-        public string LogMessage => $"{Method} {URI}{GetBody().LengthLogString}";
-        public string LogContent => GetBody().ToString();
-        public string HeadersStringCache { get; set; }
-        public bool ExcludeHeaders { get; }
-        public DateTime LogTime { get; }
 
         public void EnsureServiceAttached<T>(T service) where T : class
         {
@@ -179,62 +175,51 @@ namespace RESTable.Requests
             return Services.TryGetValue(serviceType, out var service) ? service : null;
         }
 
-        public RemoteRequest(RemoteContext context, Method method, string uri, byte[] body, Headers headers)
+        public RemoteRequest(RemoteContext context, Method method, string uri, object body, Headers headers)
         {
-            TraceId = context.InitialTraceId;
+            ProtocolHolder = new RemoteRequestProtocolHolder
+            (
+                context: context,
+                headers: headers ?? new Headers(),
+                cachedProtocolProvider: ProtocolController.DefaultProtocolProvider
+            );
             RemoteContext = context;
-            Headers = headers ?? new Headers();
             if (context.HasApiKey)
                 Headers.Authorization = $"apikey {context.ApiKey}";
             Method = method;
-            MessageType = MessageType.HttpInput;
             Services = new Dictionary<Type, object>();
-            IsValid = true;
-            IsWebSocketUpgrade = false;
+            Body = new Body(ProtocolHolder, body);
             URI = new Uri(context.ServiceRoot + uri);
             LogTime = DateTime.Now;
-            CachedProtocolProvider = ProtocolController.DefaultProtocolProvider;
-            ExcludeHeaders = false;
-            if (body?.Length > 0)
-                SetBody(body, Headers.ContentType);
         }
 
-        private RemoteRequest(RemoteContext context, Method method, Body body, Uri uri, Headers headers, string protocol)
+        private RemoteRequest(RemoteContext context, IProtocolHolder protocolHolder, Method method, Uri uri, Body bodyCopy)
         {
-            TraceId = context.InitialTraceId;
+            ProtocolHolder = protocolHolder;
             RemoteContext = context;
-            Headers = headers ?? new Headers();
             if (context.HasApiKey)
                 Headers.Authorization = $"apikey {context.ApiKey}";
             Method = method;
-            MessageType = MessageType.HttpInput;
             Services = new Dictionary<Type, object>();
-            IsValid = true;
-            IsWebSocketUpgrade = false;
             URI = uri;
+            Body = bodyCopy;
             LogTime = DateTime.Now;
-            CachedProtocolProvider = protocol != null
-                ? ProtocolController.ResolveProtocolProvider(protocol)
-                : ProtocolController.DefaultProtocolProvider;
-            ExcludeHeaders = false;
-            this.body = body;
         }
 
-        public IRequest GetCopy(string newProtocol = null) => new RemoteRequest
+        public async Task<IRequest> GetCopy(string newProtocol = null) => new RemoteRequest
         (
             context: RemoteContext,
+            protocolHolder: ProtocolHolder,
             method: Method,
-            body: body.GetCopy(newProtocol),
             uri: URI,
-            headers: Headers,
-            protocol: newProtocol
+            bodyCopy: await Body.GetCopy()
         );
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            GetBody().Dispose();
+            await Body.DisposeAsync();
             foreach (var disposable in Services.Values.OfType<IAsyncDisposable>())
-                disposable.DisposeAsync();
+                await disposable.DisposeAsync();
             foreach (var disposable in Services.Values.OfType<IDisposable>())
                 disposable.Dispose();
         }

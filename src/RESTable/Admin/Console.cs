@@ -56,82 +56,98 @@ namespace RESTable.Admin
         {
             var milliseconds = result.TimeElapsed.TotalMilliseconds;
             if (result is WebSocketUpgradeSuccessful) return;
-            var tasks = Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format).SelectMany(group =>
+            foreach (var group in Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
             {
                 switch (group.Key)
                 {
                     case ConsoleFormat.Line:
+                    {
                         var requestStub = GetLogLineStub(request);
                         var responseStub = GetLogLineStub(result, milliseconds);
-                        return group.Select(c => c.PrintLines(
-                            new StringBuilder(requestStub), request,
-                            new StringBuilder(responseStub), result)
-                        );
+                        foreach (var console in group)
+                        {
+                            await console.PrintLines(
+                                new StringBuilder(requestStub), request,
+                                new StringBuilder(responseStub), result
+                            );
+                        }
+                        break;
+                    }
                     case ConsoleFormat.JSON:
-                        return group.Select(c =>
+                    {
+                        foreach (var console in group)
                         {
                             var item = new InputOutput
                             {
                                 Type = "HTTPRequestResponse",
-                                In = new LogItem {Id = request.TraceId, Message = request.LogMessage},
-                                Out = new LogItem {Id = result.TraceId, Message = result.LogMessage},
+                                In = new LogItem {Id = request.TraceId, Message = await request.GetLogMessage()},
+                                Out = new LogItem {Id = result.TraceId, Message = await result.GetLogMessage()},
                                 ElapsedMilliseconds = milliseconds
                             };
-                            if (c.IncludeClient)
+                            if (console.IncludeClient)
                                 item.ClientInfo = new ClientInfo(request.Context.Client);
-                            if (c.IncludeHeaders)
+                            if (console.IncludeHeaders)
                             {
                                 if (!request.ExcludeHeaders)
                                     item.In.CustomHeaders = request.Headers;
                                 if (!result.ExcludeHeaders)
                                     item.Out.CustomHeaders = result.Headers;
                             }
-                            if (c.IncludeContent)
+                            if (console.IncludeContent)
                             {
-                                item.In.Content = request.LogContent;
-                                item.Out.Content = result.LogContent;
+                                item.In.Content = await request.GetLogContent();
+                                item.Out.Content = await result.GetLogContent();
                             }
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            return c.ActualSocket.SendTextRaw(json);
-                        });
+                            await console.ActualSocket.SendTextRaw(json);
+                        }
+                        break;
+                    }
                     default: throw new ArgumentOutOfRangeException();
                 }
-            });
-            await Task.WhenAll(tasks);
+            }
         }
 
         internal static async Task Log(ILogable logable)
         {
-            var tasks = Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format).SelectMany(group =>
+            foreach (var group in Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
             {
                 switch (@group.Key)
                 {
                     case ConsoleFormat.Line:
+                    {
                         var requestStub = GetLogLineStub(logable);
-                        return @group.Select(c => c.PrintLine(new StringBuilder(requestStub), logable));
+                        foreach (var console in group)
+                        {
+                            await console.PrintLine(new StringBuilder(requestStub), logable);
+                        }
+                        break;
+                    }
                     case ConsoleFormat.JSON:
-                        return @group.Select(c =>
+                    {
+                        foreach (var console in group)
                         {
                             var item = new LogItem
                             {
                                 Type = logable.MessageType.ToString(),
                                 Id = logable.TraceId,
-                                Message = logable.LogMessage,
+                                Message = await logable.GetLogMessage(),
                                 Time = logable.LogTime
                             };
-                            if (c.IncludeClient)
+                            if (console.IncludeClient)
                                 item.Client = new ClientInfo(logable.Context.Client);
-                            if (c.IncludeHeaders && !logable.ExcludeHeaders)
+                            if (console.IncludeHeaders && !logable.ExcludeHeaders)
                                 item.CustomHeaders = logable.Headers;
-                            if (c.IncludeContent)
-                                item.Content = logable.LogContent;
+                            if (console.IncludeContent)
+                                item.Content = await logable.GetLogContent();
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            return c.ActualSocket.SendTextRaw(json);
-                        });
+                            await console.ActualSocket.SendTextRaw(json);
+                        }
+                        break;
+                    }
                     default: throw new ArgumentOutOfRangeException();
                 }
-            });
-            await Task.WhenAll(tasks);
+            }
         }
 
         private const string connection = " | Connection: ";
@@ -155,7 +171,7 @@ namespace RESTable.Admin
             if (IncludeContent)
             {
                 builder.Append(content);
-                builder.Append(logable.LogContent ?? "null");
+                builder.Append(await logable.GetLogContent() ?? "null");
             }
             await ActualSocket.SendTextRaw(builder.ToString());
         }
@@ -190,8 +206,8 @@ namespace RESTable.Admin
             {
                 builder1.Append(content);
                 builder2.Append(content);
-                builder1.Append(logable1.LogContent ?? "null");
-                builder2.Append(logable2.LogContent ?? "null");
+                builder1.Append(await logable1.GetLogContent() ?? "null");
+                builder2.Append(await logable2.GetLogContent() ?? "null");
             }
             await ActualSocket.SendTextRaw(builder1.ToString());
             await ActualSocket.SendTextRaw(builder2.ToString());
@@ -220,7 +236,7 @@ namespace RESTable.Admin
             var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz");
             builder.Append(dateTimeString);
             builder.Append($"[{logable.TraceId}] ");
-            builder.Append(logable.LogMessage);
+            builder.Append(logable.GetLogMessage());
             if (milliseconds != null)
                 builder.Append($" ({milliseconds} ms)");
             return builder.ToString();

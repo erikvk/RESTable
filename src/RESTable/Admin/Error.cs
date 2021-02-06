@@ -114,13 +114,16 @@ namespace RESTable.Admin
         {
             var resource = request.SafeSelect(a => a.Resource);
             var uri = request.UriComponents.ToString();
-            var stackTrace = $"{errorResult.StackTrace} §§§ INNER: {errorResult.InnerException?.StackTrace}";
+            var errorStackTrace = errorResult.StackTrace;
+            var innerStackTrace = errorResult.InnerException?.StackTrace;
+            var nl = Environment.NewLine;
+            var stackTrace = string.Join($"{nl}§§§ INNER: §§§{nl}", errorStackTrace, innerStackTrace);
             var totalMessage = errorResult.TotalMessage();
             var error = new Error
             (
                 uri: uri,
                 method: request.Method,
-                headers: resource is IEntityResource e && e.RequiresAuthentication
+                headers: resource is IEntityResource {RequiresAuthentication: true} e
                     ? null
                     : request.Headers.StringJoin(" | ", dict => dict.Select(header => header.Key.ToLower() switch
                     {
@@ -129,7 +132,7 @@ namespace RESTable.Admin
                         _ => $"{header.Key}: {header.Value}"
                     })),
                 resourceName: resource?.Name ?? "<unknown>",
-                body: request.GetBody().ToString(),
+                body: request.Body.ToString(),
                 time: DateTime.UtcNow,
                 errorCode: errorResult.ErrorCode,
                 stackTrace: stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,

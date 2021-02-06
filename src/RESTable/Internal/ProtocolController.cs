@@ -76,7 +76,7 @@ namespace RESTable.Internal
         internal static void SetupProtocolProviders(List<IProtocolProvider> protocolProviders)
         {
             ProtocolProviders = new Dictionary<string, CachedProtocolProvider>(StringComparer.OrdinalIgnoreCase);
-            protocolProviders = protocolProviders ?? new List<IProtocolProvider>();
+            protocolProviders ??= new List<IProtocolProvider>();
             protocolProviders.Add(new DefaultProtocolProvider());
             protocolProviders.ForEach(provider =>
             {

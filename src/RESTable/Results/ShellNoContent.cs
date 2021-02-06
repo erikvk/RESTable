@@ -3,7 +3,7 @@ using System.Net;
 
 namespace RESTable.Results
 {
-    internal class ShellNoContent : Success
+    internal class ShellNoContent : ShellSuccess
     {
         internal ShellNoContent(ITraceable trace, TimeSpan elapsed) : base(trace)
         {

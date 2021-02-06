@@ -6,14 +6,14 @@ using RESTable.SQLite.Meta;
 
 namespace RESTable.SQLite
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="IAsyncUpdater{T}" />
     /// <summary>
     /// Defines a controller for a given elastic SQLite table mapping
     /// </summary>
     /// <typeparam name="TController"></typeparam>
     /// <typeparam name="TTable"></typeparam>
-    public class ElasticSQLiteTableController<TController, TTable> : ISelector<TController>, IUpdater<TController>
+    public class ElasticSQLiteTableController<TController, TTable> : IAsyncSelector<TController>, IAsyncUpdater<TController>
         where TTable : ElasticSQLiteTable
         where TController : ElasticSQLiteTableController<TController, TTable>, new()
     {

@@ -6,10 +6,10 @@ namespace RESTable.Results
     /// <summary>
     /// An unknown or other result received from a remote RESTable service
     /// </summary>
-    internal class RemoteOther : Success
+    internal sealed class RemoteOther : Success
     {
         /// <inheritdoc />
-        internal RemoteOther(ITraceable trace, HttpStatusCode statusCode, string statusDescription) : base(trace)
+        internal RemoteOther(IProtocolHolder trace, HttpStatusCode statusCode, string statusDescription) : base(trace)
         {
             StatusCode = statusCode;
             StatusDescription = statusDescription;

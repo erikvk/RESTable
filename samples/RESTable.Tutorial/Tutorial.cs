@@ -88,7 +88,7 @@ namespace RESTable.Tutorial
     }
 
     [RESTable(GET)]
-    public class SuperheroReport : ISelector<SuperheroReport>
+    public class SuperheroReport : IAsyncSelector<SuperheroReport>
     {
         public int NumberOfSuperheroes { get; set; }
         public int NumberOfFemaleHeroes { get; set; }
@@ -102,7 +102,9 @@ namespace RESTable.Tutorial
         /// </summary>
         public IEnumerable<SuperheroReport> Select(IRequest<SuperheroReport> request)
         {
-            var superheroes = request.Context.CreateRequest<Superhero>().EvaluateToEntities();
+            var innerRequest = request.Context.CreateRequest<Superhero>();
+            var superheroes = innerRequest.EvaluateToEntities().Result;
+            innerRequest.DisposeAsync().AsTask().Wait();
             var count = 0;
             var newest = default(Superhero);
             var genderCount = new int[3];

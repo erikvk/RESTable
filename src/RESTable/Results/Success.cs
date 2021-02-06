@@ -1,7 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Net;
-using RESTable.Internal;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -10,6 +9,8 @@ namespace RESTable.Results
     /// <inheritdoc cref="ISerializedResult"/>
     public abstract class Success : IResult, ISerializedResult
     {
+        private string _logContent;
+
         /// <inheritdoc />
         public string TraceId { get; }
 
@@ -31,15 +32,14 @@ namespace RESTable.Results
         /// <inheritdoc />
         public bool IsSerialized { get; protected set; }
 
+        public virtual Body Body => null;
+
         /// <inheritdoc />
-        public virtual ISerializedResult Serialize(ContentType? contentType = null)
+        public virtual ISerializedResult Serialize()
         {
             IsSerialized = true;
             return this;
         }
-
-        /// <inheritdoc />
-        public virtual Stream Body { get; set; }
 
         /// <inheritdoc />
         public TimeSpan TimeElapsed { get; protected set; }
@@ -48,10 +48,15 @@ namespace RESTable.Results
         public virtual MessageType MessageType => MessageType.HttpOutput;
 
         /// <inheritdoc />
-        public virtual string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes)";
+        public virtual ValueTask<string> GetLogMessage() => new($"{StatusCode.ToCode()}: {StatusDescription} ({Body?.ContentLength ?? 0} bytes)");
 
-        /// <inheritdoc />
-        public string LogContent { get; protected set; }
+        public string LogContent
+        {
+            get => _logContent;
+            protected set => _logContent = value;
+        }
+
+        public ValueTask<string> GetLogContent() => new(_logContent);
 
         /// <inheritdoc />
         public string HeadersStringCache { get; set; }
@@ -76,25 +81,23 @@ namespace RESTable.Results
 
         protected Success(ITraceable trace)
         {
-            Context = trace.Context;
             TraceId = trace.TraceId;
+            Context = trace.Context;
             ExcludeHeaders = false;
             Headers = new Headers();
             IsSerialized = false;
             LogTime = DateTime.Now;
-            Body = null;
             IsSuccess = true;
         }
 
         /// <inheritdoc />
         public virtual string Metadata => $"{GetType().Name};;";
 
-        /// <inheritdoc />
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            if (Body is RESTableStream rsc)
-                rsc.CanClose = true;
-            Body?.Dispose();
+            if (Body == null) return;
+            Body.CanClose = true;
+            await Body.DisposeAsync();
         }
     }
 }

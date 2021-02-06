@@ -12,14 +12,14 @@ using static RESTable.Method;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="IAsyncDeleter{T}" />
     /// <summary>
     /// The TermCache resource contains all the terms that RESTable has encountered 
     /// for a given resource type, for example in conditions.
     /// </summary>
     [RESTable(GET, DELETE, Description = description)]
-    public class TermCache : ISelector<TermCache>, IDeleter<TermCache>
+    public class TermCache : IAsyncSelector<TermCache>, IAsyncDeleter<TermCache>
     {
         private const string description = "The TermCache resource contains all the terms that RESTable " +
                                            "has encountered for a given resource, for example in conditions.";

@@ -11,17 +11,17 @@ using static RESTable.Internal.EntityResourceProviderController;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IInserter{T}" />
-    /// <inheritdoc cref="IUpdater{T}" />
-    /// <inheritdoc cref="IDeleter{T}" />
-    /// <inheritdoc cref="IValidator{T}" />
+    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="IAsyncInserter{T}" />
+    /// <inheritdoc cref="IAsyncUpdater{T}" />
+    /// <inheritdoc cref="IAsyncDeleter{T}" />
+    /// <inheritdoc cref="IAsyncValidator{T}" />
     /// <summary>
     /// The DatabaseIndex resource lets an administrator set indexes for RESTable database resources.
     /// </summary>
     [RESTable(Description = description)]
-    public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
-        IDeleter<DatabaseIndex>, IValidator<DatabaseIndex>
+    public class DatabaseIndex : IAsyncSelector<DatabaseIndex>, IAsyncInserter<DatabaseIndex>, IAsyncUpdater<DatabaseIndex>,
+        IAsyncDeleter<DatabaseIndex>, IAsyncValidator<DatabaseIndex>
     {
         private const string description = "The DatabaseIndex resource lets an administrator set " +
                                            "indexes for Starcounter database resources.";
@@ -73,7 +73,8 @@ namespace RESTable.Admin
         /// <summary>
         /// The RESTable resource corresponding to the table on which this index is registered
         /// </summary>
-        [RESTableMember(ignore: true)] public IEntityResource Resource { get; private set; }
+        [RESTableMember(ignore: true)]
+        public IEntityResource Resource { get; private set; }
 
         /// <summary>
         /// The columns on which this index is registered
@@ -121,7 +122,8 @@ namespace RESTable.Admin
                     "Cannot register database indexes before RESTableConfig.Init() has been called.");
             SelectionCondition.Value = indexName;
             SelectionRequest.Selector = () => new[] {new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}};
-            SelectionRequest.Evaluate().ThrowIfError();
+            var result = SelectionRequest.Evaluate().Result;
+            result.ThrowIfError();
         }
 
         #endregion

@@ -10,13 +10,13 @@ using static RESTable.Method;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="IAsyncDeleter{T}" />
     /// <summary>
     /// An entity resource containing all the currently open WebSockets
     /// </summary>
     [RESTable(GET, DELETE, Description = description)]
-    public class WebSocket : ISelector<WebSocket>, IDeleter<WebSocket>
+    public class WebSocket : IAsyncSelector<WebSocket>, IAsyncDeleter<WebSocket>
     {
         private const string description = "Lists all connected WebSockets";
 

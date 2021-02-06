@@ -2,7 +2,7 @@
 
 namespace RESTable.Results
 {
-    internal class ShellNoQuery : Success
+    internal class ShellNoQuery : ShellSuccess
     {
         internal ShellNoQuery(ITraceable trace) : base(trace)
         {

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using RESTable.Internal;
 using RESTable.Requests;
 
 namespace RESTable.ContentTypeProviders
@@ -56,7 +55,7 @@ namespace RESTable.ContentTypeProviders
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream stream)
         {
-            var jsonStream = new RESTableStream(ContentType.JSON);
+            using var jsonStream = new SwappingStream();
             try
             {
                 ProduceJsonArray(stream, jsonStream);
@@ -66,23 +65,22 @@ namespace RESTable.ContentTypeProviders
             finally
             {
                 jsonStream.CanClose = true;
-                jsonStream.Dispose();
             }
         }
 
         /// <inheritdoc />
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body)
         {
-            var jsonStream = new RESTableStream(ContentType.JSON);
+            using var jsonStream = new SwappingStream();
+            using var populateStream = new MemoryStream(body);
             try
             {
-                ProduceJsonArray(new MemoryStream(body), jsonStream);
+                ProduceJsonArray(populateStream, jsonStream);
                 return JsonProvider.Populate(entities, jsonStream.GetBytes());
             }
             finally
             {
                 jsonStream.CanClose = true;
-                jsonStream.Dispose();
             }
         }
     }

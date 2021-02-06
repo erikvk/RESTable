@@ -11,13 +11,13 @@ using static RESTable.Requests.Operators;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IAsyncSelector{T}" />
     /// <inheritdoc cref="JObject" />
     /// <summary>
     /// The Schema resource provides schemas for non-dynamic RESTable resources
     /// </summary>
     [RESTable(GET, Description = description)]
-    internal class Schema : JObject, ISelector<Schema>
+    internal class Schema : JObject, IAsyncSelector<Schema>
     {
         private const string description = "The Schema resource provides schemas for " +
                                            "non-dynamic RESTable resources.";

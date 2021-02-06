@@ -27,7 +27,7 @@ namespace RESTable.Internal
             IContentTypeProvider provider;
             if (request != null)
             {
-                provider = ResolveInputContentTypeProvider(request, contentType);
+                provider = request.GetInputContentTypeProvider(contentType);
                 request.Headers.ContentType = provider.ContentType;
                 return provider.ContentType;
             }
@@ -40,37 +40,29 @@ namespace RESTable.Internal
             return default;
         }
 
-        internal static IContentTypeProvider ResolveInputContentTypeProvider(IRequestInternal request, ContentType? contentTypeOverride)
+        internal static IContentTypeProvider GetInputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
         {
-            var contentType = contentTypeOverride ?? request.Headers.ContentType ?? request.CachedProtocolProvider.DefaultInputProvider.ContentType;
-            if (!request.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out var contentTypeProvider))
+            var contentType = contentTypeOverride ?? protocolHolder.Headers.ContentType ?? protocolHolder.CachedProtocolProvider.DefaultInputProvider.ContentType;
+            if (!protocolHolder.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out var contentTypeProvider))
                 throw new UnsupportedContent(contentType.ToString());
             return contentTypeProvider;
         }
 
-        internal static IContentTypeProvider ResolveOutputContentTypeProvider(IRequestInternal request = null, ContentType? contentTypeOverride = null)
+        internal static IContentTypeProvider GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
         {
             IContentTypeProvider acceptProvider = null;
 
-            if (request == null)
-            {
-                if (!contentTypeOverride.HasValue)
-                    return Providers.Json;
-                if (!ProtocolController.DefaultProtocolProvider.OutputMimeBindings.TryGetValue(contentTypeOverride.Value.MediaType, out acceptProvider))
-                    throw new NotAcceptable(contentTypeOverride.ToString());
-                return acceptProvider;
-            }
-
-            var protocolProvider = request.CachedProtocolProvider;
+            var protocolProvider = protocolHolder.CachedProtocolProvider;
+            var headers = protocolHolder.Headers;
             var contentType = contentTypeOverride;
             if (contentType.HasValue)
                 contentType = contentType.Value;
-            else if (!(request.Headers.Accept?.Count > 0))
+            else if (!(headers.Accept?.Count > 0))
                 contentType = protocolProvider.DefaultOutputProvider.ContentType;
             if (!contentType.HasValue)
             {
                 var containedWildcard = false;
-                var foundProvider = request.Headers.Accept.Any(a =>
+                var foundProvider = headers.Accept.Any(a =>
                 {
                     if (!a.AnyType)
                         return protocolProvider.OutputMimeBindings.TryGetValue(a.MediaType, out acceptProvider);
@@ -81,7 +73,7 @@ namespace RESTable.Internal
                     if (containedWildcard)
                         acceptProvider = protocolProvider.DefaultOutputProvider;
                     else
-                        throw new NotAcceptable(request.Headers.Accept.ToString());
+                        throw new NotAcceptable(headers.Accept.ToString());
             }
             else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MediaType, out acceptProvider))
                 throw new NotAcceptable(contentType.Value.ToString());

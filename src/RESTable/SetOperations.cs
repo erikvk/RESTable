@@ -18,13 +18,13 @@ using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JTok
 namespace RESTable
 {
     /// <inheritdoc cref="JObject" />
-    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IAsyncSelector{T}" />
     /// <summary>
     /// The SetOperations resource can perform advanced operations on entities in one
     /// or more RESTable resources. See the RESTable Specification for details.
     /// </summary>
     [RESTable(GET, Description = description, AllowDynamicConditions = true)]
-    public class SetOperations : JObject, ISelector<SetOperations>
+    public class SetOperations : JObject, IAsyncSelector<SetOperations>
     {
         private const string description = "The SetOperations resource can perform advanced operations " +
                                            "on entities in one or more RESTable resources. See the RESTable " +
@@ -37,7 +37,7 @@ namespace RESTable
         public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var body = request.GetBody();
+            var body = request.Body;
             if (!body.HasContent)
                 throw new Exception("Missing data source for SetOperations request");
             var jobject = body.Deserialize<JObject>().FirstOrDefault();
@@ -46,7 +46,7 @@ namespace RESTable
             {
                 switch (token)
                 {
-                    case JValue value when value.Type == JTokenType.String:
+                    case JValue {Type: JTokenType.String} value:
                         var argument = value.Value<string>();
                         switch (argument?.FirstOrDefault())
                         {
@@ -54,17 +54,17 @@ namespace RESTable
                             case default(char): throw new Exception("Operation expressions cannot be empty strings");
                             case '[': return JArray.Parse(argument);
                             case '/':
-                                switch (request.Context.CreateRequest(argument).Evaluate())
+                                switch (request.Context.CreateRequest(argument).Evaluate().Result)
                                 {
                                     case NoContent _: return new JArray();
                                     case IEntities entities: return JArray.FromObject(entities, JsonProvider.Serializer);
-                                    case var other: throw new Exception($"Could not get source data from '{argument}'. {other.LogMessage}");
+                                    case var other: throw new Exception($"Could not get source data from '{argument}'. {other.GetLogMessage().Result}");
                                 }
                             default:
                                 throw new Exception($"Invalid string '{argument}'. Must be a relative REST request URI " +
                                                     "beginning with '/<resource locator>' or a JSON array.");
                         }
-                    case JObject obj when obj.Count == 1 && obj.First is JProperty prop && prop.Value is JArray arr:
+                    case JObject {Count: 1} obj when obj.First is JProperty {Value: JArray arr} prop:
                         switch (prop.Name.ToLower())
                         {
                             case "distinct":
@@ -140,11 +140,11 @@ namespace RESTable
                     string value;
                     switch (obj.GetValue(keys[i], OrdinalIgnoreCase))
                     {
-                        case JValue jvalue when jvalue.Type == JTokenType.Null:
+                        case JValue {Type: JTokenType.Null}:
                         case null:
                             value = "null";
                             break;
-                        case JValue jvalue when jvalue.Type == JTokenType.Date:
+                        case JValue {Type: JTokenType.Date} jvalue:
                             value = jvalue.Value<DateTime>().ToString("O");
                             break;
                         case JValue jvalue when jvalue.Value<string>() is string stringValue:
@@ -155,14 +155,14 @@ namespace RESTable
                     valueBuffer[i] = value.UriEncode();
                 }
                 localMapper = string.Format(localMapper, valueBuffer);
-                switch (request.Context.CreateRequest(localMapper).Evaluate())
+                switch (request.Context.CreateRequest(localMapper).Evaluate().Result)
                 {
                     case NoContent _: break;
                     case IEntities<object> entities:
                         mapped.UnionWith(entities.Select(e => e.ToJObject()));
                         break;
                     case var other:
-                        throw new Exception($"Could not get source data from '{localMapper}'. {other.LogMessage}");
+                        throw new Exception($"Could not get source data from '{localMapper}'. {other.GetLogMessage().Result}");
                 }
             });
             return mapped;

@@ -1,75 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 using System.Net.Http.Headers;
+using Newtonsoft.Json;
 
-namespace RESTable.Requests
+namespace RESTable
 {
-    internal class ContentTypesConverter : JsonConverter<ContentTypes>
-    {
-        public override void WriteJson(JsonWriter writer, ContentTypes value, JsonSerializer s) => writer.WriteValue(value.ToString());
-
-        public override ContentTypes ReadJson(JsonReader reader, Type o, ContentTypes e, bool h, JsonSerializer s)
-        {
-            var contentTypeString = reader.Value as string;
-            if (string.IsNullOrWhiteSpace(contentTypeString)) return default;
-            return ContentType.ParseMany(contentTypeString);
-        }
-    }
-
-    /// <inheritdoc />
-    /// <summary>
-    /// A collection of ContentType instances
-    /// </summary>
-    [JsonConverter(typeof(ContentTypesConverter))]
-    public class ContentTypes : List<ContentType>
-    {
-        /// <inheritdoc />
-        public override string ToString() => string.Join(",", this);
-
-        /// <inheritdoc />
-        public ContentTypes() { }
-
-        /// <inheritdoc />
-        public ContentTypes(IEnumerable<ContentType> collection) : base(collection) { }
-
-        /// <summary>
-        /// Parses a header value, possibly containing multiple content types, an returnes a 
-        /// ContentTypes collection describing them.
-        /// </summary>
-        public static ContentTypes Parse(string headerValue) => ContentType.ParseMany(headerValue);
-
-        /// <summary>
-        /// Creates a ContentTypes from a single ContentType instance
-        /// </summary>
-        /// <param name="contentType"></param>
-        public static implicit operator ContentTypes(ContentType contentType) => new ContentTypes {contentType};
-
-        /// <summary>
-        /// Creates a ContentTypes from an array of ContentType instances
-        /// </summary>
-        /// <param name="contentTypes"></param>
-        public static implicit operator ContentTypes(ContentType[] contentTypes) => new ContentTypes(contentTypes);
-
-        /// <summary>
-        /// Converts a header value string to a ContenType
-        /// </summary>
-        public static implicit operator ContentTypes(string headerValue) => ContentType.ParseMany(headerValue);
-    }
-
-    internal class ContentTypeConverter : JsonConverter<ContentType>
-    {
-        public override void WriteJson(JsonWriter writer, ContentType value, JsonSerializer s) => writer.WriteValue(value.ToString());
-
-        public override ContentType ReadJson(JsonReader reader, Type o, ContentType e, bool h, JsonSerializer s)
-        {
-            var contentTypeString = reader.Value as string;
-            if (string.IsNullOrWhiteSpace(contentTypeString)) return default;
-            return ContentType.ParseMany(contentTypeString).FirstOrDefault();
-        }
-    }
-
     /// <summary>
     /// Describes a content type
     /// </summary>
@@ -106,17 +42,17 @@ namespace RESTable.Requests
         /// <summary>
         /// application/json
         /// </summary>
-        public static readonly ContentType JSON = new ContentType("application/json");
+        public static readonly ContentType JSON = new("application/json");
 
         /// <summary>
         /// application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
         /// </summary>
-        public static readonly ContentType Excel = new ContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        public static readonly ContentType Excel = new("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
         /// <summary>
         /// application/xml
         /// </summary>
-        public static readonly ContentType XML = new ContentType("application/xml");
+        public static readonly ContentType XML = new("application/xml");
 
         /// <summary>
         /// The default input content type (application/json)
@@ -126,7 +62,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The default output content type (*/*)
         /// </summary>
-        public static readonly ContentType DefaultOutput = new ContentType("*/*");
+        public static readonly ContentType DefaultOutput = new("*/*");
 
         /// <summary>
         /// Parses a header value an returnes a ContentType instance describing it
@@ -177,7 +113,7 @@ namespace RESTable.Requests
             var data = default(Dictionary<string, string>);
             foreach (var pair in parts.Skip(1).Select(i => i.TSplit('=', true)))
             {
-                data = data ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                data ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 data.TPut(pair);
             }
             if (data == null)
@@ -205,17 +141,17 @@ namespace RESTable.Requests
         /// <summary>
         /// Converts a header value string to a ContenType
         /// </summary>
-        public static implicit operator ContentType(string headerValue) => new ContentType(headerValue);
+        public static implicit operator ContentType(string headerValue) => new(headerValue);
 
         /// <summary>
         /// Converts a header value string to a ContenType
         /// </summary>
-        public static implicit operator ContentType(System.Net.Mime.ContentType contentType) => new ContentType(contentType.ToString());
+        public static implicit operator ContentType(System.Net.Mime.ContentType contentType) => new(contentType.ToString());
 
         /// <summary>
         /// Converts a header value string to a ContenType
         /// </summary>
-        public static implicit operator System.Net.Mime.ContentType(ContentType contentType) => new System.Net.Mime.ContentType(contentType.ToString());
+        public static implicit operator System.Net.Mime.ContentType(ContentType contentType) => new(contentType.ToString());
 
         /// <summary>
         /// Converts a header value string to a ContenType

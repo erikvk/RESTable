@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Net;
+using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Requests;
-using RESTable.Linq;
 
 namespace RESTable.Results
 {
@@ -24,7 +23,7 @@ namespace RESTable.Results
         public string StatusDescription { get; protected set; }
 
         /// <inheritdoc />
-        public Headers Headers { get; } = new Headers();
+        public Headers Headers { get; } = new();
 
         /// <inheritdoc />
         public Cookies Cookies => Context.Client.Cookies;
@@ -53,23 +52,20 @@ namespace RESTable.Results
         public MessageType MessageType => MessageType.HttpOutput;
 
         /// <inheritdoc />
-        public string LogMessage
+        public ValueTask<string> GetLogMessage()
         {
-            get
-            {
-                var info = Headers.Info;
-                var errorInfo = Headers.Error;
-                var tail = "";
-                if (info != null)
-                    tail += $". {info}";
-                if (errorInfo != null)
-                    tail += $" (see {errorInfo})";
-                return $"{StatusCode.ToCode()}: {StatusDescription}{tail}";
-            }
+            var info = Headers.Info;
+            var errorInfo = Headers.Error;
+            var tail = "";
+            if (info != null)
+                tail += $". {info}";
+            if (errorInfo != null)
+                tail += $" (see {errorInfo})";
+            return new ValueTask<string>($"{StatusCode.ToCode()}: {StatusDescription}{tail}");
         }
 
         /// <inheritdoc />
-        public string LogContent { get; } = null;
+        public ValueTask<string> GetLogContent() => new(_logContent);
 
         /// <inheritdoc />
         public DateTime LogTime { get; } = DateTime.Now;
@@ -106,18 +102,22 @@ namespace RESTable.Results
 
         internal IRequestInternal RequestInternal { get; set; }
 
-        private Stream _body;
         private bool IsSerializing;
+        private readonly string _logContent = null;
+
+        private Body _body;
 
         /// <inheritdoc />
-        public Stream Body
+        public Body Body
         {
-            get => _body ?? (IsSerializing ? _body = new RESTableStream(default) : null);
+            get => _body ?? (IsSerializing ? _body = new Body(RequestInternal) : null);
             set
             {
-                if (_body is RESTableStream rsc)
-                    rsc.CanClose = true;
-                _body?.Dispose();
+                if (_body != null)
+                {
+                    _body.CanClose = true;
+                    _body.DisposeAsync().AsTask().Wait();
+                }
                 _body = value;
             }
         }
@@ -126,7 +126,7 @@ namespace RESTable.Results
         public bool IsSerialized { get; private set; }
 
         /// <inheritdoc />
-        public ISerializedResult Serialize(ContentType? contentType = null)
+        public ISerializedResult Serialize()
         {
             if (RequestInternal == null)
             {
@@ -137,12 +137,11 @@ namespace RESTable.Results
             IsSerializing = true;
             var stopwatch = Stopwatch.StartNew();
             ISerializedResult result = this;
-            var cachedProvider = RequestInternal.CachedProtocolProvider ?? ProtocolController.DefaultProtocolProvider;
-            var acceptProvider = RequestInternal.SafeSelect(request => ContentTypeController.ResolveOutputContentTypeProvider(request, contentType))
-                                 ?? cachedProvider.DefaultOutputProvider;
+            var cachedProvider = RequestInternal.CachedProtocolProvider;
+            var acceptProvider = RequestInternal.GetOutputContentTypeProvider();
             try
             {
-                return cachedProvider.ProtocolProvider.Serialize(this, acceptProvider).Finalize(acceptProvider);
+                return cachedProvider.ProtocolProvider.Serialize(this, acceptProvider);
             }
             catch (Exception exception)
             {
@@ -168,15 +167,11 @@ namespace RESTable.Results
         /// </summary>
         public TimeSpan TimeElapsed { get; internal set; }
 
-        /// <inheritdoc />
-        public override string ToString() => LogMessage;
-
-        /// <inheritdoc />
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            if (Body is RESTableStream rsc)
-                rsc.CanClose = true;
-            Body?.Dispose();
+            if (Body == null) return;
+            Body.CanClose = true;
+            await Body.DisposeAsync();
         }
     }
 }

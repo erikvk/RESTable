@@ -30,7 +30,7 @@ namespace RESTable.Meta.Internal
         public IEnumerable<ITarget> Views => ViewDictionaryInternal?.Values;
         public TermBindingRule ConditionBindingRule { get; }
         public TermBindingRule OutputBindingRule { get; }
-        public bool RequiresAuthentication => Authenticator != null;
+        public bool RequiresAuthentication => AsyncAuthenticator != null;
         public bool GETAvailableToAll { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         public Type InterfaceType { get; }
@@ -42,11 +42,11 @@ namespace RESTable.Meta.Internal
         public bool ClaimedBy<T1>() where T1 : IEntityResourceProvider => Provider == typeof(T1).GetEntityResourceProviderId();
         public ResourceKind ResourceKind { get; }
         public bool IsDeclared { get; }
-        public bool CanSelect => Selector != null;
-        public bool CanInsert => Inserter != null;
-        public bool CanUpdate => Updater != null;
-        public bool CanDelete => Deleter != null;
-        public bool CanCount => Counter != null;
+        public bool CanSelect => AsyncSelector != null;
+        public bool CanInsert => AsyncInserter != null;
+        public bool CanUpdate => AsyncUpdater != null;
+        public bool CanDelete => AsyncDeleter != null;
+        public bool CanCount => AsyncCounter != null;
 
         string IResourceInternal.Description
         {
@@ -58,37 +58,37 @@ namespace RESTable.Meta.Internal
             set => AvailableMethods = value;
         }
 
-        public IEnumerable<T> Select(IRequest<T> request) => Selector(request);
-        public int Insert(IRequest<T> request) => Inserter(request);
-        public int Update(IRequest<T> request) => Updater(request);
-        public int Delete(IRequest<T> request) => Deleter(request);
-        public AuthResults Authenticate(IRequest<T> request) => Authenticator(request);
-        public long Count(IRequest<T> request) => Counter(request);
+        public IEnumerable<T> Select(IRequest<T> request) => AsyncSelector(request);
+        public int Insert(IRequest<T> request) => AsyncInserter(request);
+        public int Update(IRequest<T> request) => AsyncUpdater(request);
+        public int Delete(IRequest<T> request) => AsyncDeleter(request);
+        public AuthResults Authenticate(IRequest<T> request) => AsyncAuthenticator(request);
+        public long Count(IRequest<T> request) => AsyncCounter(request);
         
         public IEnumerable<T> Validate(IEnumerable<T> entities)
         {
-            if (Validator == null) return entities;
+            if (AsyncValidator == null) return entities;
             return entities?.Apply(e =>
             {
-                if (!Validator(e, out var invalidReason))
+                if (!AsyncValidator(e, out var invalidReason))
                     throw new FailedValidation(invalidReason);
             });
         }
 
-        private Selector<T> Selector { get; }
-        private Inserter<T> Inserter { get; }
-        private Updater<T> Updater { get; }
-        private Deleter<T> Deleter { get; }
-        private Authenticator<T> Authenticator { get; }
-        private Counter<T> Counter { get; }
-        private Validator<T> Validator { get; }
+        private AsyncSelector<T> AsyncSelector { get; }
+        private AsyncInserter<T> AsyncInserter { get; }
+        private AsyncUpdater<T> AsyncUpdater { get; }
+        private AsyncDeleter<T> AsyncDeleter { get; }
+        private AsyncAuthenticator<T> AsyncAuthenticator { get; }
+        private AsyncCounter<T> AsyncCounter { get; }
+        private AsyncValidator<T> AsyncValidator { get; }
         
         /// <summary>
         /// All resources are constructed here
         /// </summary>
-        internal EntityResource(string fullName, RESTableAttribute attribute, Selector<T> selector, Inserter<T> inserter,
-            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Authenticator<T> authenticator,
-            Validator<T> validator, IEntityResourceProviderInternal provider, View<T>[] views)
+        internal EntityResource(string fullName, RESTableAttribute attribute, AsyncSelector<T> asyncSelector, AsyncInserter<T> asyncInserter,
+            AsyncUpdater<T> asyncUpdater, AsyncDeleter<T> asyncDeleter, AsyncCounter<T> asyncCounter, AsyncAuthenticator<T> asyncAuthenticator,
+            AsyncValidator<T> asyncValidator, IEntityResourceProviderInternal provider, View<T>[] views)
         {
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)
@@ -114,19 +114,19 @@ namespace RESTable.Meta.Internal
             else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)
                 OutputBindingRule = TermBindingRule.DynamicWithDeclaredFallback;
             else OutputBindingRule = TermBindingRule.OnlyDeclared;
-            RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));
+            RequiresValidation = typeof(IAsyncValidator<>).IsAssignableFrom(typeof(T));
             IsDDictionary = false;
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.Id;
             Members = typeof(T).GetDeclaredProperties();
 
-            Selector = selector.AsImplemented();
-            Inserter = inserter.AsImplemented();
-            Updater = updater.AsImplemented();
-            Deleter = deleter.AsImplemented();
-            Counter = counter.AsImplemented();
-            Authenticator = authenticator.AsImplemented();
-            Validator = validator.AsImplemented();
+            AsyncSelector = asyncSelector.AsImplemented();
+            AsyncInserter = asyncInserter.AsImplemented();
+            AsyncUpdater = asyncUpdater.AsImplemented();
+            AsyncDeleter = asyncDeleter.AsImplemented();
+            AsyncCounter = asyncCounter.AsImplemented();
+            AsyncAuthenticator = asyncAuthenticator.AsImplemented();
+            AsyncValidator = asyncValidator.AsImplemented();
             
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
             views?.ForEach(view =>
@@ -167,10 +167,10 @@ namespace RESTable.Meta.Internal
         {
             switch (op)
             {
-                case RESTableOperations.Select: return Selector;
-                case RESTableOperations.Insert: return Inserter;
-                case RESTableOperations.Update: return Updater;
-                case RESTableOperations.Delete: return Deleter;
+                case RESTableOperations.Select: return AsyncSelector;
+                case RESTableOperations.Insert: return AsyncInserter;
+                case RESTableOperations.Update: return AsyncUpdater;
+                case RESTableOperations.Delete: return AsyncDeleter;
                 default: throw new ArgumentOutOfRangeException(nameof(op));
             }
         }

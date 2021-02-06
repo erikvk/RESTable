@@ -10,7 +10,7 @@ namespace RESTable.Results
     public abstract class Content : OK
     {
         /// <summary>
-        /// Us this content locked, for example due to it being tied to a certain
+        /// Is this content locked, for example due to it being tied to a certain
         /// Websocket streaming operation?
         /// </summary>
         internal bool IsLocked { get; set; }

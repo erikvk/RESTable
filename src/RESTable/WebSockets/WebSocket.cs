@@ -79,10 +79,10 @@ namespace RESTable.WebSockets
 
         private WebSocketConnection TerminalConnection { get; set; }
 
-        internal AppProfile GetAppProfile() => new AppProfile(this);
+        internal AppProfile GetAppProfile() => new(this);
 
         public Task LifetimeTask { get; private set; }
-        
+
         internal void ConnectTo(ITerminal terminal, ITerminalResource resource)
         {
             ReleaseTerminal();
@@ -149,8 +149,8 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Sends binary or text data to the client over the WebSocket
         /// </summary>
-        protected abstract Task Send(byte[] data, bool isText, int offset, int length);
-
+        protected abstract Task Send(byte[] data, bool asText, int offset, int length);
+        
         /// <summary>
         /// Is the WebSocket currently connected?
         /// </summary>
@@ -167,7 +167,7 @@ namespace RESTable.WebSockets
         /// </summary>
         /// <returns></returns>
         protected abstract Task InitLifetimeTask();
-        
+
         /// <summary>
         /// Disconnects the actual underlying WebSocket connection
         /// </summary>
@@ -202,7 +202,7 @@ namespace RESTable.WebSockets
                 return;
             }
             if (TerminalConnection.Resource?.Name != Admin.Console.TypeName)
-                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, textData, Encoding.UTF8.GetByteCount(textData)));
+                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, textData, (ulong) Encoding.UTF8.GetByteCount(textData)));
             await TerminalConnection.Terminal.HandleTextInput(textData);
             BytesReceived += (ulong) Encoding.UTF8.GetByteCount(textData);
         }
@@ -216,7 +216,7 @@ namespace RESTable.WebSockets
                 return;
             }
             if (TerminalConnection.Resource?.Name != Admin.Console.TypeName)
-                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
+                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, Encoding.UTF8.GetString(binaryData), (ulong) binaryData.LongLength));
             await TerminalConnection.Terminal.HandleBinaryInput(binaryData);
             BytesSent += (ulong) binaryData.Length;
         }
@@ -234,7 +234,7 @@ namespace RESTable.WebSockets
                     await Send(textData);
                     BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
                     if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
-                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, textData, Encoding.UTF8.GetByteCount(textData)));
+                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, textData, (ulong) Encoding.UTF8.GetByteCount(textData)));
                     break;
             }
         }
@@ -248,7 +248,7 @@ namespace RESTable.WebSockets
                     await Send(binaryData, isText, offset, length);
                     BytesSent += (ulong) length;
                     if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
-                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
+                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), (ulong) binaryData.LongLength));
                     break;
             }
         }
@@ -318,7 +318,7 @@ namespace RESTable.WebSockets
             finally
             {
                 if (disposeResult)
-                    result.Dispose();
+                    await result.DisposeAsync();
             }
         }
 
@@ -341,7 +341,7 @@ namespace RESTable.WebSockets
                     _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
                 else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
                 var stream = Providers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
-                body = stream.ToArray();
+                body = await stream.ToByteArrayAsync();
                 BinaryCache.Cache(item, body);
             }
             await _SendBinary(body, asText, 0, body.Length);
@@ -468,7 +468,7 @@ namespace RESTable.WebSockets
         #endregion
 
         #endregion
-
+        
         /// <inheritdoc />
         public override string ToString() => Id;
 

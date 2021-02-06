@@ -28,9 +28,9 @@ namespace RESTable.Meta.Internal
         /// <inheritdoc />
         public Type Type { get; }
 
-        private ViewSelector<TResource> ViewSelector { get; }
+        private AsyncViewSelector<TResource> AsyncViewSelector { get; }
 
-        public IEnumerable<TResource> Select(IRequest<TResource> request) => ViewSelector(request);
+        public IEnumerable<TResource> Select(IRequest<TResource> request) => AsyncViewSelector(request);
 
         /// <inheritdoc />
         public IEntityResource EntityResource { get; private set; }
@@ -45,7 +45,7 @@ namespace RESTable.Meta.Internal
             var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
             Type = viewType;
             Name = viewAttribute.CustomName ?? viewType.Name;
-            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
+            AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType);
             Members = viewType.GetDeclaredProperties();
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions

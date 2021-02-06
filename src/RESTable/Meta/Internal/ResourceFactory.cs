@@ -103,11 +103,11 @@ namespace RESTable.Meta.Internal
                     if (typeof(IResourceWrapper).IsAssignableFrom(resource))
                     {
                         var wrapped = resource.GetWrappedType();
-                        if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != wrapped)
+                        if (!viewType.ImplementsGenericInterface(typeof(IAsyncSelector<>), out var param) || param[0] != wrapped)
                             throw new InvalidResourceViewDeclarationException(viewType,
                                 $"Expected view type to implement ISelector<{wrapped.GetRESTableTypeName()}>");
                     }
-                    else if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != resource)
+                    else if (!viewType.ImplementsGenericInterface(typeof(IAsyncSelector<>), out var param) || param[0] != resource)
                         throw new InvalidResourceViewDeclarationException(viewType,
                             $"Expected view type to implement ISelector<{resource.GetRESTableTypeName()}>");
                     var resourceProperties = resource.GetDeclaredProperties();

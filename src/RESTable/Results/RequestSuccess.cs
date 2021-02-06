@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using RESTable.Internal;
 using RESTable.Requests;
 
@@ -21,37 +20,19 @@ namespace RESTable.Results
 
         private IRequestInternal RequestInternal { get; }
 
-        private Stream _body;
-        private bool IsSerializing;
+        public override Body Body { get; }
 
         /// <inheritdoc />
-        public override Stream Body
-        {
-            get => _body ?? (IsSerializing ? _body = new RESTableStream(default) : null);
-            set
-            {
-                if (ReferenceEquals(_body, value)) return;
-                if (_body is RESTableStream rsc)
-                    rsc.CanClose = true;
-                _body?.Dispose();
-                _body = value;
-            }
-        }
-
-        /// <inheritdoc />
-        public override ISerializedResult Serialize(ContentType? contentType = null)
+        public override ISerializedResult Serialize()
         {
             if (IsSerialized) return this;
-            IsSerializing = true;
             var stopwatch = Stopwatch.StartNew();
             ISerializedResult result = this;
             try
             {
                 var protocolProvider = RequestInternal.CachedProtocolProvider.ProtocolProvider;
-                var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
-                
-                
-                return protocolProvider.Serialize(this, acceptProvider).Finalize(acceptProvider);
+                var acceptProvider = RequestInternal.GetOutputContentTypeProvider();
+                return protocolProvider.Serialize(this, acceptProvider);
             }
             catch (Exception exception)
             {
@@ -60,7 +41,6 @@ namespace RESTable.Results
             }
             finally
             {
-                IsSerializing = false;
                 IsSerialized = true;
                 stopwatch.Stop();
                 TimeElapsed += stopwatch.Elapsed;
@@ -73,6 +53,7 @@ namespace RESTable.Results
             Request = request;
             TimeElapsed = request.TimeElapsed;
             RequestInternal = (IRequestInternal) request;
+            Body = Body.CreateOutputBody(request);
         }
     }
 }

@@ -9,10 +9,10 @@ using RESTable.Resources.Operations;
 
 namespace RESTable.Resources
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IInserter{T}" />
-    /// <inheritdoc cref="IUpdater{T}" />
-    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="IAsyncInserter{T}" />
+    /// <inheritdoc cref="IAsyncUpdater{T}" />
+    /// <inheritdoc cref="IAsyncDeleter{T}" />
     /// <inheritdoc cref="ResourceController{TController,TProvider}" />
     /// <summary>
     /// Resource controllers attach to entity resource providers that support procedural resources,
@@ -22,10 +22,10 @@ namespace RESTable.Resources
     /// <typeparam name="TController"></typeparam>
     public abstract class ResourceController<TController, TProvider> :
         Resource,
-        ISelector<TController>,
-        IInserter<TController>,
-        IUpdater<TController>,
-        IDeleter<TController>
+        IAsyncSelector<TController>,
+        IAsyncInserter<TController>,
+        IAsyncUpdater<TController>,
+        IAsyncDeleter<TController>
         where TController : ResourceController<TController, TProvider>, new()
         where TProvider : IEntityResourceProvider, IProceduralEntityResourceProvider
     {

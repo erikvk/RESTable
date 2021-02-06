@@ -33,14 +33,14 @@ namespace RESTable
         }
     }
 
-    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IAsyncSelector{T}" />
     /// <inheritdoc cref="Dictionary{TKey,TValue}" />
     /// <summary>
     /// A resource for creating arbitrary aggregated reports from multiple
     /// internal requests.
     /// </summary>
     [RESTable(Method.GET, Description = description), JsonConverter(typeof(AggregatorTemplateConverter))]
-    public class Aggregator : Dictionary<string, object>, ISelector<Aggregator>
+    public class Aggregator : Dictionary<string, object>, IAsyncSelector<Aggregator>
     {
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
 
@@ -97,7 +97,7 @@ namespace RESTable
                             method: method,
                             headers: request.Headers
                         );
-                        switch (internalRequest.Evaluate())
+                        switch (internalRequest.Evaluate().Result)
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
                             case NoContent _: return null;
@@ -105,13 +105,13 @@ namespace RESTable
                             case IEntities entities: return entities;
                             case var other:
                                 throw new Exception($"Unexpected result from {method.ToString()} request inside " +
-                                                    $"Aggregator: {other.LogMessage}");
+                                                    $"Aggregator: {other.GetLogMessage().Result}");
                         }
                     case var other: return other;
                 }
             }
 
-            var template = request.GetBody().Deserialize<Aggregator>().FirstOrDefault()
+            var template = request.Body.Deserialize<Aggregator>().FirstOrDefault()
                            ?? throw new Exception("Missing data source for Aggregator request");
             var populatedTemplate = populator(template);
             switch (populatedTemplate)

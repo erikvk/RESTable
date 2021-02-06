@@ -81,7 +81,14 @@ namespace RESTable.Requests
         public virtual IRequest<T> CreateRequest<T>(Method method = GET, string protocolId = "restable", string viewName = null) where T : class
         {
             var resource = Resource<T>.SafeGet ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
-            var parameters = new RequestParameters(this, method, resource, protocolId, viewName);
+            var parameters = new RequestParameters
+            (
+                context: this,
+                method: method,
+                resource: resource,
+                protocolIdentifier: protocolId,
+                viewName: viewName
+            );
             return new Request<T>(resource, parameters);
         }
 
@@ -97,7 +104,14 @@ namespace RESTable.Requests
         public virtual IRequest<T> CreateRequest<T>(IResource<T> resource, Method method = GET, string protocolId = "restable", string viewName = null)
             where T : class
         {
-            var parameters = new RequestParameters(this, method, resource, protocolId, viewName);
+            var parameters = new RequestParameters
+            (
+                context: this,
+                method: method,
+                resource: resource,
+                protocolIdentifier: protocolId,
+                viewName: viewName
+            );
             return new Request<T>(resource, parameters);
         }
 
@@ -108,7 +122,7 @@ namespace RESTable.Requests
         /// <param name="method">The method to perform</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public virtual IRequest CreateRequest(string uri, Method method = GET, byte[] body = null, Headers headers = null)
+        public virtual IRequest CreateRequest(string uri, Method method = GET, object body = null, Headers headers = null)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
@@ -116,9 +130,10 @@ namespace RESTable.Requests
                 WebSocket = CreateWebSocket();
                 WebSocket.Context = this;
             }
-            var parameters = new RequestParameters(this, method, uri, body, headers);
+            var parameters = new RequestParameters(this, method, uri, headers);
+            parameters.SetBody(body);
             if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
-            return Construct((dynamic) parameters.IResource, parameters);
+            return DynamicCreateRequest((dynamic) parameters.IResource, parameters);
         }
 
         /// <summary>
@@ -132,7 +147,7 @@ namespace RESTable.Requests
         public bool UriIsValid(string uri, out Error error, out IResource resource, out IUriComponents uriComponents)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
-            var parameters = new RequestParameters(this, (Method) (-1), uri, null, null);
+            var parameters = new RequestParameters(this, (Method) (-1), uri, null);
             uriComponents = null;
             if (parameters.Error != null)
             {
@@ -142,14 +157,14 @@ namespace RESTable.Requests
                 return false;
             }
             resource = parameters.IResource;
-            IRequest request = Construct((dynamic) resource, parameters);
+            IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
             if (request.IsValid)
             {
                 uriComponents = request.UriComponents;
                 error = null;
                 return true;
             }
-            error = request.Evaluate() as Error;
+            error = request.Evaluate().Result as Error;
             return false;
         }
 
@@ -179,7 +194,7 @@ namespace RESTable.Requests
             return false;
         }
 
-        private static IRequest Construct<T>(IResource<T> r, RequestParameters p) where T : class => new Request<T>(r, p);
+        private static IRequest DynamicCreateRequest<T>(IResource<T> r, RequestParameters p) where T : class => new Request<T>(r, p);
 
         /// <summary>
         /// Use this method to check the origin of an incoming OPTIONS request. This will check the contents
@@ -220,6 +235,7 @@ namespace RESTable.Requests
         public static RESTableContext Remote(string serviceRoot, string apiKey = null) => new RemoteContext(serviceRoot, apiKey);
 
         private static ulong IdNr;
+
         private static string NextId
         {
             get

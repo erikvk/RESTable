@@ -4,7 +4,7 @@ using RESTable.Internal;
 
 namespace RESTable.Requests
 {
-    internal struct HeaderRequestParameters
+    internal class HeaderRequestParameters
     {
         public Method Method { get; }
         public string URI { get; }

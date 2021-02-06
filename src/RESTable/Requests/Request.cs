@@ -5,57 +5,123 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Resources.Operations;
 using RESTable.Results;
 using RESTable.Internal.Auth;
-using static RESTable.Method;
-using static RESTable.ErrorCodes;
 using RESTable.Linq;
+using static RESTable.ErrorCodes;
+using static RESTable.Method;
 
 namespace RESTable.Requests
 {
     internal class Request<T> : IRequest, IRequest<T>, IEntityRequest<T>, ITraceable where T : class
     {
-        private bool IsEvaluating { get; set; }
+        public RequestParameters Parameters { get; }
+        public IResource<T> Resource { get; }
         public ITarget<T> Target { get; }
         public Type TargetType { get; }
-        public bool HasConditions => !(_conditions?.Count > 0);
+        private Exception Error { get; }
+        private bool IsEvaluating { get; set; }
         private Headers _responseHeaders;
         public Headers ResponseHeaders => _responseHeaders ??= new Headers();
-        public Cookies Cookies => Context.Client.Cookies;
-        public Headers Headers { get; }
-        public CachedProtocolProvider CachedProtocolProvider { get; }
-        private Exception Error { get; }
-        public bool IsValid => Error == null;
-        public IResource<T> Resource { get; }
-        public TimeSpan TimeElapsed => Stopwatch.Elapsed;
-        private Stopwatch Stopwatch { get; }
         private IDictionary<Type, object> Services { get; }
-
         public Func<IEnumerable<T>> Selector { private get; set; }
         public Func<IEnumerable<T>, IEnumerable<T>> Updater { private get; set; }
-
         public Func<IEnumerable<T>> EntitiesProducer { get; set; }
 
+        private List<Condition<T>> _conditions;
+
+        public List<Condition<T>> Conditions
+        {
+            get => _conditions ??= new List<Condition<T>>();
+            set => _conditions = value;
+        }
+
+        private MetaConditions _metaConditions;
+
+        public MetaConditions MetaConditions
+        {
+            get => _metaConditions ??= new MetaConditions();
+            set => _metaConditions = value;
+        }
+
+        #region Forwarding properties
+
+        public Cookies Cookies => Context.Client.Cookies;
+        public bool HasConditions => !(_conditions?.Count > 0);
+        public bool IsValid => Error == null;
+        public string ProtocolIdentifier => Parameters.ProtocolIdentifier;
+        public TimeSpan TimeElapsed => Stopwatch.Elapsed;
+        private Stopwatch Stopwatch => Parameters.Stopwatch;
         IEntityResource<T> IEntityRequest<T>.EntityResource => Resource as IEntityResource<T>;
         Func<IEnumerable<T>, IEnumerable<T>> IEntityRequest<T>.GetUpdater() => Updater;
         IEnumerable<T> IRequest<T>.GetInputEntities() => EntitiesProducer?.Invoke() ?? new T[0];
         Func<IEnumerable<T>> IEntityRequest<T>.GetSelector() => Selector;
         IResource IRequest.Resource => Resource;
-        private Method method;
+        public Headers Headers => Parameters.Headers;
+        public string TraceId => Parameters.TraceId;
+        public RESTableContext Context => Parameters.Context;
+        public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
+        public IMacro Macro => Parameters.UriComponents.Macro;
+        private ILogable LogItem => Parameters;
+        private IHeaderHolder HeaderHolder => Parameters;
+        MessageType ILogable.MessageType => LogItem.MessageType;
+        ValueTask<string> ILogable.GetLogMessage() => LogItem.GetLogMessage();
+        ValueTask<string> ILogable.GetLogContent() => LogItem.GetLogContent();
+        public DateTime LogTime { get; } = DateTime.Now;
+        bool IHeaderHolder.ExcludeHeaders => HeaderHolder.ExcludeHeaders;
+
+        public Body Body
+        {
+            get => Parameters.Body;
+            set
+            {
+                if (IsEvaluating)
+                    throw new InvalidOperationException("Cannot set the request body whilst the request is evaluating");
+                Parameters.Body = value;
+            }
+        }
+
+
+        public CachedProtocolProvider CachedProtocolProvider
+        {
+            get => Parameters.CachedProtocolProvider;
+            private set => Parameters.CachedProtocolProvider = value;
+        }
+
 
         public Method Method
         {
-            get => method;
+            get => Parameters.Method;
             set
             {
                 if (IsEvaluating) return;
-                method = value;
+                Parameters.Method = value;
             }
         }
+
+
+        public IUriComponents UriComponents => new UriComponents
+        (
+            resourceSpecifier: Resource.Name,
+            viewName: Target is IView ? Target.Name : null,
+            conditions: Conditions,
+            metaConditions: MetaConditions.AsConditionList(),
+            protocolProvider: CachedProtocolProvider.ProtocolProvider,
+            macro: Parameters.UriComponents.Macro
+        );
+
+        string IHeaderHolder.HeadersStringCache
+        {
+            get => HeaderHolder.HeadersStringCache;
+            set => HeaderHolder.HeadersStringCache = value;
+        }
+
+        #endregion
 
         public TData GetClientData<TData>(string key)
         {
@@ -90,96 +156,42 @@ namespace RESTable.Requests
             return Services.TryGetValue(serviceType, out var service) ? service : null;
         }
 
-        private List<Condition<T>> _conditions;
 
-        public List<Condition<T>> Conditions
+        public async Task<IEntities<T>> EvaluateToEntities()
         {
-            get => _conditions ??= new List<Condition<T>>();
-            set => _conditions = value;
-        }
-
-        private MetaConditions _metaConditions;
-
-        public MetaConditions MetaConditions
-        {
-            get => _metaConditions ??= new MetaConditions();
-            set => _metaConditions = value;
-        }
-
-        private Func<Body> BodyFunc { get; set; }
-        private Body _body;
-
-        public Body GetBody()
-        {
-            if (BodyFunc != null)
-            {
-                _body = BodyFunc();
-                BodyFunc = null;
-            }
-            return _body;
-        }
-
-        private void SetBody(Body value)
-        {
-            if (IsEvaluating)
-                throw new InvalidOperationException("Cannot set the request body whilst the request is evaluating");
-            BodyFunc = null;
-            _body = value;
-        }
-
-        public void SetBody(object content, ContentType? contentType = null) => SetBody(new Body
-        (
-            stream: content.ToStream(contentType, this),
-            protocolProvider: CachedProtocolProvider
-        ));
-
-        public IUriComponents UriComponents => new UriComponents
-        (
-            resourceSpecifier: Resource.Name,
-            viewName: Target is IView ? Target.Name : null,
-            conditions: Conditions,
-            metaConditions: MetaConditions.AsConditionList(),
-            protocolProvider: CachedProtocolProvider.ProtocolProvider,
-            macro: Parameters.UriComponents.Macro
-        );
-
-        #region Parameter bindings
-
-        public RequestParameters Parameters { get; }
-
-        public string TraceId => Parameters.TraceId;
-        public RESTableContext Context => Parameters.Context;
-        public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
-        public IMacro Macro => Parameters.UriComponents.Macro;
-
-        #endregion
-
-        #region ILogable
-
-        private ILogable LogItem => Parameters;
-        MessageType ILogable.MessageType => LogItem.MessageType;
-        string ILogable.LogMessage => LogItem.LogMessage;
-        string ILogable.LogContent => LogItem.LogContent;
-        public DateTime LogTime { get; } = DateTime.Now;
-
-        string ILogable.HeadersStringCache
-        {
-            get => LogItem.HeadersStringCache;
-            set => LogItem.HeadersStringCache = value;
-        }
-
-        bool ILogable.ExcludeHeaders => LogItem.ExcludeHeaders;
-
-        #endregion
-
-        public IEntities<T> EvaluateToEntities()
-        {
-            var result = Evaluate();
+            var result = await Evaluate();
             if (result is Error e) throw e;
             return (IEntities<T>) result;
         }
 
-        public IResult Evaluate()
+        public async Task<IResult> Evaluate()
+        {
+            if (Headers.Source is string sourceHeader)
+                Body = await GetBodyFromSourceHeader(sourceHeader);
+
+            var result = GetQuickErrorResult() ?? await RunEvaluation();
+
+            if (IsWebSocketUpgrade && !(result is WebSocketUpgradeSuccessful))
+            {
+                await using var webSocket = Context.WebSocket;
+                if (result is Forbidden forbidden)
+                    return new WebSocketUpgradeFailed(forbidden);
+                var serialized = result.Serialize();
+                await Context.WebSocket.Open();
+                await Context.WebSocket.SendResult(serialized);
+                return new WebSocketTransferSuccess(this);
+            }
+
+            result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+            if (Headers.Metadata == "full" && result.Metadata is string metadata)
+                result.Headers.Metadata = metadata;
+            result.Headers.Version = RESTableConfig.Version;
+            if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
+                throw loop;
+            return result;
+        }
+
+        private IResult GetQuickErrorResult()
         {
             if (!IsValid) return Error.AsResultOf(this);
             if (!Context.MethodIsAllowed(Method, Resource, out var error)) return error.AsResultOf(this);
@@ -193,19 +205,10 @@ namespace RESTable.Requests
                 catch (NotImplementedException) { }
             }
             if (IsEvaluating) throw new InfiniteLoop();
-
-            var result = RunEvaluation();
-
-            result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-            if (Headers.Metadata == "full" && result.Metadata is string metadata)
-                result.Headers.Metadata = metadata;
-            result.Headers.Version = RESTableConfig.Version;
-            if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
-                throw loop;
-            return result;
+            return null;
         }
 
-        private IResult RunEvaluation()
+        private async Task<IResult> RunEvaluation()
         {
             try
             {
@@ -223,15 +226,17 @@ namespace RESTable.Requests
                             var terminal = terminalResourceInternal.MakeTerminal(Conditions);
                             Context.WebSocket.SetContext(this);
                             Context.WebSocket.ConnectTo(terminal, terminalResourceInternal);
-                            Context.WebSocket.Open().Wait();
-                            terminal.Open();
+                            await Context.WebSocket.Open();
+                            await terminal.Open();
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
                         return SwitchTerminal(terminalResource);
 
                     case IBinaryResource<T> binary:
                         var (stream, contentType) = binary.SelectBinary(this);
-                        return new Binary(this, stream, contentType);
+                        var binaryResult = new Binary(this, contentType);
+                        await stream.CopyToAsync(binaryResult.Body);
+                        return binaryResult;
 
                     case IEntityResource<T> entity:
                         if (entity.RequiresAuthentication)
@@ -241,25 +246,14 @@ namespace RESTable.Requests
                             if (!entity.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
                             if (!entity.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
                         }
-
                         var evaluator = EntityOperations<T>.GetEvaluator(Method);
-
                         var result = evaluator(this);
-
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
                         if (RESTableConfig.AllowAllOrigins)
                             result.Headers.AccessControlAllowOrigin = "*";
                         else if (Headers.Origin is string origin)
                             result.Headers.AccessControlAllowOrigin = origin;
-
-                        if (!IsWebSocketUpgrade)
-                            return result;
-
-                        var serialized = result.Serialize();
-                        Context.WebSocket.Open().Wait();
-                        Context.WebSocket.SendResult(serialized).Wait();
-                        Context.WebSocket.DisposeAsync().AsTask().Wait();
-                        return new WebSocketTransferSuccess(this);
+                        return result;
 
                     case var other: throw new UnknownResource(other.Name);
                 }
@@ -286,6 +280,41 @@ namespace RESTable.Requests
             return new SwitchedTerminal(this);
         }
 
+        private async Task<Body> GetBodyFromSourceHeader(string sourceHeader)
+        {
+            try
+            {
+                Body body;
+                var source = new HeaderRequestParameters(sourceHeader);
+                if (source.Method != GET) throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
+                if (source.IsInternal)
+                {
+                    var result = await Context
+                        .CreateRequest(source.URI, source.Method, null, source.Headers)
+                        .Evaluate();
+                    if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, await result.GetLogMessage());
+                    var serialized = result.Serialize();
+                    if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");
+                    body = new Body(this, serialized.Body);
+                }
+                else
+                {
+                    if (source.Headers.Accept == null) source.Headers.Accept = ContentType.JSON;
+                    var request = new HttpRequest(this, source, null);
+                    var response = await request.GetResponseAsync() ?? throw new InvalidExternalSource(source.URI, "No response");
+                    if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(source.URI, response.LogMessage);
+                    if (response.Body.CanSeek && response.Body.Length == 0)
+                        throw new InvalidExternalSource(source.URI, "Response was empty");
+                    body = new Body(this, response.Body);
+                }
+                return body;
+            }
+            catch (HttpRequestException re)
+            {
+                throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
+            }
+        }
+
         internal Request(IResource<T> resource, RequestParameters parameters)
         {
             Parameters = parameters;
@@ -293,10 +322,7 @@ namespace RESTable.Requests
             Resource = resource;
             Target = resource;
             TargetType = typeof(T);
-            Method = parameters.Method;
-            Headers = parameters.Headers;
-            Stopwatch = parameters.Stopwatch;
-            CachedProtocolProvider = parameters.CachedProtocolProvider;
+            Body = parameters.Body;
 
             try
             {
@@ -319,80 +345,6 @@ namespace RESTable.Requests
                     MetaConditions.Unsafe = true;
                     parameters.Headers.UnsafeOverride = false;
                 }
-                var defaultContentType = CachedProtocolProvider.DefaultInputProvider.ContentType;
-                if (Headers.Source == null)
-                {
-                    if (!Parameters.HasBody) return;
-                    SetBody(new Body
-                    (
-                        stream: new RESTableStream
-                        (
-                            contentType: Headers.ContentType ?? defaultContentType,
-                            buffer: Parameters.BodyBytes
-                        ),
-                        protocolProvider: CachedProtocolProvider
-                    ));
-                }
-                else
-                {
-                    Body getBodyFromExternalSourceSync()
-                    {
-                        try
-                        {
-                            Body body;
-                            var source = new HeaderRequestParameters(Headers.Source);
-                            if (source.Method != GET) throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
-                            if (source.IsInternal)
-                            {
-                                var result = Context.CreateRequest(source.URI, source.Method, null, source.Headers)
-                                    .Evaluate();
-                                if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
-                                var serialized = result.Serialize();
-                                if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");
-                                body = new Body
-                                (
-                                    stream: new RESTableStream
-                                    (
-                                        contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
-                                        stream: serialized.Body
-                                    ),
-                                    protocolProvider: CachedProtocolProvider
-                                );
-                            }
-                            else
-                            {
-                                if (source.Headers.Accept == null) source.Headers.Accept = defaultContentType;
-                                var request = new HttpRequest(this, source, null);
-                                var response = request.GetResponseAsync().Result ?? throw new InvalidExternalSource(source.URI, "No response");
-                                if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(source.URI, response.LogMessage);
-                                if (response.Body.CanSeek && response.Body.Length == 0)
-                                    throw new InvalidExternalSource(source.URI, "Response was empty");
-                                body = new Body
-                                (
-                                    stream: new RESTableStream
-                                    (
-                                        contentType: response.Headers.ContentType ?? defaultContentType,
-                                        stream: response.Body
-                                    ),
-                                    protocolProvider: CachedProtocolProvider
-                                );
-                            }
-                            return body;
-                        }
-                        catch (HttpRequestException re)
-                        {
-                            BodyFunc = null;
-                            throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
-                        }
-                        catch
-                        {
-                            BodyFunc = null;
-                            throw;
-                        }
-                    }
-
-                    BodyFunc = getBodyFromExternalSourceSync;
-                }
             }
             catch (Exception e)
             {
@@ -402,59 +354,49 @@ namespace RESTable.Requests
 
         private Request
         (
-            Method method,
             IResource<T> resource,
             ITarget<T> target,
             Type targetType,
             CachedProtocolProvider cachedProtocolProvider,
             RequestParameters parameters,
             Body body,
-            Headers headers,
             MetaConditions metaConditions,
             List<Condition<T>> conditions,
-            Exception error,
-            string protocol
+            Exception error
         )
         {
-            Method = method;
             Services = new Dictionary<Type, object>();
             Resource = resource;
             Target = target;
             TargetType = targetType;
             Parameters = parameters;
-            _body = body;
-            Headers = headers;
+            Body = body;
             MetaConditions = metaConditions;
             Conditions = conditions;
             Error = error;
-            Stopwatch = Stopwatch.StartNew();
-            CachedProtocolProvider = protocol != null
-                ? ProtocolController.ResolveProtocolProvider(protocol)
-                : cachedProtocolProvider;
+            CachedProtocolProvider = cachedProtocolProvider;
         }
 
-        public IRequest GetCopy(string newProtocol = null) => new Request<T>
+        public async Task<IRequest> GetCopy(string newProtocol = null) => new Request<T>
         (
-            method: Method,
             resource: Resource,
             target: Target,
             targetType: TargetType,
-            cachedProtocolProvider: CachedProtocolProvider,
+            cachedProtocolProvider: newProtocol != null
+                ? ProtocolController.ResolveProtocolProvider(newProtocol)
+                : CachedProtocolProvider,
             parameters: Parameters,
-            body: GetBody().GetCopy(newProtocol),
-            headers: Headers.GetCopy(),
+            body: await Body.GetCopy(),
             metaConditions: MetaConditions.GetCopy(),
             conditions: Conditions.ToList(),
-            error: Error,
-            protocol: newProtocol
+            error: Error
         );
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            BodyFunc = null;
-            GetBody().Dispose();
+            await Body.DisposeAsync();
             foreach (var disposable in Services.Values.OfType<IAsyncDisposable>())
-                disposable.DisposeAsync();
+                await disposable.DisposeAsync();
             foreach (var disposable in Services.Values.OfType<IDisposable>())
                 disposable.Dispose();
         }

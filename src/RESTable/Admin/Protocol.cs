@@ -13,7 +13,7 @@ namespace RESTable.Admin
     /// Contains all the available protocols and content types for the current RESTable instance
     /// </summary>
     [RESTable(Method.GET, Description = description)]
-    public class Protocol : ISelector<Protocol>
+    public class Protocol : IAsyncSelector<Protocol>
     {
         private const string description = "Contains all the available protocols and content types for the current RESTable instance";
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -22,13 +21,11 @@ using RESTable.Requests.Filters;
 using RESTable.Requests.Processors;
 using RESTable.Resources;
 using RESTable.Results;
-using RESTable.WebSockets;
 using RESTable.Linq;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTable.ErrorCodes;
-using static RESTable.Internal.ContentTypeController;
 using static RESTable.Requests.Operators;
 
 namespace RESTable
@@ -575,20 +572,6 @@ namespace RESTable
             {
                 errorId = Admin.Error.Create(error, request).Id;
             }
-            if (request.IsWebSocketUpgrade)
-            {
-                var webSocket = request.Context.WebSocket;
-                if (error is Forbidden)
-                {
-                    webSocket.DisposeAsync().AsTask().Wait();
-                    return new WebSocketUpgradeFailed(error);
-                }
-                if (webSocket.Status == WebSocketStatus.Waiting)
-                    webSocket.Open().Wait();
-                webSocket.SendResult(error).Wait();
-                webSocket.DisposeAsync().AsTask().Wait();
-                return new WebSocketTransferSuccess(request);
-            }
             if (request.Headers.Metadata.EqualsNoCase("full"))
                 error.Headers.Metadata = error.Metadata;
             error.Headers.Version = RESTableConfig.Version;
@@ -596,37 +579,6 @@ namespace RESTable
                 error.Headers.Error = $"/restable.admin.error/id={errorId}";
             error.TimeElapsed = request.TimeElapsed;
             return error;
-        }
-
-        internal static ISerializedResult Finalize(this ISerializedResult result, IContentTypeProvider acceptProvider)
-        {
-            switch (result.Body = result.Body.Finalize())
-            {
-                case null: return result;
-                case RESTableStream rs when rs.ContentType.IsDefault:
-                    rs.ContentType = acceptProvider.ContentType;
-                    break;
-            }
-            if (!result.Headers.ContentType.HasValue)
-                result.Headers.ContentType = acceptProvider.ContentType;
-            return result;
-        }
-
-        [Pure]
-        internal static Stream Finalize(this Stream stream)
-        {
-            switch (stream?.CanRead)
-            {
-                case true when !stream.CanSeek: return stream;
-                case null:
-                case false:
-                case true when stream.Length == 0:
-                    stream?.Dispose();
-                    return null;
-                default:
-                    stream.Seek(0, SeekOrigin.Begin);
-                    return stream;
-            }
         }
 
         /// <summary>
@@ -743,7 +695,7 @@ namespace RESTable
                 case "": return "";
             }
 
-            if (property is DeclaredProperty prop && prop.IsEnum)
+            if (property is DeclaredProperty {IsEnum: true} prop)
             {
                 try
                 {
@@ -837,71 +789,10 @@ namespace RESTable
 
         #region Conversion
 
-        /// <summary>
-        /// Generates a content stream from a CLR object. If no content type is provided, uses the content type of the
-        /// request. If neither content type nor request are present, JSON is used if serialization is needed. If no
-        /// content type is provided with binary data (byte array or stream) an exception is thrown.
-        /// </summary>
-        internal static RESTableStream ToStream<T>(this T content, ContentType? contentType = null, IRequestInternal request = null)
-            where T : class
-        {
-            ContentType _contentType;
-            switch (content)
-            {
-                case Stream _stream:
-                    _contentType = contentType ?? ResolveInputContentType(request);
-                    if (_contentType.IsDefault) throw new ArgumentException("Missing content type for binary data", nameof(contentType));
-                    return new RESTableStream(_contentType, _stream);
-                case byte[] bytes:
-                    _contentType = contentType ?? ResolveInputContentType(request);
-                    if (_contentType.IsDefault) throw new ArgumentException("Missing content type for binary data", nameof(contentType));
-                    return new RESTableStream(_contentType, bytes);
-                case string str:
-                    _contentType = contentType ?? ResolveInputContentType(request);
-                    if (_contentType.IsDefault) _contentType = "text/plain";
-                    return new RESTableStream(_contentType, str.ToBytes());
-                case null: throw new ArgumentNullException(nameof(content));
-            }
-
-            IContentTypeProvider provider;
-            switch (request)
-            {
-                case null when contentType.HasValue && InputContentTypeProviders.TryGetValue(contentType.ToString(), out provider):
-                    break;
-                case null:
-                    provider = Providers.Json;
-                    break;
-                case var _request:
-                    provider = ResolveInputContentTypeProvider(_request, contentType);
-                    _request.Headers.ContentType = provider.ContentType;
-                    break;
-            }
-            _contentType = provider.ContentType;
-
-            var stream = new RESTableStream(_contentType);
-            switch (content)
-            {
-                case IDictionary<string, object> _:
-                case JObject _:
-                    provider.SerializeCollection(new[] {content}, stream);
-                    break;
-                case IEnumerable<object> ie:
-                    provider.SerializeCollection(ie, stream);
-                    break;
-                case IEnumerable ie:
-                    provider.SerializeCollection(ie.Cast<object>(), stream);
-                    break;
-                default:
-                    provider.SerializeCollection(new[] {content}, stream);
-                    break;
-            }
-            return stream.Rewind();
-        }
-
         internal static string SHA256(this string input)
         {
-            using (var hasher = System.Security.Cryptography.SHA256.Create())
-                return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
+            using var hasher = System.Security.Cryptography.SHA256.Create();
+            return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
         }
 
         internal static byte[] ToBytes(this string str)
@@ -931,16 +822,16 @@ namespace RESTable
             switch (stream)
             {
                 case null: return null;
-                case MemoryStream _ms: return _ms.ToArray();
-                case RESTableStream rsc: return rsc.GetBytes();
+                case MemoryStream ms: return ms.ToArray();
+                case Body body: return body.GetBytes();
                 default:
-                    using (var ms = new MemoryStream())
-                    {
-                        stream.CopyTo(ms);
-                        if (stream.CanSeek)
-                            stream.Seek(0, SeekOrigin.Begin);
-                        return ms.ToArray();
-                    }
+                {
+                    using var ms = new MemoryStream();
+                    stream.CopyTo(ms);
+                    if (stream.CanSeek)
+                        stream.Seek(0, SeekOrigin.Begin);
+                    return ms.ToArray();
+                }
             }
         }
 
@@ -949,16 +840,16 @@ namespace RESTable
             switch (stream)
             {
                 case null: return null;
-                case MemoryStream _ms: return _ms.ToArray();
-                case RESTableStream rsc: return await rsc.GetBytesAsync();
+                case MemoryStream ms: return ms.ToArray();
+                case SwappingStream ss: return await ss.GetBytesAsync();
                 default:
-                    using (var ms = new MemoryStream())
-                    {
-                        await stream.CopyToAsync(ms);
-                        if (stream.CanSeek)
-                            stream.Seek(0, SeekOrigin.Begin);
-                        return ms.ToArray();
-                    }
+                {
+                    await using var ms = new MemoryStream();
+                    await stream.CopyToAsync(ms);
+                    if (stream.CanSeek)
+                        stream.Seek(0, SeekOrigin.Begin);
+                    return ms.ToArray();
+                }
             }
         }
 

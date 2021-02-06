@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace RESTable.Results
     {
@@ -14,7 +13,7 @@ namespace RESTable.Results
             /// <summary>
             /// The serialized body contained in the result. Can be seekable or non-seekable.
             /// </summary>
-            Stream Body { get; set; }
+            Body Body { get; }
         }
     
         /// <inheritdoc cref="IResult{T}" />

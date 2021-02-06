@@ -35,15 +35,19 @@ namespace RESTable.AspNetCore
                         return;
                     }
                     var context = new RESTableAspNetCoreContext(client, aspNetCoreContext);
-                    var body = await aspNetCoreContext.Request.Body.ReadInputStream();
-                    using var request = context.CreateRequest(uri, method, body, headers);
-                    using var result = request.Evaluate().Serialize();
-                    if (result is WebSocketUpgradeSuccessful ws)
+                    var body = aspNetCoreContext.Request.Body;
+                    await using var request = context.CreateRequest(uri, method, body, headers);
+                    var result = await request.Evaluate();
+                    var serialized = result.Serialize();
+                    
+                    
+                    
+                    if (serialized is WebSocketUpgradeSuccessful ws)
                     {
                         await using var webSocket = ws.WebSocket;
                         await webSocket.LifetimeTask;
                     }
-                    else await WriteResponse(aspNetCoreContext, result);
+                    else await WriteResponse(aspNetCoreContext, serialized);
                 });
             }
         }

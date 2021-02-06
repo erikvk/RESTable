@@ -7,16 +7,12 @@ namespace RESTable.Results
     /// <summary>
     /// Holds a binary content, used as result from requests to binary resources
     /// </summary>
-    public class Binary : Content
+    public sealed class Binary : Content
     {
         /// <inheritdoc />
-        public override Stream Body { get; set; }
-
-        /// <inheritdoc />
-        public Binary(IRequest request, Stream stream, ContentType contentType) : base(request)
+        public Binary(IRequest request, ContentType contentType) : base(request)
         {
             Headers.ContentType = contentType;
-            Body = stream;
             if (Body.CanSeek)
                 Body.Seek(0, SeekOrigin.Begin);
             IsSerialized = true;

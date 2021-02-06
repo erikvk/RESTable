@@ -37,7 +37,7 @@ namespace RESTable.Starcounter3x
             switch (request.Conditions.Count)
             {
                 case 0:
-                    var sql = $"{select}{GetOrderbyString(request, out _)}";
+                    var sql = $"{select}";
                     QueryConsole.Publish(sql, null);
                     foreach (var item in Transaction.Run(db => db.Sql<T>(sql)))
                         yield return item;
@@ -54,8 +54,8 @@ namespace RESTable.Starcounter3x
                     }
                     else goto case default;
                 default:
-                    var orderBy = GetOrderbyString(request, out var orderByIndexName);
-                    var (where, values) = request.Conditions.GetSQL().MakeWhereClause(orderByIndexName, out var useOrderBy);
+                    string orderBy = null;
+                    var (where, values) = request.Conditions.GetSQL().MakeWhereClause(null, out var useOrderBy);
                     sql = useOrderBy ? $"{select}{where}{orderBy}" : $"{select}{where}";
                     QueryConsole.Publish(sql, values);
                     if (request.Conditions.HasPost(out var post))
@@ -64,12 +64,6 @@ namespace RESTable.Starcounter3x
                         yield return item;
                     yield break;
             }
-        }
-
-        private static string GetOrderbyString(IRequest request, out string indexedName)
-        {
-            indexedName = null;
-            return null;
         }
 
         /// <summary>

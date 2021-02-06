@@ -147,8 +147,7 @@ namespace RESTable.OData
                         switch (option)
                         {
                             case filter:
-                                if (Regex.Match(decodedValue, @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )") is Match m &&
-                                    m.Success)
+                                if (Regex.Match(decodedValue, @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )") is Match {Success: true} m)
                                     throw new FeatureNotImplemented($"Not implemented operator '{m.Value}' in $filter");
                                 decodedValue
                                     .Replace("(", "")
@@ -258,15 +257,19 @@ namespace RESTable.OData
         {
             result.Headers["OData-Version"] = "4.0";
             if (!(result is IEntities entities))
-                return result as ISerializedResult;
+                return (ISerializedResult) result;
 
-            var contextFragment = $"#{entities.Request.Resource.Name}";
-            var writeMetadata = true;
+            string contextFragment;
+            bool writeMetadata;
             switch (entities)
             {
                 case IEnumerable<ServiceDocument> _:
                     contextFragment = null;
                     writeMetadata = false;
+                    break;
+                default:
+                    contextFragment = $"#{entities.Request.Resource.Name}";
+                    writeMetadata = true;
                     break;
             }
             using (var swr = new StreamWriter(entities.Body, Encoding.UTF8, 1024, true))

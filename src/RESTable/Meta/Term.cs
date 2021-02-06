@@ -205,7 +205,7 @@ namespace RESTable.Meta
         private void SetCommonProperties()
         {
             IsDeclared = Store.All(p => p is DeclaredProperty);
-            ConditionSkip = Store.Any(p => p is DeclaredProperty s && s.SkipConditions);
+            ConditionSkip = Store.Any(p => p is DeclaredProperty {SkipConditions: true} s);
             Key = GetKey();
             ActualNamesKey = GetActualNameKey();
         }

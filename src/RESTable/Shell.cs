@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using RESTable.Admin;
@@ -37,22 +36,19 @@ namespace RESTable
 
         private string query;
         private string previousQuery;
-        private Task OnConfirm;
         private bool _autoGet;
         private int streamBufferSize;
         private IEntities _previousEntities;
         private bool _autoOptions;
         private string _protocol;
 
-        private IEntities PreviousEntities
+        private IEntities GetPreviousEntities() => _previousEntities;
+
+        private async Task SetPreviousEntities(IEntities value)
         {
-            get => _previousEntities;
-            set
-            {
-                if (value?.Equals(_previousEntities) != true)
-                    _previousEntities?.Dispose();
-                _previousEntities = value;
-            }
+            if (_previousEntities != null && value?.Equals(_previousEntities) != true)
+                await _previousEntities.DisposeAsync();
+            _previousEntities = value;
         }
 
         /// <summary>
@@ -62,12 +58,11 @@ namespace RESTable
 
         internal static ITerminalResource<Shell> TerminalResource { get; set; }
 
-        private void Reset()
+        private async Task Reset()
         {
             streamBufferSize = MaxStreamBufferSize;
             Unsafe = false;
-            OnConfirm = null;
-            PreviousEntities = null;
+            await SetPreviousEntities(null);
             query = "";
             previousQuery = "";
             WriteHeaders = false;
@@ -180,14 +175,13 @@ namespace RESTable
         {
             SupportsTextInput = true;
             SupportsBinaryInput = true;
-            Reset();
+            Reset().Wait();
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             WebSocket.Context.Client.ShellConfig = Providers.Json.Serialize(this);
-            Reset();
-            return default;
+            await Reset();
         }
 
         /// <inheritdoc />
@@ -228,11 +222,13 @@ namespace RESTable
                 Query = input;
             var (valid, resource) = await ValidateQuery();
             if (!valid) return;
-            PreviousEntities = null;
+            await SetPreviousEntities(null);
             if (AutoOptions) await SendOptions(resource);
             else if (AutoGet) await SafeOperation(GET);
             else await SendQuery();
         }
+
+        private Func<Task> OnConfirm { get; set; }
 
         /// <inheritdoc />
         public async Task HandleTextInput(string input)
@@ -247,7 +243,7 @@ namespace RESTable
                         break;
                     case 'Y':
                     case 'y':
-                        await OnConfirm;
+                        await OnConfirm();
                         OnConfirm = null;
                         break;
                     case 'N':
@@ -303,7 +299,7 @@ namespace RESTable
                             await SafeOperation(HEAD, tail?.ToBytes());
                             break;
                         case "STREAM":
-                            var result = WsEvaluate(GET, null);
+                            var result = await WsEvaluate(GET, null);
                             if (result is Content)
                                 await StreamResult(result, result.TimeElapsed);
                             else await SendResult(result);
@@ -325,7 +321,7 @@ namespace RESTable
                                 op: Operators.EQUALS,
                                 value: resource.Name
                             );
-                            var schema = WebSocket.Context
+                            var schema = await WebSocket.Context
                                 .CreateRequest<Schema>()
                                 .WithConditions(resourceCondition)
                                 .EvaluateToEntities();
@@ -505,54 +501,26 @@ namespace RESTable
         private async Task Permute(Func<IEntities, IUriComponents> permuter)
         {
             var stopwatch = Stopwatch.StartNew();
-            if (PreviousEntities == null)
+            if (GetPreviousEntities() == null)
             {
-                WsGetPreliminary().Dispose();
-                if (PreviousEntities == null)
+                var preliminary = await WsGetPreliminary();
+                await preliminary.DisposeAsync();
+                if (GetPreviousEntities() == null)
                 {
                     await SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
                     return;
                 }
             }
-            var link = permuter(PreviousEntities);
+            var link = permuter(GetPreviousEntities());
             await Navigate(link.ToString());
         }
 
-        private IResult WsGetPreliminary()
+        private async Task<IResult> WsGetPreliminary()
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            using (var request = WebSocket.Context.CreateRequest(local, GET, null, WebSocket.Headers))
-            {
-                var result = request.Evaluate();
-                switch (result)
-                {
-                    case Results.Error _ when queryChangedPreEval:
-                        query = previousQuery;
-                        break;
-                    case IEntities entities:
-                        query = local;
-                        PreviousEntities = entities;
-                        break;
-                    case Change _:
-                        query = local;
-                        PreviousEntities = null;
-                        break;
-                    default:
-                        query = local;
-                        break;
-                }
-                queryChangedPreEval = false;
-                return result;
-            }
-        }
-
-        private ISerializedResult WsEvaluate(Method method, byte[] body)
-        {
-            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
-            var local = Query;
-            using var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers);
-            var result = request.Evaluate().Serialize();
+            await using var request = WebSocket.Context.CreateRequest(local, GET, null, WebSocket.Headers);
+            var result = await request.Evaluate();
             switch (result)
             {
                 case Results.Error _ when queryChangedPreEval:
@@ -560,11 +528,11 @@ namespace RESTable
                     break;
                 case IEntities entities:
                     query = local;
-                    PreviousEntities = entities;
+                    await SetPreviousEntities(entities);
                     break;
                 case Change _:
                     query = local;
-                    PreviousEntities = null;
+                    await SetPreviousEntities(null);
                     break;
                 default:
                     query = local;
@@ -572,6 +540,34 @@ namespace RESTable
             }
             queryChangedPreEval = false;
             return result;
+        }
+
+        private async Task<ISerializedResult> WsEvaluate(Method method, byte[] body)
+        {
+            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
+            var local = Query;
+            await using var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers);
+            var result = await request.Evaluate();
+            var serialized = result.Serialize().Serialize();
+            switch (serialized)
+            {
+                case Results.Error _ when queryChangedPreEval:
+                    query = previousQuery;
+                    break;
+                case IEntities entities:
+                    query = local;
+                    await SetPreviousEntities(entities);
+                    break;
+                case Change _:
+                    query = local;
+                    await SetPreviousEntities(null);
+                    break;
+                default:
+                    query = local;
+                    break;
+            }
+            queryChangedPreEval = false;
+            return serialized;
         }
 
         private async Task<(bool isValid, IResource resource)> ValidateQuery()
@@ -603,26 +599,19 @@ namespace RESTable
         private async Task SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
-            switch (WsEvaluate(method, body))
+            switch (await WsEvaluate(method, body))
             {
-                case Content {Body: Stream _} content:
+                case Content {Body: Body} content:
+
                     if (!content.Body.CanRead)
                     {
                         await SendResult(new UnreadableContentStream(content));
                         break;
                     }
-                    if (!content.Body.CanSeek)
-                    {
-                        content.Body = new RESTableStream
-                        (
-                            contentType: content.Headers.ContentType.GetValueOrDefault(),
-                            stream: content.Body
-                        );
-                        break;
-                    }
+                    await content.Body.MakeSeekable();
                     if (content.Body.Length > ResultStreamThreshold)
                     {
-                        OnConfirm = StreamResult(content, sw.Elapsed);
+                        OnConfirm = () => StreamResult(content, sw.Elapsed);
                         await SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
                                                       "Do you want to stream the result instead? ");
                         break;
@@ -647,11 +636,11 @@ namespace RESTable
                 await SafeOperation(method, body);
             }
 
-            if (PreviousEntities == null)
+            if (GetPreviousEntities() == null)
             {
-                var result = WsEvaluate(GET, null);
+                var result = await WsEvaluate(GET, null);
                 if (result is IEntities entities)
-                    PreviousEntities = entities;
+                    await SetPreviousEntities(entities);
                 else
                 {
                     await SendResult(result);
@@ -659,7 +648,7 @@ namespace RESTable
                 }
             }
 
-            switch (PreviousEntities.EntityCount)
+            switch (GetPreviousEntities().EntityCount)
             {
                 case 0:
                     await SendBadRequest($". No entities for to run {method} on");
@@ -673,9 +662,9 @@ namespace RESTable
                         await runOperation();
                         break;
                     }
-                    OnConfirm = runOperation();
+                    OnConfirm = runOperation;
                     await SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
-                                                  $"'{PreviousEntities.Request.Resource}'. ");
+                                                  $"'{GetPreviousEntities().Request.Resource}'. ");
                     break;
             }
         }
@@ -718,8 +707,11 @@ namespace RESTable
             await WebSocket.SendText("### Type a command to continue...            ###");
         }
 
-        private async Task SendConfirmationRequest(string initialInfo = null) => await WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
-        private async Task SendCancel() => await WebSocket.SendText("Operation cancelled");
+        private const string ConfirmationText = "Type 'Y' to continue, 'N' to cancel";
+        private const string CancelText = "Operation cancelled";
+
+        private async Task SendCancel() => await WebSocket.SendText(CancelText);
+        private async Task SendConfirmationRequest(string initialInfo = null) => await WebSocket.SendText(initialInfo + ConfirmationText);
         private async Task SendBadRequest(string message = null) => await WebSocket.SendText($"400: Bad request{message}");
         private async Task SendInvalidCommandArgument(string command, string arg) => await WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
         private async Task SendUnknownCommand(string command) => await WebSocket.SendText($"Unknown command '{command}'");

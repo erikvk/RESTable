@@ -35,7 +35,7 @@ namespace RESTable
     /// using the types included in the RESTable.Meta namespace.
     /// </summary>
     [RESTable(Method.GET, GETAvailableToAll = true)]
-    public class Metadata : ISelector<Metadata>
+    public class Metadata : IAsyncSelector<Metadata>
     {
         /// <summary>
         /// The access scope for the current client

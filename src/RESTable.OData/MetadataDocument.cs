@@ -123,7 +123,7 @@ namespace RESTable.OData
                     swr.Write($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
                     var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
                     if (key != null) swr.Write($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>");
-                    WriteMembers(swr, declaredMembers.Where(p => !(p is DeclaredProperty d) || !d.Hidden || d.Equals(key)));
+                    WriteMembers(swr, declaredMembers.Where(p => !(p is DeclaredProperty {Hidden: true} d) || d.Equals(key)));
                     swr.Write("</EntityType>");
                 }
                 swr.Write("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>");

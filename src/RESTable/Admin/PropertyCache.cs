@@ -13,7 +13,7 @@ namespace RESTable.Admin
     /// Gets the properties discovered by this RESTable instance
     /// </summary>
     [RESTable(Method.GET, Description = description)]
-    public class PropertyCache : ISelector<PropertyCache>
+    public class PropertyCache : IAsyncSelector<PropertyCache>
     {
         private const string description = "Contains the types and properties discovered by RESTable when " +
                                            "working with the resources of the current RESTable application";

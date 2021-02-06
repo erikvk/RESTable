@@ -24,7 +24,7 @@ namespace RESTable.Meta.Internal
 
         private IResource MakeBinaryResource<T>() where T : class, Resources.IBinary<T>
         {
-            var binarySelector = DelegateMaker.GetDelegate<BinarySelector<T>>(typeof(T));
+            var binarySelector = DelegateMaker.GetDelegate<AsyncBinarySelector<T>>(typeof(T));
             return new BinaryResource<T>(binarySelector);
         }
     }

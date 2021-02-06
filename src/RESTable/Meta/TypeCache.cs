@@ -162,7 +162,7 @@ namespace RESTable.Meta
                         return underlying.GetDeclaredProperties().Values;
                     case var _ when _type.HasAttribute<RESTableViewAttribute>():
                         return _type.FindAndParseDeclaredProperties().Union(make(_type.DeclaringType));
-                    case var _ when Resource.SafeGet(_type) is IEntityResource e && e.DeclaredPropertiesFlagged:
+                    case var _ when Resource.SafeGet(_type) is IEntityResource {DeclaredPropertiesFlagged: true} e:
                     default: return _type.FindAndParseDeclaredProperties();
                 }
             }

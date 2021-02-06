@@ -392,20 +392,20 @@ namespace RESTable.Resources
         /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
         /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
         /// is fetched from the resource type declaration.</param>
-        /// <param name="selector">The selector to use. If null, the default selector is used</param>
-        /// <param name="inserter">The inserter to use. If null, the default inserter is used</param>
-        /// <param name="updater">The updater to use. If null, the default updater is used</param>
-        /// <param name="deleter">The deleter to use. If null, the default deleter is used</param>
-        /// <param name="counter">The counter to use. If null, the default counter is used</param>
-        /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
+        /// <param name="asyncSelector">The selector to use. If null, the default selector is used</param>
+        /// <param name="asyncInserter">The inserter to use. If null, the default inserter is used</param>
+        /// <param name="asyncUpdater">The updater to use. If null, the default updater is used</param>
+        /// <param name="asyncDeleter">The deleter to use. If null, the default deleter is used</param>
+        /// <param name="asyncCounter">The counter to use. If null, the default counter is used</param>
+        /// <param name="asyncAuthenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TResource">The type to create the resource for</typeparam>
         /// <returns></returns>
         private IEntityResource<TResource> InsertResource<TResource>(string fullName = null, RESTableAttribute attribute = null,
-            Selector<TResource> selector = null, Inserter<TResource> inserter = null, Updater<TResource> updater = null,
-            Deleter<TResource> deleter = null, Counter<TResource> counter = null,
-            Authenticator<TResource> authenticator = null) where TResource : class, TBase
+            AsyncSelector<TResource> asyncSelector = null, AsyncInserter<TResource> asyncInserter = null, AsyncUpdater<TResource> asyncUpdater = null,
+            AsyncDeleter<TResource> asyncDeleter = null, AsyncCounter<TResource> asyncCounter = null,
+            AsyncAuthenticator<TResource> asyncAuthenticator = null) where TResource : class, TBase
         {
-            return _InsertResource(fullName, attribute, selector, inserter, updater, deleter, counter, authenticator);
+            return _InsertResource(fullName, attribute, asyncSelector, asyncInserter, asyncUpdater, asyncDeleter, asyncCounter, asyncAuthenticator);
         }
 
         /// <summary>
@@ -414,24 +414,24 @@ namespace RESTable.Resources
         /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
         /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
         /// is fetched from the resource's type declaration.</param>
-        /// <param name="selector">The selector to use. If null, the default selector is used</param>
-        /// <param name="inserter">The inserter to use. If null, the default inserter is used</param>
-        /// <param name="updater">The updater to use. If null, the default updater is used</param>
-        /// <param name="deleter">The deleter to use. If null, the default deleter is used</param>
-        /// <param name="counter">The counter to use. If null, the default counter is used</param>
-        /// <param name="validator">The validator to use. If null, no validator is used.</param>
-        /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
+        /// <param name="asyncSelector">The selector to use. If null, the default selector is used</param>
+        /// <param name="asyncInserter">The inserter to use. If null, the default inserter is used</param>
+        /// <param name="asyncUpdater">The updater to use. If null, the default updater is used</param>
+        /// <param name="asyncDeleter">The deleter to use. If null, the default deleter is used</param>
+        /// <param name="asyncCounter">The counter to use. If null, the default counter is used</param>
+        /// <param name="asyncValidator">The validator to use. If null, no validator is used.</param>
+        /// <param name="asyncAuthenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TWrapper">The resource wrapper type</typeparam>
         /// <typeparam name="TWrapped">The wrapped resource type</typeparam>
         /// <returns></returns>
         private IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>(string fullName = null, RESTableAttribute attribute = null,
-            Selector<TWrapped> selector = null, Inserter<TWrapped> inserter = null, Updater<TWrapped> updater = null, Deleter<TWrapped> deleter = null,
-            Counter<TWrapped> counter = null, Validator<TWrapped> validator = null,
-            Authenticator<TWrapped> authenticator = null)
+            AsyncSelector<TWrapped> asyncSelector = null, AsyncInserter<TWrapped> asyncInserter = null, AsyncUpdater<TWrapped> asyncUpdater = null, AsyncDeleter<TWrapped> asyncDeleter = null,
+            AsyncCounter<TWrapped> asyncCounter = null, AsyncValidator<TWrapped> asyncValidator = null,
+            AsyncAuthenticator<TWrapped> asyncAuthenticator = null)
             where TWrapper : ResourceWrapper<TWrapped> where TWrapped : class, TBase
         {
-            return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, selector, inserter, updater, deleter, counter,
-                authenticator, validator);
+            return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, asyncSelector, asyncInserter, asyncUpdater, asyncDeleter, asyncCounter,
+                asyncAuthenticator, asyncValidator);
         }
 
         /// <summary>
@@ -469,24 +469,24 @@ namespace RESTable.Resources
         private IEntityResource<TResource> _InsertResource<TResource>(
             string fullName = null,
             RESTableAttribute attribute = null,
-            Selector<TResource> selector = null,
-            Inserter<TResource> inserter = null,
-            Updater<TResource> updater = null,
-            Deleter<TResource> deleter = null,
-            Counter<TResource> counter = null,
-            Authenticator<TResource> authenticator = null,
-            Validator<TResource> validator = null
+            AsyncSelector<TResource> asyncSelector = null,
+            AsyncInserter<TResource> asyncInserter = null,
+            AsyncUpdater<TResource> asyncUpdater = null,
+            AsyncDeleter<TResource> asyncDeleter = null,
+            AsyncCounter<TResource> asyncCounter = null,
+            AsyncAuthenticator<TResource> asyncAuthenticator = null,
+            AsyncValidator<TResource> asyncValidator = null
         ) where TResource : class, TBase => new Meta.Internal.EntityResource<TResource>
         (
             fullName: fullName ?? typeof(TResource).GetRESTableTypeName(),
             attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTableAttribute>(),
-            selector: selector ?? GetDelegate<Selector<TResource>>(typeof(TResource)) ?? DefaultSelect,
-            inserter: inserter ?? GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? DefaultInsert,
-            updater: updater ?? GetDelegate<Updater<TResource>>(typeof(TResource)) ?? DefaultUpdate,
-            deleter: deleter ?? GetDelegate<Deleter<TResource>>(typeof(TResource)) ?? DefaultDelete,
-            counter: counter ?? GetDelegate<Counter<TResource>>(typeof(TResource)) ?? DefaultCount,
-            authenticator: authenticator ?? GetDelegate<Authenticator<TResource>>(typeof(TResource)),
-            validator: validator ?? GetDelegate<Validator<TResource>>(typeof(TResource)),
+            asyncSelector: asyncSelector ?? GetDelegate<AsyncSelector<TResource>>(typeof(TResource)) ?? DefaultSelect,
+            asyncInserter: asyncInserter ?? GetDelegate<AsyncInserter<TResource>>(typeof(TResource)) ?? DefaultInsert,
+            asyncUpdater: asyncUpdater ?? GetDelegate<AsyncUpdater<TResource>>(typeof(TResource)) ?? DefaultUpdate,
+            asyncDeleter: asyncDeleter ?? GetDelegate<AsyncDeleter<TResource>>(typeof(TResource)) ?? DefaultDelete,
+            asyncCounter: asyncCounter ?? GetDelegate<AsyncCounter<TResource>>(typeof(TResource)) ?? DefaultCount,
+            asyncAuthenticator: asyncAuthenticator ?? GetDelegate<AsyncAuthenticator<TResource>>(typeof(TResource)),
+            asyncValidator: asyncValidator ?? GetDelegate<AsyncValidator<TResource>>(typeof(TResource)),
             views: GetViews<TResource>(),
             provider: this
         );
@@ -494,26 +494,26 @@ namespace RESTable.Resources
         private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>(
             string fullName = null,
             RESTableAttribute attribute = null,
-            Selector<TWrapped> selector = null,
-            Inserter<TWrapped> inserter = null,
-            Updater<TWrapped> updater = null,
-            Deleter<TWrapped> deleter = null,
-            Counter<TWrapped> counter = null,
-            Authenticator<TWrapped> authenticator = null,
-            Validator<TWrapped> validator = null
+            AsyncSelector<TWrapped> asyncSelector = null,
+            AsyncInserter<TWrapped> asyncInserter = null,
+            AsyncUpdater<TWrapped> asyncUpdater = null,
+            AsyncDeleter<TWrapped> asyncDeleter = null,
+            AsyncCounter<TWrapped> asyncCounter = null,
+            AsyncAuthenticator<TWrapped> asyncAuthenticator = null,
+            AsyncValidator<TWrapped> asyncValidator = null
         )
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Meta.Internal.EntityResource<TWrapped>
         (
             fullName: fullName ?? typeof(TWrapper).GetRESTableTypeName(),
             attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTableAttribute>(),
-            selector: selector ?? GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? DefaultSelect,
-            inserter: inserter ?? GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? DefaultInsert,
-            updater: updater ?? GetDelegate<Updater<TWrapped>>(typeof(TWrapper)) ?? DefaultUpdate,
-            deleter: deleter ?? GetDelegate<Deleter<TWrapped>>(typeof(TWrapper)) ?? DefaultDelete,
-            counter: counter ?? GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? DefaultCount,
-            authenticator: authenticator ?? GetDelegate<Authenticator<TWrapped>>(typeof(TWrapper)),
-            validator: validator ?? GetDelegate<Validator<TWrapped>>(typeof(TWrapper)),
+            asyncSelector: asyncSelector ?? GetDelegate<AsyncSelector<TWrapped>>(typeof(TWrapper)) ?? DefaultSelect,
+            asyncInserter: asyncInserter ?? GetDelegate<AsyncInserter<TWrapped>>(typeof(TWrapper)) ?? DefaultInsert,
+            asyncUpdater: asyncUpdater ?? GetDelegate<AsyncUpdater<TWrapped>>(typeof(TWrapper)) ?? DefaultUpdate,
+            asyncDeleter: asyncDeleter ?? GetDelegate<AsyncDeleter<TWrapped>>(typeof(TWrapper)) ?? DefaultDelete,
+            asyncCounter: asyncCounter ?? GetDelegate<AsyncCounter<TWrapped>>(typeof(TWrapper)) ?? DefaultCount,
+            asyncAuthenticator: asyncAuthenticator ?? GetDelegate<AsyncAuthenticator<TWrapped>>(typeof(TWrapper)),
+            asyncValidator: asyncValidator ?? GetDelegate<AsyncValidator<TWrapped>>(typeof(TWrapper)),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this
         );

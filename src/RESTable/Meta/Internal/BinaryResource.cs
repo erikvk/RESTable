@@ -40,15 +40,15 @@ namespace RESTable.Meta.Internal
             
         public (Stream stream, ContentType contentType) SelectBinary(IRequest<T> request)
         {
-            return BinarySelector(request);
+            return AsyncBinarySelector(request);
         }
 
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public void SetAlias(string alias) => Alias = alias;
         public ResourceKind ResourceKind { get; }
-        private BinarySelector<T> BinarySelector { get; }
+        private AsyncBinarySelector<T> AsyncBinarySelector { get; }
 
-        internal BinaryResource(BinarySelector<T> binarySelectorSelector)
+        internal BinaryResource(AsyncBinarySelector<T> asyncBinarySelectorSelector)
         {
             Name = typeof(T).GetRESTableTypeName() ?? throw new Exception();
             Type = typeof(T);
@@ -59,7 +59,7 @@ namespace RESTable.Meta.Internal
             ResourceKind = ResourceKind.BinaryResource;
             (_, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
             Description = attribute.Description;
-            BinarySelector = binarySelectorSelector;
+            AsyncBinarySelector = asyncBinarySelectorSelector;
             Members = typeof(T).GetDeclaredProperties();
             GETAvailableToAll = attribute.GETAvailableToAll;
             var typeName = typeof(T).FullName;

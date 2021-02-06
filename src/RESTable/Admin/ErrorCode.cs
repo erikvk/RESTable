@@ -14,7 +14,7 @@ namespace RESTable.Admin
     /// Gets all error codes used by RESTable
     /// </summary>
     [RESTable(GET, Description = "The error codes used by RESTable.")]
-    public class ErrorCode : ISelector<ErrorCode>
+    public class ErrorCode : IAsyncSelector<ErrorCode>
     {
         /// <summary>
         /// The name of the error

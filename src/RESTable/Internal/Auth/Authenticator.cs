@@ -39,7 +39,7 @@ namespace RESTable.Internal.Auth
         internal static AccessRights GetAccessRights(ref string uri, IHeaders headers)
         {
             string authorizationHeader;
-            if (uri != null && Regex.Match(uri, RegEx.UriKey) is Match keyMatch && keyMatch.Success)
+            if (uri != null && Regex.Match(uri, RegEx.UriKey) is Match {Success: true} keyMatch)
             {
                 var keyGroup = keyMatch.Groups["key"];
                 uri = uri.Remove(keyGroup.Index, keyGroup.Length);

@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using RESTable.Internal;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Results;
 
@@ -10,7 +11,6 @@ namespace RESTable.Requests
     internal interface IRequestInternal : IRequest
     {
         bool IsWebSocketUpgrade { get; }
-        CachedProtocolProvider CachedProtocolProvider { get; }
     }
 
     internal interface IEntityRequest : IRequestInternal
@@ -54,7 +54,7 @@ namespace RESTable.Requests
         /// on the request, for example by deserializing input JSON data to this request type. This will run the
         /// entire select query for all entities selected by the request, so it should only be called once.
         /// </summary>
-        IEnumerable<T> GetInputEntities();
+        IAsyncEnumerable<T> GetInputEntities();
 
         /// <summary>
         /// The method used when selecting entities for request input. Set this property to override the default behavior.
@@ -75,7 +75,7 @@ namespace RESTable.Requests
         /// If an error is encountered while evaluating the request, an exception is thrown. Equivalent to Evaluate().ToEntities&lt;T&gt;()
         /// but shorter and with one less generic type parameter.
         /// </summary>
-        IEntities<T> EvaluateToEntities();
+        Task<IEntities<T>> EvaluateToEntities();
 
         /// <summary>
         /// Gets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTable
@@ -98,7 +98,7 @@ namespace RESTable.Requests
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTable
     /// </summary>
-    public interface IRequest : IServiceProvider, ITraceable, ILogable, IDisposable
+    public interface IRequest : IServiceProvider, IProtocolHolder, IHeaderHolder, ITraceable, ILogable, IAsyncDisposable
     {
         /// <summary>
         /// The method of the request
@@ -126,19 +126,10 @@ namespace RESTable.Requests
         MetaConditions MetaConditions { get; }
 
         /// <summary>
-        /// Gets the request body
+        /// The body of the request
         /// </summary>
-        Body GetBody();
-
-        /// <summary>
-        /// Assigns a new Body instance from a .NET object and, optionally, a content type.
-        /// If string, Stream or byte array, the content is used directly - with the content type
-        /// given in Headers. Otherwise it is serialized using the given content type, or the
-        /// protocol default if contentType is null.
-        /// </summary>
-        /// <param name="content"></param>
-        /// <param name="contentType"></param>
-        void SetBody(object content, ContentType? contentType = null);
+        [NotNull]
+        Body Body { get; set; }
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 
@@ -163,7 +154,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Evaluates the request synchronously and returns the result
         /// </summary>
-        IResult Evaluate();
+        Task<IResult> Evaluate();
 
         /// <summary>
         /// Is this request valid?
@@ -176,10 +167,10 @@ namespace RESTable.Requests
         TimeSpan TimeElapsed { get; }
 
         /// <summary>
-        /// Gets an exacy copy of this request
+        /// Gets a deep exact copy of this request
         /// </summary>
         /// <returns></returns>
-        IRequest GetCopy(string newProtocol = null);
+        Task<IRequest> GetCopy(string newProtocol = null);
 
         /// <summary>
         /// Adds a service object to this request, that is disposed when the
@@ -222,20 +213,36 @@ namespace RESTable.Requests
         /// <summary>
         /// Sets the given body to the request, and returns the request
         /// </summary>
-        public static IRequest WithBody(this IRequest request, object content, ContentType? contentType = null)
+        public static IRequest WithBody(this IRequest request, object bodyObject)
+        {
+            return WithBody(request, new Body(request, bodyObject));
+        }
+
+        /// <summary>
+        /// Sets the given body to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithBody<T>(this IRequest<T> request, object bodyObject) where T : class
+        {
+            return WithBody(request, new Body(request, bodyObject));
+        }
+
+        /// <summary>
+        /// Sets the given body to the request, and returns the request
+        /// </summary>
+        public static IRequest WithBody(this IRequest request, Body body)
         {
             if (request == null) return null;
-            request.SetBody(content, contentType);
+            request.Body = body;
             return request;
         }
 
         /// <summary>
         /// Sets the given body to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithBody<T>(this IRequest<T> request, object content, ContentType? contentType = null) where T : class
+        public static IRequest<T> WithBody<T>(this IRequest<T> request, Body body) where T : class
         {
             if (request == null) return null;
-            request.SetBody(content, contentType);
+            request.Body = body;
             return request;
         }
 
@@ -297,7 +304,7 @@ namespace RESTable.Requests
             request.Updater = updater;
             return request;
         }
-        
+
         /// <summary>
         /// Sets the given conditions to the request, and returns the request
         /// </summary>
@@ -307,6 +314,5 @@ namespace RESTable.Requests
             editMetaconditions(request.MetaConditions);
             return request;
         }
-
     }
 }

@@ -23,7 +23,7 @@ namespace RESTable.Results
         /// If no content type is specified in the request, the default content 
         /// type for the protocol is used.
         /// </summary>
-        new ISerializedResult<T> Serialize(ContentType? contentType = null);
+        ISerializedResult<T> Serialize(ContentType? contentType = null);
     }
 
     /// <inheritdoc cref="ILogable" />
@@ -31,7 +31,7 @@ namespace RESTable.Results
     /// <summary>
     /// A RESTable result
     /// </summary>
-    public interface IResult : ILogable, IDisposable
+    public interface IResult : ILogable, IHeaderHolder, IAsyncDisposable
     {
         /// <summary>
         /// The status code of the result
@@ -71,7 +71,7 @@ namespace RESTable.Results
         /// If no content type is specified in the request, the default content 
         /// type for the protocol is used.
         /// </summary>
-        ISerializedResult Serialize(ContentType? contentType = null);
+        ISerializedResult Serialize();
 
         /// <summary>
         /// Tries to convert the result to an IEnumerable instance, or throws an 

@@ -19,7 +19,7 @@ namespace RESTable.SQLite
     /// Represents a mapping between a CLR class and an SQLite table
     /// </summary>
     [RESTable(Method.GET)]
-    public class TableMapping : ISelector<TableMapping>
+    public class TableMapping : IAsyncSelector<TableMapping>
     {
         #region Static
 
@@ -209,14 +209,14 @@ namespace RESTable.SQLite
                 op: Operators.EQUALS,
                 value: Resource.Name
             ));
-            var tableIndexesToKeep = indexRequest
-                .EvaluateToEntities()
+            var entities = indexRequest.EvaluateToEntities().Result;
+            var tableIndexesToKeep = entities
                 .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
                 .ToList();
             Database.Query(query);
             indexRequest.Method = Method.POST;
             indexRequest.Selector = () => tableIndexesToKeep;
-            indexRequest.Evaluate().ThrowIfError();
+            indexRequest.Evaluate().Result.ThrowIfError();
             Update();
         }
 
