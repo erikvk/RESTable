@@ -7,8 +7,8 @@ using RESTable.Resources.Operations;
 
 namespace RESTable.Resources.Templates
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+    /// <inheritdoc cref="IAsyncUpdater{T}" />
     /// <summary>
     /// Represents a form resource that can be fetched, populated and returned
     /// </summary>
@@ -35,7 +35,7 @@ namespace RESTable.Resources.Templates
 
         int IUpdater<T>.Update(IRequest<T> request)
         {
-            return request.GetInputEntities().Count();
+            return request.GetInputEntities().Result.Count();
         }
     }
 }
