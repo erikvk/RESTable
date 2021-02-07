@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Meta
@@ -45,6 +46,6 @@ namespace RESTable.Meta
         /// <summary>
         /// RESTable selector (don't use)
         /// </summary>
-        IEnumerable<T> Select(IRequest<T> request);
+        Task<IEnumerable<T>> SelectAsync(IRequest<T> request);
     }
 }

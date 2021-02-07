@@ -3,11 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using RESTable.Results;
 using RESTable.Linq;
 
 namespace RESTable.Meta.Internal
@@ -30,23 +30,17 @@ namespace RESTable.Meta.Internal
         public IEnumerable<ITarget> Views => ViewDictionaryInternal?.Values;
         public TermBindingRule ConditionBindingRule { get; }
         public TermBindingRule OutputBindingRule { get; }
-        public bool RequiresAuthentication => AsyncAuthenticator != null;
         public bool GETAvailableToAll { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         public Type InterfaceType { get; }
         public bool DeclaredPropertiesFlagged { get; }
         public override string ToString() => Name;
-        public bool RequiresValidation { get; }
         public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public bool ClaimedBy<T1>() where T1 : IEntityResourceProvider => Provider == typeof(T1).GetEntityResourceProviderId();
         public ResourceKind ResourceKind { get; }
         public bool IsDeclared { get; }
-        public bool CanSelect => AsyncSelector != null;
-        public bool CanInsert => AsyncInserter != null;
-        public bool CanUpdate => AsyncUpdater != null;
-        public bool CanDelete => AsyncDeleter != null;
-        public bool CanCount => AsyncCounter != null;
+        public bool RequiresValidation { get; }
 
         string IResourceInternal.Description
         {
@@ -58,37 +52,26 @@ namespace RESTable.Meta.Internal
             set => AvailableMethods = value;
         }
 
-        public IEnumerable<T> Select(IRequest<T> request) => AsyncSelector(request);
-        public int Insert(IRequest<T> request) => AsyncInserter(request);
-        public int Update(IRequest<T> request) => AsyncUpdater(request);
-        public int Delete(IRequest<T> request) => AsyncDeleter(request);
-        public AuthResults Authenticate(IRequest<T> request) => AsyncAuthenticator(request);
-        public long Count(IRequest<T> request) => AsyncCounter(request);
-        
-        public IEnumerable<T> Validate(IEnumerable<T> entities)
-        {
-            if (AsyncValidator == null) return entities;
-            return entities?.Apply(e =>
-            {
-                if (!AsyncValidator(e, out var invalidReason))
-                    throw new FailedValidation(invalidReason);
-            });
-        }
+        public bool RequiresAuthentication => Delegates.RequiresAuthentication;
+        public bool CanSelect => Delegates.CanSelect;
+        public bool CanInsert => Delegates.CanInsert;
+        public bool CanUpdate => Delegates.CanUpdate;
+        public bool CanDelete => Delegates.CanDelete;
+        public bool CanCount => Delegates.CanCount;
+        public Task<IEnumerable<T>> SelectAsync(IRequest<T> request) => Delegates.SelectAsync(request);
+        public Task<int> InsertAsync(IRequest<T> request) => Delegates.InsertAsync(request);
+        public Task<int> UpdateAsync(IRequest<T> request) => Delegates.UpdateAsync(request);
+        public Task<int> DeleteAsync(IRequest<T> request) => Delegates.DeleteAsync(request);
+        public ValueTask<AuthResults> AuthenticateAsync(IRequest<T> request) => Delegates.AuthenticateAsync(request);
+        public Task<long> CountAsync(IRequest<T> request) => Delegates.CountAsync(request);
+        public IEnumerable<T> Validate(IEnumerable<T> entities) => Delegates.Validate(entities);
 
-        private AsyncSelector<T> AsyncSelector { get; }
-        private AsyncInserter<T> AsyncInserter { get; }
-        private AsyncUpdater<T> AsyncUpdater { get; }
-        private AsyncDeleter<T> AsyncDeleter { get; }
-        private AsyncAuthenticator<T> AsyncAuthenticator { get; }
-        private AsyncCounter<T> AsyncCounter { get; }
-        private AsyncValidator<T> AsyncValidator { get; }
-        
+        private DelegateSet<T> Delegates { get; }
+
         /// <summary>
         /// All resources are constructed here
         /// </summary>
-        internal EntityResource(string fullName, RESTableAttribute attribute, AsyncSelector<T> asyncSelector, AsyncInserter<T> asyncInserter,
-            AsyncUpdater<T> asyncUpdater, AsyncDeleter<T> asyncDeleter, AsyncCounter<T> asyncCounter, AsyncAuthenticator<T> asyncAuthenticator,
-            AsyncValidator<T> asyncValidator, IEntityResourceProviderInternal provider, View<T>[] views)
+        internal EntityResource(string fullName, RESTableAttribute attribute, DelegateSet<T> delegates, IEntityResourceProviderInternal provider, View<T>[] views)
         {
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)
@@ -114,20 +97,12 @@ namespace RESTable.Meta.Internal
             else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)
                 OutputBindingRule = TermBindingRule.DynamicWithDeclaredFallback;
             else OutputBindingRule = TermBindingRule.OnlyDeclared;
-            RequiresValidation = typeof(IAsyncValidator<>).IsAssignableFrom(typeof(T));
+            RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));
             IsDDictionary = false;
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.Id;
             Members = typeof(T).GetDeclaredProperties();
-
-            AsyncSelector = asyncSelector.AsImplemented();
-            AsyncInserter = asyncInserter.AsImplemented();
-            AsyncUpdater = asyncUpdater.AsImplemented();
-            AsyncDeleter = asyncDeleter.AsImplemented();
-            AsyncCounter = asyncCounter.AsImplemented();
-            AsyncAuthenticator = asyncAuthenticator.AsImplemented();
-            AsyncValidator = asyncValidator.AsImplemented();
-            
+            Delegates = delegates;
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
             views?.ForEach(view =>
             {
@@ -163,14 +138,14 @@ namespace RESTable.Meta.Internal
                 }
             }).Distinct().ToArray();
 
-        private Delegate GetOpDelegate(RESTableOperations op)
+        private bool HasDelegateForOperation(RESTableOperations op)
         {
             switch (op)
             {
-                case RESTableOperations.Select: return AsyncSelector;
-                case RESTableOperations.Insert: return AsyncInserter;
-                case RESTableOperations.Update: return AsyncUpdater;
-                case RESTableOperations.Delete: return AsyncDeleter;
+                case RESTableOperations.Select: return CanSelect;
+                case RESTableOperations.Insert: return CanInsert;
+                case RESTableOperations.Update: return CanUpdate;
+                case RESTableOperations.Delete: return CanDelete;
                 default: throw new ArgumentOutOfRangeException(nameof(op));
             }
         }
@@ -179,10 +154,9 @@ namespace RESTable.Meta.Internal
         {
             foreach (var op in NecessaryOpDefs(AvailableMethods))
             {
-                var del = GetOpDelegate(op);
-                if (del == null)
+                if (!HasDelegateForOperation(op))
                 {
-                    var @interface = DelegateMaker.MatchingInterface(op);
+                    var @interface = DelegateMaker.GetMatchingInterface(op);
                     throw new InvalidResourceDeclarationException(
                         $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{Name}', but " +
                         "RESTable found no implementation of the operation interface in the type declaration. Add an implementation of the " +

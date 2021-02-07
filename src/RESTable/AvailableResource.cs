@@ -16,7 +16,7 @@ namespace RESTable
     /// A resource that generates a list of the available resources for the current user
     /// </summary>
     [RESTable(GET, Description = description, GETAvailableToAll = true)]
-    public sealed class AvailableResource : IAsyncSelector<AvailableResource>
+    public sealed class AvailableResource : ISelector<AvailableResource>
     {
         private const string description = "The AvailableResource resource contains all resources " +
                                            "available for the current user, as defined by the access " +
@@ -68,7 +68,7 @@ namespace RESTable
         /// Returns all the resources that are declared within a given namespace
         /// </summary>
         [RESTableView]
-        public class InNamespace : IAsyncSelector<AvailableResource>
+        public class InNamespace : ISelector<AvailableResource>
         {
             /// <summary>
             /// The namespace to match against

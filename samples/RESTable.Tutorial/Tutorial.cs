@@ -100,11 +100,11 @@ namespace RESTable.Tutorial
         /// This method returns an IEnumerable of the resource type. RESTable will call this
         /// on GET requests and send the results back to the client as e.g. JSON.
         /// </summary>
-        public IEnumerable<SuperheroReport> Select(IRequest<SuperheroReport> request)
+        public async Task<IEnumerable<SuperheroReport>> SelectAsync(IRequest<SuperheroReport> request)
         {
-            var innerRequest = request.Context.CreateRequest<Superhero>();
-            var superheroes = innerRequest.EvaluateToEntities().Result;
-            innerRequest.DisposeAsync().AsTask().Wait();
+            await using var innerRequest = request.Context.CreateRequest<Superhero>();
+            await using var superheroes = await innerRequest.EvaluateToEntities();
+
             var count = 0;
             var newest = default(Superhero);
             var genderCount = new int[3];
@@ -119,13 +119,16 @@ namespace RESTable.Tutorial
                     newest = superhero;
             }
 
-            yield return new SuperheroReport
+            return new[]
             {
-                NumberOfSuperheroes = count,
-                NumberOfFemaleHeroes = genderCount[(int) Female],
-                NumberOfMaleHeroes = genderCount[(int) Male],
-                NumberOfOtherGenderHeroes = genderCount[(int) Other],
-                NewestSuperhero = newest
+                new SuperheroReport
+                {
+                    NumberOfSuperheroes = count,
+                    NumberOfFemaleHeroes = genderCount[(int) Female],
+                    NumberOfMaleHeroes = genderCount[(int) Male],
+                    NumberOfOtherGenderHeroes = genderCount[(int) Other],
+                    NewestSuperhero = newest
+                }
             };
         }
     }
@@ -175,7 +178,7 @@ namespace RESTable.Tutorial
         {
             if (string.Equals(input, "quit", OrdinalIgnoreCase))
             {
-                WebSocket.DirectToShell();
+                await WebSocket.DirectToShell();
                 return;
             }
 
@@ -216,8 +219,9 @@ namespace RESTable.Tutorial
                 var uri = $"https://api.dialogflow.com/v1/query?v=20170712&query={WebUtility.UrlEncode(input)}" +
                           $"&lang=en&sessionId={SessionId}&timezone={TimeZoneInfo.Local.DisplayName}";
                 var message = new HttpRequestMessage(HttpMethod.Get, uri) {Headers = {Authorization = Authorization}};
-                var response = await HttpClient.SendAsync(message).Result.Content.ReadAsStringAsync();
-                return JObject.Parse(response);
+                using var response = await HttpClient.SendAsync(message);
+                var responseString = await response.Content.ReadAsStringAsync();
+                return JObject.Parse(responseString);
             }
         }
 
@@ -314,7 +318,7 @@ namespace RESTable.Tutorial
                 return;
             if (string.Equals(input, "quit", OrdinalIgnoreCase))
             {
-                WebSocket.DirectToShell();
+                await WebSocket.DirectToShell();
                 return;
             }
 

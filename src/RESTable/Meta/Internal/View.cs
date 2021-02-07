@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -29,10 +30,14 @@ namespace RESTable.Meta.Internal
         public Type Type { get; }
 
         private AsyncViewSelector<TResource> AsyncViewSelector { get; }
+        private ViewSelector<TResource> ViewSelector { get; }
 
-        public IEnumerable<TResource> Select(IRequest<TResource> request) => AsyncViewSelector(request);
+        public IEnumerable<TResource> Select(IRequest<TResource> request) => ViewSelector(request);
+
+        public Task<IEnumerable<TResource>> SelectAsync(IRequest<TResource> request) => AsyncViewSelector(request);
 
         /// <inheritdoc />
+        [RESTableMember(hide: true)]
         public IEntityResource EntityResource { get; private set; }
 
         public void SetEntityResource(IEntityResource resource) => EntityResource = resource;
@@ -45,6 +50,7 @@ namespace RESTable.Meta.Internal
             var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
             Type = viewType;
             Name = viewAttribute.CustomName ?? viewType.Name;
+            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
             AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType);
             Members = viewType.GetDeclaredProperties();
             Description = viewAttribute.Description;

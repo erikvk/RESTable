@@ -11,7 +11,7 @@ namespace RESTable.Admin
     /// The settings resource contains the current settings for the RESTable instance.
     /// </summary>
     [RESTable(GET, Description = description)]
-    public class Settings : IAsyncSelector<Settings>
+    public class Settings : ISelector<Settings>
     {
         private const string description = "The Settings resource contains the current " +
                                            "settings for the RESTable instance.";

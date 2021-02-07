@@ -29,9 +29,7 @@ namespace RESTable.Requests
         private Headers _responseHeaders;
         public Headers ResponseHeaders => _responseHeaders ??= new Headers();
         private IDictionary<Type, object> Services { get; }
-        public Func<IEnumerable<T>> Selector { private get; set; }
-        public Func<IEnumerable<T>, IEnumerable<T>> Updater { private get; set; }
-        public Func<IEnumerable<T>> EntitiesProducer { get; set; }
+
 
         private List<Condition<T>> _conditions;
 
@@ -58,9 +56,21 @@ namespace RESTable.Requests
         public TimeSpan TimeElapsed => Stopwatch.Elapsed;
         private Stopwatch Stopwatch => Parameters.Stopwatch;
         IEntityResource<T> IEntityRequest<T>.EntityResource => Resource as IEntityResource<T>;
-        Func<IEnumerable<T>, IEnumerable<T>> IEntityRequest<T>.GetUpdater() => Updater;
-        IEnumerable<T> IRequest<T>.GetInputEntities() => EntitiesProducer?.Invoke() ?? new T[0];
-        Func<IEnumerable<T>> IEntityRequest<T>.GetSelector() => Selector;
+
+        public Func<Task<IEnumerable<T>>> GetSelector() => Selector;
+        public Func<IEnumerable<T>, Task<IEnumerable<T>>> GetUpdater() => Updater;
+
+        public Func<Task<IEnumerable<T>>> Selector { private get; set; }
+        public Func<IEnumerable<T>, Task<IEnumerable<T>>> Updater { private get; set; }
+        public Func<Task<IEnumerable<T>>> EntitiesProducer { get; set; }
+
+        public async Task<IEnumerable<T>> GetInputEntities()
+        {
+            if (EntitiesProducer != null)
+                return await EntitiesProducer();
+            return new T[0];
+        }
+
         IResource IRequest.Resource => Resource;
         public Headers Headers => Parameters.Headers;
         public string TraceId => Parameters.TraceId;
@@ -225,29 +235,29 @@ namespace RESTable.Requests
                             var terminalResourceInternal = (Meta.Internal.TerminalResource<T>) terminalResource;
                             var terminal = terminalResourceInternal.MakeTerminal(Conditions);
                             Context.WebSocket.SetContext(this);
-                            Context.WebSocket.ConnectTo(terminal, terminalResourceInternal);
+                            await Context.WebSocket.ConnectTo(terminal, terminalResourceInternal);
                             await Context.WebSocket.Open();
                             await terminal.Open();
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
-                        return SwitchTerminal(terminalResource);
+                        return await SwitchTerminal(terminalResource);
 
                     case IBinaryResource<T> binary:
-                        var (stream, contentType) = binary.SelectBinary(this);
+                        var (stream, contentType) = await binary.SelectBinary(this);
                         var binaryResult = new Binary(this, contentType);
                         await stream.CopyToAsync(binaryResult.Body);
                         return binaryResult;
 
                     case IEntityResource<T> entity:
                         if (entity.RequiresAuthentication)
-                            this.RunResourceAuthentication(entity);
+                            await this.RunResourceAuthentication(entity);
                         if (MetaConditions.SafePost != null)
                         {
                             if (!entity.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
                             if (!entity.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
                         }
-                        var evaluator = EntityOperations<T>.GetEvaluator(Method);
-                        var result = evaluator(this);
+                        var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
+                        var result = await evaluator(this);
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
                         if (RESTableConfig.AllowAllOrigins)
                             result.Headers.AccessControlAllowOrigin = "*";
@@ -271,12 +281,12 @@ namespace RESTable.Requests
             }
         }
 
-        private ISerializedResult SwitchTerminal(ITerminalResource<T> resource)
+        private async Task<ISerializedResult> SwitchTerminal(ITerminalResource<T> resource)
         {
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(Conditions);
-            Context.WebSocket.ConnectTo(newTerminal, resource);
-            newTerminal.Open();
+            await Context.WebSocket.ConnectTo(newTerminal, resource);
+            await newTerminal.Open();
             return new SwitchedTerminal(this);
         }
 

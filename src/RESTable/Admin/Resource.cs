@@ -10,13 +10,13 @@ using static RESTable.Internal.EntityResourceProviderController;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="IAsyncUpdater{T}" />
     /// <summary>
     /// A meta-resource that provides representations of all resources in a RESTable instance
     /// </summary>
     [RESTable(Method.GET, Description = description)]
-    public class Resource : IAsyncSelector<Resource>
+    public class Resource : ISelector<Resource>
     {
         private const string description = "A meta-resource that provides representations " +
                                            "of all resources in a RESTable instance.";

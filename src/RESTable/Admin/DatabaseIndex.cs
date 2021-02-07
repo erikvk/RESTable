@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -11,7 +12,7 @@ using static RESTable.Internal.EntityResourceProviderController;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="IAsyncInserter{T}" />
     /// <inheritdoc cref="IAsyncUpdater{T}" />
     /// <inheritdoc cref="IAsyncDeleter{T}" />
@@ -21,7 +22,7 @@ namespace RESTable.Admin
     /// </summary>
     [RESTable(Description = description)]
     public class DatabaseIndex : IAsyncSelector<DatabaseIndex>, IAsyncInserter<DatabaseIndex>, IAsyncUpdater<DatabaseIndex>,
-        IAsyncDeleter<DatabaseIndex>, IAsyncValidator<DatabaseIndex>
+        IAsyncDeleter<DatabaseIndex>, IValidator<DatabaseIndex>
     {
         private const string description = "The DatabaseIndex resource lets an administrator set " +
                                            "indexes for Starcounter database resources.";
@@ -96,33 +97,37 @@ namespace RESTable.Admin
         /// Creates an ascending database index for the table T with a given name on the given column(s).
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        public static void Register<T>(string indexName, params string[] columnNames) where T : class
+        public static async Task Register<T>(string indexName, params string[] columnNames) where T : class
         {
-            Register<T>(indexName, columnNames.Select(columnName => (ColumnInfo) (columnName, false)).ToArray());
+            await Register<T>(indexName, columnNames.Select(columnName => (ColumnInfo) (columnName, false)).ToArray());
         }
 
         /// <summary>
         /// Creates a database index for the table T with a given name on the given column(s).
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        public static void Register<T>(string indexName, params (string columnName, bool descending)[] columns) where T : class
+        public static async Task Register<T>(string indexName, params (string columnName, bool descending)[] columns) where T : class
         {
-            Register<T>(indexName, columns.Select(column => (ColumnInfo) column).ToArray());
+            await Register<T>(indexName, columns.Select(column => (ColumnInfo) column).ToArray());
         }
 
         /// <summary>
         /// Creates a database index for a table type with a given name on a given list of columns.
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
+        private static async Task Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             if (!RESTableConfig.Initialized)
                 throw new NotInitializedException(
                     $"Invalid call to DatabaseIndex.Register() with index name '{indexName}' for type '{typeof(T)}'. " +
                     "Cannot register database indexes before RESTableConfig.Init() has been called.");
             SelectionCondition.Value = indexName;
-            SelectionRequest.Selector = () => new[] {new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}};
-            var result = SelectionRequest.Evaluate().Result;
+            SelectionRequest.Selector = () =>
+            {
+                var entities = new[] {new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}};
+                return Task.FromResult<IEnumerable<DatabaseIndex>>(entities);
+            };
+            await using var result = await SelectionRequest.Evaluate();
             result.ThrowIfError();
         }
 
@@ -165,40 +170,59 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => EntityResourceProviders
-            .Values
-            .Select(p => p.DatabaseIndexer)
-            .Where(indexer => indexer != null)
-            .Distinct()
-            .SelectMany(indexer => indexer.Select(request));
+        public async Task<IEnumerable<DatabaseIndex>> SelectAsync(IRequest<DatabaseIndex> request)
+        {
+            var indexes = new List<DatabaseIndex>();
+            foreach (var indexer in EntityResourceProviders
+                .Values
+                .Select(p => p.DatabaseIndexer)
+                .Where(indexer => indexer != null)
+                .Distinct())
+            foreach (var index in await indexer.SelectAsync(request))
+                indexes.Add(index);
+            return indexes;
+        }
 
         /// <inheritdoc />
-        public int Insert(IRequest<DatabaseIndex> request) => request.GetInputEntities()
-            .GroupBy(index => index.Resource.Provider)
-            .Sum(group =>
+        public async Task<int> InsertAsync(IRequest<DatabaseIndex> request)
+        {
+            var count = 0;
+            var entities = await request.GetInputEntities();
+            if (entities == null) return 0;
+            foreach (var group in entities.GroupBy(index => index.Resource.Provider))
             {
-                if (!EntityResourceProviders.TryGetValue(group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
-                    throw new Exception($"Unable to register index. Resource '{group.First().Resource.Name}' is not a database resource.");
-                request.Selector = () => group;
-                return indexer.Insert(request);
-            });
+                if (!EntityResourceProviders.TryGetValue(@group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
+                    throw new Exception($"Unable to register index. Resource '{@group.First().Resource.Name}' is not a database resource.");
+                request.Selector = () => Task.FromResult<IEnumerable<DatabaseIndex>>(@group);
+                count += await indexer.InsertAsync(request);
+            }
+            return count;
+        }
 
         /// <inheritdoc />
-        public int Update(IRequest<DatabaseIndex> request) => request.GetInputEntities()
-            .GroupBy(index => index.Resource.Provider)
-            .Sum(group =>
+        public async Task<int> UpdateAsync(IRequest<DatabaseIndex> request)
+        {
+            var count = 0;
+            var entities = await request.GetInputEntities();
+            foreach (var group in entities.GroupBy(index => index.Resource.Provider))
             {
-                request.Updater = _ => group;
-                return EntityResourceProviders[group.Key].DatabaseIndexer.Update(request);
-            });
+                request.Updater = _ => Task.FromResult<IEnumerable<DatabaseIndex>>(@group);
+                count += await EntityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request);
+            }
+            return count;
+        }
 
         /// <inheritdoc />
-        public int Delete(IRequest<DatabaseIndex> request) => request.GetInputEntities()
-            .GroupBy(index => index.Resource.Provider)
-            .Sum(group =>
+        public async Task<int> DeleteAsync(IRequest<DatabaseIndex> request)
+        {
+            var count = 0;
+            var entities = await request.GetInputEntities();
+            foreach (var group in entities.GroupBy(index => index.Resource.Provider))
             {
-                request.Selector = () => group;
-                return EntityResourceProviders[group.Key].DatabaseIndexer.Delete(request);
-            });
+                request.Selector = () => Task.FromResult<IEnumerable<DatabaseIndex>>(@group);
+                count += await EntityResourceProviders[@group.Key].DatabaseIndexer.DeleteAsync(request);
+            }
+            return count;
+        }
     }
 }

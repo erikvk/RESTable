@@ -12,14 +12,14 @@ using static RESTable.Method;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="IAsyncDeleter{T}" />
     /// <summary>
     /// The TermCache resource contains all the terms that RESTable has encountered 
     /// for a given resource type, for example in conditions.
     /// </summary>
     [RESTable(GET, DELETE, Description = description)]
-    public class TermCache : IAsyncSelector<TermCache>, IAsyncDeleter<TermCache>
+    public class TermCache : ISelector<TermCache>, IDeleter<TermCache>
     {
         private const string description = "The TermCache resource contains all the terms that RESTable " +
                                            "has encountered for a given resource, for example in conditions.";
@@ -44,7 +44,7 @@ namespace RESTable.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            request.GetInputEntities().ForEach(e =>
+            request.GetInputEntities().Result.ForEach(e =>
             {
                 TypeCache.TermCache
                     .Where(pair => pair.Key.Type == e.Type)

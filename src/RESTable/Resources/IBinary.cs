@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Resources
@@ -12,6 +13,6 @@ namespace RESTable.Resources
         /// <summary>
         /// Generates a binary stream and content type for a request
         /// </summary>
-        (Stream stream, ContentType contentType) Select(IRequest<T> request);
+        Task<(Stream stream, ContentType contentType)> SelectAsync(IRequest<T> request);
     }
 }

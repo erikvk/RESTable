@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 
@@ -45,13 +46,14 @@ namespace RESTable.SQLite
             });
 
         /// <inheritdoc />
-        public override int Update(IRequest<TController> request)
+        public override async Task<int> UpdateAsync(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in request.GetInputEntities().ToList())
+            var entities = await request.GetInputEntities();
+            foreach (var resource in entities.ToList())
             {
                 resource.Update();
-                resource.Definition.Update();
+                await resource.Definition.Update();
                 i += 1;
             }
             return i;

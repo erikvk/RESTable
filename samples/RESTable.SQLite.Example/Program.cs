@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -57,10 +58,10 @@ namespace RESTable.SQLite.Example
         public int Int { get; set; }
         public MyEnum Enum { get; set; }
 
-        protected override void OnInsert()
+        protected override Task OnInsert()
         {
-            base.OnInsert();
             Enum = MyEnum.B;
+            return base.OnInsert();
         }
     }
 
@@ -98,7 +99,7 @@ namespace RESTable.SQLite.Example
         /// This method returns an IEnumerable of the resource type. RESTable will call this 
         /// on GET requests and send the results back to the client as e.g. JSON.
         /// </summary>
-        public IEnumerable<SuperheroReport> Select(IRequest<SuperheroReport> request)
+        public async Task<IEnumerable<SuperheroReport>> SelectAsync(IRequest<SuperheroReport> request)
         {
             var superHeroesOrdered = SQLite<Superhero>
                 .Select()
@@ -108,7 +109,7 @@ namespace RESTable.SQLite.Example
             {
                 new SuperheroReport
                 {
-                    NumberOfSuperheroes = SQLite<Superhero>.Count(),
+                    NumberOfSuperheroes = await SQLite<Superhero>.Count(),
                     FirstSuperheroInserted = superHeroesOrdered.FirstOrDefault(),
                     LastSuperheroInserted = superHeroesOrdered.LastOrDefault(),
                 }

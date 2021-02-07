@@ -10,12 +10,12 @@ namespace RESTable.SQLite
         private static AssemblyName AssemblyName { get; }
         private static AssemblyBuilder AssemblyBuilder { get; }
         private static ModuleBuilder ModuleBuilder { get; }
-        private const string _assemblyName = "RESTable.SQLite.Dynamic";
+        private const string AssemblyNameString = "RESTable.SQLite.Dynamic";
         internal static Assembly Assembly => AssemblyBuilder;
 
         static TypeBuilder()
         {
-            AssemblyName = new AssemblyName("DynamicAssemblyExample");
+            AssemblyName = new AssemblyName(AssemblyNameString);
             AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName,AssemblyBuilderAccess.Run);
             ModuleBuilder = AssemblyBuilder.DefineDynamicModule(AssemblyName.Name + ".dll");
         }

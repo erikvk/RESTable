@@ -86,11 +86,6 @@ namespace RESTable
             })
             .Where(type => type.IsSubclassOf(baseType));
 
-        internal static T AsImplemented<T>(this T @delegate) where T : Delegate
-        {
-            return @delegate?.Method.HasAttribute<MethodNotImplementedAttribute>() == false ? @delegate : null;
-        }
-
         internal static bool HasAttribute(this MemberInfo type, Type attributeType)
         {
             return (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.Admin;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -13,10 +14,10 @@ namespace RESTable.SQLite
         private const string syntax = @"CREATE +INDEX +""*(?<name>\w+)""* +ON +""*(?<table>[\w\$]+)""* " +
                                       @"\((?:(?<columns>""*\w+""* *[""*\w+""*]*) *,* *)+\)";
 
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
+        public async Task<IEnumerable<DatabaseIndex>> SelectAsync(IRequest<DatabaseIndex> request)
         {
             var sqls = new List<string>();
-            Database.Query("SELECT sql FROM sqlite_master WHERE type='index'", row => sqls.Add(row.GetString(0)));
+            await Database.QueryAsync("SELECT sql FROM sqlite_master WHERE type='index'", row => sqls.Add(row.GetString(0)));
             return sqls.Select(sql =>
             {
                 var groups = Regex.Match(sql, syntax, RegexOptions.IgnoreCase).Groups;
@@ -35,46 +36,46 @@ namespace RESTable.SQLite
             });
         }
 
-        public int Insert(IRequest<DatabaseIndex> request)
+        public async Task<int> InsertAsync(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in request.GetInputEntities())
+            foreach (var index in await request.GetInputEntities())
             {
                 var tableMapping = TableMapping.Get(index.Resource.Type);
                 if (index.Resource == null)
                     throw new Exception("Found no resource to register index on");
                 var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "ASC")}"))})";
-                Database.Query(sql);
+                await Database.QueryAsync(sql);
                 count += 1;
             }
             return count;
         }
 
-        public int Update(IRequest<DatabaseIndex> request)
+        public async Task<int> UpdateAsync(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in request.GetInputEntities())
+            foreach (var index in await request.GetInputEntities())
             {
                 var tableMapping = TableMapping.Get(index.Resource.Type);
-                Database.Query($"DROP INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName}");
+                await Database.QueryAsync($"DROP INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName}");
                 var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})";
-                Database.Query(sql);
+                await Database.QueryAsync(sql);
                 count += 1;
             }
             return count;
         }
 
-        public int Delete(IRequest<DatabaseIndex> request)
+        public async Task<int> DeleteAsync(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in request.GetInputEntities())
+            foreach (var index in await request.GetInputEntities())
             {
-                Database.Query($"DROP INDEX {index.Name.Fnuttify()}");
+                await Database.QueryAsync($"DROP INDEX {index.Name.Fnuttify()}");
                 count += 1;
             }
             return count;

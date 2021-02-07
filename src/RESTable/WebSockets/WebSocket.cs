@@ -83,15 +83,16 @@ namespace RESTable.WebSockets
 
         public Task LifetimeTask { get; private set; }
 
-        internal void ConnectTo(ITerminal terminal, ITerminalResource resource)
+        internal async Task ConnectTo(ITerminal terminal, ITerminalResource resource)
         {
-            ReleaseTerminal();
+            await ReleaseTerminal();
             TerminalConnection = new WebSocketConnection(this, terminal, resource);
         }
 
-        private void ReleaseTerminal()
+        private async Task ReleaseTerminal()
         {
-            TerminalConnection?.DisposeAsync().AsTask().Wait();
+            if (TerminalConnection != null)
+                await TerminalConnection.DisposeAsync();
             TerminalConnection = null;
         }
 
@@ -131,7 +132,7 @@ namespace RESTable.WebSockets
             StreamManifest?.Dispose();
             StreamManifest = null;
             var terminalName = TerminalConnection?.Resource?.Name;
-            ReleaseTerminal();
+            await ReleaseTerminal();
             if (IsConnected)
                 await Close();
             Status = WebSocketStatus.Closed;
@@ -150,7 +151,7 @@ namespace RESTable.WebSockets
         /// Sends binary or text data to the client over the WebSocket
         /// </summary>
         protected abstract Task Send(byte[] data, bool asText, int offset, int length);
-        
+
         /// <summary>
         /// Is the WebSocket currently connected?
         /// </summary>
@@ -176,10 +177,10 @@ namespace RESTable.WebSockets
         #region IWebSocket
 
         /// <inheritdoc />
-        public void DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => DirectTo(Shell.TerminalResource);
+        public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => DirectTo(Shell.TerminalResource);
 
         /// <inheritdoc />
-        public void DirectTo<T>(ITerminalResource<T> resource, ICollection<Condition<T>> assignments = null) where T : class, ITerminal
+        public async Task DirectTo<T>(ITerminalResource<T> resource, ICollection<Condition<T>> assignments = null) where T : class, ITerminal
         {
             if (Status != WebSocketStatus.Open)
                 throw new InvalidOperationException($"Unable to send WebSocket with status '{Status}' to terminal '{resource.Name}'");
@@ -187,8 +188,8 @@ namespace RESTable.WebSockets
                 throw new ArgumentNullException(nameof(resource));
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(assignments);
-            Context.WebSocket.ConnectTo(newTerminal, _resource);
-            newTerminal.Open();
+            await Context.WebSocket.ConnectTo(newTerminal, _resource);
+            await newTerminal.Open();
         }
 
         #region Input
@@ -468,7 +469,7 @@ namespace RESTable.WebSockets
         #endregion
 
         #endregion
-        
+
         /// <inheritdoc />
         public override string ToString() => Id;
 

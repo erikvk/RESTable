@@ -102,25 +102,10 @@ namespace RESTable.Results
 
         internal IRequestInternal RequestInternal { get; set; }
 
-        private bool IsSerializing;
         private readonly string _logContent = null;
 
-        private Body _body;
-
         /// <inheritdoc />
-        public Body Body
-        {
-            get => _body ?? (IsSerializing ? _body = new Body(RequestInternal) : null);
-            set
-            {
-                if (_body != null)
-                {
-                    _body.CanClose = true;
-                    _body.DisposeAsync().AsTask().Wait();
-                }
-                _body = value;
-            }
-        }
+        public Body Body { get; private set; }
 
         /// <inheritdoc />
         public bool IsSerialized { get; private set; }
@@ -134,9 +119,9 @@ namespace RESTable.Results
                 Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
                 return this;
             }
-            IsSerializing = true;
             var stopwatch = Stopwatch.StartNew();
             ISerializedResult result = this;
+            Body = Body.CreateOutputBody(RequestInternal);
             var cachedProvider = RequestInternal.CachedProtocolProvider;
             var acceptProvider = RequestInternal.GetOutputContentTypeProvider();
             try
@@ -150,7 +135,6 @@ namespace RESTable.Results
             }
             finally
             {
-                IsSerializing = false;
                 IsSerialized = true;
                 stopwatch.Stop();
                 TimeElapsed = TimeElapsed + stopwatch.Elapsed;

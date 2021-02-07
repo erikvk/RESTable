@@ -4,6 +4,7 @@ using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -28,7 +29,9 @@ namespace RESTable.SQLite
         private static void Init()
         {
             if (IsInitiated) return;
-            typeof(SQLiteTable).GetConcreteSubclasses().ForEach(TableMapping.Create);
+            typeof(SQLiteTable)
+                .GetConcreteSubclasses()
+                .ForEach(cl => TableMapping.CreateMapping(cl).Wait());
             IsInitiated = true;
         }
 
@@ -116,19 +119,19 @@ namespace RESTable.SQLite
         protected override Type AttributeType => typeof(SQLiteAttribute);
 
         /// <inheritdoc />
-        protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => SQLiteOperations<T>.Select(request);
+        protected override Task<IEnumerable<T>> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Select(request);
 
         /// <inheritdoc />
-        protected override int DefaultInsert<T>(IRequest<T> request) => SQLiteOperations<T>.Insert(request);
+        protected override Task<int> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Insert(request);
 
         /// <inheritdoc />
-        protected override int DefaultUpdate<T>(IRequest<T> request) => SQLiteOperations<T>.Update(request);
+        protected override Task<int> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Update(request);
 
         /// <inheritdoc />
-        protected override int DefaultDelete<T>(IRequest<T> request) => SQLiteOperations<T>.Delete(request);
+        protected override Task<int> DefaultDeleteAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Delete(request);
 
         /// <inheritdoc />
-        protected override long DefaultCount<T>(IRequest<T> request) => SQLiteOperations<T>.Count(request);
+        protected override Task<long> DefaultCountAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Count(request);
 
         /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()
@@ -139,7 +142,7 @@ namespace RESTable.SQLite
                 if (type != null)
                 {
                     if (TableMapping.Get(type) == null)
-                        TableMapping.Create(type);
+                        TableMapping.CreateMapping(type).Wait();
                     yield return resource;
                 }
             }
@@ -160,8 +163,8 @@ namespace RESTable.SQLite
                 throw new SQLiteException(
                     $"Could not locate basetype '{resource.BaseTypeName}' when building procedural resource '{resource.Name}'. " +
                     "Was the assembly modified between builds?");
-            TableMapping.Create(resourceType);
-            SQLite<ProceduralResource>.Insert(new[] {resource});
+            TableMapping.CreateMapping(resourceType).Wait();
+            SQLite<ProceduralResource>.Insert(resource).Wait();
             return resource;
         }
 
@@ -170,7 +173,7 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Methods = methods;
-            SQLite<ProceduralResource>.Update(new[] {_resource});
+            SQLite<ProceduralResource>.Update(new[] {_resource}).Wait();
         }
 
         /// <inheritdoc />
@@ -178,15 +181,15 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Description = newDescription;
-            SQLite<ProceduralResource>.Update(new[] {_resource});
+            SQLite<ProceduralResource>.Update(new[] {_resource}).Wait();
         }
 
         /// <inheritdoc />
         protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
         {
             var _resource = (ProceduralResource) resource;
-            TableMapping.Drop(_resource.Type);
-            SQLite<ProceduralResource>.Delete(new[] {_resource});
+            TableMapping.Drop(_resource.Type).Wait();
+            SQLite<ProceduralResource>.Delete(new[] {_resource}).Wait();
             return true;
         }
     }

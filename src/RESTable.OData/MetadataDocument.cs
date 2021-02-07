@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -74,15 +75,15 @@ namespace RESTable.OData
         private static readonly ContentType ContentType = "application/xml; charset=utf-8";
 
         /// <inheritdoc />
-        public (Stream stream, ContentType contentType) Select(IRequest<MetadataDocument> request)
+        public async Task<(Stream stream, ContentType contentType)> SelectAsync(IRequest<MetadataDocument> request)
         {
             var stream = new MemoryStream();
             var metadata = Metadata.Get(MetadataLevel.Full);
-            using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            await using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
             {
-                swr.Write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                swr.Write("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>");
-                swr.Write("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">");
+                await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+                await swr.WriteAsync("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>");
+                await swr.WriteAsync("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">");
 
                 var (enumTypes, complexTypes) = metadata.PeripheralTypes.Split(t => t.Key.IsEnum);
 
@@ -90,10 +91,10 @@ namespace RESTable.OData
 
                 foreach (var pair in enumTypes)
                 {
-                    swr.Write($"<EnumType Name=\"{pair.Key.FullName}\">");
+                    await swr.WriteAsync($"<EnumType Name=\"{pair.Key.FullName}\">");
                     foreach (var member in EnumMember.GetMembers(pair.Key))
-                        swr.Write($"<Member Name=\"{member.Name}\" Value=\"{member.NumericValue}\"/>");
-                    swr.Write("</EnumType>");
+                        await swr.WriteAsync($"<Member Name=\"{member.Name}\" Value=\"{member.NumericValue}\"/>");
+                    await swr.WriteAsync("</EnumType>");
                 }
 
                 #endregion
@@ -105,10 +106,9 @@ namespace RESTable.OData
                     var (type, members) = (pair.Key, pair.Value);
                     var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
                     var isOpenType = type.IsDynamic() || dynamicMembers.Any();
-                    swr.Write($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
-                    WriteMembers(swr, declaredMembers);
-                    swr.Write("</ComplexType>");
-
+                    await swr.WriteAsync($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
+                    await WriteMembers(swr, declaredMembers);
+                    await swr.WriteAsync("</ComplexType>");
                 }
 
                 #endregion
@@ -120,59 +120,59 @@ namespace RESTable.OData
                     var (type, members) = (pair.Key, pair.Value);
                     var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
                     var isOpenType = type.IsDynamic() || dynamicMembers.Any();
-                    swr.Write($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
+                    await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
                     var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
-                    if (key != null) swr.Write($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>");
-                    WriteMembers(swr, declaredMembers.Where(p => !(p is DeclaredProperty {Hidden: true} d) || d.Equals(key)));
-                    swr.Write("</EntityType>");
+                    if (key != null) await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>");
+                    await WriteMembers(swr, declaredMembers.Where(p => !(p is DeclaredProperty {Hidden: true} d) || d.Equals(key)));
+                    await swr.WriteAsync("</EntityType>");
                 }
-                swr.Write("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>");
+                await swr.WriteAsync("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>");
 
                 #endregion
 
                 #region Write entity container and entity sets
 
-                swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
+                await swr.WriteAsync($"<EntityContainer Name=\"{EntityContainerName}\">");
                 foreach (var entitySet in metadata.EntityResources.Where(t => t.Type != typeof(Metadata)))
                 {
-                    swr.Write($"<EntitySet EntityType=\"{GetEdmTypeName(entitySet.Type)}\" Name=\"{entitySet.Name}\">");
+                    await swr.WriteAsync($"<EntitySet EntityType=\"{GetEdmTypeName(entitySet.Type)}\" Name=\"{entitySet.Name}\">");
                     var methods = metadata.CurrentAccessScope[entitySet].Intersect(entitySet.AvailableMethods).ToList();
-                    swr.Write(InsertableAnnotation(methods.Contains(Method.POST)));
-                    swr.Write(UpdatableAnnotation(methods.Contains(Method.PATCH)));
-                    swr.Write(DeletableAnnotation(methods.Contains(Method.DELETE)));
-                    swr.Write("</EntitySet>");
+                    await swr.WriteAsync(InsertableAnnotation(methods.Contains(Method.POST)));
+                    await swr.WriteAsync(UpdatableAnnotation(methods.Contains(Method.PATCH)));
+                    await swr.WriteAsync(DeletableAnnotation(methods.Contains(Method.DELETE)));
+                    await swr.WriteAsync("</EntitySet>");
                 }
-                swr.Write("</EntityContainer>");
-                swr.Write($"<Annotations Target=\"global.{EntityContainerName}\">");
-                swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.ConformanceLevel\"><EnumMember>Org.OData.Capabilities.V1." +
-                          "ConformanceLevelType/Minimal</EnumMember></Annotation>");
-                swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.SupportedFormats\">");
-                swr.Write("<Collection>");
-                swr.Write("<String>application/json;odata.metadata=minimal;IEEE754Compatible=false;odata.streaming=true</String>");
-                swr.Write("</Collection>");
-                swr.Write("</Annotation>");
-                swr.Write("<Annotation Bool=\"true\" Term=\"Org.OData.Capabilities.V1.AsynchronousRequestsSupported\"/>");
-                swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.FilterFunctions\"><Collection></Collection></Annotation>");
-                swr.Write("</Annotations>");
-                swr.Write("</Schema>");
-                swr.Write("</edmx:DataServices></edmx:Edmx>");
+                await swr.WriteAsync("</EntityContainer>");
+                await swr.WriteAsync($"<Annotations Target=\"global.{EntityContainerName}\">");
+                await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.ConformanceLevel\"><EnumMember>Org.OData.Capabilities.V1." +
+                                     "ConformanceLevelType/Minimal</EnumMember></Annotation>");
+                await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.SupportedFormats\">");
+                await swr.WriteAsync("<Collection>");
+                await swr.WriteAsync("<String>application/json;odata.metadata=minimal;IEEE754Compatible=false;odata.streaming=true</String>");
+                await swr.WriteAsync("</Collection>");
+                await swr.WriteAsync("</Annotation>");
+                await swr.WriteAsync("<Annotation Bool=\"true\" Term=\"Org.OData.Capabilities.V1.AsynchronousRequestsSupported\"/>");
+                await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.FilterFunctions\"><Collection></Collection></Annotation>");
+                await swr.WriteAsync("</Annotations>");
+                await swr.WriteAsync("</Schema>");
+                await swr.WriteAsync("</edmx:DataServices></edmx:Edmx>");
 
                 #endregion
             }
             return (stream, ContentType);
         }
 
-        private static void WriteMembers(TextWriter swr, IEnumerable<Member> members)
+        private static async Task WriteMembers(TextWriter swr, IEnumerable<Member> members)
         {
             foreach (var member in members)
             {
-                swr.Write($"<Property Name=\"{member.Name}\" Nullable=\"{member.IsNullable.XMLBool()}\" " +
-                          $"Type=\"{GetEdmTypeName(member.Type)}\" ");
+                await swr.WriteAsync($"<Property Name=\"{member.Name}\" Nullable=\"{member.IsNullable.XMLBool()}\" " +
+                                     $"Type=\"{GetEdmTypeName(member.Type)}\" ");
                 if (member.IsReadOnly)
-                    swr.Write($">{ReadOnlyAnnotation}</Property>");
+                    await swr.WriteAsync($">{ReadOnlyAnnotation}</Property>");
                 else if (member.IsWriteOnly)
-                    swr.Write($">{WriteOnlyAnnotation}</Property>");
-                else swr.Write("/>");
+                    await swr.WriteAsync($">{WriteOnlyAnnotation}</Property>");
+                else await swr.WriteAsync("/>");
             }
         }
 

@@ -12,8 +12,8 @@ namespace RESTable.Resources
         protected override Type AttributeType => typeof(InMemoryAttribute);
 
         protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => InMemoryOperations<T>.Select();
-        protected override int DefaultInsert<T>(IRequest<T> request) => InMemoryOperations<T>.Insert(request.GetInputEntities());
-        protected override int DefaultUpdate<T>(IRequest<T> request) => InMemoryOperations<T>.Update(request.GetInputEntities());
-        protected override int DefaultDelete<T>(IRequest<T> request) => InMemoryOperations<T>.Delete(request.GetInputEntities());
+        protected override int DefaultInsert<T>(IRequest<T> request) => InMemoryOperations<T>.Insert(request.GetInputEntities().Result);
+        protected override int DefaultUpdate<T>(IRequest<T> request) => InMemoryOperations<T>.Update(request.GetInputEntities().Result);
+        protected override int DefaultDelete<T>(IRequest<T> request) => InMemoryOperations<T>.Delete(request.GetInputEntities().Result);
     }
 }

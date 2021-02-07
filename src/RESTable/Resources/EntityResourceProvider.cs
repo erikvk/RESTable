@@ -2,113 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
 using static System.Reflection.BindingFlags;
-using static RESTable.Resources.Operations.DelegateMaker;
 using Resource = RESTable.Meta.Resource;
 
 namespace RESTable.Resources
 {
-    /// <summary>
-    /// A common interface for all entity resource providers
-    /// </summary>
-    public interface IEntityResourceProvider
-    {
-        /// <summary>
-        /// The ID of the entity resource provider
-        /// </summary>
-        string Id { get; }
-    }
-
-    /// <inheritdoc />
-    /// <summary>
-    /// A common abstract class for generic EntityResourceProvider instances
-    /// </summary>
-    internal interface IEntityResourceProviderInternal : IEntityResourceProvider
-    {
-        /// <summary>
-        /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
-        /// created by this provider to have database indexes managed by that resource.
-        /// </summary>
-        IDatabaseIndexer DatabaseIndexer { get; }
-
-        /// <summary>
-        /// Should the given type be included in the claim of this entity resource provider?
-        /// </summary>
-        bool Include(Type type);
-
-        /// <summary>
-        /// Marks a collection of regular entity resource types as claimed by this entity resource provider
-        /// </summary>
-        void MakeClaimRegular(IEnumerable<Type> types);
-
-        /// <summary>
-        /// Marks a collection of wrapped entity resource types as claimed by this entity resource provider
-        /// </summary>
-        void MakeClaimWrapped(IEnumerable<Type> types);
-
-        /// <summary>
-        /// Triggers the collection of all procedural resources belonging to this entity resource provider
-        /// </summary>
-        void MakeClaimProcedural();
-
-        /// <summary>
-        /// Inserts the given resource as a new resource claimed by this entity resource provider
-        /// </summary>
-        void InsertProcedural(IProceduralEntityResource resource);
-
-        /// <summary>
-        /// Validates the entity resource provider
-        /// </summary>
-        void Validate();
-        
-        /// <summary>
-        /// Returns all procedural entity resources from the provider. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        IEnumerable<IProceduralEntityResource> SelectProceduralResources();
-
-        /// <summary>
-        /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data);
-
-        /// <summary>
-        /// Runs a given update operation. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods);
-
-        /// <summary>
-        /// Runs a given update operation. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription);
-
-        /// <summary>
-        /// Deletes a dynamic entity resource entity. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        bool DeleteProceduralResource(IProceduralEntityResource resource);
-
-        /// <summary>
-        /// The ReceiveClaimed method is called by RESTable once one or more resources provided
-        /// by this ResourceProvider have been added. Override this to provide additional 
-        /// logic once resources have been validated and set up.
-        /// </summary>
-        void ReceiveClaimed(ICollection<IEntityResource> claimedResources);
-
-        /// <summary>
-        /// An optional method for modifying the RESTable resource attribute of a type before the resource is generated
-        /// </summary>
-        void ModifyResourceAttribute(Type type, RESTableAttribute attribute);
-
-        /// <summary>
-        /// Removes the procedural resource belonging to the given type
-        /// </summary>
-        bool RemoveProceduralResource(Type type);
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// An EntityResourceProvider gives default implementations for the operations of a group of entity resources, 
@@ -197,7 +101,7 @@ namespace RESTable.Resources
                 throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
                                                               $"type '{type.GetRESTableTypeName()}': " + reason);
         });
-        
+
         #endregion
 
         #region Internal virtual
@@ -252,7 +156,7 @@ namespace RESTable.Resources
         /// An optional method for modifying the RESTable resource attribute of a type before the resource is generated
         /// </summary>
         protected virtual void ModifyResourceAttribute(Type type, RESTableAttribute attribute) { }
-        
+
         /// <summary>
         /// Override this method to add a validation step to the resource claim process. 
         /// </summary>
@@ -354,6 +258,56 @@ namespace RESTable.Resources
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// The default Selector to use for resources claimed by this ResourceProvider
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual Task<IEnumerable<T>> DefaultSelectAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The default Inserter to use for resources claimed by this ResourceProvider
+        /// </summary>
+        ///  <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual Task<int> DefaultInsertAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The default Updater to use for resources claimed by this ResourceProvider
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual Task<int> DefaultUpdateAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The default Deleter to use for resources claimed by this ResourceProvider
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual Task<int> DefaultDeleteAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The default Counter to use for resources claimed by this ResourceProvider
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual Task<long> DefaultCountAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region Add resource API
@@ -392,20 +346,16 @@ namespace RESTable.Resources
         /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
         /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
         /// is fetched from the resource type declaration.</param>
-        /// <param name="asyncSelector">The selector to use. If null, the default selector is used</param>
-        /// <param name="asyncInserter">The inserter to use. If null, the default inserter is used</param>
-        /// <param name="asyncUpdater">The updater to use. If null, the default updater is used</param>
-        /// <param name="asyncDeleter">The deleter to use. If null, the default deleter is used</param>
-        /// <param name="asyncCounter">The counter to use. If null, the default counter is used</param>
-        /// <param name="asyncAuthenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TResource">The type to create the resource for</typeparam>
         /// <returns></returns>
-        private IEntityResource<TResource> InsertResource<TResource>(string fullName = null, RESTableAttribute attribute = null,
-            AsyncSelector<TResource> asyncSelector = null, AsyncInserter<TResource> asyncInserter = null, AsyncUpdater<TResource> asyncUpdater = null,
-            AsyncDeleter<TResource> asyncDeleter = null, AsyncCounter<TResource> asyncCounter = null,
-            AsyncAuthenticator<TResource> asyncAuthenticator = null) where TResource : class, TBase
+        private IEntityResource<TResource> InsertResource<TResource>
+        (
+            string fullName = null,
+            RESTableAttribute attribute = null,
+            DelegateSet<TResource> delegates = null
+        ) where TResource : class, TBase
         {
-            return _InsertResource(fullName, attribute, asyncSelector, asyncInserter, asyncUpdater, asyncDeleter, asyncCounter, asyncAuthenticator);
+            return _InsertResource(fullName, attribute, delegates);
         }
 
         /// <summary>
@@ -414,24 +364,18 @@ namespace RESTable.Resources
         /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
         /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
         /// is fetched from the resource's type declaration.</param>
-        /// <param name="asyncSelector">The selector to use. If null, the default selector is used</param>
-        /// <param name="asyncInserter">The inserter to use. If null, the default inserter is used</param>
-        /// <param name="asyncUpdater">The updater to use. If null, the default updater is used</param>
-        /// <param name="asyncDeleter">The deleter to use. If null, the default deleter is used</param>
-        /// <param name="asyncCounter">The counter to use. If null, the default counter is used</param>
-        /// <param name="asyncValidator">The validator to use. If null, no validator is used.</param>
-        /// <param name="asyncAuthenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TWrapper">The resource wrapper type</typeparam>
         /// <typeparam name="TWrapped">The wrapped resource type</typeparam>
         /// <returns></returns>
-        private IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>(string fullName = null, RESTableAttribute attribute = null,
-            AsyncSelector<TWrapped> asyncSelector = null, AsyncInserter<TWrapped> asyncInserter = null, AsyncUpdater<TWrapped> asyncUpdater = null, AsyncDeleter<TWrapped> asyncDeleter = null,
-            AsyncCounter<TWrapped> asyncCounter = null, AsyncValidator<TWrapped> asyncValidator = null,
-            AsyncAuthenticator<TWrapped> asyncAuthenticator = null)
+        private IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>
+        (
+            string fullName = null,
+            RESTableAttribute attribute = null,
+            DelegateSet<TWrapped> delegates = null
+        )
             where TWrapper : ResourceWrapper<TWrapped> where TWrapped : class, TBase
         {
-            return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, asyncSelector, asyncInserter, asyncUpdater, asyncDeleter, asyncCounter,
-                asyncAuthenticator, asyncValidator);
+            return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, delegates);
         }
 
         /// <summary>
@@ -457,67 +401,59 @@ namespace RESTable.Resources
         private IEntityResource _InsertResource(Type type, string fullName = null, RESTableAttribute attribute = null)
         {
             var method = InsertResourceMethod.MakeGenericMethod(type);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null});
         }
 
         private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string fullName = null, RESTableAttribute attribute = null)
         {
             var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null});
         }
 
-        private IEntityResource<TResource> _InsertResource<TResource>(
+        private IEntityResource<TResource> _InsertResource<TResource>
+        (
             string fullName = null,
             RESTableAttribute attribute = null,
-            AsyncSelector<TResource> asyncSelector = null,
-            AsyncInserter<TResource> asyncInserter = null,
-            AsyncUpdater<TResource> asyncUpdater = null,
-            AsyncDeleter<TResource> asyncDeleter = null,
-            AsyncCounter<TResource> asyncCounter = null,
-            AsyncAuthenticator<TResource> asyncAuthenticator = null,
-            AsyncValidator<TResource> asyncValidator = null
+            DelegateSet<TResource> delegates = null
         ) where TResource : class, TBase => new Meta.Internal.EntityResource<TResource>
         (
             fullName: fullName ?? typeof(TResource).GetRESTableTypeName(),
             attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTableAttribute>(),
-            asyncSelector: asyncSelector ?? GetDelegate<AsyncSelector<TResource>>(typeof(TResource)) ?? DefaultSelect,
-            asyncInserter: asyncInserter ?? GetDelegate<AsyncInserter<TResource>>(typeof(TResource)) ?? DefaultInsert,
-            asyncUpdater: asyncUpdater ?? GetDelegate<AsyncUpdater<TResource>>(typeof(TResource)) ?? DefaultUpdate,
-            asyncDeleter: asyncDeleter ?? GetDelegate<AsyncDeleter<TResource>>(typeof(TResource)) ?? DefaultDelete,
-            asyncCounter: asyncCounter ?? GetDelegate<AsyncCounter<TResource>>(typeof(TResource)) ?? DefaultCount,
-            asyncAuthenticator: asyncAuthenticator ?? GetDelegate<AsyncAuthenticator<TResource>>(typeof(TResource)),
-            asyncValidator: asyncValidator ?? GetDelegate<AsyncValidator<TResource>>(typeof(TResource)),
+            delegates: ResolveDelegateSet<TResource, TResource>(delegates),
             views: GetViews<TResource>(),
             provider: this
         );
 
-        private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>(
+        private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>
+        (
             string fullName = null,
             RESTableAttribute attribute = null,
-            AsyncSelector<TWrapped> asyncSelector = null,
-            AsyncInserter<TWrapped> asyncInserter = null,
-            AsyncUpdater<TWrapped> asyncUpdater = null,
-            AsyncDeleter<TWrapped> asyncDeleter = null,
-            AsyncCounter<TWrapped> asyncCounter = null,
-            AsyncAuthenticator<TWrapped> asyncAuthenticator = null,
-            AsyncValidator<TWrapped> asyncValidator = null
+            DelegateSet<TWrapped> delegates = null
         )
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Meta.Internal.EntityResource<TWrapped>
         (
             fullName: fullName ?? typeof(TWrapper).GetRESTableTypeName(),
             attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTableAttribute>(),
-            asyncSelector: asyncSelector ?? GetDelegate<AsyncSelector<TWrapped>>(typeof(TWrapper)) ?? DefaultSelect,
-            asyncInserter: asyncInserter ?? GetDelegate<AsyncInserter<TWrapped>>(typeof(TWrapper)) ?? DefaultInsert,
-            asyncUpdater: asyncUpdater ?? GetDelegate<AsyncUpdater<TWrapped>>(typeof(TWrapper)) ?? DefaultUpdate,
-            asyncDeleter: asyncDeleter ?? GetDelegate<AsyncDeleter<TWrapped>>(typeof(TWrapper)) ?? DefaultDelete,
-            asyncCounter: asyncCounter ?? GetDelegate<AsyncCounter<TWrapped>>(typeof(TWrapper)) ?? DefaultCount,
-            asyncAuthenticator: asyncAuthenticator ?? GetDelegate<AsyncAuthenticator<TWrapped>>(typeof(TWrapper)),
-            asyncValidator: asyncValidator ?? GetDelegate<AsyncValidator<TWrapped>>(typeof(TWrapper)),
+            delegates: ResolveDelegateSet<TWrapper, TWrapped>(delegates),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this
         );
 
+        private DelegateSet<TResource> ResolveDelegateSet<TTarget, TResource>(DelegateSet<TResource> delegates)
+            where TResource : class, TBase
+            where TTarget : class => (delegates ?? new DelegateSet<TResource>())
+            .GetDelegatesFromTargetWhereNull<TTarget>()
+            .SetDelegatesToDefaultsWhereNull
+            (
+                selector: DefaultSelect, asyncSelector: DefaultSelectAsync,
+                inserter: DefaultInsert, asyncInserter: DefaultInsertAsync,
+                updater: DefaultUpdate, asyncUpdater: DefaultUpdateAsync,
+                deleter: DefaultDelete, asyncDeleter: DefaultDeleteAsync,
+                counter: DefaultCount, asyncCounter: DefaultCountAsync
+            )
+            .SetDelegatesToNullWhereNotImplemented()
+            .SetAsyncDelegatesToSyncWhereNull();
 
         private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)
             .GetNestedTypes()

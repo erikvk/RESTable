@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using RESTable.Admin;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -19,7 +21,7 @@ namespace RESTable.SQLite
     /// Represents a mapping between a CLR class and an SQLite table
     /// </summary>
     [RESTable(Method.GET)]
-    public class TableMapping : IAsyncSelector<TableMapping>
+    public class TableMapping : ISelector<TableMapping>
     {
         #region Static
 
@@ -79,7 +81,7 @@ namespace RESTable.SQLite
             get
             {
                 var results = 0;
-                Database.Query($"PRAGMA table_info({TableName})", rowAction: row => results += 1);
+                Database.QueryAsync($"PRAGMA table_info({TableName})", rowAction: row => results += 1).Wait();
                 return results > 0;
             }
         }
@@ -119,7 +121,13 @@ namespace RESTable.SQLite
             /// <inheritdoc />
             protected override IEnumerable<Option> GetOptions()
             {
-                yield return new Option("Update", "Updates all table mappings", _ => TableMappingByType.Values.ForEach(m => m.Update()));
+                async ValueTask Action(string[] _)
+                {
+                    foreach (var mapping in TableMappingByType.Values)
+                        await mapping.Update();
+                }
+
+                yield return new Option("Update", "Updates all table mappings", Action);
             }
         }
 
@@ -137,8 +145,6 @@ namespace RESTable.SQLite
             TableName = clrClass.GetCustomAttribute<SQLiteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('+', '.').Replace('.', '$')
                 ?? throw new SQLiteException("RESTable.SQLite encountered an unknown CLR class when creating table mappings");
             TableMappingByType[CLRClass] = this;
-            if (!Exists) Database.Query(GetCreateTableSQL());
-            Update();
         }
 
         #region Helpers
@@ -181,13 +187,13 @@ namespace RESTable.SQLite
             return allColumns;
         }
 
-        private void DropTable()
+        private async Task DropTable()
         {
-            Database.Query($"DROP TABLE IF EXISTS {TableName}");
+            await Database.QueryAsync($"DROP TABLE IF EXISTS {TableName}");
             RemoveTable(this);
         }
 
-        internal void DropColumns(List<ColumnMapping> mappings)
+        internal async Task DropColumns(List<ColumnMapping> mappings)
         {
             mappings.ForEach(mapping => ColumnMappings.Remove(mapping));
             ReloadColumnNames();
@@ -197,48 +203,59 @@ namespace RESTable.SQLite
             var tempName = $"__{TableName}__RESTABLE_TEMP";
             var query = "PRAGMA foreign_keys=off;BEGIN TRANSACTION;" +
                         $"ALTER TABLE {TableName} RENAME TO {tempName};" +
-                        $"{GetCreateTableSQL()}" +
+                        $"{GetCreateTableSql()}" +
                         $"INSERT INTO {TableName} ({columnsSQL})" +
                         $"  SELECT {columnsSQL} FROM {tempName};" +
                         $"DROP TABLE {tempName};" +
                         "COMMIT;PRAGMA foreign_keys=on;";
-            var indexRequest = RESTableContext.Root.CreateRequest<DatabaseIndex>();
-            indexRequest.Conditions.Add(new Condition<DatabaseIndex>
-            (
-                key: nameof(DatabaseIndex.ResourceName),
-                op: Operators.EQUALS,
-                value: Resource.Name
-            ));
-            var entities = indexRequest.EvaluateToEntities().Result;
+            await using var indexRequest = RESTableContext.Root
+                .CreateRequest<DatabaseIndex>()
+                .WithConditions(new Condition<DatabaseIndex>
+                (
+                    key: nameof(DatabaseIndex.ResourceName),
+                    op: Operators.EQUALS,
+                    value: Resource.Name
+                ));
+            var entities = await indexRequest.EvaluateToEntities();
             var tableIndexesToKeep = entities
                 .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
                 .ToList();
-            Database.Query(query);
+            await Database.QueryAsync(query);
             indexRequest.Method = Method.POST;
-            indexRequest.Selector = () => tableIndexesToKeep;
-            indexRequest.Evaluate().Result.ThrowIfError();
-            Update();
+            indexRequest.Selector = () => Task.FromResult<IEnumerable<DatabaseIndex>>(tableIndexesToKeep);
+            await using var result = await indexRequest.Evaluate();
+            result.ThrowIfError();
+            await Update();
         }
 
         /// <summary>
         /// Gets the SQL columns of the mapped SQL table
         /// </summary>
         /// <returns></returns>
-        public List<SQLColumn> GetSQLColumns()
+        public async Task<List<SQLColumn>> GetSqlColumns()
         {
             var columns = new List<SQLColumn>();
-            Database.Query($"PRAGMA table_info({TableName})", row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2).ParseSQLDataType())));
+
+            async ValueTask RowAction(DbDataReader row)
+            {
+                var firstString = await row.GetFieldValueAsync<string>(1);
+                var secondString = await row.GetFieldValueAsync<string>(2);
+                columns.Add(new SQLColumn(firstString, secondString.ParseSQLDataType()));
+            }
+
+            await Database.QueryAsync($"PRAGMA table_info({TableName})", RowAction);
+
             return columns;
         }
 
         private void ReloadColumnNames() => SQLColumnNames = MakeColumnNames();
 
-        internal void Update()
+        internal async Task Update()
         {
             ColumnMappings = GetDeclaredColumnMappings();
-            ColumnMappings.Push();
+            await ColumnMappings.Push();
             var columnNames = MakeColumnNames();
-            GetSQLColumns()
+            (await GetSqlColumns())
                 .Where(column => !columnNames.Contains(column.Name))
                 .ForEach(column => ColumnMappings.Add(new ColumnMapping
                 (
@@ -250,9 +267,9 @@ namespace RESTable.SQLite
             TransactMappings = ColumnMappings.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
         }
 
-        private void Drop() => Database.Query($"DROP TABLE {TableName};");
+        private async Task Drop() => await Database.QueryAsync($"DROP TABLE {TableName};");
 
-        private string GetCreateTableSQL() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
+        private string GetCreateTableSql() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
 
         private ColumnMappings GetDeclaredColumnMappings() => CLRClass
             .GetDeclaredColumnProperties()
@@ -265,16 +282,21 @@ namespace RESTable.SQLite
             ))
             .ToColumnMappings();
 
-        internal static void Create(Type clrClass) => new TableMapping(clrClass);
+        internal static async Task CreateMapping(Type clrClass)
+        {
+            var mapping = new TableMapping(clrClass);
+            if (!mapping.Exists) await Database.QueryAsync(mapping.GetCreateTableSql());
+            await mapping.Update();
+        }
 
-        internal static bool Drop(Type clrClass)
+        internal static async Task<bool> Drop(Type clrClass)
         {
             switch (Get(clrClass))
             {
                 case null: return false;
                 case var declared when declared.IsDeclared: return false;
                 case var procedural:
-                    procedural.Drop();
+                    await procedural.Drop();
                     TableMappingByType.Remove(clrClass);
                     return true;
             }

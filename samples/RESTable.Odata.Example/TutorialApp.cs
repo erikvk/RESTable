@@ -50,7 +50,7 @@ namespace RESTable.SQLite.Example
     }
 
     [RESTable(GET)]
-    public class SuperheroReport : IAsyncSelector<SuperheroReport>
+    public class SuperheroReport : ISelector<SuperheroReport>
     {
         public long NumberOfSuperheroes { get; private set; }
         public Superhero FirstSuperheroInserted { get; private set; }

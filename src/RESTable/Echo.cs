@@ -10,14 +10,14 @@ using static RESTable.Method;
 
 namespace RESTable
 {
-    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="JObject" />
     /// <summary>
     /// The Echo resource is a test and utility resource that returns the 
     /// request conditions as an object.
     /// </summary>
     [RESTable(GET, AllowDynamicConditions = true, Description = description)]
-    public class Echo : JObject, IAsyncSelector<Echo>
+    public class Echo : JObject, ISelector<Echo>
     {
         private const string description = "The Echo resource is a test and utility entity resource that " +
                                            "returns the request conditions as an entity.";

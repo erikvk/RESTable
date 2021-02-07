@@ -11,9 +11,7 @@ namespace RESTable.Starcounter3x
     {
         protected override Type AttributeType { get; } = null;
         protected override IDatabaseIndexer DatabaseIndexer { get; } = null;
-
-        internal IDatabaseIndexer GetDatabaseIndexer() => DatabaseIndexer;
-
+        
         protected override void Validate() { }
 
         protected override bool Include(Type type)

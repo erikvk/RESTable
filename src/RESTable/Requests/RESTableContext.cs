@@ -158,14 +158,14 @@ namespace RESTable.Requests
             }
             resource = parameters.IResource;
             IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
-            if (request.IsValid)
+            if (!request.IsValid)
             {
-                uriComponents = request.UriComponents;
-                error = null;
-                return true;
+                error = request.Evaluate().Result as Error;
+                return false;
             }
-            error = request.Evaluate().Result as Error;
-            return false;
+            uriComponents = request.UriComponents;
+            error = null;
+            return true;
         }
 
         /// <summary>

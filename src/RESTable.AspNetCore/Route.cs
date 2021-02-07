@@ -11,7 +11,7 @@ using RESTable.Resources.Operations;
 namespace RESTable.AspNetCore
 {
     [RESTable(Method.GET)]
-    public class Route : IAsyncSelector<Route>
+    public class Route : ISelector<Route>
     {
         public string Name { get; set; }
         public string Template { get; set; }

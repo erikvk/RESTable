@@ -63,7 +63,7 @@ namespace RESTable.WebSockets
             ActionQueue.Enqueue(() => ToQueueFor.SendBinary(d, o, l));
             return Task.CompletedTask;
         }
-        
+
         public Task SendJson(object i, bool a = false, bool? p = null, bool ig = false)
         {
             ActionQueue.Enqueue(() => ToQueueFor.SendJson(i, a, p, ig));
@@ -88,22 +88,24 @@ namespace RESTable.WebSockets
             return Task.CompletedTask;
         }
 
-        public void DirectToShell(IEnumerable<Condition<Shell>> a = null)
+        public Task DirectToShell(IEnumerable<Condition<Shell>> a = null)
         {
             ActionQueue.Enqueue(() =>
             {
                 ToQueueFor.DirectToShell(a);
                 return Task.CompletedTask;
             });
+            return Task.CompletedTask;
         }
 
-        public void DirectTo<T>(ITerminalResource<T> t, ICollection<Condition<T>> a = null) where T : class, ITerminal
+        public Task DirectTo<T>(ITerminalResource<T> t, ICollection<Condition<T>> a = null) where T : class, ITerminal
         {
             ActionQueue.Enqueue(() =>
             {
                 ToQueueFor.DirectTo(t, a);
                 return Task.CompletedTask;
             });
+            return Task.CompletedTask;
         }
 
         public ValueTask DisposeAsync()

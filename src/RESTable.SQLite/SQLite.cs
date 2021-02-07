@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
+using System.Threading.Tasks;
 using RESTable.SQLite.Meta;
 
 namespace RESTable.SQLite
@@ -31,17 +32,17 @@ namespace RESTable.SQLite
         /// Inserts a range of SQLiteTable entities into the appropriate SQLite database
         /// table and returns the number of rows affected.
         /// </summary>
-        public static int Insert(params T[] entities) => Insert((IEnumerable<T>) entities);
+        public static async Task<int> Insert(params T[] entities) => await Insert((IEnumerable<T>) entities);
 
         /// <summary>
         /// Inserts an IEnumerable of SQLiteTable entities into the appropriate SQLite database
         /// table and returns the number of rows affected.
         /// </summary>
-        public static int Insert(IEnumerable<T> entities)
+        public static async Task<int> Insert(IEnumerable<T> entities)
         {
             if (entities == null) return 0;
             var (name, columns, param, mappings) = TableMapping<T>.InsertSpec;
-            return Database.Transact((connection, command) =>
+            return await Database.TransactAsync(async (connection, command) =>
             {
                 var count = 0;
                 command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
@@ -49,13 +50,13 @@ namespace RESTable.SQLite
                     command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
                 foreach (var entity in entities)
                 {
-                    entity._OnInsert();
+                    await entity._OnInsert();
                     for (var i = 0; i < mappings.Length; i++)
                     {
                         object propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
-                    count += command.ExecuteNonQuery();
+                    count += await command.ExecuteNonQueryAsync();
                     entity.RowId = connection.LastInsertRowId;
                 }
                 return count;
@@ -66,11 +67,11 @@ namespace RESTable.SQLite
         /// Updates the corresponding SQLite database table rows for a given IEnumerable 
         /// of updated entities and returns the number of rows affected.
         /// </summary>
-        public static int Update(IEnumerable<T> updatedEntities)
+        public static async Task<int> Update(IEnumerable<T> updatedEntities)
         {
             if (updatedEntities == null) return 0;
             var (name, set, param, mappings) = TableMapping<T>.UpdateSpec;
-            return Database.Transact(command =>
+            return await Database.TransactAsync(async command =>
             {
                 var count = 0;
                 command.CommandText = $"UPDATE {name} SET {set} WHERE RowId = {RowIdParameter}";
@@ -79,14 +80,14 @@ namespace RESTable.SQLite
                     command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
                 foreach (var entity in updatedEntities)
                 {
-                    entity._OnUpdate();
+                    await entity._OnUpdate();
                     command.Parameters[RowIdParameter].Value = entity.RowId;
                     for (var i = 0; i < mappings.Length; i++)
                     {
                         object propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
-                    count += command.ExecuteNonQuery();
+                    count += await command.ExecuteNonQueryAsync();
                 }
                 return count;
             });
@@ -98,19 +99,19 @@ namespace RESTable.SQLite
         /// </summary>
         /// <param name="entities"></param>
         /// <returns></returns>
-        public static int Delete(IEnumerable<T> entities)
+        public static async Task<int> Delete(IEnumerable<T> entities)
         {
             if (entities == null) return 0;
-            return Database.Transact(command =>
+            return await Database.TransactAsync(async command =>
             {
                 var count = 0;
                 command.CommandText = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId = {RowIdParameter}";
                 command.Parameters.Add(RowIdParameter, DbType.Int64);
                 foreach (var entity in entities)
                 {
-                    entity._OnDelete();
+                    await entity._OnDelete();
                     command.Parameters[RowIdParameter].Value = entity.RowId;
-                    count += command.ExecuteNonQuery();
+                    count += await command.ExecuteNonQueryAsync();
                 }
                 return count;
             });
@@ -122,12 +123,12 @@ namespace RESTable.SQLite
         /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 
         /// by "SELECT COUNT(*) FROM {type} " in the actual query</param>
         /// <returns></returns>
-        public static long Count(string where = null)
+        public static async Task<long> Count(string where = null)
         {
             var sql = $"SELECT COUNT(RowId) FROM {TableMapping<T>.TableName} {where}";
-            using (var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn())
-            using (var command = new SQLiteCommand(sql, connection))
-                return (long) (command.ExecuteScalar() ?? 0L);
+            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+            await using var command = new SQLiteCommand(sql, connection);
+            return (long) (await command.ExecuteScalarAsync() ?? 0L);
         }
     }
 }

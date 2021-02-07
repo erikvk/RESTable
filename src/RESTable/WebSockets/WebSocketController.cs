@@ -71,7 +71,7 @@ namespace RESTable.WebSockets
                         break;
                     case "#SHELL":
                     case "#HOME":
-                        webSocket.DirectToShell();
+                        await webSocket.DirectToShell();
                         break;
                     case "#DISCONNECT":
                         await webSocket.DisposeAsync();

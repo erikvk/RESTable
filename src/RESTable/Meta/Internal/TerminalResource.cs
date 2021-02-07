@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
@@ -13,7 +14,6 @@ namespace RESTable.Meta.Internal
         public string Name { get; }
         public Type Type { get; }
         public IReadOnlyCollection<Method> AvailableMethods { get; set; }
-        public string Alias { get; private set; }
         public bool IsInternal { get; }
         public bool IsGlobal { get; }
         public bool IsInnerResource { get; }
@@ -29,15 +29,14 @@ namespace RESTable.Meta.Internal
         public override int GetHashCode() => Name.GetHashCode();
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
-        public void SetAlias(string alias) => Alias = alias;
         public Type InterfaceType { get; }
         public ResourceKind ResourceKind { get; }
         private bool IsDynamicTerminal { get; }
-        
+
         private Constructor<ITerminal> Constructor { get; }
-        
-        public IEnumerable<T> Select(IRequest<T> request) => throw new InvalidOperationException();
-        
+
+        public Task<IEnumerable<T>> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
+
         internal ITerminal MakeTerminal(IEnumerable<Condition<T>> assignments = null)
         {
             var newTerminal = Constructor();
@@ -74,7 +73,7 @@ namespace RESTable.Meta.Internal
             Constructor = typeof(T).MakeStaticConstructor<ITerminal>();
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
             IsDynamicTerminal = typeof(IDynamicTerminal).IsAssignableFrom(typeof(T));
-            
+
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)
             {

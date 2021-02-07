@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
@@ -15,11 +16,11 @@ namespace RESTable.Internal.Auth
         internal static void NewState() => ApiKeys = new Dictionary<string, AccessRights>();
         internal const string AuthHeaderMask = "*******";
 
-        internal static void RunResourceAuthentication<T>(this IRequest<T> request, IEntityResource<T> resource) where T : class
+        internal static async Task RunResourceAuthentication<T>(this IRequest<T> request, IEntityResource<T> resource) where T : class
         {
             if (request.Context.Client.ResourceAuthMappings.ContainsKey(resource))
                 return;
-            var authResults = resource.Authenticate(request);
+            var authResults = await resource.AuthenticateAsync(request);
             if (authResults.Success)
                 request.Context.Client.ResourceAuthMappings[resource] = default;
             else throw new FailedResourceAuthentication(authResults.Reason);

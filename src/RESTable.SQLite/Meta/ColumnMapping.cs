@@ -1,4 +1,5 @@
-﻿using RESTable.Resources;
+﻿using System.Threading.Tasks;
+using RESTable.Resources;
 
 namespace RESTable.SQLite.Meta
 {
@@ -24,10 +25,10 @@ namespace RESTable.SQLite.Meta
         /// </summary>
         public bool IsRowId { get; }
 
-        internal void Push()
+        internal async Task Push()
         {
             if (IsRowId) return;
-            SQLColumn.Push();
+            await SQLColumn.Push();
         }
 
         /// <summary>

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -259,8 +260,12 @@ namespace RESTable.ProtocolProviders
             }
         }
 
-        private static void SetSelector<TRequest, TEntity>(IRequest<TRequest> r, IEntities<TEntity> e)
-            where TRequest : class where TEntity : class, TRequest => r.Selector = () => e;
+        private static void SetSelector<TRequest, TEntity>(IRequest<TRequest> request, IEntities<TEntity> entities)
+            where TRequest : class
+            where TEntity : class, TRequest
+        {
+            request.Selector = () => Task.FromResult<IEnumerable<TRequest>>(entities);
+        }
 
         public bool IsCompliant(IRequest request, out string invalidReason)
         {
@@ -268,8 +273,6 @@ namespace RESTable.ProtocolProviders
             return true;
         }
 
-        public void OnInit()
-        {
-        }
+        public void OnInit() { }
     }
 }

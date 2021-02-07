@@ -56,7 +56,6 @@ namespace RESTable.Meta.Internal
         public IEnumerable<ITarget> Views => throw new InvalidOperationException(ErrorMessage());
         public bool RequiresAuthentication => throw new InvalidOperationException(ErrorMessage());
         public IReadOnlyCollection<Method> AvailableMethods => throw new InvalidOperationException(ErrorMessage());
-        public string Alias => throw new InvalidOperationException(ErrorMessage());
         public bool IsInternal => throw new InvalidOperationException(ErrorMessage());
         public bool IsGlobal => throw new InvalidOperationException(ErrorMessage());
         public bool IsInnerResource => throw new InvalidOperationException(ErrorMessage());
@@ -64,8 +63,7 @@ namespace RESTable.Meta.Internal
         public bool GETAvailableToAll => throw new InvalidOperationException(ErrorMessage());
         public Type InterfaceType => throw new InvalidOperationException(ErrorMessage());
         public ResourceKind ResourceKind => throw new InvalidOperationException(ErrorMessage());
-        public void SetAlias(string alias) => throw new InvalidOperationException(ErrorMessage());
-
+        
         #endregion
     }
 }

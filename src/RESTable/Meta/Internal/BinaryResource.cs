@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -11,9 +12,9 @@ namespace RESTable.Meta.Internal
     internal interface IBinaryResource<T> : IBinaryResource, IResource<T> where T : class
     {
         /// <summary>
-        /// Selects binary content from a binary resource
+        /// Selects binary content asynchronously from a binary resource
         /// </summary>
-        (Stream stream, ContentType contentType) SelectBinary(IRequest<T> request);
+        Task<(Stream stream, ContentType contentType)> SelectBinary(IRequest<T> request);
     }
 
     internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResource<T> where T : class
@@ -36,19 +37,19 @@ namespace RESTable.Meta.Internal
         public bool GETAvailableToAll { get; }
         public Type InterfaceType { get; }
 
+        public Task<IEnumerable<T>> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
         public IEnumerable<T> Select(IRequest<T> request) => throw new InvalidOperationException();
-            
-        public (Stream stream, ContentType contentType) SelectBinary(IRequest<T> request)
+
+        public Task<(Stream stream, ContentType contentType)> SelectBinary(IRequest<T> request)
         {
-            return AsyncBinarySelector(request);
+            return BinarySelector(request);
         }
 
         public IReadOnlyList<IResource> InnerResources { get; set; }
-        public void SetAlias(string alias) => Alias = alias;
         public ResourceKind ResourceKind { get; }
-        private AsyncBinarySelector<T> AsyncBinarySelector { get; }
+        private BinarySelector<T> BinarySelector { get; }
 
-        internal BinaryResource(AsyncBinarySelector<T> asyncBinarySelectorSelector)
+        internal BinaryResource(BinarySelector<T> binarySelector)
         {
             Name = typeof(T).GetRESTableTypeName() ?? throw new Exception();
             Type = typeof(T);
@@ -59,7 +60,7 @@ namespace RESTable.Meta.Internal
             ResourceKind = ResourceKind.BinaryResource;
             (_, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
             Description = attribute.Description;
-            AsyncBinarySelector = asyncBinarySelectorSelector;
+            BinarySelector = binarySelector;
             Members = typeof(T).GetDeclaredProperties();
             GETAvailableToAll = attribute.GETAvailableToAll;
             var typeName = typeof(T).FullName;

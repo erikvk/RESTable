@@ -12,7 +12,7 @@ namespace RESTable.OData
     /// This resource lists all the available resources of the OData service.
     /// </summary>
     [RESTable(Method.GET, GETAvailableToAll = true, Description = description)]
-    public class ServiceDocument : IAsyncSelector<ServiceDocument>
+    public class ServiceDocument : ISelector<ServiceDocument>
     {
         private const string description = "The OData metadata document listing the resources of this application";
 

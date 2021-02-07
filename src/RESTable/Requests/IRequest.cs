@@ -21,9 +21,10 @@ namespace RESTable.Requests
     internal interface IEntityRequest<T> : IEntityRequest, IRequestInternal, IRequest<T> where T : class
     {
         IEntityResource<T> EntityResource { get; }
-        Func<IEnumerable<T>> EntitiesProducer { get; set; }
-        Func<IEnumerable<T>> GetSelector();
-        Func<IEnumerable<T>, IEnumerable<T>> GetUpdater();
+
+        Func<Task<IEnumerable<T>>> EntitiesProducer { get; set; }
+        Func<Task<IEnumerable<T>>> GetSelector();
+        Func<IEnumerable<T>, Task<IEnumerable<T>>> GetUpdater();
     }
 
     /// <inheritdoc />
@@ -54,21 +55,21 @@ namespace RESTable.Requests
         /// on the request, for example by deserializing input JSON data to this request type. This will run the
         /// entire select query for all entities selected by the request, so it should only be called once.
         /// </summary>
-        IAsyncEnumerable<T> GetInputEntities();
+        Task<IEnumerable<T>> GetInputEntities();
 
         /// <summary>
         /// The method used when selecting entities for request input. Set this property to override the default behavior.
         /// This delegate is used in GetInputEntities(). By default RESTable will generate entities by deserializing the request 
         /// body to an <see cref="IEnumerable{T}"/> using the content type provided in the Content-Type header.
         /// </summary>
-        Func<IEnumerable<T>> Selector { set; }
-
+        Func<Task<IEnumerable<T>>> Selector { set; }
+        
         /// <summary>
         /// The method used when updating existing entities. Set this property to override the default behavior.
         /// By default RESTable will populate the existing entities with content from the request body, using the 
         /// content type provided in the Content-Type header.
         /// </summary>
-        Func<IEnumerable<T>, IEnumerable<T>> Updater { set; }
+        Func<IEnumerable<T>, Task<IEnumerable<T>>> Updater { set; }
 
         /// <summary>
         /// Evaluates the request synchronously and returns the result as an entity collection. Only valid for GET requests.
@@ -268,7 +269,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Sets the given selector to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithSelector<T>(this IRequest<T> request, Func<IEnumerable<T>> selector) where T : class
+        public static IRequest<T> WithSelector<T>(this IRequest<T> request, Func<Task<IEnumerable<T>>> selector) where T : class
         {
             if (request == null) return null;
             request.Selector = selector;
@@ -281,7 +282,7 @@ namespace RESTable.Requests
         public static IRequest<T> WithEntities<T>(this IRequest<T> request, IEnumerable<T> entities) where T : class
         {
             if (request == null) return null;
-            request.Selector = () => entities;
+            request.Selector = () => Task.FromResult(entities);
             return request;
         }
 
@@ -290,15 +291,13 @@ namespace RESTable.Requests
         /// </summary>
         public static IRequest<T> WithEntities<T>(this IRequest<T> request, params T[] entities) where T : class
         {
-            if (request == null) return null;
-            request.Selector = () => entities;
-            return request;
+            return request.WithEntities((IEnumerable<T>) entities);
         }
 
         /// <summary>
         /// Sets the given selector to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithUpdater<T>(this IRequest<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater) where T : class
+        public static IRequest<T> WithUpdater<T>(this IRequest<T> request, Func<IEnumerable<T>, Task<IEnumerable<T>>> updater) where T : class
         {
             if (request == null) return null;
             request.Updater = updater;

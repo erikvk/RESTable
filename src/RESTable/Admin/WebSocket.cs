@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
@@ -10,13 +11,13 @@ using static RESTable.Method;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="IAsyncDeleter{T}" />
     /// <summary>
     /// An entity resource containing all the currently open WebSockets
     /// </summary>
     [RESTable(GET, DELETE, Description = description)]
-    public class WebSocket : IAsyncSelector<WebSocket>, IAsyncDeleter<WebSocket>
+    public class WebSocket : ISelector<WebSocket>, IAsyncDeleter<WebSocket>
     {
         private const string description = "Lists all connected WebSockets";
 
@@ -45,7 +46,7 @@ namespace RESTable.Admin
         /// </summary>
         public bool IsThis { get; private set; }
 
-        private WebSockets.WebSocket _WebSocket { get; set; }
+        private WebSockets.WebSocket UnderlyingSocket { get; set; }
 
         /// <inheritdoc />
         public IEnumerable<WebSocket> Select(IRequest<WebSocket> request) => WebSocketController
@@ -58,16 +59,16 @@ namespace RESTable.Admin
                 TerminalType = socket.TerminalResource?.Name,
                 Client = JObject.FromObject(socket.GetAppProfile(), JsonProvider.Serializer),
                 Terminal = socket.Terminal == null ? null : JObject.FromObject(socket.Terminal, JsonProvider.Serializer),
-                _WebSocket = socket
+                UnderlyingSocket = socket
             });
 
         /// <inheritdoc />
-        public int Delete(IRequest<WebSocket> request)
+        public async Task<int> DeleteAsync(IRequest<WebSocket> request)
         {
             var count = 0;
-            foreach (var entity in request.GetInputEntities())
+            foreach (var entity in await request.GetInputEntities())
             {
-                entity._WebSocket.DisposeAsync().AsTask().Wait();
+                await entity.UnderlyingSocket.DisposeAsync();
                 count += 1;
             }
             return count;

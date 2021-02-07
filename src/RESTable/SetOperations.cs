@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Results;
-using RESTable.Linq;
 using static System.StringComparison;
 using static RESTable.Method;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
@@ -18,7 +18,7 @@ using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JTok
 namespace RESTable
 {
     /// <inheritdoc cref="JObject" />
-    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <summary>
     /// The SetOperations resource can perform advanced operations on entities in one
     /// or more RESTable resources. See the RESTable Specification for details.
@@ -34,7 +34,7 @@ namespace RESTable
         private SetOperations(JObject other) : base(other) { }
 
         /// <inheritdoc />
-        public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
+        public async Task<IEnumerable<SetOperations>> SelectAsync(IRequest<SetOperations> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var body = request.Body;
@@ -42,7 +42,7 @@ namespace RESTable
                 throw new Exception("Missing data source for SetOperations request");
             var jobject = body.Deserialize<JObject>().FirstOrDefault();
 
-            JTokens recursor(JToken token)
+            async Task<JTokens> recursor(JToken token)
             {
                 switch (token)
                 {
@@ -54,39 +54,57 @@ namespace RESTable
                             case default(char): throw new Exception("Operation expressions cannot be empty strings");
                             case '[': return JArray.Parse(argument);
                             case '/':
-                                switch (request.Context.CreateRequest(argument).Evaluate().Result)
+                            {
+                                await using var innerRequest = request.Context.CreateRequest(argument);
+                                await using var result = await request.Evaluate(); 
+                                switch (result)
                                 {
                                     case NoContent _: return new JArray();
                                     case IEntities entities: return JArray.FromObject(entities, JsonProvider.Serializer);
                                     case var other: throw new Exception($"Could not get source data from '{argument}'. {other.GetLogMessage().Result}");
                                 }
+                            }
                             default:
                                 throw new Exception($"Invalid string '{argument}'. Must be a relative REST request URI " +
                                                     "beginning with '/<resource locator>' or a JSON array.");
                         }
-                    case JObject {Count: 1} obj when obj.First is JProperty {Value: JArray arr} prop:
+                    case JObject {Count: 1, First: JProperty {Value: JArray arr} prop}:
                         switch (prop.Name.ToLower())
                         {
                             case "distinct":
                                 if (arr.Count != 1)
                                     throw new Exception("Distinct takes one and only one set as operand");
-                                return Distinct(recursor(arr.First));
+                                return Distinct(await recursor(arr.First));
                             case "except":
                                 if (arr.Count != 2)
                                     throw new Exception("Except takes two and only two argument sets as operands");
-                                return Except(recursor(arr[0]), recursor(arr[1]));
+                                return Except(await recursor(arr[0]), await recursor(arr[1]));
                             case "intersect":
+                            {
                                 if (arr.Count < 2)
                                     throw new Exception("Intersect takes at least two sets as operands");
-                                return Intersect(arr.Select(recursor).ToArray());
+
+                                var tokens = new JTokens[arr.Count];
+                                for (var i = 0; i < tokens.Length; i += 1)
+                                    tokens[i] = await recursor(arr[i]);
+
+                                return Intersect(tokens);
+                            }
                             case "union":
+                            {
                                 if (arr.Count < 2)
                                     throw new Exception("Union takes at least two sets as operands");
-                                return Union(arr.Select(recursor).ToArray());
+
+                                var tokens = new JTokens[arr.Count];
+                                for (var i = 0; i < tokens.Length; i += 1)
+                                    tokens[i] = await recursor(arr[i]);
+
+                                return Union(tokens);
+                            }
                             case "map":
                                 if (arr.Count != 2)
                                     throw new Exception("Map takes two and only two arguments");
-                                return Map(recursor(arr[0]), (string) arr[1], request);
+                                return await Map(await recursor(arr[0]), (string) arr[1], request);
                             default:
                                 throw new ArgumentOutOfRangeException(
                                     $"Unknown operation '{prop.Name}'. Avaliable operations: distinct, except, " +
@@ -99,14 +117,13 @@ namespace RESTable
                 }
             }
 
-            return recursor(jobject).Select(token =>
+            var recursedObject = await recursor(jobject);
+
+            return recursedObject.Select(token => token switch
             {
-                switch (token)
-                {
-                    case JValue value: return new SetOperations(new JObject(new JProperty("Value", value)));
-                    case JObject @object: return new SetOperations(@object);
-                    default: throw new Exception("Invalid entity type in set operation");
-                }
+                JValue value => new SetOperations(new JObject(new JProperty("Value", value))),
+                JObject @object => new SetOperations(@object),
+                _ => throw new Exception("Invalid entity type in set operation")
             });
         }
 
@@ -115,7 +132,7 @@ namespace RESTable
         private static JTokens Union(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Union(y, EqualityComparer));
         private static JTokens Except(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Except(y, EqualityComparer));
 
-        private static JTokens Map(JTokens set, string mapper, IRequest request)
+        private static async Task<JTokens> Map(JTokens set, string mapper, IRequest request)
         {
             if (set == null) throw new ArgumentException(nameof(set));
             if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
@@ -131,7 +148,7 @@ namespace RESTable
             var argumentCount = keys.Count;
             var valueBuffer = new object[argumentCount];
 
-            Distinct(set).ForEach(item =>
+            foreach (var item in Distinct(set))
             {
                 var obj = item as JObject ?? throw new Exception("JSON syntax error in map set. Set must be of objects");
                 var localMapper = mapper;
@@ -150,12 +167,13 @@ namespace RESTable
                         case JValue jvalue when jvalue.Value<string>() is string stringValue:
                             value = stringValue == "" ? "\"\"" : stringValue;
                             break;
-                        default: return;
+                        // exit inner loop, continue outer loop
+                        default: goto next_item;
                     }
                     valueBuffer[i] = value.UriEncode();
                 }
                 localMapper = string.Format(localMapper, valueBuffer);
-                switch (request.Context.CreateRequest(localMapper).Evaluate().Result)
+                switch (await request.Context.CreateRequest(localMapper).Evaluate())
                 {
                     case NoContent _: break;
                     case IEntities<object> entities:
@@ -164,12 +182,16 @@ namespace RESTable
                     case var other:
                         throw new Exception($"Could not get source data from '{localMapper}'. {other.GetLogMessage().Result}");
                 }
-            });
+                next_item: ;
+            }
             return mapped;
         }
 
-        private static JTokens[] Checked(JTokens[] arrays) => arrays == null || arrays.Length < 2 || arrays.Any(a => a == null)
-            ? throw new ArgumentException(nameof(arrays))
-            : arrays;
+        private static JTokens[] Checked(JTokens[] arrays)
+        {
+            if (arrays == null || arrays.Length < 2 || arrays.Any(a => a == null))
+                throw new ArgumentException(nameof(arrays));
+            return arrays;
+        }
     }
 }

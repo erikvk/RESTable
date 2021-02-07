@@ -102,7 +102,7 @@ namespace RESTable.Resources.Templates
                     break;
                 case "CLOSE":
                     await WebSocket.SendText("> Status: CLOSED\n");
-                    WebSocket.DirectToShell();
+                    await WebSocket.DirectToShell();
                     break;
                 case var unrecognized:
                     await WebSocket.SendText($"> Unknown command '{unrecognized}'");

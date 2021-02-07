@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.Admin;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
@@ -9,7 +10,7 @@ using RESTable.Resources.Operations;
 
 namespace RESTable.Resources
 {
-    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="IAsyncInserter{T}" />
     /// <inheritdoc cref="IAsyncUpdater{T}" />
     /// <inheritdoc cref="IAsyncDeleter{T}" />
@@ -22,6 +23,10 @@ namespace RESTable.Resources
     /// <typeparam name="TController"></typeparam>
     public abstract class ResourceController<TController, TProvider> :
         Resource,
+        ISelector<TController>,
+        IInserter<TController>,
+        IUpdater<TController>,
+        IDeleter<TController>,
         IAsyncSelector<TController>,
         IAsyncInserter<TController>,
         IAsyncUpdater<TController>,
@@ -60,7 +65,8 @@ namespace RESTable.Resources
         /// <summary>
         /// Additional data associated with this resource (as defined by the resource provider)
         /// </summary>
-        [RESTableMember(ignore: true)] protected virtual dynamic Data { get; } = null;
+        [RESTableMember(ignore: true)]
+        protected virtual dynamic Data { get; } = null;
 
         /// <summary>
         /// Selects the instances that have been inserted by this controller
@@ -125,7 +131,7 @@ namespace RESTable.Resources
         public virtual int Insert(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in request.GetInputEntities())
+            foreach (var resource in request.GetInputEntities().Result)
             {
                 resource.Insert();
                 i += 1;
@@ -137,7 +143,7 @@ namespace RESTable.Resources
         public virtual int Update(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in request.GetInputEntities())
+            foreach (var resource in request.GetInputEntities().Result)
             {
                 resource.Update();
                 i += 1;
@@ -149,7 +155,42 @@ namespace RESTable.Resources
         public virtual int Delete(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in request.GetInputEntities())
+            foreach (var resource in request.GetInputEntities().Result)
+            {
+                resource.Delete();
+                i += 1;
+            }
+            return i;
+        }
+
+        public virtual Task<IEnumerable<TController>> SelectAsync(IRequest<TController> request) => Task.FromResult(Select());
+
+        public virtual async Task<int> InsertAsync(IRequest<TController> request)
+        {
+            var i = 0;
+            foreach (var resource in await request.GetInputEntities())
+            {
+                resource.Insert();
+                i += 1;
+            }
+            return i;
+        }
+
+        public virtual async Task<int> UpdateAsync(IRequest<TController> request)
+        {
+            var i = 0;
+            foreach (var resource in await request.GetInputEntities())
+            {
+                resource.Update();
+                i += 1;
+            }
+            return i;
+        }
+
+        public virtual async Task<int> DeleteAsync(IRequest<TController> request)
+        {
+            var i = 0;
+            foreach (var resource in await request.GetInputEntities())
             {
                 resource.Delete();
                 i += 1;

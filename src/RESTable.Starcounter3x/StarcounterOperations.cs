@@ -73,7 +73,7 @@ namespace RESTable.Starcounter3x
         {
             request.EnsureServiceAttached(Transaction);
             var count = 0;
-            Transaction.Run(db => count = request.GetInputEntities().Count());
+            Transaction.Run(db => count = request.GetInputEntities().Result.Count());
             return count;
         }
 
@@ -83,7 +83,7 @@ namespace RESTable.Starcounter3x
         public static int Update(IRequest<T> request)
         {
             var count = 0;
-            Transaction.Run(db => count = request.GetInputEntities().Count());
+            Transaction.Run(db => count = request.GetInputEntities().Result.Count());
             return count;
         }
 
@@ -94,7 +94,7 @@ namespace RESTable.Starcounter3x
         {
             request.EnsureServiceAttached(Transaction);
             var count = 0;
-            Transaction.Run(db => request.GetInputEntities().ForEach(entity =>
+            Transaction.Run(db => request.GetInputEntities().Result.ForEach(entity =>
             {
                 db.Delete(entity);
                 count += 1;

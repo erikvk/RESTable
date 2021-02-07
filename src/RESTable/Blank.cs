@@ -5,15 +5,15 @@ using RESTable.Resources.Operations;
 
 namespace RESTable
 {
-    /// <inheritdoc cref="IAsyncSelector{T}" />
-    /// <inheritdoc cref="IAsyncInserter{T}" />
-    /// <inheritdoc cref="IAsyncUpdater{T}" />
-    /// <inheritdoc cref="IAsyncDeleter{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
     /// <summary>
     /// The Blank resource is a test and debug resource that does nothing at all.
     /// </summary>
     [RESTable(Description = description)]
-    public class Blank : IAsyncSelector<Blank>, IAsyncInserter<Blank>, IAsyncUpdater<Blank>, IAsyncDeleter<Blank>
+    public class Blank : ISelector<Blank>, IInserter<Blank>, IUpdater<Blank>, IDeleter<Blank>
     {
         private const string description = "A test and debug entity resource that is just an empty set of entities with no properties";
 

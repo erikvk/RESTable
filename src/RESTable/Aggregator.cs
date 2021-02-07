@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -33,7 +34,7 @@ namespace RESTable
         }
     }
 
-    /// <inheritdoc cref="IAsyncSelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="Dictionary{TKey,TValue}" />
     /// <summary>
     /// A resource for creating arbitrary aggregated reports from multiple
@@ -45,16 +46,16 @@ namespace RESTable
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
 
         /// <inheritdoc />
-        public IEnumerable<Aggregator> Select(IRequest<Aggregator> request)
+        public async Task<IEnumerable<Aggregator>> SelectAsync(IRequest<Aggregator> request)
         {
-            object populator(object node)
+            async Task<object> Populator(object node)
             {
                 switch (node)
                 {
                     case Aggregator aggregator:
                         foreach (var (key, obj) in aggregator.ToList())
                         {
-                            var value = populator(obj);
+                            var value = Populator(obj);
                             switch (key)
                             {
                                 case "$add" when IsNumberArray(value, out var terms): return terms.Sum();
@@ -71,11 +72,12 @@ namespace RESTable
                         }
                         return aggregator;
                     case JArray array:
-                        return array.Select(item => item.ToObject<object>()).Select(populator).ToList();
+                        return array.Select(item => item.ToObject<object>()).Select(Populator).ToList();
                     case JObject jobj:
-                        return populator(jobj.ToObject<Aggregator>(JsonProvider.Serializer));
+                        return Populator(jobj.ToObject<Aggregator>(JsonProvider.Serializer));
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
+                    {
                         Method method;
                         string uri;
                         if (stringValue.StartsWith("GET ", OrdinalIgnoreCase))
@@ -91,13 +93,14 @@ namespace RESTable
                         else return stringValue;
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
-                        var internalRequest = request.Context.CreateRequest
+                        await using var internalRequest = request.Context.CreateRequest
                         (
                             uri: uri,
                             method: method,
                             headers: request.Headers
                         );
-                        switch (internalRequest.Evaluate().Result)
+                        var result = await internalRequest.Evaluate();
+                        switch (result)
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
                             case NoContent _: return null;
@@ -107,21 +110,19 @@ namespace RESTable
                                 throw new Exception($"Unexpected result from {method.ToString()} request inside " +
                                                     $"Aggregator: {other.GetLogMessage().Result}");
                         }
+                    }
                     case var other: return other;
                 }
             }
 
             var template = request.Body.Deserialize<Aggregator>().FirstOrDefault()
                            ?? throw new Exception("Missing data source for Aggregator request");
-            var populatedTemplate = populator(template);
-            switch (populatedTemplate)
+            return await Populator(template) switch
             {
-                case Aggregator aggregator: return new[] {aggregator};
-                case long integer: return new[] {new Aggregator {["Result"] = integer}};
-                case var other:
-                    throw new InvalidOperationException("An error occured when reading the request template, " +
-                                                        $"the root object was resolved to {other?.GetType().FullName ?? "null"}");
-            }
+                Aggregator aggregator => new[] {aggregator},
+                long integer => new[] {new Aggregator {["Result"] = integer}},
+                var other => throw new InvalidOperationException($"An error occured when reading the request template, the root object was resolved to {other?.GetType().FullName ?? "null"}")
+            };
         }
 
         private static Exception GetArithmeticException(string operation, string message = null)
