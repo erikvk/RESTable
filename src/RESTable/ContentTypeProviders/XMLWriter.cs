@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTable.Requests;
 
@@ -46,31 +47,28 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null)
+        public async Task<ulong> SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null)
         {
-            var count = JsonProvider.SerializeCollection(entities, stream, request);
+            var count = await JsonProvider.SerializeCollection(entities, stream, request);
             stream.Seek(0, SeekOrigin.Begin);
-            XmlSerializeJsonStream(stream);
+            await XmlSerializeJsonStream(stream);
             return count;
         }
 
-        private static void XmlSerializeJsonStream(Stream stream)
+        private static async Task XmlSerializeJsonStream(Stream stream)
         {
-            using (var streamReader = new StreamReader(stream, RESTableConfig.DefaultEncoding, false, 1024, true))
-            {
-                var json = $"{{\"entity\":{streamReader.ReadToEnd()}}}";
-                var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
-                stream.Seek(0, SeekOrigin.Begin);
-                stream.Write(XMLHeader, 0, XMLHeader.Length);
-                xml.Save(stream);
-            }
+            using var streamReader = new StreamReader(stream, RESTableConfig.DefaultEncoding, false, 1024, true);
+            var json = $"{{\"entity\":{await streamReader.ReadToEndAsync()}}}";
+            var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
+            stream.Seek(0, SeekOrigin.Begin);
+            await stream.WriteAsync(XMLHeader, 0, XMLHeader.Length);
+            xml?.Save(stream);
         }
 
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream body) => throw new NotImplementedException();
 
         /// <inheritdoc />
-        public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) =>
-            throw new NotImplementedException();
+        public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) => throw new NotImplementedException();
     }
 }

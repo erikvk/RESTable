@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.ContentTypeProviders
@@ -50,7 +51,7 @@ namespace RESTable.ContentTypeProviders
         protected abstract void ProduceJsonArray(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
-        public abstract ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null);
+        public abstract Task<ulong> SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null);
 
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream stream)

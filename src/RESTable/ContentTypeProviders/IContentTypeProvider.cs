@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.ContentTypeProviders
@@ -48,7 +49,7 @@ namespace RESTable.ContentTypeProviders
         /// <summary>
         /// Serializes the entity collection to the given Stream and returns the number of entities serialized.
         /// </summary>
-        ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null);
+        Task<ulong> SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null);
 
         /// <summary>
         /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 

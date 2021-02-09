@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders.NativeJsonProtocol;
@@ -184,39 +185,34 @@ namespace RESTable.ContentTypeProviders
         public string[] MatchStrings { get; set; }
 
         /// <inheritdoc />
-        public ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null)
+        public async Task<ulong> SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null)
         {
             if (entities == null) return 0;
-            using (var swr = new StreamWriter(stream, UTF8, 2048, true))
-            using (var jwr = new RESTableJsonWriter(swr, 0))
-            {
-                jwr.Formatting = _PrettyPrint ? Indented : None;
-                Serializer.Serialize(jwr, entities);
-                return jwr.ObjectsWritten;
-            }
+            await using var swr = new StreamWriter(stream, UTF8, 2048, true);
+            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = _PrettyPrint ? Indented : None};
+            Serializer.Serialize(jwr, entities);
+            return jwr.ObjectsWritten;
         }
 
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream body)
         {
-            using (var jsonReader = new JsonTextReader(new StreamReader(body, UTF8, false, 1024, true)))
+            using var jsonReader = new JsonTextReader(new StreamReader(body, UTF8, false, 1024, true));
+            jsonReader.Read();
+            switch (jsonReader.TokenType)
             {
-                jsonReader.Read();
-                switch (jsonReader.TokenType)
-                {
-                    case JsonToken.StartObject:
+                case JsonToken.StartObject:
+                    yield return Serializer.Deserialize<T>(jsonReader);
+                    break;
+                case JsonToken.StartArray:
+                    jsonReader.Read();
+                    while (jsonReader.TokenType != JsonToken.EndArray)
+                    {
                         yield return Serializer.Deserialize<T>(jsonReader);
-                        break;
-                    case JsonToken.StartArray:
                         jsonReader.Read();
-                        while (jsonReader.TokenType != JsonToken.EndArray)
-                        {
-                            yield return Serializer.Deserialize<T>(jsonReader);
-                            jsonReader.Read();
-                        }
-                        break;
-                    case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");
-                }
+                    }
+                    break;
+                case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");
             }
         }
     }

@@ -57,6 +57,7 @@ namespace RESTable.Results
             var stopwatch = Stopwatch.StartNew();
             var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
             ContentTypeProvider.SerializeCollection(new[] {optionsBody}, serializedResult.Body);
+            serializedResult.Body.Rewind();
             stopwatch.Stop();
             TimeElapsed += stopwatch.Elapsed;
             Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);

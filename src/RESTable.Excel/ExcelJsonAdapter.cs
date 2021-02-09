@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
 using RESTable.ContentTypeProviders;
@@ -38,7 +39,7 @@ namespace RESTable.Excel
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override ulong SerializeCollection<T>(IEnumerable<T> _entities, Stream stream, IRequest request = null)
+        public override async Task<ulong> SerializeCollection<T>(IEnumerable<T> _entities, Stream stream, IRequest request = null)
         {
             var serializer = JsonProvider.GetSerializer();
             if (_entities == null) return 0;
@@ -121,7 +122,7 @@ namespace RESTable.Excel
                 writeEntities(_entities.Cast<object>());
                 if (currentRow == 1) return 0;
                 worksheet.Cells.AutoFitColumns(0);
-                package.Save();
+                await package.SaveAsync();
                 return (ulong) currentRow - 1;
             }
             catch (Exception e)
@@ -130,15 +131,12 @@ namespace RESTable.Excel
             }
         }
 
-        private static object GetCellValue(DeclaredProperty prop, object target)
+        private static object GetCellValue(DeclaredProperty prop, object target) => prop switch
         {
-            switch (prop)
-            {
-                case var _ when prop.ExcelReducer != null: return prop.ExcelReducer((dynamic) target);
-                case var _ when prop.Type.IsEnum: return prop.GetValue(target)?.ToString();
-                default: return prop.GetValue(target);
-            }
-        }
+            _ when prop.ExcelReducer != null => prop.ExcelReducer((dynamic) target),
+            _ when prop.Type.IsEnum => prop.GetValue(target)?.ToString(),
+            _ => prop.GetValue(target)
+        };
 
         private static void WriteExcelCell(ExcelRange target, object value)
         {
