@@ -58,27 +58,24 @@ namespace RESTable.Results
         public Cookies Cookies => Result.Cookies;
 
         /// <inheritdoc />
-        public bool IsSerialized => Result.IsSerialized;
-
-        /// <inheritdoc />
-        public ISerializedResult Serialize() => Result.Serialize();
-
-        /// <inheritdoc />
         public void ThrowIfError() => Result.ThrowIfError();
 
         /// <inheritdoc />
         public IEntities<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
 
         /// <inheritdoc />
-        public TimeSpan TimeElapsed => Result.TimeElapsed;
+        public TimeSpan TimeElapsed
+        {
+            get => Result.TimeElapsed;
+            set => Result.TimeElapsed = value;
+        }
+
+        public IRequest Request => Result.Request;
+
+        public IProtocolHolder ProtocolHolder => Result.ProtocolHolder;
 
         /// <inheritdoc />
         public string Metadata => Result.Metadata;
-
-        public async ValueTask DisposeAsync()
-        {
-            await Result.DisposeAsync();
-        }
 
         /// <summary>
         /// The wrapped result

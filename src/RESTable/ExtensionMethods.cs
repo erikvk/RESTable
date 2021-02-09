@@ -557,12 +557,13 @@ namespace RESTable
             }
         }
 
-        internal static IResult AsResultOf(this Exception exception, IRequestInternal request)
+        internal static Error AsResultOf(this Exception exception, IRequest request)
         {
             var error = exception.AsError();
+            if (request == null) return error;
             long? errorId = default;
             error.SetTrace(request);
-            error.RequestInternal = request;
+            error.Request = request;
             if (!(error is Forbidden) && !(request is RemoteRequest) && request.Method >= 0)
             {
                 errorId = Admin.Error.Create(error, request).Id;

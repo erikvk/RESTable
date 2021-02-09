@@ -23,12 +23,12 @@ namespace RESTable.Requests
         /// <summary>
         /// The client IP address that made the request (null for internal requests)
         /// </summary>
-        public string ClientIP { get; }
+        public string ClientIp { get; }
 
         /// <summary>
         /// If the client was forwarded by a proxy, this property contains the proxy's IP address. Otherwise null.
         /// </summary>
-        public string ProxyIP { get; }
+        public string ProxyIp { get; }
 
         /// <summary>
         /// The host, as defined in the incoming request
@@ -43,7 +43,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Was the request sent over HTTPS?
         /// </summary>
-        public bool HTTPS { get; }
+        public bool Https { get; }
 
         /// <summary>
         /// The cookies associated with this client
@@ -59,14 +59,14 @@ namespace RESTable.Requests
         /// <summary>
         /// Creates a new client with the given origin type
         /// </summary>
-        private Client(OriginType origin, string host, IPAddress clientIP, IPAddress proxyIP, string userAgent, bool https, Cookies cookies)
+        private Client(OriginType origin, string host, IPAddress clientIp, IPAddress proxyIp, string userAgent, bool https, Cookies cookies)
         {
             Origin = origin;
             Host = host;
-            ClientIP = clientIP?.ToString();
-            ProxyIP = proxyIP?.ToString();
+            ClientIp = clientIp?.ToString();
+            ProxyIp = proxyIp?.ToString();
             UserAgent = userAgent;
-            HTTPS = https;
+            Https = https;
             ResourceAuthMappings = new ConcurrentDictionary<IResource, byte>();
             ResourceClientDataMappings = new ConcurrentDictionary<IResource, IDictionary<string, object>>();
             Cookies = cookies;
@@ -75,19 +75,19 @@ namespace RESTable.Requests
         /// <summary>
         /// Creates a new Client representing an external web client.
         /// </summary>
-        /// <param name="clientIP">The IP address of the client</param>
-        /// <param name="proxyIP">The IP address of the proxy, or null if no proxy was used to route the request</param>
+        /// <param name="clientIp">The IP address of the client</param>
+        /// <param name="proxyIp">The IP address of the proxy, or null if no proxy was used to route the request</param>
         /// <param name="userAgent">THe user agent of the client</param>
         /// <param name="host">The content of the host header in the HTTP request</param>
         /// <param name="https">Is the client connected with HTTPS?</param>
         /// <param name="cookies">The cookies registered for this client</param>
         /// <returns></returns>
-        public static Client External(IPAddress clientIP, IPAddress proxyIP, string userAgent, string host, bool https, Cookies cookies) => new Client
+        public static Client External(IPAddress clientIp, IPAddress proxyIp, string userAgent, string host, bool https, Cookies cookies) => new Client
         (
             origin: OriginType.External,
             host: host,
-            clientIP: clientIP,
-            proxyIP: proxyIP,
+            clientIp: clientIp,
+            proxyIp: proxyIp,
             userAgent: userAgent,
             https: https,
             cookies: cookies
@@ -100,8 +100,8 @@ namespace RESTable.Requests
         (
             origin: OriginType.Internal,
             host: $"localhost:{Admin.Settings._Port}",
-            clientIP: new IPAddress(new byte[] {127, 0, 0, 1}),
-            proxyIP: null,
+            clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
+            proxyIp: null,
             userAgent: null,
             https: false,
             cookies: new Cookies()
@@ -111,8 +111,8 @@ namespace RESTable.Requests
         (
             origin: (OriginType) (-1),
             host: $"localhost:{Admin.Settings._Port}",
-            clientIP: new IPAddress(new byte[] {127, 0, 0, 1}),
-            proxyIP: null,
+            clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
+            proxyIp: null,
             userAgent: null,
             https: false,
             cookies: new Cookies()
@@ -122,8 +122,8 @@ namespace RESTable.Requests
         (
             origin: OriginType.Internal,
             host: $"localhost:{Admin.Settings._Port}",
-            clientIP: new IPAddress(new byte[] {127, 0, 0, 1}),
-            proxyIP: null,
+            clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
+            proxyIp: null,
             userAgent: null,
             https: false,
             cookies: new Cookies()
@@ -170,7 +170,7 @@ namespace RESTable.Requests
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"Origin: {Origin}, IP: {ClientIP}";
+            return $"Origin: {Origin}, IP: {ClientIp}";
         }
     }
 }

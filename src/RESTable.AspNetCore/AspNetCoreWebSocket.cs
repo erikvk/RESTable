@@ -20,29 +20,29 @@ namespace RESTable.AspNetCore
             HttpContext = httpContext;
         }
 
-        protected override async Task Send(string text)
+        protected override async Task Send(string text, CancellationToken cancellationToken)
         {
             var buffer = Encoding.UTF8.GetBytes(text);
             var segment = new ArraySegment<byte>(buffer);
-            await WebSocket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
+            await WebSocket.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken);
         }
 
-        protected override async Task Send(byte[] data, bool asText, int offset, int length)
+        protected override async Task Send(byte[] data, bool asText, int offset, int length, CancellationToken cancellationToken)
         {
             var segment = new ArraySegment<byte>(data);
-            await WebSocket.SendAsync(segment, asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, CancellationToken.None);
+            await WebSocket.SendAsync(segment, asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, cancellationToken);
         }
 
-        protected override bool IsConnected => !WebSocket.CloseStatus.HasValue;
+        protected override bool IsConnected => WebSocket.State == WebSocketState.Open;
 
         protected override async Task SendUpgrade()
         {
             WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
         }
 
-        protected override async Task InitLifetimeTask()
+        protected override async Task InitLifetimeTask(CancellationToken cancellationToken)
         {
-            while (await ReceiveStreamAsync() is var (byteArray, isBinary) && !WebSocket.CloseStatus.HasValue)
+            while (await ReceiveStreamAsync(cancellationToken) is var (byteArray, isBinary) && !WebSocket.CloseStatus.HasValue)
             {
                 try
                 {
@@ -58,7 +58,7 @@ namespace RESTable.AspNetCore
                 }
                 catch (Exception e)
                 {
-                    await Send(e.Message);
+                    await Send(e.Message, cancellationToken);
                     await DisposeAsync();
                 }
             }

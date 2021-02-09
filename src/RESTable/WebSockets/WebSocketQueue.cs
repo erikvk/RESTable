@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -76,15 +77,21 @@ namespace RESTable.WebSockets
             return Task.CompletedTask;
         }
 
-        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false, bool d = true)
+        public Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false, bool d = true)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendResult(r, t, w, d));
+            ActionQueue.Enqueue(() => ToQueueFor.SendSerializedResult(serializedResult, t, w, d));
             return Task.CompletedTask;
         }
 
-        public Task StreamResult(ISerializedResult r, int m, TimeSpan? t = null, bool w = false, bool d = true)
+        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.StreamResult(r, m, t, w, d));
+            ActionQueue.Enqueue(() => ToQueueFor.SendResult(r, t, w));
+            return Task.CompletedTask;
+        }
+
+        public Task StreamSerializedResult(ISerializedResult r, int m, TimeSpan? t = null, bool w = false, bool d = true)
+        {
+            ActionQueue.Enqueue(() => ToQueueFor.StreamSerializedResult(r, m, t, w, d));
             return Task.CompletedTask;
         }
 
@@ -107,6 +114,16 @@ namespace RESTable.WebSockets
             });
             return Task.CompletedTask;
         }
+
+        public string HeadersStringCache
+        {
+            get => ToQueueFor.HeadersStringCache;
+            set => ToQueueFor.HeadersStringCache = value;
+        }
+
+        public bool ExcludeHeaders => ToQueueFor.ExcludeHeaders;
+        public string ProtocolIdentifier => ToQueueFor.ProtocolIdentifier;
+        public CachedProtocolProvider CachedProtocolProvider => ToQueueFor.CachedProtocolProvider;
 
         public ValueTask DisposeAsync()
         {

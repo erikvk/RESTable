@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Web;
 using RESTable.Admin;
 using RESTable.ContentTypeProviders;
@@ -249,15 +250,15 @@ namespace RESTable.OData
         {
             var origin = entities.Request.Context.Client;
             var hostAndPath = $"{origin.Host}{Settings._Uri}-odata";
-            return origin.HTTPS ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
+            return origin.Https ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
         }
 
         /// <inheritdoc />
-        public ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider)
+        public async Task Serialize(IResult result, Stream body, IContentTypeProvider contentTypeProvider)
         {
             result.Headers["OData-Version"] = "4.0";
             if (!(result is IEntities entities))
-                return (ISerializedResult) result;
+                return;
 
             string contextFragment;
             bool writeMetadata;
@@ -272,30 +273,26 @@ namespace RESTable.OData
                     writeMetadata = true;
                     break;
             }
-            using (var swr = new StreamWriter(entities.Body, Encoding.UTF8, 1024, true))
-            using (var jwr = new ODataJsonWriter(swr))
+            await using var swr = new StreamWriter(body, Encoding.UTF8, 1024, true);
+            using var jwr = new ODataJsonWriter(swr) {Formatting = Settings._PrettyPrint ? Indented : None};
+            await jwr.WriteStartObjectAsync();
+            await jwr.WritePropertyNameAsync("@odata.context");
+            await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}");
+            await jwr.WritePropertyNameAsync("value");
+            Providers.Json.Serialize(jwr, entities);
+            entities.EntityCount = jwr.ObjectsWritten;
+            if (writeMetadata)
             {
-                jwr.Formatting = Settings._PrettyPrint ? Indented : None;
-                jwr.WriteStartObject();
-                jwr.WritePropertyName("@odata.context");
-                jwr.WriteValue($"{GetServiceRoot(entities)}/$metadata{contextFragment}");
-                jwr.WritePropertyName("value");
-                Providers.Json.Serialize(jwr, entities);
-                entities.EntityCount = jwr.ObjectsWritten;
-                if (writeMetadata)
+                await jwr.WritePropertyNameAsync("@odata.count");
+                await jwr.WriteValueAsync(entities.EntityCount);
+                if (entities.IsPaged)
                 {
-                    jwr.WritePropertyName("@odata.count");
-                    jwr.WriteValue(entities.EntityCount);
-                    if (entities.IsPaged)
-                    {
-                        jwr.WritePropertyName("@odata.nextLink");
-                        jwr.WriteValue(MakeRelativeUri(entities.GetNextPageLink()));
-                    }
+                    await jwr.WritePropertyNameAsync("@odata.nextLink");
+                    await jwr.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink()));
                 }
-                jwr.WriteEndObject();
             }
+            await jwr.WriteEndObjectAsync();
             entities.Headers.ContentType = "application/json; odata.metadata=minimal; odata.streaming=true; charset=utf-8";
-            return entities;
         }
     }
 }

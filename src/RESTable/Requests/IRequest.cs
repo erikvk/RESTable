@@ -63,7 +63,7 @@ namespace RESTable.Requests
         /// body to an <see cref="IEnumerable{T}"/> using the content type provided in the Content-Type header.
         /// </summary>
         Func<Task<IEnumerable<T>>> Selector { set; }
-        
+
         /// <summary>
         /// The method used when updating existing entities. Set this property to override the default behavior.
         /// By default RESTable will populate the existing entities with content from the request body, using the 
@@ -99,7 +99,7 @@ namespace RESTable.Requests
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTable
     /// </summary>
-    public interface IRequest : IServiceProvider, IProtocolHolder, IHeaderHolder, ITraceable, ILogable, IAsyncDisposable
+    public interface IRequest : IServiceProvider, IProtocolHolder, IHeaderHolder, ITraceable, ILogable, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// The method of the request
@@ -183,7 +183,7 @@ namespace RESTable.Requests
         /// Adds a service object to this request, that is disposed when the
         /// request is disposed.
         /// </summary>
-        void EnsureServiceAttached<TService, TImplementation>(TImplementation service) where TImplementation : class, TService where TService : class;
+        void EnsureServiceAttached<TService, TImplementation>(TImplementation service) where TImplementation : class, TService where TService : class; 
     }
 
     /// <summary>

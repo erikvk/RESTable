@@ -7,7 +7,7 @@ using RESTable.Resources;
 
 namespace RESTable.AspNetCore
 {
-    public static class RESTableExtensions
+    public static class AspNetCoreRESTableExtensions
     {
         public static IApplicationBuilder UseRESTable
         (

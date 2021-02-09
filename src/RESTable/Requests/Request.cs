@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -174,6 +175,42 @@ namespace RESTable.Requests
             return (IEntities<T>) result;
         }
 
+//        private void FixDestination()
+//        {
+//            if (Headers.Destination == null)
+//            {
+//                return result;
+//            }
+//            try
+//            {
+//                var parameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
+//                if (parameters.IsInternal)
+//                {
+//                    await using var internalRequest = entities
+//                        .Context
+//                        .CreateRequest(parameters.URI, parameters.Method, null, parameters.Headers)
+//                        .WithBody(body);
+//                    var internalResult = await internalRequest.Evaluate();
+//                    result = internalResult;
+//                    return result;
+//                }
+//                var externalRequest = new HttpRequest(result, parameters, body);
+//                var response = await externalRequest.GetResponseAsync()
+//                               ?? throw new InvalidExternalDestination(externalRequest, "No response");
+//                if (response.StatusCode >= HttpStatusCode.BadRequest)
+//                    throw new InvalidExternalDestination(externalRequest,
+//                        $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.Info}");
+//                if (result.Headers.AccessControlAllowOrigin is string h)
+//                    response.Headers.AccessControlAllowOrigin = h;
+//                result = new ExternalDestinationResult(entities.Request, response);
+//                return result;
+//            }
+//            catch (HttpRequestException re)
+//            {
+//                throw new InvalidSyntax(ErrorCodes.InvalidDestination, $"{re.Message} in the Destination header");
+//            }
+//        }
+
         public async Task<IResult> Evaluate()
         {
             if (Headers.Source is string sourceHeader)
@@ -186,9 +223,9 @@ namespace RESTable.Requests
                 await using var webSocket = Context.WebSocket;
                 if (result is Forbidden forbidden)
                     return new WebSocketUpgradeFailed(forbidden);
-                var serialized = result.Serialize();
-                await Context.WebSocket.Open();
-                await Context.WebSocket.SendResult(serialized);
+                var serialized = await result.Serialize();
+                await Context.WebSocket.Open(this);
+                await Context.WebSocket.SendSerializedResult(serialized);
                 return new WebSocketTransferSuccess(this);
             }
 
@@ -236,7 +273,7 @@ namespace RESTable.Requests
                             var terminal = terminalResourceInternal.MakeTerminal(Conditions);
                             Context.WebSocket.SetContext(this);
                             await Context.WebSocket.ConnectTo(terminal, terminalResourceInternal);
-                            await Context.WebSocket.Open();
+                            await Context.WebSocket.Open(this);
                             await terminal.Open();
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
@@ -245,7 +282,8 @@ namespace RESTable.Requests
                     case IBinaryResource<T> binary:
                         var (stream, contentType) = await binary.SelectBinary(this);
                         var binaryResult = new Binary(this, contentType);
-                        await stream.CopyToAsync(binaryResult.Body);
+                        await stream.CopyToAsync(binaryResult.Stream);
+                        binaryResult.Stream.Seek(0, SeekOrigin.Begin);
                         return binaryResult;
 
                     case IEntityResource<T> entity:
@@ -281,7 +319,7 @@ namespace RESTable.Requests
             }
         }
 
-        private async Task<ISerializedResult> SwitchTerminal(ITerminalResource<T> resource)
+        private async Task<IResult> SwitchTerminal(ITerminalResource<T> resource)
         {
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(Conditions);
@@ -302,9 +340,11 @@ namespace RESTable.Requests
                     var result = await Context
                         .CreateRequest(source.URI, source.Method, null, source.Headers)
                         .Evaluate();
-                    if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, await result.GetLogMessage());
-                    var serialized = result.Serialize();
-                    if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");
+                    var entities = result as IEntities;
+                    if (entities == null) throw new InvalidExternalSource(source.URI, await result.GetLogMessage());
+                    var serialized = await result.Serialize();
+                    if (serialized.Result is Error error) throw error;
+                    if (entities.EntityCount == 0) throw new InvalidExternalSource(source.URI, "Response was empty");
                     body = new Body(this, serialized.Body);
                 }
                 else
@@ -401,6 +441,15 @@ namespace RESTable.Requests
             conditions: Conditions.ToList(),
             error: Error
         );
+
+        public void Dispose()
+        {
+            Body.Dispose();
+            foreach (var disposable in Services.Values.OfType<IAsyncDisposable>())
+                disposable.DisposeAsync().AsTask().Wait();
+            foreach (var disposable in Services.Values.OfType<IDisposable>())
+                disposable.Dispose();
+        }
 
         public async ValueTask DisposeAsync()
         {

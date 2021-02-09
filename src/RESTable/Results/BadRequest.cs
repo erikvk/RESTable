@@ -14,6 +14,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(BadRequest)};{RequestInternal?.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(BadRequest)};{Request?.Resource};{ErrorCode}";
     }
 }

@@ -16,6 +16,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(UpgradeRequired)};{RequestInternal?.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(UpgradeRequired)};{Request?.Resource};{ErrorCode}";
     }
 }

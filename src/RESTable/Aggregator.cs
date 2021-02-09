@@ -103,7 +103,6 @@ namespace RESTable
                         switch (result)
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
-                            case NoContent _: return null;
                             case Report report: return report.ReportBody.Count;
                             case IEntities entities: return entities;
                             case var other:

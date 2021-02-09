@@ -22,6 +22,17 @@ namespace RESTable.AspNetCore
         public void AddRoutes(Method[] methods, string rootUri, ushort _)
         {
             var template = rootUri + "/{resource?}/{conditions?}/{metaconditions?}";
+
+            RouteBuilder.MapVerb("OPTIONS", template, async aspNetCoreContext =>
+            {
+                var (_, uri) = aspNetCoreContext.Request.Path.Value.TSplit(rootUri);
+                var headers = new Headers(aspNetCoreContext.Request.Headers);
+                var client = GetClient(aspNetCoreContext);
+                var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
+                var options = context.GetOptions(uri, headers);
+                await WriteResponse(aspNetCoreContext, options);
+            });
+
             foreach (var method in methods)
             {
                 RouteBuilder.MapVerb(method.ToString(), template, async aspNetCoreContext =>
@@ -29,62 +40,62 @@ namespace RESTable.AspNetCore
                     var (_, uri) = aspNetCoreContext.Request.Path.Value.TSplit(rootUri);
                     var headers = new Headers(aspNetCoreContext.Request.Headers);
                     var client = GetClient(aspNetCoreContext);
-                    if (!client.TryAuthenticate(ref uri, headers, out var error))
+                    if (!client.TryAuthenticate(ref uri, headers, out var forbidden))
                     {
-                        await WriteResponse(aspNetCoreContext, error);
+                        await WriteResponse(aspNetCoreContext, await forbidden.Serialize());
                         return;
                     }
-                    var context = new RESTableAspNetCoreContext(client, aspNetCoreContext);
+                    var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
                     var body = aspNetCoreContext.Request.Body;
                     await using var request = context.CreateRequest(uri, method, body, headers);
                     var result = await request.Evaluate();
-                    var serialized = result.Serialize();
-                    
-                    
-                    
-                    if (serialized is WebSocketUpgradeSuccessful ws)
+                    if (result is WebSocketUpgradeSuccessful ws)
                     {
                         await using var webSocket = ws.WebSocket;
                         await webSocket.LifetimeTask;
                     }
-                    else await WriteResponse(aspNetCoreContext, serialized);
+                    else
+                    {
+                        await using var serializedResult = await result.Serialize();
+                        await WriteResponse(aspNetCoreContext, serializedResult);
+                    }
                 });
             }
         }
 
         public void RemoveRoutes(Method[] methods, string uri, ushort _) { }
 
-        private static async Task WriteResponse(HttpContext context, ISerializedResult result)
+        private static async Task WriteResponse(HttpContext context, ISerializedResult serializedResult)
         {
+            var result = serializedResult.Result;
             context.Response.StatusCode = (ushort) result.StatusCode;
             result.Headers.ForEach(header => context.Response.Headers[header.Key] = header.Value);
             result.Cookies.ForEach(cookie => context.Response.Headers["Set-Cookie"] = cookie.ToString());
-            if (result.Body != null)
+            if (serializedResult.Body != null)
             {
                 if (result.Headers.ContentType.HasValue)
                     context.Response.ContentType = result.Headers.ContentType.ToString();
-                await using var local = result.Body;
                 await using var remote = context.Response.Body;
-                await local.CopyToAsync(remote);
+                await serializedResult.Body.CopyToAsync(remote);
             }
         }
 
         private static Client GetClient(HttpContext context)
         {
-            var clientIP = context.Connection.RemoteIpAddress;
-            var proxyIP = default(IPAddress);
+            var clientIp = context.Connection.RemoteIpAddress;
+            var proxyIp = default(IPAddress);
             var host = context.Request.Host.Host;
             var userAgent = context.Request.Headers["User-Agent"];
             var https = context.Request.IsHttps;
             if (context.Request.Headers.TryGetValue("X-Forwarded-For", out var ip))
             {
-                clientIP = IPAddress.Parse(ip.First().Split(':')[0]);
-                proxyIP = clientIP;
+                clientIp = IPAddress.Parse(ip.First().Split(':')[0]);
+                proxyIp = clientIp;
             }
             return Client.External
             (
-                clientIP: clientIP,
-                proxyIP: proxyIP,
+                clientIp: clientIp,
+                proxyIp: proxyIp,
                 userAgent: userAgent,
                 host: host,
                 https: https,

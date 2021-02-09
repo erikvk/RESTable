@@ -19,8 +19,7 @@ namespace RESTable.Results
         private IResource Resource { get; }
         private bool HasResource => Resource != null;
         private IContentTypeProvider ContentTypeProvider { get; }
-        private IProtocolHolder ProtocolHolder { get; }
-
+        
         internal static Options Create(RequestParameters parameters)
         {
             var options = new Options(parameters);
@@ -44,26 +43,24 @@ namespace RESTable.Results
 
         private Options(RequestParameters parameters) : base(parameters)
         {
-            ProtocolHolder = parameters;
             StatusCode = HttpStatusCode.OK;
             StatusDescription = "OK";
             Resource = parameters.iresource;
             ContentTypeProvider = parameters.GetOutputContentTypeProvider();
         }
 
-        public override ISerializedResult Serialize()
+        public ISerializedResult Serialize()
         {
-            if (IsSerialized) return this;
             if (!HasResource)
-                return base.Serialize();
+                return new SerializedResult(this);
+            var serializedResult = new SerializedResult(this);
             var stopwatch = Stopwatch.StartNew();
             var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
-            ContentTypeProvider.SerializeCollection(new[] {optionsBody}, Body);
-            IsSerialized = true;
+            ContentTypeProvider.SerializeCollection(new[] {optionsBody}, serializedResult.Body);
             stopwatch.Stop();
             TimeElapsed += stopwatch.Elapsed;
             Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-            return this;
+            return serializedResult;
         }
     }
 

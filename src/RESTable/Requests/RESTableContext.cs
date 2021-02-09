@@ -152,7 +152,7 @@ namespace RESTable.Requests
             if (parameters.Error != null)
             {
                 var invalidParametersRequest = new InvalidParametersRequest(parameters);
-                error = (Error) parameters.Error.AsResultOf(invalidParametersRequest);
+                error = parameters.Error.AsResultOf(invalidParametersRequest);
                 resource = null;
                 return false;
             }

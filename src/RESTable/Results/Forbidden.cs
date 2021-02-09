@@ -16,6 +16,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(Forbidden)};{RequestInternal?.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(Forbidden)};{Request?.Resource};{ErrorCode}";
     }
 }

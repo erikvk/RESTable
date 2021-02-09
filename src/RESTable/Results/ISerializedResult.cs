@@ -1,26 +1,67 @@
 ﻿using System;
+using System.Threading.Tasks;
+using RESTable.Requests;
 
 namespace RESTable.Results
+{
+    internal class SerializedResult : ISerializedResult
     {
-        /// <inheritdoc cref="IResult" />
-        /// <inheritdoc cref="IDisposable" />
-        /// <summary>
-        /// Represents a result that is ready to be sent back to the client, for example 
-        /// in an HTTP response or a WebSocket message.
-        /// </summary>
-        public interface ISerializedResult : IResult
+        public string TraceId => Result.TraceId;
+        public RESTableContext Context => Result.Context;
+        public Headers Headers => Result.Headers;
+
+        public string HeadersStringCache
         {
-            /// <summary>
-            /// The serialized body contained in the result. Can be seekable or non-seekable.
-            /// </summary>
-            Body Body { get; }
+            get => Result.HeadersStringCache;
+            set => Result.HeadersStringCache = value;
         }
-    
-        /// <inheritdoc cref="IResult{T}" />
-        /// <inheritdoc cref="ISerializedResult" />
-        /// <summary>
-        /// Represents a result that is ready to be sent back to the client, for example 
-        /// in an HTTP response or a WebSocket message.
-        /// </summary>
-        public interface ISerializedResult<T> : IResult<T>, ISerializedResult where T : class { }
+
+        public bool ExcludeHeaders => Result.ExcludeHeaders;
+        public MessageType MessageType => Result.MessageType;
+        public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
+        public async ValueTask<string> GetLogContent() => await Body.ToStringAsync();
+        public DateTime LogTime => Result.LogTime;
+
+        public IResult Result { get; }
+        public Body Body { get; }
+        public TimeSpan TimeElapsed => Result.TimeElapsed;
+
+        public SerializedResult(IResult result)
+        {
+            Result = result ?? throw new ArgumentNullException(nameof(result));
+            Body = result.ProtocolHolder != null ? Body.CreateOutputBody(result.ProtocolHolder) : null;
+        }
+
+        public void Dispose()
+        {
+            if (Body == null) return;
+            Body.CanClose = true;
+            Body.Dispose();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Body == null) return;
+            Body.CanClose = true;
+            await Body.DisposeAsync();
+        }
     }
+
+    public interface ISerializedResult : ILogable, ITraceable, IHeaderHolder, IDisposable, IAsyncDisposable
+    {
+        /// <summary>
+        /// The result that was serialized
+        /// </summary>
+        IResult Result { get; }
+
+        /// <summary>
+        /// The serialized body contained in the result. Can be seekable or non-seekable.
+        /// </summary>
+        Body Body { get; }
+
+        /// <summary>
+        /// The time it took for RESTable to generate and serialize the result.
+        /// </summary>
+        TimeSpan TimeElapsed { get; }
+    }
+}

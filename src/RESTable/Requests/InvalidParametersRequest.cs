@@ -10,7 +10,7 @@ namespace RESTable.Requests
     {
         public bool IsValid { get; }
         private Exception Error { get; }
-        public Task<IResult> Evaluate() => Task.FromResult(Error.AsResultOf(this));
+        public Task<IResult> Evaluate() => Task.FromResult<IResult>(Error.AsResultOf(this));
 
         public Type TargetType => null;
         public bool HasConditions => false;
@@ -78,9 +78,7 @@ namespace RESTable.Requests
             return Task.FromResult<IRequest>(new InvalidParametersRequest(Parameters));
         }
 
-        public async ValueTask DisposeAsync()
-        {
-            await Body.DisposeAsync();
-        }
+        public void Dispose() => Body.Dispose();
+        public async ValueTask DisposeAsync() => await Body.DisposeAsync();
     }
 }

@@ -94,7 +94,7 @@ namespace RESTable.Requests
                 if (string.IsNullOrWhiteSpace(resultType))
                     return new ExternalServiceNotRESTable(URI).AsResultOf(this);
                 RemoteResource = new RemoteResource(resourceName);
-                
+
                 async Task<IResult> getResult()
                 {
                     int nr;
@@ -105,21 +105,20 @@ namespace RESTable.Requests
                         {
                             var entitiesResult = new RemoteEntities(this, count);
                             using var responseStream = response.Content;
-                            if (responseStream != null)     
-                                await response.Content.CopyToAsync(entitiesResult.Body);
+                            if (responseStream != null)
+                                await response.Content.CopyToAsync(entitiesResult.SerializedResult.Body);
                             return entitiesResult;
                         }
-                        case nameof(Head) when int.TryParse(data, out nr): return new Head(this, nr);
-                        case nameof(Report) when int.TryParse(data, out nr): return new Report(this, nr);
+                        case nameof(Head) when ulong.TryParse(data, out var count): return new Head(this, count);
+                        case nameof(Report) when ulong.TryParse(data, out var count): return new Report(this, count);
                         case nameof(Binary):
                         {
                             var binaryResult = new Binary(this, responseHeaders.ContentType.GetValueOrDefault());
                             using var responseStream = response.Content;
-                            if (responseStream != null)     
-                                await response.Content.CopyToAsync(binaryResult.Body);
+                            if (responseStream != null)
+                                await response.Content.CopyToAsync(binaryResult.Stream);
                             return binaryResult;
                         }
-                        case nameof(NoContent): return new NoContent(this);
                         case nameof(InsertedEntities) when int.TryParse(data, out nr): return new InsertedEntities(this, nr);
                         case nameof(UpdatedEntities) when int.TryParse(data, out nr): return new UpdatedEntities(this, nr);
                         case nameof(DeletedEntities) when int.TryParse(data, out nr): return new DeletedEntities(this, nr);
@@ -214,6 +213,15 @@ namespace RESTable.Requests
             uri: URI,
             bodyCopy: await Body.GetCopy()
         );
+
+        public void Dispose()
+        {
+            Body.Dispose();
+            foreach (var disposable in Services.Values.OfType<IAsyncDisposable>())
+                disposable.DisposeAsync().AsTask().Wait();
+            foreach (var disposable in Services.Values.OfType<IDisposable>())
+                disposable.Dispose();
+        }
 
         public async ValueTask DisposeAsync()
         {

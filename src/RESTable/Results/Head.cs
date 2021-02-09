@@ -1,4 +1,5 @@
-﻿using RESTable.Requests;
+﻿using System.Net;
+using RESTable.Requests;
 
 namespace RESTable.Results
 {
@@ -13,7 +14,16 @@ namespace RESTable.Results
         /// </summary>
         public ulong EntityCount { get; }
 
-        internal Head(IRequest request, long count) : base(request) => EntityCount = (ulong) count;
+        internal Head(IRequest request, ulong count) : base(request)
+        {
+            EntityCount = count;
+            if (count > 0) return;
+            StatusCode = HttpStatusCode.NoContent;
+            StatusDescription = "No content";
+            Headers.Info = "No entities found matching request.";
+            if (Request.Headers.Metadata == "full")
+                Headers.Metadata = Metadata;
+        }
 
         /// <inheritdoc />
         public override string Metadata => $"{nameof(Head)};{Request.Resource};{EntityCount}";

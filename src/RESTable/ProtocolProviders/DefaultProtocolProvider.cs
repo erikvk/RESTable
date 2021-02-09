@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -195,69 +194,37 @@ namespace RESTable.ProtocolProviders
         }
 
         /// <inheritdoc />
-        public ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider)
+        public Task Serialize(IResult result, Stream body, IContentTypeProvider contentTypeProvider)
         {
             switch (result)
             {
                 case Report report:
-                    contentTypeProvider.SerializeCollection(new[] {report.ReportBody}, report.Body, report.Request);
-                    return report;
+                    contentTypeProvider.SerializeCollection(new[] {report.ReportBody}, body, report.Request);
+                    return Task.CompletedTask;
 
                 case Head head:
                     head.Headers.EntityCount = head.EntityCount.ToString();
-                    return head;
+                    return Task.CompletedTask;
 
                 case IEntities<object> entities:
 
-                    ISerializedResult SerializeEntities()
+                    var entityCount = contentTypeProvider.SerializeCollection((dynamic) entities, body, entities.Request);
+                    body.Seek(0, SeekOrigin.Begin);
+                    entities.Headers.EntityCount = entityCount.ToString();
+                    entities.EntityCount = entityCount;
+                    if (entityCount == 0)
                     {
-                        var entityCount = contentTypeProvider.SerializeCollection((dynamic) entities, entities.Body, entities.Request);
-                        if (entityCount == 0) return new NoContent(entities.Request);
-                        entities.Body.Seek(0, SeekOrigin.Begin);
-                        entities.Headers.EntityCount = entityCount.ToString();
-                        entities.EntityCount = entityCount;
-                        if (entities.IsPaged)
-                        {
-                            var pager = entities.GetNextPageLink();
-                            entities.Headers.Pager = pager.ToUriString();
-                        }
-                        entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
-                        return entities;
+                        entities.MakeNoContent();
                     }
-
-                    if (entities.Request.Headers.Destination == null)
-                        return SerializeEntities();
-                    try
+                    if (entities.IsPaged)
                     {
-                        var parameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
-                        if (parameters.IsInternal)
-                        {
-                            var internalRequest = entities.Context.CreateRequest(parameters.URI, parameters.Method, null, parameters.Headers);
-                            var serializedEntities = SerializeEntities();
-                            if (!(serializedEntities is Content content))
-                                return serializedEntities;
-                            internalRequest.Body = content.Body;
-                            var internalResult = internalRequest.Evaluate().Result;
-                            return internalResult.Serialize();
-                        }
-                        var serialized = SerializeEntities();
-                        var externalRequest = new HttpRequest(serialized, parameters, serialized.Body);
-                        var response = externalRequest.GetResponseAsync().Result
-                                       ?? throw new InvalidExternalDestination(externalRequest, "No response");
-                        if (response.StatusCode >= HttpStatusCode.BadRequest)
-                            throw new InvalidExternalDestination(externalRequest,
-                                $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.Info}");
-                        if (serialized.Headers.AccessControlAllowOrigin is string h)
-                            response.Headers.AccessControlAllowOrigin = h;
-                        return new ExternalDestinationResult(entities.Request, response);
+                        var pager = entities.GetNextPageLink();
+                        entities.Headers.Pager = pager.ToUriString();
                     }
-                    catch (HttpRequestException re)
-                    {
-                        throw new InvalidSyntax(ErrorCodes.InvalidDestination, $"{re.Message} in the Destination header");
-                    }
-
-                default: return result as ISerializedResult;
+                    entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
+                    return Task.CompletedTask;
             }
+            return Task.CompletedTask;
         }
 
         private static void SetSelector<TRequest, TEntity>(IRequest<TRequest> request, IEntities<TEntity> entities)

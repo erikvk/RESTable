@@ -15,8 +15,8 @@ namespace RESTable.WebSockets
         {
             WebSocketId = webSocket.TraceId;
             Host = webSocket.Context.Client.Host;
-            IsSSLEncrypted = webSocket.Context.Client.HTTPS;
-            ClientIP = webSocket.Context.Client.ClientIP;
+            IsSSLEncrypted = webSocket.Context.Client.Https;
+            ClientIP = webSocket.Context.Client.ClientIp;
             ConnectedAt = webSocket.OpenedAt.ToString("yyyy-MM-dd HH:mm:ss");
             CurrentTerminal = webSocket.TerminalResource?.Name ?? "none";
             CustomHeaders = webSocket.Headers;

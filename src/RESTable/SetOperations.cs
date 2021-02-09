@@ -56,10 +56,9 @@ namespace RESTable
                             case '/':
                             {
                                 await using var innerRequest = request.Context.CreateRequest(argument);
-                                await using var result = await request.Evaluate(); 
+                                var result = await request.Evaluate();
                                 switch (result)
                                 {
-                                    case NoContent _: return new JArray();
                                     case IEntities entities: return JArray.FromObject(entities, JsonProvider.Serializer);
                                     case var other: throw new Exception($"Could not get source data from '{argument}'. {other.GetLogMessage().Result}");
                                 }
@@ -173,14 +172,16 @@ namespace RESTable
                     valueBuffer[i] = value.UriEncode();
                 }
                 localMapper = string.Format(localMapper, valueBuffer);
-                switch (await request.Context.CreateRequest(localMapper).Evaluate())
+                await using (var innerRequest = request.Context.CreateRequest(localMapper))
                 {
-                    case NoContent _: break;
-                    case IEntities<object> entities:
-                        mapped.UnionWith(entities.Select(e => e.ToJObject()));
-                        break;
-                    case var other:
-                        throw new Exception($"Could not get source data from '{localMapper}'. {other.GetLogMessage().Result}");
+                    switch (await innerRequest.Evaluate())
+                    {
+                        case IEntities<object> entities:
+                            mapped.UnionWith(entities.Select(e => e.ToJObject()));
+                            break;
+                        case var other:
+                            throw new Exception($"Could not get source data from '{localMapper}'. {other.GetLogMessage().Result}");
+                    }
                 }
                 next_item: ;
             }

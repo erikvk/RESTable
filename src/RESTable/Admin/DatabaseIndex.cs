@@ -127,7 +127,7 @@ namespace RESTable.Admin
                 var entities = new[] {new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}};
                 return Task.FromResult<IEnumerable<DatabaseIndex>>(entities);
             };
-            await using var result = await SelectionRequest.Evaluate();
+            var result = await SelectionRequest.Evaluate();
             result.ThrowIfError();
         }
 

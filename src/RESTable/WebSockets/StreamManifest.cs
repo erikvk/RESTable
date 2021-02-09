@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTable.Results;
 
@@ -7,9 +8,10 @@ using RESTable.Results;
 
 namespace RESTable.WebSockets
 {
-    internal class StreamManifest : IDisposable
+    internal class StreamManifest : IDisposable, IAsyncDisposable
     {
-        internal Content Content { get; }
+        internal ISerializedResult Result { get; }
+        
         internal int CurrentMessageIndex { get; set; }
         internal int BufferSize { get; }
         internal int LastIndex { get; }
@@ -32,46 +34,27 @@ namespace RESTable.WebSockets
 
         private static readonly StreamCommand[] _Commands =
         {
-            new StreamCommand
-            {
-                Command = "GET",
-                Description = "Streams all messages"
-            },
-            new StreamCommand
-            {
-                Command = "NEXT",
-                Description = "Streams the next message"
-            },
-            new StreamCommand
-            {
-                Command = "NEXT <integer>",
-                Description = "Streams the next <n> messages where <n> is an integer"
-            },
-            new StreamCommand
-            {
-                Command = "MANIFEST",
-                Description = "Prints the manifest"
-            },
-            new StreamCommand
-            {
-                Command = "CLOSE",
-                Description = "Closes the stream and returns to the previous terminal resource"
-            }
+            new() {Command = "GET", Description = "Streams all messages"},
+            new() {Command = "NEXT", Description = "Streams the next message"},
+            new() {Command = "NEXT <integer>", Description = "Streams the next <n> messages where <n> is an integer"},
+            new() {Command = "MANIFEST", Description = "Prints the manifest"},
+            new() {Command = "CLOSE", Description = "Closes the stream and returns to the previous terminal resource"}
         };
 
-        internal StreamManifest(Content content, int bufferSize)
+        internal StreamManifest(ISerializedResult serializedContent, int bufferSize)
         {
-            Content = content;
+            Result = serializedContent;
+            var content = serializedContent.Result;
             ContentType = content.Headers.ContentType?.ToString();
-            TotalLength = content.Body.Length;
+            TotalLength = serializedContent.Body.Length;
             BufferSize = bufferSize;
-            BytesRemaining = content.Body.Length;
+            BytesRemaining = serializedContent.Body.Length;
             if (content is IEntities entities)
             {
                 EntityType = entities.EntityType.GetRESTableTypeName();
                 EntityCount = entities.EntityCount;
             }
-            var dataLength = content.Body.Length;
+            var dataLength = serializedContent.Body.Length;
             var nrOfMessages = dataLength / bufferSize;
             var last = dataLength % bufferSize;
             if (last > 0) nrOfMessages += 1;
@@ -94,6 +77,7 @@ namespace RESTable.WebSockets
             Messages = messages;
         }
 
-        public void Dispose() => Content.Body.Dispose();
+        public void Dispose() => Result.Dispose();
+        public async ValueTask DisposeAsync() => await Result.DisposeAsync();
     }
 }

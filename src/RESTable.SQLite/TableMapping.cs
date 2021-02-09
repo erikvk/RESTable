@@ -223,7 +223,7 @@ namespace RESTable.SQLite
             await Database.QueryAsync(query);
             indexRequest.Method = Method.POST;
             indexRequest.Selector = () => Task.FromResult<IEnumerable<DatabaseIndex>>(tableIndexesToKeep);
-            await using var result = await indexRequest.Evaluate();
+            var result = await indexRequest.Evaluate();
             result.ThrowIfError();
             await Update();
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -27,5 +28,14 @@ namespace RESTable.Results
 
         /// <inheritdoc />
         protected Content(IRequest request) : base(request) { }
+
+        public void MakeNoContent()
+        {
+            StatusCode = HttpStatusCode.NoContent;
+            StatusDescription = "No content";
+            Headers.Info = "No entities found matching request.";
+            if (Request.Headers.Metadata == "full")
+                Headers.Metadata = Metadata;
+        }
     }
 }

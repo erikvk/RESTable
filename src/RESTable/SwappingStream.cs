@@ -7,7 +7,7 @@ using Microsoft.IO;
 
 namespace RESTable
 {
-    public class SwappingStream : Stream, IAsyncDisposable
+    public class SwappingStream : Stream, IDisposable, IAsyncDisposable
     {
         private const int MaxMemoryContentLength = 1 << 24;
         private bool Swapped;

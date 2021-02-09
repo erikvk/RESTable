@@ -52,8 +52,9 @@ namespace RESTable.Admin
 
         #region Console
 
-        internal static async Task Log(IRequest request, ISerializedResult result)
+        internal static async Task Log(IRequest request, ISerializedResult serializedResult)
         {
+            var result = serializedResult.Result;
             var milliseconds = result.TimeElapsed.TotalMilliseconds;
             if (result is WebSocketUpgradeSuccessful) return;
             foreach (var group in Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
@@ -96,7 +97,7 @@ namespace RESTable.Admin
                             if (console.IncludeContent)
                             {
                                 item.In.Content = await request.GetLogContent();
-                                item.Out.Content = await result.GetLogContent();
+                                item.Out.Content = await serializedResult.GetLogContent();
                             }
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
                             await console.ActualSocket.SendTextRaw(json);
@@ -138,8 +139,6 @@ namespace RESTable.Admin
                                 item.Client = new ClientInfo(logable.Context.Client);
                             if (console.IncludeHeaders && !logable.ExcludeHeaders)
                                 item.CustomHeaders = logable.Headers;
-                            if (console.IncludeContent)
-                                item.Content = await logable.GetLogContent();
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
                             await console.ActualSocket.SendTextRaw(json);
                         }
@@ -159,7 +158,7 @@ namespace RESTable.Admin
             if (IncludeClient)
             {
                 builder.Append(connection);
-                builder.Append(logable.Context.Client.ClientIP);
+                builder.Append(logable.Context.Client.ClientIp);
             }
             if (IncludeHeaders && !logable.ExcludeHeaders)
             {
@@ -182,8 +181,8 @@ namespace RESTable.Admin
             {
                 builder1.Append(connection);
                 builder2.Append(connection);
-                builder1.Append(logable1.Context.Client.ClientIP);
-                builder2.Append(logable2.Context.Client.ClientIP);
+                builder1.Append(logable1.Context.Client.ClientIp);
+                builder2.Append(logable2.Context.Client.ClientIp);
             }
             if (IncludeHeaders)
             {

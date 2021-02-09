@@ -12,7 +12,7 @@ namespace RESTable.Internal.Logging
         public MessageType MessageType { get; }
         public string TraceId { get; }
 
-        public ValueTask<string> GetLogMessage() => new(_logContent);
+        public ValueTask<string> GetLogMessage() => new(_logMessage);
         public ValueTask<string> GetLogContent() => new(_logContent);
 
         public Headers Headers { get; }

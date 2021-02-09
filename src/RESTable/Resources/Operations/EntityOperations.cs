@@ -92,18 +92,18 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static async Task<long> TryCount(IEntityRequest<T> request)
+        private static async Task<ulong> TryCount(IEntityRequest<T> request)
         {
             try
             {
                 request.EntitiesProducer = () => Task.FromResult<IEnumerable<T>>(new T[0]);
                 if (request.EntityResource.CanCount &&
                     request.MetaConditions.CanUseExternalCounter)
-                    return await request.EntityResource.CountAsync(request);
+                    return (ulong) await request.EntityResource.CountAsync(request);
                 var entities = request.MetaConditions.HasProcessors
                     ? await SelectProcessFilter(request)
                     : await SelectFilter(request);
-                return entities?.Count() ?? 0L;
+                return (ulong) (entities?.LongCount() ?? 0L);
             }
             catch (InfiniteLoop)
             {
@@ -242,8 +242,7 @@ namespace RESTable.Resources.Operations
             async Task<RequestSuccess> HeadEvaluator(IEntityRequest<T> request)
             {
                 var count = await TryCount(request);
-                if (count > 0) return new Head(request, count);
-                return new NoContent(request);
+                return new Head(request, count);
             }
 
             async Task<RequestSuccess> PatchEvaluator(IEntityRequest<T> request) => new UpdatedEntities(request, await Update(request));
@@ -322,7 +321,7 @@ namespace RESTable.Resources.Operations
                 {
                     conditions.ForEach(cond => cond.Value = entity.SafeSelect(cond.Term.Evaluate));
                     innerRequest.Conditions = conditions;
-                    await using var result = await innerRequest.Evaluate();
+                    var result = await innerRequest.Evaluate();
                     var entities = result.ToEntities<T>().ToList();
                     switch (entities.Count)
                     {

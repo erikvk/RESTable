@@ -6,11 +6,8 @@ using RESTable.Requests;
 namespace RESTable.Results
 {
     /// <inheritdoc cref="IResult"/>
-    /// <inheritdoc cref="ISerializedResult"/>
-    public abstract class Success : IResult, ISerializedResult
+    public abstract class Success : IResult
     {
-        private string _logContent;
-
         /// <inheritdoc />
         public string TraceId { get; }
 
@@ -27,36 +24,24 @@ namespace RESTable.Results
         public virtual Headers Headers { get; }
 
         /// <inheritdoc />
+        public virtual IRequest Request { get; }
+
+        /// <inheritdoc />
+        public IProtocolHolder ProtocolHolder { get; }
+
+        /// <inheritdoc />
         public Cookies Cookies => Context.Client.Cookies;
-
+        
         /// <inheritdoc />
-        public bool IsSerialized { get; protected set; }
-
-        public virtual Body Body => null;
-
-        /// <inheritdoc />
-        public virtual ISerializedResult Serialize()
-        {
-            IsSerialized = true;
-            return this;
-        }
-
-        /// <inheritdoc />
-        public TimeSpan TimeElapsed { get; protected set; }
+        public TimeSpan TimeElapsed { get; set; }
 
         /// <inheritdoc />
         public virtual MessageType MessageType => MessageType.HttpOutput;
 
         /// <inheritdoc />
-        public virtual ValueTask<string> GetLogMessage() => new($"{StatusCode.ToCode()}: {StatusDescription} ({Body?.ContentLength ?? 0} bytes)");
+        public virtual ValueTask<string> GetLogMessage() => new($"{StatusCode.ToCode()}: {StatusDescription}");
 
-        public string LogContent
-        {
-            get => _logContent;
-            protected set => _logContent = value;
-        }
-
-        public ValueTask<string> GetLogContent() => new(_logContent);
+        public ValueTask<string> GetLogContent() => new(default(string));
 
         /// <inheritdoc />
         public string HeadersStringCache { get; set; }
@@ -79,25 +64,18 @@ namespace RESTable.Results
         /// <inheritdoc />
         public void ThrowIfError() { }
 
-        protected Success(ITraceable trace)
+        protected Success(IProtocolHolder protocolHolder)
         {
-            TraceId = trace.TraceId;
-            Context = trace.Context;
+            ProtocolHolder = protocolHolder;
+            TraceId = protocolHolder.TraceId;
+            Context = protocolHolder.Context;
             ExcludeHeaders = false;
             Headers = new Headers();
-            IsSerialized = false;
             LogTime = DateTime.Now;
             IsSuccess = true;
         }
 
         /// <inheritdoc />
         public virtual string Metadata => $"{GetType().Name};;";
-
-        public async ValueTask DisposeAsync()
-        {
-            if (Body == null) return;
-            Body.CanClose = true;
-            await Body.DisposeAsync();
-        }
     }
 }

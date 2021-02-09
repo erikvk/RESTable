@@ -103,7 +103,7 @@ namespace RESTable.Tutorial
         public async Task<IEnumerable<SuperheroReport>> SelectAsync(IRequest<SuperheroReport> request)
         {
             await using var innerRequest = request.Context.CreateRequest<Superhero>();
-            await using var superheroes = await innerRequest.EvaluateToEntities();
+            var superheroes = await innerRequest.EvaluateToEntities();
 
             var count = 0;
             var newest = default(Superhero);

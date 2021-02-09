@@ -9,21 +9,12 @@ namespace RESTable.Results
     /// A generic RESTable result
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public interface IResult<T> : IResult where T : class
+    public interface IResult<out T> : IResult where T : class
     {
         /// <summary>
         /// The entities contained in the result
         /// </summary>
         IEntities<T> Entities { get; }
-
-        /// <summary>
-        /// Serializes the result and prepares output streams and content types.
-        /// Optionally, provide a content type to serialize the result with.
-        /// If null, the content type specified in the request will be used.
-        /// If no content type is specified in the request, the default content 
-        /// type for the protocol is used.
-        /// </summary>
-        ISerializedResult<T> Serialize(ContentType? contentType = null);
     }
 
     /// <inheritdoc cref="ILogable" />
@@ -31,8 +22,18 @@ namespace RESTable.Results
     /// <summary>
     /// A RESTable result
     /// </summary>
-    public interface IResult : ILogable, IHeaderHolder, IAsyncDisposable
+    public interface IResult : ILogable, IHeaderHolder, ITraceable
     {
+        /// <summary>
+        /// The request that generated this result
+        /// </summary>
+        IRequest Request { get; }
+
+        /// <summary>
+        /// The protocol holder of this result
+        /// </summary>
+        IProtocolHolder ProtocolHolder { get; }
+        
         /// <summary>
         /// The status code of the result
         /// </summary>
@@ -65,15 +66,6 @@ namespace RESTable.Results
         void ThrowIfError();
 
         /// <summary>
-        /// Serializes the result and prepares output streams and content types.
-        /// Optionally, provide a content type to serialize the result with.
-        /// If null, the content type specified in the request will be used.
-        /// If no content type is specified in the request, the default content 
-        /// type for the protocol is used.
-        /// </summary>
-        ISerializedResult Serialize();
-
-        /// <summary>
         /// Tries to convert the result to an IEnumerable instance, or throws an 
         /// Exception if the result is non-successful or cannot be cast to the given type.
         /// </summary>
@@ -82,12 +74,7 @@ namespace RESTable.Results
         /// <summary>
         /// The time it took for RESTable to generate the response.
         /// </summary>
-        TimeSpan TimeElapsed { get; }
-
-        /// <summary>
-        /// Has this result been serialized?
-        /// </summary>
-        bool IsSerialized { get; }
+        TimeSpan TimeElapsed { get; set; }
 
         /// <summary>
         /// The metadata for this result, for use in the RESTable-metadata header in remote requests.

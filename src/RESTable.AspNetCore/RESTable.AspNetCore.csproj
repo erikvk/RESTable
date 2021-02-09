@@ -7,9 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RESTable\RESTable.csproj"/>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5"/>
-        <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="2.2.1"/>
+        <ProjectReference Include="..\RESTable\RESTable.csproj" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
+        <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="2.2.1" />
     </ItemGroup>
 
 </Project>

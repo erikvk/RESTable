@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
+using RESTable.Results;
 
 namespace RESTable
 {
@@ -16,7 +17,7 @@ namespace RESTable
     /// <summary>
     /// Encodes a request body
     /// </summary>
-    public class Body : Stream, IAsyncDisposable
+    public class Body : Stream, IDisposable, IAsyncDisposable
     {
         [NotNull] private SwappingStream Stream { get; }
 
@@ -31,6 +32,16 @@ namespace RESTable
         private IContentTypeProvider ContentTypeProvider => IsIngoing
             ? ProtocolHolder.GetInputContentTypeProvider()
             : ProtocolHolder.GetOutputContentTypeProvider();
+
+        /// <summary>
+        /// Serializes the given result object to this body, using the appropriate content type
+        /// provider assigned to the request or response that this body belongs to.
+        /// </summary>
+        /// <param name="result"></param>
+        public async Task Serialize(IResult result)
+        {
+            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.Serialize(result, this, ContentTypeProvider);
+        }
 
         /// <summary>
         /// Deserializes the body to an IEnumerable of entities of the given type
@@ -197,9 +208,16 @@ namespace RESTable
         //     return base.ToString();
         // }
 
+        protected override void Dispose(bool disposing)
+        {
+            Stream.Dispose();
+            base.Dispose(disposing);
+        }
+
         public override async ValueTask DisposeAsync()
         {
             await Stream.DisposeAsync();
+            await base.DisposeAsync();
         }
 
         internal byte[] GetBytes() => Stream.GetBytes();

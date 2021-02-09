@@ -13,6 +13,7 @@ namespace RESTable.AspNetCore
     [RESTable(Method.GET)]
     public class Route : ISelector<Route>
     {
+        
         public string Name { get; set; }
         public string Template { get; set; }
         public string[] MethodRestrictions { get; set; }

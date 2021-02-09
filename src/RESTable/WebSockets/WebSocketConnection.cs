@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -84,13 +85,16 @@ namespace RESTable.WebSockets
         public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);
 
         /// <inheritdoc />
-        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.SendResult(r, t, w, d);
+        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false) => WebSocket.SendResult(r, t, w);
 
         /// <inheritdoc />
-        public Task StreamResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,
+        public Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.SendSerializedResult(serializedResult, t, w, d);
+
+        /// <inheritdoc />
+        public Task StreamSerializedResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,
             bool disposeResult = true)
         {
-            return WebSocket.StreamResult(result, messageSize, timeElapsed, writeHeaders, disposeResult);
+            return WebSocket.StreamSerializedResult(result, messageSize, timeElapsed, writeHeaders, disposeResult);
         }
 
         /// <inheritdoc />
@@ -110,6 +114,16 @@ namespace RESTable.WebSockets
         {
             return WebSocket.DirectTo(terminalResource, assignments);
         }
+        
+        public string HeadersStringCache
+        {
+            get => WebSocket.HeadersStringCache;
+            set => WebSocket.HeadersStringCache = value;
+        }
+
+        public bool ExcludeHeaders => WebSocket.ExcludeHeaders;
+        public string ProtocolIdentifier => WebSocket.ProtocolIdentifier;
+        public CachedProtocolProvider CachedProtocolProvider => WebSocket.CachedProtocolProvider;
 
         /// <inheritdoc />
         public WebSocketStatus Status => IsSuspended ? WebSocketStatus.Suspended : WebSocket.Status;

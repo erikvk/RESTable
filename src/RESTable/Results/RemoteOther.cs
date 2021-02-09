@@ -9,7 +9,7 @@ namespace RESTable.Results
     internal sealed class RemoteOther : Success
     {
         /// <inheritdoc />
-        internal RemoteOther(IProtocolHolder trace, HttpStatusCode statusCode, string statusDescription) : base(trace)
+        internal RemoteOther(IProtocolHolder protocolHolder, HttpStatusCode statusCode, string statusDescription) : base(protocolHolder)
         {
             StatusCode = statusCode;
             StatusDescription = statusDescription;

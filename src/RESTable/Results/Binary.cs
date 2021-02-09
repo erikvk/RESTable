@@ -9,13 +9,15 @@ namespace RESTable.Results
     /// </summary>
     public sealed class Binary : Content
     {
+        private ISerializedResult SerializedResult { get; }
+
+        public Stream Stream => SerializedResult.Body;
+
         /// <inheritdoc />
         public Binary(IRequest request, ContentType contentType) : base(request)
         {
             Headers.ContentType = contentType;
-            if (Body.CanSeek)
-                Body.Seek(0, SeekOrigin.Begin);
-            IsSerialized = true;
+            SerializedResult = new SerializedResult(this);
         }
 
         /// <inheritdoc />

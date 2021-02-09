@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Globalization;
 using System.Net;
 using System.Threading.Tasks;
-using RESTable.Internal;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -14,7 +11,7 @@ namespace RESTable.Results
     /// <summary>
     /// A super class for all custom RESTable exceptions
     /// </summary>
-    public abstract class Error : RESTableException, IResult, ISerializedResult, ITraceable
+    public abstract class Error : RESTableException, IResult, ITraceable
     {
         /// <inheritdoc />
         public HttpStatusCode StatusCode { get; protected set; }
@@ -100,47 +97,11 @@ namespace RESTable.Results
         /// <inheritdoc />
         public void ThrowIfError() => throw this;
 
-        internal IRequestInternal RequestInternal { get; set; }
+        public IRequest Request { get; set; }
+
+        public IProtocolHolder ProtocolHolder => Request;
 
         private readonly string _logContent = null;
-
-        /// <inheritdoc />
-        public Body Body { get; private set; }
-
-        /// <inheritdoc />
-        public bool IsSerialized { get; private set; }
-
-        /// <inheritdoc />
-        public ISerializedResult Serialize()
-        {
-            if (RequestInternal == null)
-            {
-                IsSerialized = true;
-                Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-                return this;
-            }
-            var stopwatch = Stopwatch.StartNew();
-            ISerializedResult result = this;
-            Body = Body.CreateOutputBody(RequestInternal);
-            var cachedProvider = RequestInternal.CachedProtocolProvider;
-            var acceptProvider = RequestInternal.GetOutputContentTypeProvider();
-            try
-            {
-                return cachedProvider.ProtocolProvider.Serialize(this, acceptProvider);
-            }
-            catch (Exception exception)
-            {
-                result.Body?.Dispose();
-                return exception.AsResultOf(RequestInternal).Serialize();
-            }
-            finally
-            {
-                IsSerialized = true;
-                stopwatch.Stop();
-                TimeElapsed = TimeElapsed + stopwatch.Elapsed;
-                Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-            }
-        }
 
         /// <inheritdoc />
         public virtual string Metadata => $"{GetType().Name};;";
@@ -149,13 +110,6 @@ namespace RESTable.Results
         /// <summary>
         /// The time elapsed from the start of reqeust evaluation
         /// </summary>
-        public TimeSpan TimeElapsed { get; internal set; }
-
-        public async ValueTask DisposeAsync()
-        {
-            if (Body == null) return;
-            Body.CanClose = true;
-            await Body.DisposeAsync();
-        }
+        public TimeSpan TimeElapsed { get; set; }
     }
 }

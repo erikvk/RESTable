@@ -8,11 +8,12 @@ using RESTable.Results;
 
 namespace RESTable.WebSockets
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="RESTable.ITraceable" />
+    /// <inheritdoc cref="RESTable.IProtocolHolder" />
     /// <summary>
     /// WebSockets support sending continuous data over a single TCP connection
     /// </summary>
-    public interface IWebSocket : ITraceable
+    public interface IWebSocket : ITraceable, IProtocolHolder
     {
         /// <summary>
         /// Sends the string data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
@@ -37,17 +38,28 @@ namespace RESTable.WebSockets
         Task SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false);
 
         /// <summary>
-        /// Sends a result synchronously over a WebSocket, with the body contained in a single binary message. If the result body is larger than
-        /// 16 megabytes, a <see cref="WebSocketMessageTooLargeException"/> will be thrown. In these cases, use <see cref="StreamResult"/> instead.
+        /// Sends a result asynchronously over a WebSocket.
         /// </summary>
         /// <param name="result">The result to send. The body of the result (if any) will be sent as binary over the websocket.
-        /// Additional inforation can be included in separate text messages (see other parameters).</param>
+        ///     Additional inforation can be included in separate text messages (see other parameters).</param>
         /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included. If not null, timeElapsed 
-        /// will be included in the status text message (see writeStatus)</param>
+        ///     will be included in the status text message (see writeStatus)</param>
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
-        /// (if any) and before the content is sent.</param>
-        /// <param name="disposeResult">Should the result be disposed after it is sent to the WebSocket?</param>
-        Task SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
+        ///     (if any) and before the content is sent.</param>
+        Task SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false);
+
+        /// <summary>
+        /// Sends a serialized result asynchronously over a WebSocket, with the body contained in a single binary message. If the result body is larger than
+        /// 16 megabytes, a <see cref="WebSocketMessageTooLargeException"/> will be thrown. In these cases, use <see cref="StreamSerializedResult"/> instead.
+        /// </summary>
+        /// <param name="serializedResulte result to send. The body of the result (if any) will be sent as binary over the websocket.
+        ///     Additional inforation can be included in separate text messages (see other parameters).</param>
+        /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included. If not null, timeElapsed 
+        ///     will be included in the status text message (see writeStatus)</param>
+        /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
+        ///     (if any) and before the content is sent.</param>
+        /// <param name="disposeResult">Should the serialized result be disposed after it is sent to the WebSocket?</param>
+        Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
         /// Sends an arbitrarily large result over a WebSocket, with the body split over multiple binary messages. Before sending
@@ -55,25 +67,20 @@ namespace RESTable.WebSockets
         /// initiating and controlling the actual data transfer. The WebSocket is directed back to the previous terminal once streaming
         /// is either completed or cancelled.
         /// </summary>
-        /// <param name="result">The result to send. The body of the result will be sent as binary over the websocket.
-        /// Additional inforation can be included in separate text messages (see other parameters).</param>
+        /// <param name="serializedResult">The result to send. The body of the result will be sent as binary over the websocket.
+        ///     Additional inforation can be included in separate text messages (see other parameters).</param>
         /// <param name="messageSize">The size of each message, in bytes. Cannot be less than 512 or greater than 16000000</param>
         /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included. If not null, timeElapsed 
-        /// will be included in the status text message (see writeStatus)</param>
+        ///     will be included in the status text message (see writeStatus)</param>
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
-        /// (if any) and before the content is sent.</param>
+        ///     (if any) and before the content is sent.</param>
         /// <param name="disposeResult">Should the result be disposed after it is sent to the WebSocket?</param>
-        Task StreamResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
+        Task StreamSerializedResult(ISerializedResult serializedResult, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
         /// Sends an exception over the WebSocket.
         /// </summary>
         Task SendException(Exception exception);
-
-        /// <summary>
-        /// The headers included in the initial HTTP request
-        /// </summary>
-        Headers Headers { get; }
 
         /// <summary>
         /// The cookies of the initial HTTP request

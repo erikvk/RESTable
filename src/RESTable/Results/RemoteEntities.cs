@@ -23,23 +23,19 @@ namespace RESTable.Results
         private IRequestInternal RequestInternal { get; }
         private IContentTypeProvider ContentTypeProvider { get; }
 
-        public override ISerializedResult Serialize()
-        {
-            Body.Rewind();
-            return this;
-        }
+        internal ISerializedResult SerializedResult { get; }
 
-        public override IEntities<T1> ToEntities<T1>() => new DeserializedTypeEnumerable<T1>(RequestInternal, Body, this, ContentTypeProvider);
+        public override IEntities<T1> ToEntities<T1>() => new DeserializedTypeEnumerable<T1>(RequestInternal, SerializedResult.Body, this, ContentTypeProvider);
 
-        public IEnumerator<JObject> GetEnumerator() => new StreamEnumerator<JObject>(Body, ContentTypeProvider);
+        public IEnumerator<JObject> GetEnumerator() => new StreamEnumerator<JObject>(SerializedResult.Body, ContentTypeProvider);
 
         internal RemoteEntities(IRequestInternal request, ulong entityCount) : base(request)
         {
             RequestInternal = request;
             EntityType = typeof(JObject);
             EntityCount = entityCount;
-            IsSerialized = true;
             ContentTypeProvider = RequestInternal.GetOutputContentTypeProvider();
+            SerializedResult = new SerializedResult(this);
         }
     }
 
@@ -48,7 +44,7 @@ namespace RESTable.Results
         private readonly Stream Stream;
         private readonly IEntities Entities;
         private readonly IContentTypeProvider ContentTypeProvider;
-
+        
         public DeserializedTypeEnumerable(IRequest request, Stream stream, IEntities entities, IContentTypeProvider contentTypeProvider) : base(request)
         {
             Stream = stream;

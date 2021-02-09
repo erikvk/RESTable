@@ -24,9 +24,9 @@ namespace RESTable.Internal.Logging
 
         internal ClientInfo(Client client)
         {
-            ClientIP = client.ClientIP;
-            ProxyIP = client.ProxyIP;
-            Protocol = client.HTTPS ? "HTTPS" : "HTTP";
+            ClientIP = client.ClientIp;
+            ProxyIP = client.ProxyIp;
+            Protocol = client.Https ? "HTTPS" : "HTTP";
             UserAgent = client.UserAgent;
         }
     }

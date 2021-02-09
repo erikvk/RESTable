@@ -5,7 +5,7 @@ namespace RESTable.Results
 {
     internal class ShellNoContent : ShellSuccess
     {
-        internal ShellNoContent(ITraceable trace, TimeSpan elapsed) : base(trace)
+        internal ShellNoContent(IProtocolHolder protocolHolder, TimeSpan elapsed) : base(protocolHolder)
         {
             StatusCode = HttpStatusCode.NoContent;
             StatusDescription = "No content";

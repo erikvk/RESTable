@@ -13,7 +13,7 @@ namespace RESTable.Results
         /// </summary>
         public ReportBody ReportBody { get; }
 
-        internal Report(IRequest request, long count) : base(request) => ReportBody = new ReportBody(count);
+        internal Report(IRequest request, ulong count) : base(request) => ReportBody = new ReportBody(count);
 
         /// <inheritdoc />
         public override string Metadata => $"{nameof(Report)};{Request.Resource};{ReportBody.Count}";
@@ -27,8 +27,8 @@ namespace RESTable.Results
         /// <summary>
         /// The number of entities counted
         /// </summary>
-        public long Count { get; }
+        public ulong Count { get; }
 
-        internal ReportBody(long count) => Count = count;
+        internal ReportBody(ulong count) => Count = count;
     }
 }

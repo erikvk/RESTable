@@ -5,11 +5,11 @@ using RESTable.WebSockets;
 
 namespace RESTable.AspNetCore
 {
-    internal class RESTableAspNetCoreContext : RESTableContext
+    internal class AspNetCoreRESTableContext : RESTableContext
     {
         private HttpContext HttpContext { get; }
 
-        public RESTableAspNetCoreContext(Client client, HttpContext httpContext) : base(client)
+        public AspNetCoreRESTableContext(Client client, HttpContext httpContext) : base(client)
         {
             HttpContext = httpContext;
         }
