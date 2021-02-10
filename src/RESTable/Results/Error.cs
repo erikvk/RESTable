@@ -97,9 +97,9 @@ namespace RESTable.Results
         /// <inheritdoc />
         public void ThrowIfError() => throw this;
 
-        public IRequest Request { get; set; }
-
         public IProtocolHolder ProtocolHolder => Request;
+
+        public IRequest Request { get; set; }
 
         private readonly string _logContent = null;
 

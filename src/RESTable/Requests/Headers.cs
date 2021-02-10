@@ -247,6 +247,6 @@ namespace RESTable.Requests
         /// <inheritdoc />
         public ICollection<string> Values => this._Keys();
 
-        internal Headers GetCopy() => new Headers(this);
+        internal Headers GetCopy() => new(this);
     }
 }

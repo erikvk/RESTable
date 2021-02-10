@@ -25,15 +25,15 @@ namespace RESTable.Results
     public interface IResult : ILogable, IHeaderHolder, ITraceable
     {
         /// <summary>
+        /// The protocol holder of this result
+        /// </summary>
+        IProtocolHolder ProtocolHolder { get; }
+
+        /// <summary>
         /// The request that generated this result
         /// </summary>
         IRequest Request { get; }
 
-        /// <summary>
-        /// The protocol holder of this result
-        /// </summary>
-        IProtocolHolder ProtocolHolder { get; }
-        
         /// <summary>
         /// The status code of the result
         /// </summary>

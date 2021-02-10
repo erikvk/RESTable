@@ -14,13 +14,10 @@ namespace RESTable.Results
         {
             var stopwatch = Stopwatch.StartNew();
             var serializedResult = new SerializedResult(result);
-            if (serializedResult.Body == null)
-            {
-                result.Headers.Elapsed = result.TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-                return serializedResult;
-            }
             try
             {
+                if (serializedResult.Body == null)
+                    return serializedResult;
                 await serializedResult.Body.Serialize(result);
                 return serializedResult;
             }

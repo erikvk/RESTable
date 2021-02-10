@@ -197,19 +197,21 @@ namespace RESTable.ContentTypeProviders
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream body)
         {
-            using var jsonReader = new JsonTextReader(new StreamReader(body, UTF8, false, 1024, true));
-            jsonReader.Read();
+            using var streamReader = new StreamReader(body, UTF8, false, 1024, true);
+            using var jsonReader = new JsonTextReader(streamReader);
+            jsonReader.ReadAsync().Wait();
             switch (jsonReader.TokenType)
             {
+                case JsonToken.None: yield break;
                 case JsonToken.StartObject:
                     yield return Serializer.Deserialize<T>(jsonReader);
                     break;
                 case JsonToken.StartArray:
-                    jsonReader.Read();
+                    jsonReader.ReadAsync().Wait();
                     while (jsonReader.TokenType != JsonToken.EndArray)
                     {
                         yield return Serializer.Deserialize<T>(jsonReader);
-                        jsonReader.Read();
+                        jsonReader.ReadAsync().Wait();
                     }
                     break;
                 case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");

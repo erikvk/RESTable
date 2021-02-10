@@ -139,7 +139,10 @@ namespace RESTable.Requests
             HeadersStringCache = headersStringCache;
         }
 
-        internal void SetBody(object bodyObject) => Body = new Body(this, bodyObject);
+        internal void SetBody(object bodyObject)
+        {
+            Body = new Body(this, bodyObject);
+        }
 
         /// <summary>
         /// Used when creating generic requests through the .NET API

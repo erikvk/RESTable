@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
+using RESTable.Resources.Operations;
 using RESTable.Results;
 
 namespace RESTable
@@ -51,11 +52,12 @@ namespace RESTable
             if (!HasContent) return null;
             try
             {
-                return ContentTypeProvider.DeserializeCollection<T>(Stream.Rewind());
+                return ContentTypeProvider.DeserializeCollection<T>(Stream);
             }
             finally
             {
-                Stream.Rewind();
+                if (CanSeek)
+                    Stream.Rewind();
             }
         }
 
@@ -72,7 +74,8 @@ namespace RESTable
             }
             finally
             {
-                Stream.Rewind();
+                if (CanSeek)
+                    Stream.Rewind();
             }
         }
 
@@ -83,14 +86,13 @@ namespace RESTable
         {
             null => false,
             Stream {CanRead: false} => false,
-            Stream {CanSeek: true} seekable => seekable.Length > 0,
             _ => true
         };
 
         /// <summary>
         /// The length of the body content in bytes
         /// /// </summary>
-        public long? ContentLength => Stream?.Length;
+        public long? ContentLength => Do.SafeGet<long?>(() => Stream.Length);
 
         public Task MakeSeekable() => Stream.MakeSeekable();
 
@@ -220,6 +222,12 @@ namespace RESTable
             await base.DisposeAsync();
         }
 
+        internal bool CanClose
+        {
+            get => Stream.CanClose;
+            set => Stream.CanClose = value;
+        }
+
         internal byte[] GetBytes() => Stream.GetBytes();
         internal Task<byte[]> GetBytesAsync() => Stream.GetBytesAsync();
 
@@ -235,12 +243,6 @@ namespace RESTable
         {
             get => Stream.WriteTimeout;
             set => Stream.WriteTimeout = value;
-        }
-
-        internal bool CanClose
-        {
-            get => Stream.CanClose;
-            set => Stream.CanClose = value;
         }
 
         public override long Position

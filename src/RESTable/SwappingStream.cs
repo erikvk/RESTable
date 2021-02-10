@@ -100,7 +100,7 @@ namespace RESTable
         public override bool CanRead => Stream.CanRead;
         public override bool CanSeek => Stream.CanSeek;
         public override bool CanWrite => Stream.CanWrite;
-        public override long Length => Stream.CanSeek ? Stream.Length : -1;
+        public override long Length => Stream.Length;
 
         public override void Close()
         {
@@ -130,6 +130,16 @@ namespace RESTable
         #endregion
 
         #region async IO
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return await Stream.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
+        {
+            return await Stream.ReadAsync(buffer, cancellationToken);
+        }
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

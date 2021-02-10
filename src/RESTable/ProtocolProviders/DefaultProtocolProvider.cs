@@ -194,21 +194,21 @@ namespace RESTable.ProtocolProviders
         }
 
         /// <inheritdoc />
-        public Task Serialize(IResult result, Stream body, IContentTypeProvider contentTypeProvider)
+        public async Task Serialize(IResult result, Stream body, IContentTypeProvider contentTypeProvider)
         {
             switch (result)
             {
                 case Report report:
-                    contentTypeProvider.SerializeCollection(new[] {report.ReportBody}, body, report.Request);
-                    return Task.CompletedTask;
+                    await contentTypeProvider.SerializeCollection(new[] {report.ReportBody}, body, report.Request);
+                    return;
 
                 case Head head:
                     head.Headers.EntityCount = head.EntityCount.ToString();
-                    return Task.CompletedTask;
+                    return;
 
                 case IEntities<object> entities:
 
-                    var entityCount = contentTypeProvider.SerializeCollection((dynamic) entities, body, entities.Request);
+                    ulong entityCount = await contentTypeProvider.SerializeCollection((dynamic) entities, body, entities.Request);
                     body.Seek(0, SeekOrigin.Begin);
                     entities.Headers.EntityCount = entityCount.ToString();
                     entities.EntityCount = entityCount;
@@ -222,9 +222,8 @@ namespace RESTable.ProtocolProviders
                         entities.Headers.Pager = pager.ToUriString();
                     }
                     entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
-                    return Task.CompletedTask;
+                    return;
             }
-            return Task.CompletedTask;
         }
 
         private static void SetSelector<TRequest, TEntity>(IRequest<TRequest> request, IEntities<TEntity> entities)
