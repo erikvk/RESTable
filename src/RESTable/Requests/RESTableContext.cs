@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using RESTable.Internal;
+using RESTable.Internal.Auth;
 using RESTable.Meta;
 using RESTable.Results;
 using RESTable.WebSockets;
@@ -70,6 +71,34 @@ namespace RESTable.Requests
         /// </summary>
         public Client Client { get; }
 
+        /// <summary>
+        /// Returns true if and only if this client is considered authenticated. This is a necessary precondition for 
+        /// being included in a context. If false, a NotAuthorized result object is returned in the out parameter, that 
+        /// can be returned to the client.
+        /// </summary>
+        /// <param name="uri">The URI of the request</param>
+        /// <param name="headers">The headers of the request</param>
+        /// <param name="error">The error result, if not authenticated</param>
+        /// <returns></returns>
+        public bool TryAuthenticate(ref string uri, out Unauthorized error, Headers headers = null)
+        {
+            Client.AccessRights = RESTableConfig.RequireApiKey switch
+            {
+                true => Authenticator.GetAccessRights(ref uri, headers),
+                false => AccessRights.Root
+            };
+            if (Client.AccessRights == null)
+            {
+                error = new Unauthorized();
+                error.SetContext(this);
+                if (headers?.Metadata == "full")
+                    error.Headers.Metadata = error.Metadata;
+                return false;
+            }
+            error = null;
+            return true;
+        }
+        
         /// <summary>
         /// Creates a request in this context for a resource type, using the given method and optional protocol id and 
         /// view name. If the protocol ID is null, the default protocol will be used. T must be a registered resource type.

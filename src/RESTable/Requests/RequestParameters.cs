@@ -20,7 +20,7 @@ namespace RESTable.Requests
     internal class RequestParameters : ILogable, IHeaderHolder, IProtocolHolder, ITraceable
     {
         /// <inheritdoc />
-        public string TraceId { get; }
+        public string TraceId => Context.InitialTraceId;
 
         /// <inheritdoc /> 
         public RESTableContext Context { get; }
@@ -149,7 +149,6 @@ namespace RESTable.Requests
         /// </summary>
         internal RequestParameters(RESTableContext context, Method method, IResource resource, string protocolIdentifier = null, string viewName = null)
         {
-            TraceId = context.InitialTraceId;
             Context = context;
             Method = method;
             Headers = new Headers();
@@ -165,7 +164,6 @@ namespace RESTable.Requests
         /// </summary>
         internal RequestParameters(RESTableContext context, Method method, string uri, Headers headers)
         {
-            TraceId = context.InitialTraceId;
             Context = context;
             Method = method;
             Headers = headers ?? new Headers();
@@ -229,7 +227,6 @@ namespace RESTable.Requests
         /// </summary>
         internal RequestParameters(RESTableContext context, string uri, Headers headers)
         {
-            TraceId = context.InitialTraceId;
             Context = context;
             Headers = headers ?? new Headers();
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);

@@ -368,7 +368,7 @@ namespace RESTable.WebSockets
         public async Task SendException(Exception exception)
         {
             var error = exception.AsError();
-            error.SetTrace(this);
+            error.SetContext(Context);
             await SendResult(error);
         }
 

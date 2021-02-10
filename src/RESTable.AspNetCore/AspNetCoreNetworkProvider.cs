@@ -40,12 +40,12 @@ namespace RESTable.AspNetCore
                     var (_, uri) = aspNetCoreContext.Request.Path.Value.TSplit(rootUri);
                     var headers = new Headers(aspNetCoreContext.Request.Headers);
                     var client = GetClient(aspNetCoreContext);
-                    if (!client.TryAuthenticate(ref uri, headers, out var forbidden))
+                    var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
+                    if (!context.TryAuthenticate(ref uri, out var notAuthorized, headers))
                     {
-                        await WriteResponse(aspNetCoreContext, await forbidden.Serialize());
+                        await WriteResponse(aspNetCoreContext, await notAuthorized.Serialize());
                         return;
                     }
-                    var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
                     var body = aspNetCoreContext.Request.Body;
                     await using var request = context.CreateRequest(uri, method, body, headers);
                     var result = await request.Evaluate();

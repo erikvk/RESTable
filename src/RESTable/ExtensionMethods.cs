@@ -562,7 +562,7 @@ namespace RESTable
             var error = exception.AsError();
             if (request == null) return error;
             long? errorId = default;
-            error.SetTrace(request);
+            error.SetContext(request.Context);
             error.Request = request;
             if (!(error is Forbidden) && !(request is RemoteRequest) && request.Method >= 0)
             {

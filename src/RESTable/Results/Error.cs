@@ -33,14 +33,13 @@ namespace RESTable.Results
 
         #region ITraceable, ILogable
 
-        internal void SetTrace(ITraceable request)
+        internal void SetContext(RESTableContext context)
         {
-            TraceId = request.TraceId;
-            Context = request.Context;
+            Context = context;
         }
 
         /// <inheritdoc />
-        public string TraceId { get; private set; }
+        public string TraceId => Context?.InitialTraceId;
 
         /// <inheritdoc />
         public RESTableContext Context { get; private set; }

@@ -55,7 +55,7 @@ namespace RESTable
                     case Aggregator aggregator:
                         foreach (var (key, obj) in aggregator.ToList())
                         {
-                            var value = Populator(obj);
+                            var value = await Populator(obj);
                             switch (key)
                             {
                                 case "$add" when IsNumberArray(value, out var terms): return terms.Sum();
@@ -72,9 +72,17 @@ namespace RESTable
                         }
                         return aggregator;
                     case JArray array:
-                        return array.Select(item => item.ToObject<object>()).Select(Populator).ToList();
-                    case JObject jobj:
-                        return Populator(jobj.ToObject<Aggregator>(JsonProvider.Serializer));
+                    {
+                        var list = new List<object>();
+                        foreach (var item in array)
+                        {
+                            var obj = item.ToObject<object>();
+                            var populated = await Populator(obj);
+                            list.Add(populated);
+                        }
+                        return list;
+                    }
+                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(JsonProvider.Serializer));
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
                     {
