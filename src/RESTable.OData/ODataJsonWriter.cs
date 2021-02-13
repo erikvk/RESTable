@@ -15,7 +15,7 @@ namespace RESTable.OData
         private const int BaseIndentation = 1;
         private readonly string NewLine;
         private int CurrentDepth;
-        public ulong ObjectsWritten { get; private set; }
+        public long ObjectsWritten { get; private set; }
 
         public override void WriteStartObject()
         {

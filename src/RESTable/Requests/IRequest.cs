@@ -21,10 +21,9 @@ namespace RESTable.Requests
     internal interface IEntityRequest<T> : IEntityRequest, IRequestInternal, IRequest<T> where T : class
     {
         IEntityResource<T> EntityResource { get; }
-
-        Func<Task<IEnumerable<T>>> EntitiesProducer { get; set; }
-        Func<Task<IEnumerable<T>>> GetSelector();
-        Func<IEnumerable<T>, Task<IEnumerable<T>>> GetUpdater();
+        Func<IAsyncEnumerable<T>> EntitiesProducer { get; set; }
+        Func<IAsyncEnumerable<T>> GetSelector();
+        Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> GetUpdater();
     }
 
     /// <inheritdoc />
@@ -55,21 +54,30 @@ namespace RESTable.Requests
         /// on the request, for example by deserializing input JSON data to this request type. This will run the
         /// entire select query for all entities selected by the request, so it should only be called once.
         /// </summary>
-        Task<IEnumerable<T>> GetInputEntities();
+        IEnumerable<T> GetInputEntities();
+
+        /// <summary>
+        /// Selects, processes and returns the input entities for this request. Use this in Inserters and
+        /// Deleters to receive the entities to insert or delete, and in Updaters to receive and update the
+        /// entities selected by the request. The entities may be generated in various different ways, depending
+        /// on the request, for example by deserializing input JSON data to this request type. This will run the
+        /// entire select query for all entities selected by the request, so it should only be called once.
+        /// </summary>
+        IAsyncEnumerable<T> GetInputEntitiesAsync();
 
         /// <summary>
         /// The method used when selecting entities for request input. Set this property to override the default behavior.
         /// This delegate is used in GetInputEntities(). By default RESTable will generate entities by deserializing the request 
         /// body to an <see cref="IEnumerable{T}"/> using the content type provided in the Content-Type header.
         /// </summary>
-        Func<Task<IEnumerable<T>>> Selector { set; }
+        Func<IAsyncEnumerable<T>> Selector { set; }
 
         /// <summary>
         /// The method used when updating existing entities. Set this property to override the default behavior.
         /// By default RESTable will populate the existing entities with content from the request body, using the 
         /// content type provided in the Content-Type header.
         /// </summary>
-        Func<IEnumerable<T>, Task<IEnumerable<T>>> Updater { set; }
+        Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { set; }
 
         /// <summary>
         /// Evaluates the request synchronously and returns the result as an entity collection. Only valid for GET requests.
@@ -183,7 +191,7 @@ namespace RESTable.Requests
         /// Adds a service object to this request, that is disposed when the
         /// request is disposed.
         /// </summary>
-        void EnsureServiceAttached<TService, TImplementation>(TImplementation service) where TImplementation : class, TService where TService : class; 
+        void EnsureServiceAttached<TService, TImplementation>(TImplementation service) where TImplementation : class, TService where TService : class;
     }
 
     /// <summary>
@@ -191,6 +199,32 @@ namespace RESTable.Requests
     /// </summary>
     public static class ExtensionMethods
     {
+        public static TResult Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, TResult> selector, string message) where TResource : class
+        {
+            try
+            {
+                return selector(request);
+            }
+            catch (Exception e)
+            {
+                message = $"Error in request to resource '{typeof(TResource).GetRESTableTypeName()}': {message}";
+                throw new BadRequest(ErrorCodes.Unknown, message, e);
+            }
+        }
+        
+        public static async Task<TResult> Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, Task<TResult>> selector, string message) where TResource : class
+        {
+            try
+            {
+                return await selector(request);
+            }
+            catch (Exception e)
+            {
+                message = $"Error in request to resource '{typeof(TResource).GetRESTableTypeName()}': {message}";
+                throw new BadRequest(ErrorCodes.Unknown, message, e);
+            }
+        }
+
         /// <summary>
         /// Sets the given method to the request, and returns the request
         /// </summary>
@@ -269,7 +303,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Sets the given selector to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithSelector<T>(this IRequest<T> request, Func<Task<IEnumerable<T>>> selector) where T : class
+        public static IRequest<T> WithSelector<T>(this IRequest<T> request, Func<IAsyncEnumerable<T>> selector) where T : class
         {
             if (request == null) return null;
             request.Selector = selector;
@@ -282,7 +316,7 @@ namespace RESTable.Requests
         public static IRequest<T> WithEntities<T>(this IRequest<T> request, IEnumerable<T> entities) where T : class
         {
             if (request == null) return null;
-            request.Selector = () => Task.FromResult(entities);
+            request.Selector = entities.ToAsyncEnumerable;
             return request;
         }
 
@@ -297,7 +331,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Sets the given selector to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithUpdater<T>(this IRequest<T> request, Func<IEnumerable<T>, Task<IEnumerable<T>>> updater) where T : class
+        public static IRequest<T> WithUpdater<T>(this IRequest<T> request, Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> updater) where T : class
         {
             if (request == null) return null;
             request.Updater = updater;

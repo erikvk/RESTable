@@ -387,15 +387,15 @@ namespace RESTable
 
         #region Filter and Process
 
-        internal static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, IFilter filter) where T : class
+        internal static IAsyncEnumerable<T> Filter<T>(this IAsyncEnumerable<T> entities, IFilter filter) where T : class
         {
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IEnumerable<JObject> Process<T>(this IEnumerable<T> entities, params IProcessor[] processors)
+        internal static IAsyncEnumerable<JObject> Process<T>(this IAsyncEnumerable<T> entities, params IProcessor[] processors)
             where T : class
         {
-            return processors.Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
+            return processors.Aggregate(default(IAsyncEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
         }
 
         #endregion
@@ -589,8 +589,10 @@ namespace RESTable
         /// Generates new UriComponents that encode a request for the next page of entities, calculated from an IEntities entity collection.
         /// The count parameter controls the size of the next page. If omitted, the size is the same as the current page.
         /// </summary>
-        public static IUriComponents GetNextPageLink(this IEntities entities, int count = -1)
+        public static IUriComponents GetNextPageLink(this ISerializedResult serializedEntities, int count = -1)
         {
+            var entities = serializedEntities.Result as IEntities 
+                           ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             if (count > -1)
             {
@@ -599,7 +601,7 @@ namespace RESTable
             }
             components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Offset)));
             var previousOffset = entities.Request.MetaConditions.Offset;
-            var offsetNr = (long) entities.EntityCount + previousOffset.Number;
+            var offsetNr = serializedEntities.EntityCount + previousOffset.Number;
             UriCondition offset;
             if (previousOffset == -1)
                 offset = new UriCondition(RESTableMetaCondition.Offset, "∞");
@@ -614,11 +616,13 @@ namespace RESTable
         /// Generates new UriComponents that encode a request for the previous page of entities, calculated from an IEntities entity collection.
         /// The count parameter controls the size of the next page. If omitted, the size is the same as the current page.
         /// </summary>
-        public static IUriComponents GetPreviousPageLink(this IEntities entities, int count = -1)
+        public static IUriComponents GetPreviousPageLink(this ISerializedResult serializedEntities, int count = -1)
         {
+            var entities = serializedEntities.Result as IEntities 
+                           ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             var previousOffset = entities.Request.MetaConditions.Offset;
-            var pageSize = (long) entities.EntityCount;
+            var pageSize = serializedEntities.EntityCount;
             if (count > -1)
             {
                 components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Limit)));
@@ -643,13 +647,15 @@ namespace RESTable
             components.MetaConditions.Add(offset);
             return components;
         }
-
+        
         /// <summary>
         /// Generates new UriComponents that encode a request for the first number of entities, calculated from an IEntities entity collection.
         /// The count parameter controls how many entities are selected. If omitted, one entity is selected.
         /// </summary>
-        public static IUriComponents GetFirstLink(this IEntities entities, int count = 1)
+        public static IUriComponents GetFirstLink(this ISerializedResult serializedEntities, int count = 1)
         {
+            var entities = serializedEntities.Result as IEntities 
+                           ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
             components.MetaConditions.Add(new UriCondition(RESTableMetaCondition.Limit, count.ToString()));
@@ -660,8 +666,10 @@ namespace RESTable
         /// Generates new UriComponents that encode a request for the last number of entities, calculated from an IEntities entity collection.
         /// The count parameter controls how many entities are selected. If omitted, one entity is selected.
         /// </summary>
-        public static IUriComponents GetLastLink(this IEntities entities, int count = 1)
+        public static IUriComponents GetLastLink(this ISerializedResult serializedEntities, int count = 1)
         {
+            var entities = serializedEntities.Result as IEntities 
+                           ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
             components.MetaConditions.Add(new UriCondition(RESTableMetaCondition.Offset, (-count).ToString()));
@@ -672,8 +680,10 @@ namespace RESTable
         /// <summary>
         /// Generates new UriComponents that encode a request for all entities in a resource, calculated from an IEntities entity collection.
         /// </summary>
-        public static IUriComponents GetAllLink(this IEntities entities)
+        public static IUriComponents GetAllLink(this ISerializedResult serializedEntities)
         {
+            var entities = serializedEntities.Result as IEntities 
+                           ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
             return components;

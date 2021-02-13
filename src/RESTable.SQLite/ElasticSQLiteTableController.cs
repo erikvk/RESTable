@@ -41,20 +41,13 @@ namespace RESTable.SQLite
         public string[] DroppedColumns { get; set; }
 
         /// <inheritdoc />
-        public virtual Task<IEnumerable<TController>> SelectAsync(IRequest<TController> request) => Task.FromResult(Select());
+        public virtual IAsyncEnumerable<TController> SelectAsync(IRequest<TController> request) => Select().ToAsyncEnumerable();
 
         /// <inheritdoc />
-        public virtual async Task<int> UpdateAsync(IRequest<TController> request)
-        {
-            var inputEntities = await request.GetInputEntities();
-            var count = 0;
-            foreach (var entity in inputEntities)
-            {
-                if (await entity.Update())
-                    count += 1;
-            }
-            return count;
-        }
+        public virtual async Task<int> UpdateAsync(IRequest<TController> request) => await request
+            .GetInputEntitiesAsync()
+            .WhereAwait(async entity => await entity.Update())
+            .CountAsync();
 
         protected ElasticSQLiteTableController() { }
 

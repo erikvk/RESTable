@@ -103,7 +103,7 @@ namespace RESTable.Requests
                     {
                         case nameof(Entities<object>) when ulong.TryParse(responseHeaders.EntityCount, out var count):
                         {
-                            var entitiesResult = new RemoteEntities(this, count);
+                            var entitiesResult = new RemoteEntities(this);
                             using var responseStream = response.Content;
                             if (responseStream != null)
                                 await response.Content.CopyToAsync(entitiesResult.SerializedResult.Body);

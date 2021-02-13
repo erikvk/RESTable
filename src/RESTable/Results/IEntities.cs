@@ -10,19 +10,8 @@ namespace RESTable.Results
     /// <summary>
     /// A non-generic interface for a collection of result entities from a RESTable request
     /// </summary>
-    public interface IEntities : IEnumerable, IResult
+    public interface IEntities : IResult
     {
-        /// <summary>
-        /// The number of entities in the collection. Should be set by the serializer, since it is unknown
-        /// until the collection is iterated.
-        /// </summary>
-        ulong EntityCount { get; set; }
-
-        /// <summary>
-        /// Is this result paged?
-        /// </summary>
-        bool IsPaged { get; }
-
         /// <summary>
         /// Helper method for setting the Content-Disposition headers of the result to an appropriate file
         /// attachment. 
@@ -42,7 +31,7 @@ namespace RESTable.Results
     /// A generic interface for a collection of result entities from a RESTable request
     /// </summary>
     /// <typeparam name="T">The entity type contained in the entity collection</typeparam>
-    public interface IEntities<out T> : IEntities, IEnumerable<T> where T : class
+    public interface IEntities<out T> : IEntities, IAsyncEnumerable<T> where T : class
     {
         /// <summary>
         /// Marks this result as 204 NoContent

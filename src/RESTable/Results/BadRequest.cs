@@ -4,7 +4,7 @@ using System.Net;
 namespace RESTable.Results
 {
     /// <inheritdoc />
-    public abstract class BadRequest : Error
+    public class BadRequest : Error
     {
         /// <inheritdoc />
         public BadRequest(ErrorCodes code, string info, Exception ie = null) : base(code, info, ie)

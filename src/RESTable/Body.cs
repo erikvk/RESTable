@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
+using RESTable.Linq;
 using RESTable.Resources.Operations;
 using RESTable.Results;
 
@@ -39,15 +40,15 @@ namespace RESTable
         /// provider assigned to the request or response that this body belongs to.
         /// </summary>
         /// <param name="result"></param>
-        public async Task Serialize(IResult result)
+        public async Task Serialize(ISerializedResult result)
         {
-            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.Serialize(result, this, ContentTypeProvider);
+            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.Serialize(result, ContentTypeProvider);
         }
 
         /// <summary>
         /// Deserializes the body to an IEnumerable of entities of the given type
         /// </summary>
-        public IEnumerable<T> Deserialize<T>()
+        public IAsyncEnumerable<T> Deserialize<T>()
         {
             if (!HasContent) return null;
             try
@@ -65,7 +66,7 @@ namespace RESTable
         /// Populates the body onto each entity in a source collection. If the body is empty,
         /// returns null.
         /// </summary>
-        public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class
+        public IAsyncEnumerable<T> PopulateTo<T>(IAsyncEnumerable<T> source) where T : class
         {
             if (source == null || !HasContent) return null;
             try
@@ -100,10 +101,10 @@ namespace RESTable
         {
             ProtocolHolder = protocolHolder;
             IsIngoing = true;
-            Stream = ResolveStream(bodyObject);
+            Stream = ResolveStream(bodyObject).Result;
         }
 
-        private SwappingStream ResolveStream(object content)
+        private async Task<SwappingStream> ResolveStream(object content)
         {
             switch (content)
             {
@@ -126,16 +127,19 @@ namespace RESTable
             {
                 case IDictionary<string, object> _:
                 case JObject _:
-                    contentTypeProvider.SerializeCollection(new[] {content}, stream);
+                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), stream);
+                    break;
+                case IAsyncEnumerable<object> aie:
+                    await contentTypeProvider.SerializeCollection(aie, stream);
                     break;
                 case IEnumerable<object> ie:
-                    contentTypeProvider.SerializeCollection(ie, stream);
+                    await contentTypeProvider.SerializeCollection(ie.ToAsyncEnumerable(), stream);
                     break;
                 case IEnumerable ie:
-                    contentTypeProvider.SerializeCollection(ie.Cast<object>(), stream);
+                    await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), stream);
                     break;
                 default:
-                    contentTypeProvider.SerializeCollection(new[] {content}, stream);
+                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), stream);
                     break;
             }
             return stream.Rewind();

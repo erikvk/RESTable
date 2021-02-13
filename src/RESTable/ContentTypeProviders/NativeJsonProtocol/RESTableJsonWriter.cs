@@ -11,7 +11,7 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
         private readonly string NewLine;
         private int BaseIndentation;
         private int CurrentDepth;
-        public ulong ObjectsWritten { get; private set; }
+        public long ObjectsWritten { get; private set; }
 
         public override void WriteStartObject()
         {

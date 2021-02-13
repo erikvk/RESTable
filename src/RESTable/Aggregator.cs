@@ -46,7 +46,7 @@ namespace RESTable
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
 
         /// <inheritdoc />
-        public async Task<IEnumerable<Aggregator>> SelectAsync(IRequest<Aggregator> request)
+        public async IAsyncEnumerable<Aggregator> SelectAsync(IRequest<Aggregator> request)
         {
             async Task<object> Populator(object node)
             {
@@ -122,13 +122,16 @@ namespace RESTable
                 }
             }
 
-            var template = request.Body.Deserialize<Aggregator>().FirstOrDefault()
-                           ?? throw new Exception("Missing data source for Aggregator request");
-            return await Populator(template) switch
+            var template = await request.Expecting
+            (
+                selector: async r => await r.Body.Deserialize<Aggregator>().FirstAsync(),
+                message: "Expected an aggregator template as request body"
+            );
+            yield return await Populator(template) switch
             {
-                Aggregator aggregator => new[] {aggregator},
-                long integer => new[] {new Aggregator {["Result"] = integer}},
-                var other => throw new InvalidOperationException($"An error occured when reading the request template, the root object was resolved to {other?.GetType().FullName ?? "null"}")
+                Aggregator aggregator => aggregator,
+                long integer => new Aggregator {["Result"] = integer},
+                var other => throw new InvalidOperationException($"An error occured when reading the request template, the root object was resolved to {other.GetType().FullName}")
             };
         }
 

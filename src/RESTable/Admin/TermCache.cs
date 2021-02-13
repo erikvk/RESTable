@@ -44,7 +44,7 @@ namespace RESTable.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            request.GetInputEntities().Result.ForEach(e =>
+            request.GetInputEntities().ForEach(e =>
             {
                 TypeCache.TermCache
                     .Where(pair => pair.Key.Type == e.Type)

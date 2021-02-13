@@ -17,20 +17,27 @@ namespace RESTable
     /// request conditions as an object.
     /// </summary>
     [RESTable(GET, AllowDynamicConditions = true, Description = description)]
-    public class Echo : JObject, ISelector<Echo>
+    public class Echo : JObject, IAsyncSelector<Echo>
     {
         private const string description = "The Echo resource is a test and utility entity resource that " +
                                            "returns the request conditions as an entity.";
-        
+
         private Echo(object thing) : base(thing) { }
 
         /// <inheritdoc />
-        public IEnumerable<Echo> Select(IRequest<Echo> request)
+        public async IAsyncEnumerable<Echo> SelectAsync(IRequest<Echo> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var members = request.Conditions.Select(c => new JProperty(c.Key, c.Value));
+            var members = request.Conditions
+                .Select(c => new JProperty(c.Key, c.Value))
+                .ToHashSet(EqualityComparer);
             var body = request.Body.Deserialize<JObject>();
-            if (body != null) members = members.Union<JProperty>(body.SelectMany(item => item.Properties()), EqualityComparer);
+            if (body != null)
+            {
+                await foreach (var item in body)
+                foreach (var property in item.Properties())
+                    members.Add(property);
+            }
             var echo = new Echo(members);
             request.Conditions.Clear();
             TypeCache.ClearTermsFor<Echo>();

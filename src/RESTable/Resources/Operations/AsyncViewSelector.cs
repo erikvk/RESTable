@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
@@ -10,5 +9,5 @@ namespace RESTable.Resources.Operations
     /// and returns them.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    internal delegate Task<IEnumerable<T>> AsyncViewSelector<T>(IRequest<T> request) where T : class;
+    internal delegate IAsyncEnumerable<T> AsyncViewSelector<T>(IRequest<T> request) where T : class;
 }

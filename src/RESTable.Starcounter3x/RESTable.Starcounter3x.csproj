@@ -7,10 +7,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RESTable\RESTable.csproj"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0"/>
-        <PackageReference Include="Starcounter.Database.Abstractions" Version="3.0.0-*"/>
-        <PackageReference Include="Starcounter.Database.Data" Version="3.0.0-*"/>
+        <ProjectReference Include="..\RESTable\RESTable.csproj" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
+        <PackageReference Include="Starcounter.Database.Abstractions" Version="3.0.0" />
+        <PackageReference Include="Starcounter.Database.Data" Version="3.0.0" />
     </ItemGroup>
 
 </Project>

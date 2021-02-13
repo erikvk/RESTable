@@ -35,7 +35,7 @@ namespace RESTable.Resources.Templates
 
         int IUpdater<T>.Update(IRequest<T> request)
         {
-            return request.GetInputEntities().Result.Count();
+            return request.GetInputEntities().Count();
         }
     }
 }

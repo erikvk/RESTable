@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -122,11 +123,8 @@ namespace RESTable.Admin
                     $"Invalid call to DatabaseIndex.Register() with index name '{indexName}' for type '{typeof(T)}'. " +
                     "Cannot register database indexes before RESTableConfig.Init() has been called.");
             SelectionCondition.Value = indexName;
-            SelectionRequest.Selector = () =>
-            {
-                var entities = new[] {new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}};
-                return Task.FromResult<IEnumerable<DatabaseIndex>>(entities);
-            };
+
+            SelectionRequest.Selector = () => new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}.ToAsyncSingleton();
             var result = await SelectionRequest.Evaluate();
             result.ThrowIfError();
         }
@@ -170,30 +168,28 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<DatabaseIndex>> SelectAsync(IRequest<DatabaseIndex> request)
+        public async IAsyncEnumerable<DatabaseIndex> SelectAsync(IRequest<DatabaseIndex> request)
         {
-            var indexes = new List<DatabaseIndex>();
             foreach (var indexer in EntityResourceProviders
                 .Values
                 .Select(p => p.DatabaseIndexer)
                 .Where(indexer => indexer != null)
                 .Distinct())
-            foreach (var index in await indexer.SelectAsync(request))
-                indexes.Add(index);
-            return indexes;
+            await foreach (var index in indexer.SelectAsync(request))
+                yield return index;
         }
 
         /// <inheritdoc />
         public async Task<int> InsertAsync(IRequest<DatabaseIndex> request)
         {
             var count = 0;
-            var entities = await request.GetInputEntities();
+            var entities = request.GetInputEntitiesAsync();
             if (entities == null) return 0;
-            foreach (var group in entities.GroupBy(index => index.Resource.Provider))
+            await foreach (var group in entities.GroupBy(index => index.Resource.Provider))
             {
                 if (!EntityResourceProviders.TryGetValue(@group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
-                    throw new Exception($"Unable to register index. Resource '{@group.First().Resource.Name}' is not a database resource.");
-                request.Selector = () => Task.FromResult<IEnumerable<DatabaseIndex>>(@group);
+                    throw new Exception($"Unable to register index. Resource '{(await group.FirstAsync()).Resource.Name}' is not a database resource.");
+                request.Selector = () => group;
                 count += await indexer.InsertAsync(request);
             }
             return count;
@@ -203,10 +199,10 @@ namespace RESTable.Admin
         public async Task<int> UpdateAsync(IRequest<DatabaseIndex> request)
         {
             var count = 0;
-            var entities = await request.GetInputEntities();
-            foreach (var group in entities.GroupBy(index => index.Resource.Provider))
+            var entities = request.GetInputEntitiesAsync();
+            await foreach (var group in entities.GroupBy(index => index.Resource.Provider))
             {
-                request.Updater = _ => Task.FromResult<IEnumerable<DatabaseIndex>>(@group);
+                request.Updater = _ => group;
                 count += await EntityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request);
             }
             return count;
@@ -216,10 +212,10 @@ namespace RESTable.Admin
         public async Task<int> DeleteAsync(IRequest<DatabaseIndex> request)
         {
             var count = 0;
-            var entities = await request.GetInputEntities();
-            foreach (var group in entities.GroupBy(index => index.Resource.Provider))
+            var entities = request.GetInputEntitiesAsync();
+            await foreach (var group in entities.GroupBy(index => index.Resource.Provider))
             {
-                request.Selector = () => Task.FromResult<IEnumerable<DatabaseIndex>>(@group);
+                request.Selector = () => group;
                 count += await EntityResourceProviders[@group.Key].DatabaseIndexer.DeleteAsync(request);
             }
             return count;

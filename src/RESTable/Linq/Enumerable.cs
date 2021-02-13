@@ -10,6 +10,8 @@ namespace RESTable.Linq
     /// </summary>
     public static class Enumerable
     {
+        public static IAsyncEnumerable<T> ToAsyncSingleton<T>(this T item) => AsyncEnumerable.Repeat(item, 1);
+
         /// <summary>
         /// Generates an IEnumerable of string using the selector function applied to the source IEnumerable, 
         /// and then joins those strings using the separator.
@@ -256,15 +258,15 @@ namespace RESTable.Linq
             return (trues, falses);
         }
 
-        internal static IEnumerable<T> UnsafeLimit<T>(this IEnumerable<T> source, bool limit = true)
+        internal static IAsyncEnumerable<T> UnsafeLimit<T>(this IAsyncEnumerable<T> source, bool limit = true)
         {
             if (!limit) return source;
             if (source == null) return null;
 
-            IEnumerable<T> apply()
+            async IAsyncEnumerable<T> apply()
             {
                 var i = 1;
-                foreach (var entity in source)
+                await foreach (var entity in source)
                 {
                     if (i > 1) throw new AmbiguousMatch();
                     i += 1;
@@ -275,15 +277,15 @@ namespace RESTable.Linq
             return apply();
         }
 
-        internal static IEnumerable<T> InputLimit<T>(this IEnumerable<T> source, bool limit = true)
+        internal static IAsyncEnumerable<T> InputLimit<T>(this IAsyncEnumerable<T> source, bool limit = true)
         {
             if (!limit) return source;
             if (source == null) return null;
 
-            IEnumerable<T> apply()
+            async IAsyncEnumerable<T> apply()
             {
                 var i = 1;
-                foreach (var entity in source)
+                await foreach (var entity in source)
                 {
                     if (i > 1) throw new InvalidInputCount();
                     i += 1;

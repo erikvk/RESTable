@@ -47,7 +47,7 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public async Task<ulong> SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null)
+        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> entities, Stream stream, IRequest request = null)
         {
             var count = await JsonProvider.SerializeCollection(entities, stream, request);
             stream.Seek(0, SeekOrigin.Begin);
@@ -66,9 +66,9 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public IEnumerable<T> DeserializeCollection<T>(Stream body) => throw new NotImplementedException();
+        public IAsyncEnumerable<T> DeserializeCollection<T>(Stream body) => throw new NotImplementedException();
 
         /// <inheritdoc />
-        public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) => throw new NotImplementedException();
+        public IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body) => throw new NotImplementedException();
     }
 }

@@ -24,10 +24,6 @@ namespace RESTable.Resources
     public abstract class ResourceController<TController, TProvider> :
         Resource,
         ISelector<TController>,
-        IInserter<TController>,
-        IUpdater<TController>,
-        IDeleter<TController>,
-        IAsyncSelector<TController>,
         IAsyncInserter<TController>,
         IAsyncUpdater<TController>,
         IAsyncDeleter<TController>
@@ -127,48 +123,10 @@ namespace RESTable.Resources
         /// <inheritdoc />
         public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select();
 
-        /// <inheritdoc />
-        public virtual int Insert(IRequest<TController> request)
-        {
-            var i = 0;
-            foreach (var resource in request.GetInputEntities().Result)
-            {
-                resource.Insert();
-                i += 1;
-            }
-            return i;
-        }
-
-        /// <inheritdoc />
-        public virtual int Update(IRequest<TController> request)
-        {
-            var i = 0;
-            foreach (var resource in request.GetInputEntities().Result)
-            {
-                resource.Update();
-                i += 1;
-            }
-            return i;
-        }
-
-        /// <inheritdoc />
-        public virtual int Delete(IRequest<TController> request)
-        {
-            var i = 0;
-            foreach (var resource in request.GetInputEntities().Result)
-            {
-                resource.Delete();
-                i += 1;
-            }
-            return i;
-        }
-
-        public virtual Task<IEnumerable<TController>> SelectAsync(IRequest<TController> request) => Task.FromResult(Select());
-
         public virtual async Task<int> InsertAsync(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in await request.GetInputEntities())
+            await foreach (var resource in request.GetInputEntitiesAsync())
             {
                 resource.Insert();
                 i += 1;
@@ -179,7 +137,7 @@ namespace RESTable.Resources
         public virtual async Task<int> UpdateAsync(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in await request.GetInputEntities())
+            await foreach (var resource in request.GetInputEntitiesAsync())
             {
                 resource.Update();
                 i += 1;
@@ -190,7 +148,7 @@ namespace RESTable.Resources
         public virtual async Task<int> DeleteAsync(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in await request.GetInputEntities())
+            await foreach (var resource in request.GetInputEntitiesAsync())
             {
                 resource.Delete();
                 i += 1;

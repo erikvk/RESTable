@@ -13,11 +13,13 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
     {
         private static readonly JsonConverter StringEnumConverter;
         private static readonly JsonConverter TypeConverter;
+        private static readonly JsonConverter AsyncEnumerableConverter;
 
         static DefaultResolver()
         {
             StringEnumConverter = new StringEnumConverter();
             TypeConverter = new TypeConverter();
+            AsyncEnumerableConverter = new AsyncEnumerableConverter();
         }
 
         protected override string ResolveDictionaryKey(string dictionaryKey)
@@ -40,6 +42,9 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
                     break;
                 case var _ when objectType.IsEnum:
                     contract.Converter = StringEnumConverter;
+                    break;
+                case var _ when objectType.ImplementsGenericInterface(typeof(IAsyncEnumerable<>)):
+                    contract.Converter = AsyncEnumerableConverter;
                     break;
             }
             if (entityTypeContract.CustomCreator != null)

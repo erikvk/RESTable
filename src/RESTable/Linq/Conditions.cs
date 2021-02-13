@@ -16,7 +16,7 @@ namespace RESTable.Linq
         /// Filters an IEnumerable of resource entities and returns all entities x such that all the 
         /// conditions are true of x.
         /// </summary>
-        public static IEnumerable<T> Where<T>(this IEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
+        public static IAsyncEnumerable<T> Where<T>(this IAsyncEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
             where T : class
         {
             if (conditions == null) return entities;

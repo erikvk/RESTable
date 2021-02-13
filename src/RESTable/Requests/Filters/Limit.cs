@@ -34,7 +34,7 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Applies the limiting to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T: class => Number > -1 ? entities.Take((int) Number) : entities;
+        public IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class => Number > -1 ? entities.Take((int) Number) : entities;
     }
 
     /// <inheritdoc cref="IFilter" />
@@ -63,33 +63,52 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Applies the offset to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T : class
+        public async IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
         {
             switch ((int) Number)
             {
                 case int.MaxValue:
-                case int.MinValue: return new T[0];
-                case 0: return entities;
-                case var positive when positive > 0: return entities.Skip(positive);
-                case var negative: return NegativeSkip(entities, -negative);
+                case int.MinValue:
+                {
+                    yield break;
+                }
+                case 0:
+                {
+                    await foreach (var item in entities)
+                        yield return item;
+                    yield break;
+                }
+                case var positive when positive > 0:
+                {
+                    await foreach (var item in entities.Skip(positive))
+                        yield return item;
+                    yield break;
+                }
+                case var negative:
+                {
+                    await foreach (var item in NegativeSkip(entities, -negative))
+                        yield return item;
+                    yield break;
+                }
             }
         }
 
         /// <summary>
         /// Returns the last items in the IEnumerable (with just one pass over the IEnumerable)
         /// </summary>
-        private static IEnumerable<T> NegativeSkip<T>(IEnumerable<T> source, int count)
+        private static async IAsyncEnumerable<T> NegativeSkip<T>(IAsyncEnumerable<T> source, int count)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
             var queue = new Queue<T>(count);
-            foreach (var element in source)
+            await foreach (var element in source)
             {
                 queue.Enqueue(element);
                 if (queue.Count > count)
                     queue.Dequeue();
             }
-            return queue;
+            foreach (var item in queue)
+                yield return item;
         }
     }
 }

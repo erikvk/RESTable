@@ -99,20 +99,17 @@ namespace RESTable.SQLite.Example
         /// This method returns an IEnumerable of the resource type. RESTable will call this 
         /// on GET requests and send the results back to the client as e.g. JSON.
         /// </summary>
-        public async Task<IEnumerable<SuperheroReport>> SelectAsync(IRequest<SuperheroReport> request)
+        public async IAsyncEnumerable<SuperheroReport> SelectAsync(IRequest<SuperheroReport> request)
         {
-            var superHeroesOrdered = SQLite<Superhero>
+            var superHeroesOrdered = await SQLite<Superhero>
                 .Select()
                 .OrderBy(r => r.RowId)
-                .ToList();
-            return new[]
+                .ToListAsync();
+            yield return new SuperheroReport
             {
-                new SuperheroReport
-                {
-                    NumberOfSuperheroes = await SQLite<Superhero>.Count(),
-                    FirstSuperheroInserted = superHeroesOrdered.FirstOrDefault(),
-                    LastSuperheroInserted = superHeroesOrdered.LastOrDefault(),
-                }
+                NumberOfSuperheroes = await SQLite<Superhero>.Count(),
+                FirstSuperheroInserted = superHeroesOrdered.FirstOrDefault(),
+                LastSuperheroInserted = superHeroesOrdered.LastOrDefault(),
             };
         }
     }

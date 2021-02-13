@@ -5,6 +5,6 @@ namespace RESTable.Requests.Processors
 {
     internal interface IProcessor
     {
-        IEnumerable<JObject> Apply<T>(IEnumerable<T> entities);
+        IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities);
     }
 }

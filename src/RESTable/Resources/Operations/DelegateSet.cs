@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Results;
@@ -15,13 +16,13 @@ namespace RESTable.Resources.Operations
         bool CanDelete { get; }
         bool CanCount { get; }
 
-        Task<IEnumerable<TResource>> SelectAsync(IRequest<TResource> request);
+        IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request);
         Task<int> InsertAsync(IRequest<TResource> request);
         Task<int> UpdateAsync(IRequest<TResource> request);
         Task<int> DeleteAsync(IRequest<TResource> request);
         ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request);
         Task<long> CountAsync(IRequest<TResource> request);
-        IEnumerable<TResource> Validate(IEnumerable<TResource> entities);
+        IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities);
     }
 
     internal class DelegateSet<TResource> : IEntityResourceOperationDefinition<TResource> where TResource : class
@@ -51,23 +52,36 @@ namespace RESTable.Resources.Operations
         public bool CanDelete => AsyncDeleter != null;
         public bool CanCount => AsyncCounter != null;
 
-        public Task<IEnumerable<TResource>> SelectAsync(IRequest<TResource> request) => AsyncSelector(request);
+        public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request) => AsyncSelector(request);
         public Task<int> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);
         public Task<int> UpdateAsync(IRequest<TResource> request) => AsyncUpdater(request);
         public Task<int> DeleteAsync(IRequest<TResource> request) => AsyncDeleter(request);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request) => AsyncAuthenticator(request);
         public Task<long> CountAsync(IRequest<TResource> request) => AsyncCounter(request);
 
-        public IEnumerable<TResource> Validate(IEnumerable<TResource> entities)
+        public IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities)
         {
-            if (entities == null) yield break;
-            foreach (var item in entities)
+            if (entities == null) return AsyncEnumerable.Empty<TResource>();
+            if (Validator == null) return entities;
+            return entities.Select(item =>
             {
                 if (!Validator(item, out var invalidReason))
                     throw new FailedValidation(invalidReason);
+                return item;
+            });
+        }
+
+#pragma warning disable 1998
+
+        private static async IAsyncEnumerable<TResource> CallAsync(IEnumerable<TResource> entities)
+        {
+            foreach (var item in entities)
+            {
                 yield return item;
             }
         }
+
+#pragma warning restore 1998
 
         /// <summary>
         /// Transforms synchronous delegates to async where null
@@ -75,7 +89,7 @@ namespace RESTable.Resources.Operations
         internal DelegateSet<TResource> SetAsyncDelegatesToSyncWhereNull()
         {
             if (AsyncSelector == null && SyncSelector is Selector<TResource> selector)
-                AsyncSelector = request => Task.FromResult(selector(request));
+                AsyncSelector = request => CallAsync(selector(request));
             if (AsyncInserter == null && SyncInserter is Inserter<TResource> inserter)
                 AsyncInserter = request => Task.FromResult(inserter(request));
             if (AsyncUpdater == null && SyncUpdater is Updater<TResource> updater)

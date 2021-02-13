@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
@@ -35,7 +34,7 @@ namespace RESTable.Meta.Internal
 
         private Constructor<ITerminal> Constructor { get; }
 
-        public Task<IEnumerable<T>> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
+        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
 
         internal ITerminal MakeTerminal(IEnumerable<Condition<T>> assignments = null)
         {

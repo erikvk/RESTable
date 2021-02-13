@@ -16,7 +16,7 @@ namespace RESTable.ContentTypeProviders
     /// </summary>
     public abstract class JsonAdapter : IContentTypeProvider
     {
-        private readonly JsonProvider JsonProvider = new JsonProvider();
+        private readonly JsonProvider JsonProvider = new();
 
         /// <summary>
         /// The RESTable default UTF8 encoding. An UTF8 encoding without BOM.
@@ -48,19 +48,19 @@ namespace RESTable.ContentTypeProviders
         /// Include true in the isSingularEntity property when the produced JSON encodes a single 
         /// entity (as opposed to an array of entities).
         /// </summary>
-        protected abstract void ProduceJsonArray(Stream inputStream, Stream outputStream);
+        protected abstract Task ProduceJsonArray(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
-        public abstract Task<ulong> SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null);
+        public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> entities, Stream stream, IRequest request = null);
 
         /// <inheritdoc />
-        public IEnumerable<T> DeserializeCollection<T>(Stream stream)
+        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream)
         {
-            using var jsonStream = new SwappingStream();
+            await using var jsonStream = new SwappingStream();
             try
             {
-                ProduceJsonArray(stream, jsonStream);
-                foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()))
+                await ProduceJsonArray(stream, jsonStream);
+                await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()))
                     yield return item;
             }
             finally
@@ -70,14 +70,17 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body)
+        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body)
         {
-            using var jsonStream = new SwappingStream();
-            using var populateStream = new MemoryStream(body);
+            await using var jsonStream = new SwappingStream();
+            await using var populateStream = new MemoryStream(body);
             try
             {
-                ProduceJsonArray(populateStream, jsonStream);
-                return JsonProvider.Populate(entities, jsonStream.GetBytes());
+                await ProduceJsonArray(populateStream, jsonStream);
+                await foreach(var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()))
+                {
+                    yield return item;
+                }
             }
             finally
             {

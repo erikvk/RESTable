@@ -171,10 +171,10 @@ namespace RESTable.ContentTypeProviders
         public string ContentDispositionFileExtension { get; }
 
         /// <inheritdoc />
-        public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body)
+        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body)
         {
             var json = Encoding.UTF8.GetString(body);
-            foreach (var entity in entities)
+            await foreach (var entity in entities)
             {
                 JsonConvert.PopulateObject(json, entity, Settings);
                 yield return entity;
@@ -185,21 +185,37 @@ namespace RESTable.ContentTypeProviders
         public string[] MatchStrings { get; set; }
 
         /// <inheritdoc />
-        public async Task<ulong> SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null)
+        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> entities, Stream stream, IRequest request = null)
         {
             if (entities == null) return 0;
-            await using var swr = new StreamWriter(stream, UTF8, 2048, true);
-            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = _PrettyPrint ? Indented : None};
+            await using var swr = new StreamWriter
+            (
+                stream: stream,
+                encoding: UTF8,
+                bufferSize: 2048,
+                leaveOpen: true
+            );
+            using var jwr = new RESTableJsonWriter(swr, 0)
+            {
+                Formatting = _PrettyPrint ? Indented : None
+            };
             Serializer.Serialize(jwr, entities);
             return jwr.ObjectsWritten;
         }
 
         /// <inheritdoc />
-        public IEnumerable<T> DeserializeCollection<T>(Stream body)
+        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream body)
         {
-            using var streamReader = new StreamReader(body, UTF8, false, 1024, true);
+            using var streamReader = new StreamReader
+            (
+                stream: body,
+                encoding: UTF8,
+                detectEncodingFromByteOrderMarks: false,
+                bufferSize: 1024,
+                leaveOpen: true
+            );
             using var jsonReader = new JsonTextReader(streamReader);
-            jsonReader.ReadAsync().Wait();
+            await jsonReader.ReadAsync();
             switch (jsonReader.TokenType)
             {
                 case JsonToken.None: yield break;
@@ -207,11 +223,11 @@ namespace RESTable.ContentTypeProviders
                     yield return Serializer.Deserialize<T>(jsonReader);
                     break;
                 case JsonToken.StartArray:
-                    jsonReader.ReadAsync().Wait();
+                    await jsonReader.ReadAsync();
                     while (jsonReader.TokenType != JsonToken.EndArray)
                     {
                         yield return Serializer.Deserialize<T>(jsonReader);
-                        jsonReader.ReadAsync().Wait();
+                        await jsonReader.ReadAsync();
                     }
                     break;
                 case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");

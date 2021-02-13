@@ -38,16 +38,10 @@ namespace RESTable
         private string previousQuery;
         private bool _autoGet;
         private int streamBufferSize;
-        private IEntities _previousEntities;
         private bool _autoOptions;
         private string _protocol;
 
-        private IEntities GetPreviousEntities() => _previousEntities;
-
-        private void SetPreviousEntities(IEntities value)
-        {
-            _previousEntities = value;
-        }
+        private ISerializedResult PreviousEntities { get; set; }
 
         /// <summary>
         /// Signals that there are changes to the query that have been made pre evaluation
@@ -60,7 +54,7 @@ namespace RESTable
         {
             streamBufferSize = MaxStreamBufferSize;
             Unsafe = false;
-            SetPreviousEntities(null);
+            PreviousEntities = null;
             query = "";
             previousQuery = "";
             WriteHeaders = false;
@@ -221,7 +215,7 @@ namespace RESTable
                 Query = input;
             var (valid, resource) = await ValidateQuery();
             if (!valid) return;
-            SetPreviousEntities(null);
+            PreviousEntities = null;
             if (AutoOptions) await SendOptions(resource);
             else if (AutoGet) await SafeOperation(GET);
             else await SendQuery();
@@ -499,19 +493,19 @@ namespace RESTable
 
         private async Task SendHeaders() => await WebSocket.SendJson(new {WebSocket.Headers});
 
-        private async Task Permute(Func<IEntities, IUriComponents> permuter)
+        private async Task Permute(Func<ISerializedResult, IUriComponents> permuter)
         {
             var stopwatch = Stopwatch.StartNew();
-            if (GetPreviousEntities() == null)
+            if (PreviousEntities == null)
             {
                 await WsGetPreliminary();
-                if (GetPreviousEntities() == null)
+                if (PreviousEntities == null)
                 {
                     await SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
                     return;
                 }
             }
-            var link = permuter(GetPreviousEntities());
+            var link = permuter(PreviousEntities);
             await Navigate(link.ToString());
         }
 
@@ -528,11 +522,12 @@ namespace RESTable
                     break;
                 case IEntities entities:
                     query = local;
-                    SetPreviousEntities(entities);
+                    var serialized = await entities.Serialize();
+                    PreviousEntities = serialized;
                     break;
                 case Change _:
                     query = local;
-                    SetPreviousEntities(null);
+                    PreviousEntities = null;
                     break;
                 default:
                     query = local;
@@ -548,6 +543,7 @@ namespace RESTable
             var local = Query;
             await using var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers);
             var result = await request.Evaluate();
+
             switch (result)
             {
                 case Results.Error _ when queryChangedPreEval:
@@ -555,11 +551,12 @@ namespace RESTable
                     break;
                 case IEntities entities:
                     query = local;
-                    SetPreviousEntities(entities);
+                    var serialized = await entities.Serialize();
+                    PreviousEntities = serialized;
                     break;
                 case Change _:
                     query = local;
-                    SetPreviousEntities(null);
+                    PreviousEntities = null;
                     break;
                 default:
                     query = local;
@@ -634,19 +631,20 @@ namespace RESTable
                 await SafeOperation(method, body);
             }
 
-            if (GetPreviousEntities() == null)
+            if (PreviousEntities == null)
             {
                 var result = await WsEvaluate(GET, null);
-                if (result is IEntities entities)
-                    SetPreviousEntities(entities);
+                var serialized = await result.Serialize();
+                if (result is IEntities)
+                    PreviousEntities = serialized;
                 else
                 {
-                    await SendSerializedResult(await result.Serialize());
+                    await SendSerializedResult(serialized);
                     return;
                 }
             }
 
-            switch (GetPreviousEntities().EntityCount)
+            switch (PreviousEntities.EntityCount)
             {
                 case 0:
                     await SendBadRequest($". No entities for to run {method} on");
@@ -662,7 +660,7 @@ namespace RESTable
                     }
                     OnConfirm = runOperation;
                     await SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
-                                                  $"'{GetPreviousEntities().Request.Resource}'. ");
+                                                  $"'{PreviousEntities.Result.Request.Resource}'. ");
                     break;
             }
         }

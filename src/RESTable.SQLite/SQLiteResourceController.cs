@@ -49,8 +49,7 @@ namespace RESTable.SQLite
         public override async Task<int> UpdateAsync(IRequest<TController> request)
         {
             var i = 0;
-            var entities = await request.GetInputEntities();
-            foreach (var resource in entities.ToList())
+            foreach (var resource in await request.GetInputEntitiesAsync().ToListAsync())
             {
                 resource.Update();
                 await resource.Definition.Update();

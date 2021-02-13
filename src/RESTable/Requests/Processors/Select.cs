@@ -21,7 +21,7 @@ namespace RESTable.Requests.Processors
             .ForEach(Add);
 
         private Select(Select other) : base(other) { }
-        internal Select GetCopy() => new Select(this);
+        internal Select GetCopy() => new(this);
 
         internal JObject Apply<T>(T entity)
         {
@@ -38,6 +38,6 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Selects a set of properties from an IEnumerable of entities
         /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(Apply);
+        public IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities) => entities?.Select(Apply);
     }
 }

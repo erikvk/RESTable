@@ -29,7 +29,7 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Applies the order by operation on an IEnumerable of entities
         /// </summary>
-        public abstract IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T : class;
+        public abstract IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class;
 
         internal abstract OrderBy GetCopy();
     }
@@ -46,7 +46,7 @@ namespace RESTable.Requests.Filters
         private OrderByAscending(IEntityResource resource, Term term) : base(resource, term) { }
 
         /// <inheritdoc />
-        public override IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        public override IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities)
         {
             if (Skip) return entities;
 
@@ -80,7 +80,7 @@ namespace RESTable.Requests.Filters
         private OrderByDescending(IEntityResource resource, Term term) : base(resource, term) { }
 
         /// <inheritdoc />
-        public override IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        public override IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities)
         {
             if (Skip) return entities;
 

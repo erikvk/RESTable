@@ -217,12 +217,12 @@ namespace RESTable.SQLite
                     value: Resource.Name
                 ));
             var entities = await indexRequest.EvaluateToEntities();
-            var tableIndexesToKeep = entities
+            var tableIndexesToKeep = await entities
                 .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
-                .ToList();
+                .ToListAsync();
             await Database.QueryAsync(query);
             indexRequest.Method = Method.POST;
-            indexRequest.Selector = () => Task.FromResult<IEnumerable<DatabaseIndex>>(tableIndexesToKeep);
+            indexRequest.Selector = () => tableIndexesToKeep.ToAsyncEnumerable();
             var result = await indexRequest.Evaluate();
             result.ThrowIfError();
             await Update();

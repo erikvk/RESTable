@@ -39,7 +39,7 @@ namespace RESTable.Excel
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override async Task<ulong> SerializeCollection<T>(IEnumerable<T> _entities, Stream stream, IRequest request = null)
+        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> _entities, Stream stream, IRequest request = null)
         {
             var serializer = JsonProvider.GetSerializer();
             if (_entities == null) return 0;
@@ -49,13 +49,13 @@ namespace RESTable.Excel
                 var currentRow = 1;
                 var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheet1");
 
-                void writeEntities(IEnumerable<object> entities)
+                async Task writeEntities(IAsyncEnumerable<object> entities)
                 {
                     switch (entities)
                     {
-                        case IEnumerable<IDictionary<string, object>> dicts:
+                        case IAsyncEnumerable<IDictionary<string, object>> dicts:
                             var columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            foreach (var dict in dicts)
+                            await foreach (var dict in dicts)
                             {
                                 currentRow += 1;
                                 foreach (var (key, value) in dict)
@@ -72,9 +72,9 @@ namespace RESTable.Excel
                                 }
                             }
                             break;
-                        case IEnumerable<JObject> jobjects:
+                        case IAsyncEnumerable<JObject> jobjects:
                             var _columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            foreach (var jobject in jobjects)
+                            await foreach (var jobject in jobjects)
                             {
                                 currentRow += 1;
                                 foreach (var (key, value) in jobject)
@@ -91,10 +91,6 @@ namespace RESTable.Excel
                                 }
                             }
                             break;
-                        case ICollection<object> objs:
-                            writeEntities(objs.Select(o => o is JObject jo ? jo : JObject.FromObject(o, serializer)));
-                            break;
-
                         default:
                             var properties = typeof(T).GetDeclaredProperties().Values.Where(p => !p.Hidden).ToList();
                             var columnIndex = 1;
@@ -105,7 +101,7 @@ namespace RESTable.Excel
                                 cell.Value = property.Name;
                                 columnIndex += 1;
                             }
-                            foreach (var entity in entities)
+                            await foreach (var entity in entities)
                             {
                                 currentRow += 1;
                                 columnIndex = 1;
@@ -119,11 +115,11 @@ namespace RESTable.Excel
                     }
                 }
 
-                writeEntities(_entities.Cast<object>());
+                await writeEntities(_entities.Select(e => (object) e));
                 if (currentRow == 1) return 0;
                 worksheet.Cells.AutoFitColumns(0);
                 await package.SaveAsync();
-                return (ulong) currentRow - 1;
+                return (long) currentRow - 1;
             }
             catch (Exception e)
             {
@@ -186,15 +182,15 @@ namespace RESTable.Excel
         }
 
         /// <inheritdoc />
-        protected override void ProduceJsonArray(Stream excelStream, Stream jsonStream)
+        protected override async Task ProduceJsonArray(Stream excelStream, Stream jsonStream)
         {
             try
             {
-                using var swr = new StreamWriter(jsonStream, UTF8, 1024, true);
+                await using var swr = new StreamWriter(jsonStream, UTF8, 1024, true);
                 using var jwr = new RESTableFromExcelJsonTextWriter(swr);
                 using var package = new ExcelPackage(excelStream);
 
-                jwr.WriteStartArray();
+                await jwr.WriteStartArrayAsync();
 
                 var worksheet = package.Workbook?.Worksheets?.FirstOrDefault();
                 if (worksheet?.Dimension != null)
@@ -207,21 +203,21 @@ namespace RESTable.Excel
                             propertyNames[col] = worksheet.Cells[1, col].GetValue<string>();
                         for (var row = 2; row <= rows; row += 1)
                         {
-                            jwr.WriteStartObject();
+                            await jwr.WriteStartObjectAsync();
                             for (var col = 1; col <= columns; col += 1)
                             {
                                 if (propertyNames[col] is string propertyName)
                                 {
-                                    jwr.WritePropertyName(propertyName);
-                                    jwr.WriteValue(worksheet.Cells[row, col].Value);
+                                    await jwr.WritePropertyNameAsync(propertyName);
+                                    await jwr.WriteValueAsync(worksheet.Cells[row, col].Value);
                                 }
                             }
-                            jwr.WriteEndObject();
+                            await jwr.WriteEndObjectAsync();
                         }
                     }
                 }
 
-                jwr.WriteEndArray();
+                await jwr.WriteEndArrayAsync();
             }
             catch (Exception e)
             {

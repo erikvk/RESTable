@@ -58,18 +58,21 @@ namespace RESTable.Requests
         private Stopwatch Stopwatch => Parameters.Stopwatch;
         IEntityResource<T> IEntityRequest<T>.EntityResource => Resource as IEntityResource<T>;
 
-        public Func<Task<IEnumerable<T>>> GetSelector() => Selector;
-        public Func<IEnumerable<T>, Task<IEnumerable<T>>> GetUpdater() => Updater;
+        public Func<IAsyncEnumerable<T>> GetSelector() => Selector;
+        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> GetUpdater() => Updater;
 
-        public Func<Task<IEnumerable<T>>> Selector { private get; set; }
-        public Func<IEnumerable<T>, Task<IEnumerable<T>>> Updater { private get; set; }
-        public Func<Task<IEnumerable<T>>> EntitiesProducer { get; set; }
+        public Func<IAsyncEnumerable<T>> Selector { private get; set; }
+        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { private get; set; }
 
-        public async Task<IEnumerable<T>> GetInputEntities()
+        public Func<IAsyncEnumerable<T>> EntitiesProducer { get; set; }
+
+        public IEnumerable<T> GetInputEntities() => GetInputEntitiesAsync().ToEnumerable();
+
+        public async IAsyncEnumerable<T> GetInputEntitiesAsync()
         {
-            if (EntitiesProducer != null)
-                return await EntitiesProducer();
-            return new T[0];
+            if (EntitiesProducer == null) yield break;
+            await foreach (var item in EntitiesProducer())
+                yield return item;
         }
 
         IResource IRequest.Resource => Resource;
@@ -344,7 +347,7 @@ namespace RESTable.Requests
                     if (entities == null) throw new InvalidExternalSource(source.URI, await result.GetLogMessage());
                     var serialized = await result.Serialize();
                     if (serialized.Result is Error error) throw error;
-                    if (entities.EntityCount == 0) throw new InvalidExternalSource(source.URI, "Response was empty");
+                    if (serialized.EntityCount == 0) throw new InvalidExternalSource(source.URI, "Response was empty");
                     body = new Body(this, serialized.Body);
                 }
                 else

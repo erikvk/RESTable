@@ -9,30 +9,29 @@ namespace RESTable.SQLite
 {
     internal static class SQLiteOperations<T> where T : SQLiteTable
     {
-        public static Task<IEnumerable<T>> Select(IRequest<T> request)
+        public static IAsyncEnumerable<T> Select(IRequest<T> request)
         {
             var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
             request.Conditions = post;
-            var entities = SQLite<T>.Select(
+            return SQLite<T>.Select(
                 where: sql.ToSQLiteWhereClause(),
                 onlyRowId: request.Method == Method.DELETE && !request.Conditions.Any()
             );
-            return Task.FromResult(entities);
         }
 
         public static async Task<int> Insert(IRequest<T> request)
         {
-            return await SQLite<T>.Insert(await request.GetInputEntities());
+            return await SQLite<T>.Insert(request.GetInputEntitiesAsync());
         }
 
         public static async Task<int> Update(IRequest<T> request)
         {
-            return await SQLite<T>.Update((await request.GetInputEntities()).ToList());
+            return await SQLite<T>.Update(request.GetInputEntitiesAsync());
         }
 
         public static async Task<int> Delete(IRequest<T> request)
         {
-            return await SQLite<T>.Delete((await request.GetInputEntities()).ToList());
+            return await SQLite<T>.Delete(request.GetInputEntitiesAsync());
         }
 
         public static async Task<long> Count(IRequest<T> request)
@@ -40,11 +39,10 @@ namespace RESTable.SQLite
             var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
             if (post.Any())
             {
-                long count = SQLite<T>
+                return await SQLite<T>
                     .Select(sql.ToSQLiteWhereClause())
                     .Where(post)
-                    .Count();
-                return count;
+                    .CountAsync();
             }
             return await SQLite<T>.Count(sql.ToSQLiteWhereClause());
         }

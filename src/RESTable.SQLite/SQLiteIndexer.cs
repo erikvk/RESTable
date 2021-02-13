@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -14,11 +15,12 @@ namespace RESTable.SQLite
         private const string syntax = @"CREATE +INDEX +""*(?<name>\w+)""* +ON +""*(?<table>[\w\$]+)""* " +
                                       @"\((?:(?<columns>""*\w+""* *[""*\w+""*]*) *,* *)+\)";
 
-        public async Task<IEnumerable<DatabaseIndex>> SelectAsync(IRequest<DatabaseIndex> request)
+        public async IAsyncEnumerable<DatabaseIndex> SelectAsync(IRequest<DatabaseIndex> request)
         {
             var sqls = new List<string>();
-            await Database.QueryAsync("SELECT sql FROM sqlite_master WHERE type='index'", row => sqls.Add(row.GetString(0)));
-            return sqls.Select(sql =>
+            async ValueTask AddRowToList(DbDataReader row) => sqls.Add(await row.GetFieldValueAsync<string>(0));
+            await Database.QueryAsync("SELECT sql FROM sqlite_master WHERE type='index'", AddRowToList);
+            var items = sqls.Select(sql =>
             {
                 var groups = Regex.Match(sql, syntax, RegexOptions.IgnoreCase).Groups;
                 var tableName = groups["table"].Value;
@@ -34,13 +36,15 @@ namespace RESTable.SQLite
                     }).ToArray()
                 };
             });
+            foreach (var item in items)
+                yield return item;
         }
 
         public async Task<int> InsertAsync(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in await request.GetInputEntities())
+            await foreach (var index in request.GetInputEntitiesAsync())
             {
                 var tableMapping = TableMapping.Get(index.Resource.Type);
                 if (index.Resource == null)
@@ -57,7 +61,7 @@ namespace RESTable.SQLite
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in await request.GetInputEntities())
+            await foreach (var index in request.GetInputEntitiesAsync())
             {
                 var tableMapping = TableMapping.Get(index.Resource.Type);
                 await Database.QueryAsync($"DROP INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName}");
@@ -73,7 +77,7 @@ namespace RESTable.SQLite
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in await request.GetInputEntities())
+            await foreach (var index in request.GetInputEntitiesAsync())
             {
                 await Database.QueryAsync($"DROP INDEX {index.Name.Fnuttify()}");
                 count += 1;

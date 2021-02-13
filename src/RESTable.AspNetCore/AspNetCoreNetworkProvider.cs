@@ -86,7 +86,6 @@ namespace RESTable.AspNetCore
             var proxyIp = default(IPAddress);
             var host = context.Request.Host.Host;
             var userAgent = context.Request.Headers["User-Agent"];
-            var https = context.Request.IsHttps;
             if (context.Request.Headers.TryGetValue("X-Forwarded-For", out var ip))
             {
                 clientIp = IPAddress.Parse(ip.First().Split(':')[0]);
@@ -98,7 +97,7 @@ namespace RESTable.AspNetCore
                 proxyIp: proxyIp,
                 userAgent: userAgent,
                 host: host,
-                https: https,
+                https: context.Request.IsHttps,
                 cookies: new Cookies(context.Request.Cookies)
             );
         }

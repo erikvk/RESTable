@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data.SQLite;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.SQLite.Meta;
 
 namespace RESTable.SQLite
 {
-    internal class EntityEnumerator<T> : IEnumerator<T> where T : SQLiteTable
+    internal class EntityEnumerator<T> : IAsyncEnumerator<T> where T : SQLiteTable
     {
         private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
         private SQLiteDataReader Reader { get; set; }
@@ -16,26 +16,20 @@ namespace RESTable.SQLite
         private string SQL { get; }
         private bool OnlyRowId { get; }
 
-        public void Dispose()
+        private long CurrentRowId { get; set; }
+
+        public async ValueTask DisposeAsync()
         {
-            Command.Dispose();
-            Reader.Dispose();
-            Connection.Dispose();
+            await Command.DisposeAsync();
+            await Reader.DisposeAsync();
+            await Connection.DisposeAsync();
         }
 
-        public bool MoveNext() => Reader.Read();
-
-        public void Reset()
+        public async ValueTask<bool> MoveNextAsync()
         {
-            Command.Dispose();
-            Reader.Dispose();
-            Init();
-        }
-
-        private void Init()
-        {
-            Command = new SQLiteCommand(SQL, Connection);
-            Reader = Command.ExecuteReader();
+            if (!await Reader.ReadAsync()) return false;
+            CurrentRowId = await Reader.GetFieldValueAsync<long>(0);
+            return true;
         }
 
         internal EntityEnumerator(string sql, bool onlyRowId)
@@ -44,16 +38,16 @@ namespace RESTable.SQLite
             Connection = new SQLiteConnection(Settings.ConnectionString);
             Connection.Open();
             SQL = sql;
-            Init();
+            Command = new SQLiteCommand(SQL, Connection);
+            Reader = Command.ExecuteReader();
         }
 
-        object IEnumerator.Current => Current;
         public T Current => MakeEntity();
 
         private T MakeEntity()
         {
             var entity = Constructor();
-            entity.RowId = Reader.GetInt64(0);
+            entity.RowId = CurrentRowId;
             if (!OnlyRowId)
             {
                 foreach (var column in TableMapping<T>.TransactMappings)

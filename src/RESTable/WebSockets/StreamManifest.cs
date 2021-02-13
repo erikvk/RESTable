@@ -27,7 +27,7 @@ namespace RESTable.WebSockets
         public readonly string EntityType;
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public readonly ulong EntityCount;
+        public readonly long EntityCount;
 
         public StreamManifestMessage[] Messages { get; }
         public readonly StreamCommand[] Commands = _Commands;
@@ -52,8 +52,8 @@ namespace RESTable.WebSockets
             if (content is IEntities entities)
             {
                 EntityType = entities.EntityType.GetRESTableTypeName();
-                EntityCount = entities.EntityCount;
             }
+            EntityCount = serializedContent.EntityCount;
             var dataLength = serializedContent.Body.Length;
             var nrOfMessages = dataLength / bufferSize;
             var last = dataLength % bufferSize;

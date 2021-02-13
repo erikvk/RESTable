@@ -64,13 +64,13 @@ namespace RESTable.Requests.Filters
             IgnoreCase = ignoreCase;
         }
 
-        internal Search GetCopy() => new Search(Pattern, Selector, IgnoreCase);
+        internal Search GetCopy() => new(Pattern, Selector, IgnoreCase);
 
         /// <summary>
         /// Searches the entities for a given case insensitive string pattern, and returns only 
         /// those that contain the pattern.
         /// </summary>
-        public virtual IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T : class
+        public virtual IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
         {
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
             var formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None;

@@ -263,7 +263,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual Task<IEnumerable<T>> DefaultSelectAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }

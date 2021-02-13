@@ -26,7 +26,7 @@ namespace RESTable.Requests.Processors
         }
 
         private Rename(Rename other) : base(other) { }
-        internal Rename GetCopy() => new Rename(this);
+        internal Rename GetCopy() => new(this);
 
         private JObject Renamed(JObject entity)
         {
@@ -51,6 +51,6 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Renames properties in an IEnumerable
         /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(entity => Renamed(entity.ToJObject()));
+        public IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities) => entities?.Select(entity => Renamed(entity.ToJObject()));
     }
 }

@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Net;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
+using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
 
@@ -56,7 +57,7 @@ namespace RESTable.Results
             var serializedResult = new SerializedResult(this);
             var stopwatch = Stopwatch.StartNew();
             var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
-            ContentTypeProvider.SerializeCollection(new[] {optionsBody}, serializedResult.Body);
+            ContentTypeProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), serializedResult.Body);
             serializedResult.Body.Rewind();
             stopwatch.Stop();
             TimeElapsed += stopwatch.Elapsed;

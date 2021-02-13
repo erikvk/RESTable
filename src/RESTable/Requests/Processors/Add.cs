@@ -22,12 +22,12 @@ namespace RESTable.Requests.Processors
             .ForEach(Add);
 
         private Add(Add other) : base(other) { }
-        internal Add GetCopy() => new Add(this);
+        internal Add GetCopy() => new(this);
 
         /// <summary>
         /// Adds properties to entities in an IEnumerable
         /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(entity =>
+        public IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities) => entities?.Select(entity =>
         {
             var jobj = entity.ToJObject();
             ForEach(term =>

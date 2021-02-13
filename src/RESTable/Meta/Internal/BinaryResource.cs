@@ -37,7 +37,7 @@ namespace RESTable.Meta.Internal
         public bool GETAvailableToAll { get; }
         public Type InterfaceType { get; }
 
-        public Task<IEnumerable<T>> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
+        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
         public IEnumerable<T> Select(IRequest<T> request) => throw new InvalidOperationException();
 
         public Task<(Stream stream, ContentType contentType)> SelectBinary(IRequest<T> request)

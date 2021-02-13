@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -11,28 +12,19 @@ namespace RESTable.Results
     /// </summary>
     internal class Entities<T> : Content, IEntities<T> where T : class
     {
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        /// <inheritdoc />
-        public IEnumerator<T> GetEnumerator() => Content.GetEnumerator();
+        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = new())
+        {
+            return Content.GetAsyncEnumerator(cancellationToken);
+        }
 
         /// <summary>
         /// The entities contained in the result
         /// </summary>
-        private IEnumerable<T> Content { get; }
+        private IAsyncEnumerable<T> Content { get; }
 
         public Type EntityType => typeof(T);
 
-        /// <inheritdoc />
-        /// <summary>
-        /// The number of entities contained in this result
-        /// </summary>
-        public ulong EntityCount { get; set; }
-
-        /// <inheritdoc />
-        public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
-
-        internal Entities(IRequest request, IEnumerable<T> enumerable) : base(request) => Content = enumerable ?? new T[0];
+        internal Entities(IRequest request, IAsyncEnumerable<T> enumerable) : base(request) => Content = enumerable ?? new T[0].ToAsyncEnumerable();
 
         /// <inheritdoc />
         public override string Metadata => $"{nameof(Entities<T>)};{Request.Resource};{EntityType}";

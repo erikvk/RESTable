@@ -11,8 +11,8 @@
         <ProjectReference Include="..\..\src\RESTable.SQLite\RESTable.SQLite.csproj" />
         <ProjectReference Include="..\..\src\RESTable.Excel\RESTable.Excel.csproj" />
         <ProjectReference Include="..\..\src\RESTable\RESTable.csproj" />
-        <PackageReference Include="Starcounter.Database.Abstractions" Version="3.0.0-*" />
-        <PackageReference Include="Starcounter.Database.Data" Version="3.0.0-*" />
+        <PackageReference Include="Starcounter.Database.Abstractions" Version="3.0.0" />
+        <PackageReference Include="Starcounter.Database.Data" Version="3.0.0" />
     </ItemGroup>
 
 </Project>

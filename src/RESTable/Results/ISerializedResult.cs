@@ -10,6 +10,10 @@ namespace RESTable.Results
         public RESTableContext Context => Result.Context;
         public Headers Headers => Result.Headers;
 
+        public long EntityCount { get; set; }
+
+        public bool IsPaged => EntityCount > 0 && EntityCount == (long?) Result.Request?.MetaConditions.Limit;
+
         public string HeadersStringCache
         {
             get => Result.HeadersStringCache;
@@ -63,5 +67,16 @@ namespace RESTable.Results
         /// The time it took for RESTable to generate and serialize the result.
         /// </summary>
         TimeSpan TimeElapsed { get; }
+
+        /// <summary>
+        /// The number of entities in the collection. Should be set by the serializer, since it is unknown
+        /// until the collection is iterated.
+        /// </summary>
+        long EntityCount { get; set; }
+
+        /// <summary>
+        /// Is this result paged?
+        /// </summary>
+        bool IsPaged { get; }
     }
 }

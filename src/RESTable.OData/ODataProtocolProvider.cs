@@ -254,17 +254,17 @@ namespace RESTable.OData
         }
 
         /// <inheritdoc />
-        public async Task Serialize(IResult result, Stream body, IContentTypeProvider contentTypeProvider)
+        public async Task Serialize(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
         {
-            result.Headers["OData-Version"] = "4.0";
-            if (!(result is IEntities entities))
+            toSerialize.Headers["OData-Version"] = "4.0";
+            if (!(toSerialize.Result is IEntities entities))
                 return;
 
             string contextFragment;
             bool writeMetadata;
             switch (entities)
             {
-                case IEnumerable<ServiceDocument> _:
+                case IAsyncEnumerable<ServiceDocument> _:
                     contextFragment = null;
                     writeMetadata = false;
                     break;
@@ -273,22 +273,22 @@ namespace RESTable.OData
                     writeMetadata = true;
                     break;
             }
-            await using var swr = new StreamWriter(body, Encoding.UTF8, 1024, true);
+            await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
             using var jwr = new ODataJsonWriter(swr) {Formatting = Settings._PrettyPrint ? Indented : None};
             await jwr.WriteStartObjectAsync();
             await jwr.WritePropertyNameAsync("@odata.context");
             await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}");
             await jwr.WritePropertyNameAsync("value");
             Providers.Json.Serialize(jwr, entities);
-            entities.EntityCount = jwr.ObjectsWritten;
+            toSerialize.EntityCount = jwr.ObjectsWritten;
             if (writeMetadata)
             {
                 await jwr.WritePropertyNameAsync("@odata.count");
-                await jwr.WriteValueAsync(entities.EntityCount);
-                if (entities.IsPaged)
+                await jwr.WriteValueAsync(toSerialize.EntityCount);
+                if (toSerialize.IsPaged)
                 {
                     await jwr.WritePropertyNameAsync("@odata.nextLink");
-                    await jwr.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink()));
+                    await jwr.WriteValueAsync(MakeRelativeUri(toSerialize.GetNextPageLink()));
                 }
             }
             await jwr.WriteEndObjectAsync();

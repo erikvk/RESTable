@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
@@ -14,6 +13,6 @@ namespace RESTable.Resources.Operations
         /// The select method for this ISelector instance. Defines the Select
         /// operation for a given resource.
         /// </summary>
-        Task<IEnumerable<T>> SelectAsync(IRequest<T> request);
+        IAsyncEnumerable<T> SelectAsync(IRequest<T> request);
     }
 }

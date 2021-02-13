@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
+using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
@@ -194,12 +194,12 @@ namespace RESTable.ProtocolProviders
         }
 
         /// <inheritdoc />
-        public async Task Serialize(IResult result, Stream body, IContentTypeProvider contentTypeProvider)
+        public async Task Serialize(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
         {
-            switch (result)
+            switch (toSerialize.Result)
             {
                 case Report report:
-                    await contentTypeProvider.SerializeCollection(new[] {report.ReportBody}, body, report.Request);
+                    await contentTypeProvider.SerializeCollection(report.ReportBody.ToAsyncSingleton(), toSerialize.Body, report.Request);
                     return;
 
                 case Head head:
@@ -207,18 +207,17 @@ namespace RESTable.ProtocolProviders
                     return;
 
                 case IEntities<object> entities:
-
-                    ulong entityCount = await contentTypeProvider.SerializeCollection((dynamic) entities, body, entities.Request);
-                    body.Seek(0, SeekOrigin.Begin);
-                    entities.Headers.EntityCount = entityCount.ToString();
-                    entities.EntityCount = entityCount;
+                    long entityCount = await contentTypeProvider.SerializeCollection((dynamic) entities, toSerialize.Body, entities.Request);
+                    toSerialize.Body.Rewind();
+                    toSerialize.Headers.EntityCount = entityCount.ToString();
+                    toSerialize.EntityCount = entityCount;
                     if (entityCount == 0)
                     {
                         entities.MakeNoContent();
                     }
-                    if (entities.IsPaged)
+                    if (toSerialize.IsPaged)
                     {
-                        var pager = entities.GetNextPageLink();
+                        var pager = toSerialize.GetNextPageLink();
                         entities.Headers.Pager = pager.ToUriString();
                     }
                     entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
@@ -230,7 +229,7 @@ namespace RESTable.ProtocolProviders
             where TRequest : class
             where TEntity : class, TRequest
         {
-            request.Selector = () => Task.FromResult<IEnumerable<TRequest>>(entities);
+            request.Selector = () => entities;
         }
 
         public bool IsCompliant(IRequest request, out string invalidReason)

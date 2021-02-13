@@ -22,7 +22,7 @@ namespace RESTable.Requests.Filters
         /// Searches the entities using Pattern as a regex pattern, and returns only 
         /// those that match the pattern.
         /// </summary>
-        public override IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        public override IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities)
         {
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
             var formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None;

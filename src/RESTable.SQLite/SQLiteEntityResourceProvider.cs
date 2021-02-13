@@ -119,7 +119,7 @@ namespace RESTable.SQLite
         protected override Type AttributeType => typeof(SQLiteAttribute);
 
         /// <inheritdoc />
-        protected override Task<IEnumerable<T>> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Select(request);
+        protected override IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Select(request);
 
         /// <inheritdoc />
         protected override Task<int> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Insert(request);
@@ -136,7 +136,7 @@ namespace RESTable.SQLite
         /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()
         {
-            foreach (var resource in SQLite<ProceduralResource>.Select().ToList())
+            foreach (var resource in SQLite<ProceduralResource>.Select().ToEnumerable())
             {
                 var type = resource.Type;
                 if (type != null)
@@ -173,7 +173,7 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Methods = methods;
-            SQLite<ProceduralResource>.Update(new[] {_resource}).Wait();
+            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).Wait();
         }
 
         /// <inheritdoc />
@@ -181,7 +181,7 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Description = newDescription;
-            SQLite<ProceduralResource>.Update(new[] {_resource}).Wait();
+            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).Wait();
         }
 
         /// <inheritdoc />
@@ -189,7 +189,7 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             TableMapping.Drop(_resource.Type).Wait();
-            SQLite<ProceduralResource>.Delete(new[] {_resource}).Wait();
+            SQLite<ProceduralResource>.Delete(_resource.ToAsyncSingleton()).Wait();
             return true;
         }
     }

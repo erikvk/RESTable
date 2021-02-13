@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
@@ -16,10 +17,7 @@ namespace RESTable.Results
     /// </summary>
     internal class RemoteEntities : Content, IEntities<JObject>
     {
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        public ulong EntityCount { get; set; }
         public Type EntityType { get; }
-        public bool IsPaged => EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
         private IRequestInternal RequestInternal { get; }
         private IContentTypeProvider ContentTypeProvider { get; }
 
@@ -27,13 +25,16 @@ namespace RESTable.Results
 
         public override IEntities<T1> ToEntities<T1>() => new DeserializedTypeEnumerable<T1>(RequestInternal, SerializedResult.Body, this, ContentTypeProvider);
 
-        public IEnumerator<JObject> GetEnumerator() => new StreamEnumerator<JObject>(SerializedResult.Body, ContentTypeProvider);
+        public IAsyncEnumerator<JObject> GetAsyncEnumerator(CancellationToken cancellationToken = new())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new StreamEnumerator<JObject>(SerializedResult.Body, ContentTypeProvider);
+        }
 
-        internal RemoteEntities(IRequestInternal request, ulong entityCount) : base(request)
+        internal RemoteEntities(IRequestInternal request) : base(request)
         {
             RequestInternal = request;
             EntityType = typeof(JObject);
-            EntityCount = entityCount;
             ContentTypeProvider = RequestInternal.GetOutputContentTypeProvider();
             SerializedResult = new SerializedResult(this);
         }
@@ -44,7 +45,7 @@ namespace RESTable.Results
         private readonly Stream Stream;
         private readonly IEntities Entities;
         private readonly IContentTypeProvider ContentTypeProvider;
-        
+
         public DeserializedTypeEnumerable(IRequest request, Stream stream, IEntities entities, IContentTypeProvider contentTypeProvider) : base(request)
         {
             Stream = stream;
@@ -52,37 +53,36 @@ namespace RESTable.Results
             ContentTypeProvider = contentTypeProvider;
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        public IEnumerator<T> GetEnumerator() => new StreamEnumerator<T>(Stream, ContentTypeProvider);
+        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new StreamEnumerator<T>(Stream, ContentTypeProvider);
+        }
 
         #region Entities bindings
 
-        public bool IsPaged => Entities.IsPaged;
         public Type EntityType => Entities.EntityType;
-
-        public ulong EntityCount
-        {
-            get => Entities.EntityCount;
-            set => Entities.EntityCount = value;
-        }
 
         #endregion
     }
 
-    internal class StreamEnumerator<T> : IEnumerator<T> where T : class
+    internal class StreamEnumerator<T> : IAsyncEnumerator<T> where T : class
     {
-        private readonly IEnumerator<T> Enumerator;
+        private readonly IAsyncEnumerator<T> Enumerator;
 
-        public StreamEnumerator(Stream stream, IContentTypeProvider contentTypeProvider)
+        public StreamEnumerator(Stream stream, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken = new())
         {
             var enumerable = contentTypeProvider.DeserializeCollection<T>(stream);
-            Enumerator = enumerable.GetEnumerator();
+            Enumerator = enumerable.GetAsyncEnumerator(cancellationToken);
         }
 
-        public void Dispose() => Enumerator.Dispose();
-        public bool MoveNext() => Enumerator.MoveNext();
-        public void Reset() => Enumerator.Reset();
-        object IEnumerator.Current => Current;
+        public async ValueTask DisposeAsync()
+        {
+            await Enumerator.DisposeAsync();
+        }
+
+        public ValueTask<bool> MoveNextAsync() => Enumerator.MoveNextAsync();
+
         public T Current => Enumerator.Current;
     }
 }

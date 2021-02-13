@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
+using System.Linq;
 using System.Threading.Tasks;
 using RESTable.SQLite.Meta;
 
@@ -22,7 +23,7 @@ namespace RESTable.SQLite
         /// by "SELECT * FROM {type} " in the actual query</param>
         /// <param name="onlyRowId">Populates only RowIds for the resulting entities</param>
         /// <returns></returns>
-        public static IEnumerable<T> Select(string where = null, bool onlyRowId = false) => new EntityEnumerable<T>
+        public static IAsyncEnumerable<T> Select(string where = null, bool onlyRowId = false) => new EntityEnumerable<T>
         (
             sql: $"SELECT RowId,* FROM {TableMapping<T>.TableName} {where}",
             onlyRowId: onlyRowId
@@ -32,13 +33,13 @@ namespace RESTable.SQLite
         /// Inserts a range of SQLiteTable entities into the appropriate SQLite database
         /// table and returns the number of rows affected.
         /// </summary>
-        public static async Task<int> Insert(params T[] entities) => await Insert((IEnumerable<T>) entities);
+        public static async Task<int> Insert(params T[] entities) => await Insert(entities.ToAsyncEnumerable());
 
         /// <summary>
         /// Inserts an IEnumerable of SQLiteTable entities into the appropriate SQLite database
         /// table and returns the number of rows affected.
         /// </summary>
-        public static async Task<int> Insert(IEnumerable<T> entities)
+        public static async Task<int> Insert(IAsyncEnumerable<T> entities)
         {
             if (entities == null) return 0;
             var (name, columns, param, mappings) = TableMapping<T>.InsertSpec;
@@ -48,7 +49,7 @@ namespace RESTable.SQLite
                 command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
                 for (var i = 0; i < mappings.Length; i++)
                     command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
-                foreach (var entity in entities)
+                await foreach (var entity in entities)
                 {
                     await entity._OnInsert();
                     for (var i = 0; i < mappings.Length; i++)
@@ -67,7 +68,7 @@ namespace RESTable.SQLite
         /// Updates the corresponding SQLite database table rows for a given IEnumerable 
         /// of updated entities and returns the number of rows affected.
         /// </summary>
-        public static async Task<int> Update(IEnumerable<T> updatedEntities)
+        public static async Task<int> Update(IAsyncEnumerable<T> updatedEntities)
         {
             if (updatedEntities == null) return 0;
             var (name, set, param, mappings) = TableMapping<T>.UpdateSpec;
@@ -78,7 +79,7 @@ namespace RESTable.SQLite
                 command.Parameters.Add(RowIdParameter, DbType.Int64);
                 for (var i = 0; i < mappings.Length; i++)
                     command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
-                foreach (var entity in updatedEntities)
+                await foreach (var entity in updatedEntities)
                 {
                     await entity._OnUpdate();
                     command.Parameters[RowIdParameter].Value = entity.RowId;
@@ -99,7 +100,7 @@ namespace RESTable.SQLite
         /// </summary>
         /// <param name="entities"></param>
         /// <returns></returns>
-        public static async Task<int> Delete(IEnumerable<T> entities)
+        public static async Task<int> Delete(IAsyncEnumerable<T> entities)
         {
             if (entities == null) return 0;
             return await Database.TransactAsync(async command =>
@@ -107,7 +108,7 @@ namespace RESTable.SQLite
                 var count = 0;
                 command.CommandText = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId = {RowIdParameter}";
                 command.Parameters.Add(RowIdParameter, DbType.Int64);
-                foreach (var entity in entities)
+                await foreach (var entity in entities)
                 {
                     await entity._OnDelete();
                     command.Parameters[RowIdParameter].Value = entity.RowId;

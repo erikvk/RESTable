@@ -18,7 +18,7 @@ namespace RESTable.Results
             {
                 if (serializedResult.Body == null)
                     return serializedResult;
-                await serializedResult.Body.Serialize(result);
+                await serializedResult.Body.Serialize(serializedResult);
                 return serializedResult;
             }
             catch (Exception exception)

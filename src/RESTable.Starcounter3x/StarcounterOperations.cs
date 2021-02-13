@@ -5,7 +5,6 @@ using RESTable.Admin;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Linq;
-using Starcounter.Database;
 using Starcounter.Database.Data;
 
 namespace RESTable.Starcounter3x
@@ -19,12 +18,6 @@ namespace RESTable.Starcounter3x
         private static readonly string TableName = typeof(T).GetRESTableTypeName();
         private static readonly string select = $"SELECT t FROM {TableName.Fnuttify()} t ";
         private const string ObjectNo = nameof(ObjectNo);
-
-        private static readonly TransactOptions ReadonlyOptions = new TransactOptions
-        (
-            flags: TransactionFlags.ReadOnly,
-            onCommit: () => { }
-        );
 
         private static Transaction Transaction => Transaction.Current ?? Transaction.Create();
 
@@ -73,7 +66,7 @@ namespace RESTable.Starcounter3x
         {
             request.EnsureServiceAttached(Transaction);
             var count = 0;
-            Transaction.Run(db => count = request.GetInputEntities().Result.Count());
+            Transaction.Run(db => count = request.GetInputEntities().Count());
             return count;
         }
 
@@ -83,7 +76,7 @@ namespace RESTable.Starcounter3x
         public static int Update(IRequest<T> request)
         {
             var count = 0;
-            Transaction.Run(db => count = request.GetInputEntities().Result.Count());
+            Transaction.Run(db => count = request.GetInputEntities().Count());
             return count;
         }
 
@@ -94,7 +87,7 @@ namespace RESTable.Starcounter3x
         {
             request.EnsureServiceAttached(Transaction);
             var count = 0;
-            Transaction.Run(db => request.GetInputEntities().Result.ForEach(entity =>
+            Transaction.Run(db => request.GetInputEntities().ForEach(entity =>
             {
                 db.Delete(entity);
                 count += 1;
