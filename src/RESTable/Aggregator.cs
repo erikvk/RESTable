@@ -48,6 +48,12 @@ namespace RESTable
         /// <inheritdoc />
         public async IAsyncEnumerable<Aggregator> SelectAsync(IRequest<Aggregator> request)
         {
+            var template = await request.Expecting
+            (
+                selector: async r => await r.Body.Deserialize<Aggregator>().FirstAsync(),
+                errorMessage: "Expected an aggregator template as request body"
+            );
+
             async Task<object> Populator(object node)
             {
                 switch (node)
@@ -122,11 +128,6 @@ namespace RESTable
                 }
             }
 
-            var template = await request.Expecting
-            (
-                selector: async r => await r.Body.Deserialize<Aggregator>().FirstAsync(),
-                message: "Expected an aggregator template as request body"
-            );
             yield return await Populator(template) switch
             {
                 Aggregator aggregator => aggregator,

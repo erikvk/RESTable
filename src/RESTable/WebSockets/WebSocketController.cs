@@ -7,7 +7,7 @@ using RESTable.ContentTypeProviders;
 
 namespace RESTable.WebSockets
 {
-    public static class WebSocketController
+    internal static class WebSocketController
     {
         internal static readonly IDictionary<string, WebSocket> AllSockets;
         static WebSocketController() => AllSockets = new ConcurrentDictionary<string, WebSocket>();
@@ -81,14 +81,14 @@ namespace RESTable.WebSockets
                         break;
                 }
             }
-            else await webSocket.HandleTextInput(textInput);
+            else await webSocket.HandleTextInputInternal(textInput);
         }
 
         public static async Task HandleBinaryInput(string wsId, byte[] binaryInput)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
-            await webSocket.HandleBinaryInput(binaryInput);
+            await webSocket.HandleBinaryInputInternal(binaryInput);
         }
 
         public static void RemoveWebSocket(string wsId) => AllSockets.Remove(wsId);

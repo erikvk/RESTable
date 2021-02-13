@@ -18,7 +18,7 @@ namespace RESTable
         [NotNull]
         protected Stream Stream { get; set; }
 
-        internal byte[] GetBytes()
+        public byte[] GetBytes()
         {
             if (!Stream.CanRead) return new byte[0];
             try
@@ -27,21 +27,20 @@ namespace RESTable
             }
             finally
             {
-                this.Rewind();
+                Rewind();
             }
         }
 
-        internal async Task<byte[]> GetBytesAsync()
+        public async Task<byte[]> GetBytesAsync()
         {
             if (!Stream.CanRead) return new byte[0];
-            this.Rewind();
             try
             {
                 return await Stream.ToByteArrayAsync();
             }
             finally
             {
-                this.Rewind();
+                Rewind();
             }
         }
 

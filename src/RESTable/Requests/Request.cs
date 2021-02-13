@@ -31,7 +31,6 @@ namespace RESTable.Requests
         public Headers ResponseHeaders => _responseHeaders ??= new Headers();
         private IDictionary<Type, object> Services { get; }
 
-
         private List<Condition<T>> _conditions;
 
         public List<Condition<T>> Conditions
@@ -216,6 +215,10 @@ namespace RESTable.Requests
 
         public async Task<IResult> Evaluate()
         {
+            if (IsEvaluating)
+            {
+                throw new InvalidOperationException("A call to Evaluate() was made for a request that is already evaluating");
+            }
             if (Headers.Source is string sourceHeader)
                 Body = await GetBodyFromSourceHeader(sourceHeader);
 

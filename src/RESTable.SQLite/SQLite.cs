@@ -19,7 +19,7 @@ namespace RESTable.SQLite
         /// Selects entities in the SQLite database using the RESTable.SQLite O/RM mapping 
         /// facilities. Returns an IEnumerable of the provided resource type.
         /// </summary>
-        /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 
+        /// <param name="where">The WHERE clause of the SQL squery to execute. Will be preceded 
         /// by "SELECT * FROM {type} " in the actual query</param>
         /// <param name="onlyRowId">Populates only RowIds for the resulting entities</param>
         /// <returns></returns>

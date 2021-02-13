@@ -123,6 +123,10 @@ namespace RESTable.WebSockets
             }
         }
 
+        public async Task HandleTextInput(string textInput) => await WebSocketController.HandleTextInput(Id, textInput);
+
+        public async Task HandleBinaryInput(byte[] binaryInput) => await WebSocketController.HandleBinaryInput(Id, binaryInput);
+
         private IProtocolHolder ProtocolHolder { get; set; }
 
         public string HeadersStringCache
@@ -213,7 +217,7 @@ namespace RESTable.WebSockets
 
         #region Input
 
-        internal async Task HandleTextInput(string textData)
+        internal async Task HandleTextInputInternal(string textData)
         {
             if (TerminalConnection == null) return;
             if (!TerminalConnection.Terminal.SupportsTextInput)
@@ -227,7 +231,7 @@ namespace RESTable.WebSockets
             BytesReceived += (ulong) Encoding.UTF8.GetByteCount(textData);
         }
 
-        internal async Task HandleBinaryInput(byte[] binaryData)
+        internal async Task HandleBinaryInputInternal(byte[] binaryData)
         {
             if (TerminalConnection == null) return;
             if (!TerminalConnection.Terminal.SupportsBinaryInput)

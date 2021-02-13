@@ -81,14 +81,15 @@ namespace RESTable.Requests
         /// <param name="https">Is the client connected with HTTPS?</param>
         /// <param name="cookies">The cookies registered for this client</param>
         /// <returns></returns>
-        public static Client External(IPAddress clientIp, IPAddress proxyIp, string userAgent, string host, bool https, Cookies cookies) => new(
+        public static Client External(IPAddress clientIp, IPAddress proxyIp, string userAgent, string host, bool https, Cookies cookies) => new
+        (
             origin: OriginType.External,
             host: host,
             clientIp: clientIp,
             proxyIp: proxyIp,
             userAgent: userAgent,
             https: https,
-            cookies: cookies
+            cookies: cookies ?? new Cookies()
         );
 
         /// <summary>

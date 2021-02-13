@@ -6,14 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using RESTable.Requests;
-using RESTable.WebSockets;
 
 namespace RESTable.AspNetCore
 {
     internal class AspNetCoreWebSocket : WebSockets.WebSocket
     {
         private HttpContext HttpContext { get; }
-        private System.Net.WebSockets.WebSocket WebSocket { get; set; }
+        private WebSocket WebSocket { get; set; }
 
         public AspNetCoreWebSocket(HttpContext httpContext, string webSocketId, Client client) : base(webSocketId, client)
         {
@@ -48,12 +47,12 @@ namespace RESTable.AspNetCore
                 {
                     if (isBinary)
                     {
-                        await WebSocketController.HandleBinaryInput(Id, byteArray);
+                        await HandleBinaryInput(byteArray);
                     }
                     else
                     {
                         var str = Encoding.UTF8.GetString(byteArray);
-                        await WebSocketController.HandleTextInput(Id, str);
+                        await HandleTextInput(str);
                     }
                 }
                 catch (Exception e)
@@ -67,7 +66,7 @@ namespace RESTable.AspNetCore
         private async Task<(byte[] data, bool isText)> ReceiveStreamAsync(CancellationToken ct = default)
         {
             var buffer = new ArraySegment<byte>(new byte[4096]);
-            var ms = new MemoryStream();
+            var ms = new SwappingStream();
 
             WebSocketReceiveResult result;
             do
@@ -78,8 +77,10 @@ namespace RESTable.AspNetCore
                     await ms.WriteAsync(buffer.Array, buffer.Offset, result.Count, ct);
             } while (!result.EndOfMessage);
 
+            ms.Seek(0, SeekOrigin.Begin);
+            
             return (
-                data: ms.ToArray(),
+                data: await ms.GetBytesAsync(),
                 isText: result.MessageType == WebSocketMessageType.Binary
             );
         }

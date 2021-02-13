@@ -552,6 +552,7 @@ namespace RESTable
                 case FormatException _: return new UnsupportedContent(exception);
                 case JsonReaderException jre: return new FailedJsonDeserialization(jre);
                 case RuntimeBinderException _: return new BinderPermissions(exception);
+                case ArgumentException _: return new BadRequest(ErrorCodes.Unknown, exception.Message, exception);
                 case NotImplementedException _: return new FeatureNotImplemented("RESTable encountered a call to a non-implemented method");
                 default: return new Unknown(exception);
             }

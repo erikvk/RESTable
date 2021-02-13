@@ -54,7 +54,17 @@ namespace RESTable.Tests
 
     public class MockNetworkProvider : INetworkProvider
     {
-        public static Task<HttpStatusCode> Handle(Method method, string uri, Stream body, Headers headers)
+        private static Client GetMockClient => Client.External
+        (
+            clientIp: IPAddress.Parse("151.10.10.5"),
+            proxyIp: null,
+            userAgent: "Some User-Agent!",
+            host: "the host header",
+            https: true,
+            cookies: new Cookies()
+        );
+
+        public static Task<HttpStatusCode> MakeRequest(Method method, string uri, Stream body, Headers headers)
         {
             return default;
         }

@@ -199,7 +199,7 @@ namespace RESTable.Requests
     /// </summary>
     public static class ExtensionMethods
     {
-        public static TResult Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, TResult> selector, string message) where TResource : class
+        public static TResult Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, TResult> selector, string errorMessage) where TResource : class
         {
             try
             {
@@ -207,12 +207,12 @@ namespace RESTable.Requests
             }
             catch (Exception e)
             {
-                message = $"Error in request to resource '{typeof(TResource).GetRESTableTypeName()}': {message}";
-                throw new BadRequest(ErrorCodes.Unknown, message, e);
+                errorMessage = $"Error in request to resource '{typeof(TResource).GetRESTableTypeName()}': {errorMessage}";
+                throw new BadRequest(ErrorCodes.Unknown, errorMessage, e);
             }
         }
         
-        public static async Task<TResult> Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, Task<TResult>> selector, string message) where TResource : class
+        public static async Task<TResult> Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, Task<TResult>> selector, string errorMessage) where TResource : class
         {
             try
             {
@@ -220,8 +220,8 @@ namespace RESTable.Requests
             }
             catch (Exception e)
             {
-                message = $"Error in request to resource '{typeof(TResource).GetRESTableTypeName()}': {message}";
-                throw new BadRequest(ErrorCodes.Unknown, message, e);
+                errorMessage = $"Error in request to resource '{typeof(TResource).GetRESTableTypeName()}': {errorMessage}";
+                throw new BadRequest(ErrorCodes.Unknown, errorMessage, e);
             }
         }
 
