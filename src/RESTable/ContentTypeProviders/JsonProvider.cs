@@ -149,8 +149,7 @@ namespace RESTable.ContentTypeProviders
             var serializer = ignoreNulls ? SerializerIgnoreNulls : Serializer;
             var stream = new SwappingStream();
             using var swr = new StreamWriter(stream, UTF8, 1024, true);
-            using var jwr = new RESTableJsonWriter(swr, 0);
-            jwr.Formatting = _formatting;
+            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = _formatting};
             serializer.Serialize(jwr, entity);
             return stream;
         }

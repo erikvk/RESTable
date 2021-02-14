@@ -200,15 +200,14 @@ namespace RESTable.ProtocolProviders
             {
                 case Report report:
                     await contentTypeProvider.SerializeCollection(report.ReportBody.ToAsyncSingleton(), toSerialize.Body, report.Request);
-                    return;
+                    break;
 
                 case Head head:
                     head.Headers.EntityCount = head.EntityCount.ToString();
-                    return;
+                    break;
 
                 case IEntities<object> entities:
                     long entityCount = await contentTypeProvider.SerializeCollection((dynamic) entities, toSerialize.Body, entities.Request);
-                    toSerialize.Body.Rewind();
                     toSerialize.Headers.EntityCount = entityCount.ToString();
                     toSerialize.EntityCount = entityCount;
                     if (entityCount == 0)
@@ -221,8 +220,9 @@ namespace RESTable.ProtocolProviders
                         entities.Headers.Pager = pager.ToUriString();
                     }
                     entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
-                    return;
+                    break;
             }
+            toSerialize.Body.Rewind();
         }
 
         private static void SetSelector<TRequest, TEntity>(IRequest<TRequest> request, IEntities<TEntity> entities)

@@ -8,6 +8,11 @@
     public enum LineEndings
     {
         /// <summary>
+        /// Line endings are written as defined by the current environment
+        /// </summary>
+        Environment = 0,
+
+        /// <summary>
         /// Line endings are written as \r\n
         /// </summary>
         Windows,

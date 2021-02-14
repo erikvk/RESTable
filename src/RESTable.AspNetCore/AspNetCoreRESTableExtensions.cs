@@ -17,7 +17,7 @@ namespace RESTable.AspNetCore
             bool allowAllOrigins = true,
             string configFilePath = null,
             bool prettyPrint = true,
-            LineEndings lineEndings = LineEndings.Windows
+            LineEndings lineEndings = LineEndings.Environment
         )
         {
             builder.UseWebSockets();

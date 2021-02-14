@@ -292,8 +292,7 @@ namespace RESTable
                             await SafeOperation(HEAD, tail?.ToBytes());
                             break;
                         case "STREAM":
-                            var result = await WsEvaluate(GET, null);
-                            var serialized = await result.Serialize();
+                            var serialized = await WsEvaluate(GET, null);
                             if (serialized.Result is Content)
                                 await StreamSerializedResult(serialized, serialized.TimeElapsed);
                             else await SendSerializedResult(serialized);
@@ -537,21 +536,21 @@ namespace RESTable
             return result;
         }
 
-        private async Task<IResult> WsEvaluate(Method method, byte[] body)
+        private async Task<ISerializedResult> WsEvaluate(Method method, byte[] body)
         {
-            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
+            if (Query.Length == 0) return await new ShellNoQuery(WebSocket).Serialize();
             var local = Query;
             await using var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers);
             var result = await request.Evaluate();
+            var serialized = await result.Serialize();
 
             switch (result)
             {
                 case Results.Error _ when queryChangedPreEval:
                     query = previousQuery;
                     break;
-                case IEntities entities:
+                case IEntities _:
                     query = local;
-                    var serialized = await entities.Serialize();
                     PreviousEntities = serialized;
                     break;
                 case Change _:
@@ -563,7 +562,7 @@ namespace RESTable
                     break;
             }
             queryChangedPreEval = false;
-            return result;
+            return serialized;
         }
 
         private async Task<(bool isValid, IResource resource)> ValidateQuery()
@@ -595,9 +594,8 @@ namespace RESTable
         private async Task SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
-            var result = await WsEvaluate(method, body);
-            var serializedResult = await result.Serialize();
-            switch (result)
+            var serializedResult = await WsEvaluate(method, body);
+            switch (serializedResult.Result)
             {
                 case Content content:
 
@@ -633,11 +631,8 @@ namespace RESTable
 
             if (PreviousEntities == null)
             {
-                var result = await WsEvaluate(GET, null);
-                var serialized = await result.Serialize();
-                if (result is IEntities)
-                    PreviousEntities = serialized;
-                else
+                var serialized = await WsEvaluate(GET, null);
+                if (serialized.Result is not IEntities)
                 {
                     await SendSerializedResult(serialized);
                     return;
@@ -727,7 +722,7 @@ namespace RESTable
         private async Task SendBadRequest(string message = null) => await WebSocket.SendText($"400: Bad request{message}");
         private async Task SendInvalidCommandArgument(string command, string arg) => await WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
         private async Task SendUnknownCommand(string command) => await WebSocket.SendText($"Unknown command '{command}'");
-        private async Task SendCredits() => await WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
+        private async Task SendCredits() => await WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © {DateTime.Now.Year}");
 
         private async Task Close()
         {

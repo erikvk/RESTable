@@ -83,7 +83,7 @@ namespace RESTable
             string configFilePath = null,
             bool prettyPrint = true,
             ushort nrOfErrorsToKeep = 2000,
-            LineEndings lineEndings = LineEndings.Windows,
+            LineEndings lineEndings = LineEndings.Environment,
             IEnumerable<IEntityResourceProvider> entityResourceProviders = null,
             IEnumerable<IProtocolProvider> protocolProviders = null,
             IEnumerable<IContentTypeProvider> contentTypeProviders = null,

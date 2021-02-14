@@ -13,7 +13,6 @@ namespace RESTable.SQLite
         private SQLiteDataReader Reader { get; set; }
         private SQLiteConnection Connection { get; }
         private SQLiteCommand Command { get; set; }
-        private string SQL { get; }
         private bool OnlyRowId { get; }
 
         private long CurrentRowId { get; set; }
@@ -37,8 +36,7 @@ namespace RESTable.SQLite
             OnlyRowId = onlyRowId;
             Connection = new SQLiteConnection(Settings.ConnectionString);
             Connection.Open();
-            SQL = sql;
-            Command = new SQLiteCommand(SQL, Connection);
+            Command = new SQLiteCommand(sql, Connection);
             Reader = Command.ExecuteReader();
         }
 

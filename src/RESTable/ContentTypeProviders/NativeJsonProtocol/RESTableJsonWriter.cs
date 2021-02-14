@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Newtonsoft.Json;
 using RESTable.Admin;
 
@@ -36,6 +37,9 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
             BaseIndentation = baseIndentation;
             switch (Settings._LineEndings)
             {
+                case LineEndings.Environment:
+                    NewLine = Environment.NewLine;
+                    break;
                 case LineEndings.Windows:
                     NewLine = "\r\n";
                     break;

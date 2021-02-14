@@ -49,7 +49,7 @@ namespace RESTable.Tutorial
             .UseMvcWithDefaultRoute()
             .UseRESTable
             (
-                uri: "/api",
+                uri: "/restable",
                 requireApiKey: true,
                 configFilePath: "./Config.xml"
             );
