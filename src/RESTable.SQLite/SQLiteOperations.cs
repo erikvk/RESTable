@@ -9,7 +9,7 @@ namespace RESTable.SQLite
 {
     internal static class SQLiteOperations<T> where T : SQLiteTable
     {
-        public static IAsyncEnumerable<T> Select(IRequest<T> request)
+        public static IAsyncEnumerable<T> SelectAsync(IRequest<T> request)
         {
             var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
             request.Conditions = post;
@@ -19,22 +19,22 @@ namespace RESTable.SQLite
             );
         }
 
-        public static async Task<int> Insert(IRequest<T> request)
+        public static async Task<int> InsertAsync(IRequest<T> request)
         {
             return await SQLite<T>.Insert(request.GetInputEntitiesAsync());
         }
 
-        public static async Task<int> Update(IRequest<T> request)
+        public static async Task<int> UpdateAsync(IRequest<T> request)
         {
             return await SQLite<T>.Update(request.GetInputEntitiesAsync());
         }
 
-        public static async Task<int> Delete(IRequest<T> request)
+        public static async Task<int> DeleteAsync(IRequest<T> request)
         {
             return await SQLite<T>.Delete(request.GetInputEntitiesAsync());
         }
 
-        public static async Task<long> Count(IRequest<T> request)
+        public static async Task<long> CountAsync(IRequest<T> request)
         {
             var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
             if (post.Any())

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Resources;
-using RESTable.AspNetCore;
 using RESTable.Excel;
 using RESTable.OData;
 using RESTable.ProtocolProviders;
@@ -35,7 +34,8 @@ namespace RESTable.Example
         public void Configure(IApplicationBuilder app)
         {
             app.UseMvcWithDefaultRoute();
-            app.UseRESTable();
+            app.UseWebSockets();
+            RESTableConfig.Init(services: app.ApplicationServices);
 
             RESTableContext.Root
                 .CreateRequest<Person>(Method.POST)

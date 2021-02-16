@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -18,13 +19,15 @@ namespace RESTable.SQLite.Example
     {
         public static void Main()
         {
+            var services = new ServiceCollection()
+                .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("\\data_debug2"))
+                .BuildServiceProvider();
+
             RESTableConfig.Init
             (
-                port: 8282,
-                uri: "/api",
                 requireApiKey: true,
                 configFilePath: "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteEntityResourceProvider("\\data_debug2")}
+                services: services
             );
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers

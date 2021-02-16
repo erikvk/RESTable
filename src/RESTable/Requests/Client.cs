@@ -97,7 +97,7 @@ namespace RESTable.Requests
         /// </summary>
         public static Client Internal => new(
             origin: OriginType.Internal,
-            host: $"localhost:{Admin.Settings._Port}",
+            host: "localhost",
             clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
             proxyIp: null,
             userAgent: null,
@@ -107,17 +107,7 @@ namespace RESTable.Requests
 
         internal static Client Remote => new(
             origin: (OriginType) (-1),
-            host: $"localhost:{Admin.Settings._Port}",
-            clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
-            proxyIp: null,
-            userAgent: null,
-            https: false,
-            cookies: new Cookies()
-        );
-
-        internal static Client Webhook => new(
-            origin: OriginType.Internal,
-            host: $"localhost:{Admin.Settings._Port}",
+            host: "localhost",
             clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
             proxyIp: null,
             userAgent: null,

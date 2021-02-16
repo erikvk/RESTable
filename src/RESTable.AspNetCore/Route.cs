@@ -13,16 +13,13 @@ namespace RESTable.AspNetCore
     [RESTable(Method.GET)]
     public class Route : ISelector<Route>
     {
-        
         public string Name { get; set; }
         public string Template { get; set; }
         public string[] MethodRestrictions { get; set; }
 
-        public IEnumerable<Route> Select(IRequest<Route> request) => GetRoutes();
-
-        private static IEnumerable<Route> GetRoutes()
+        public IEnumerable<Route> Select(IRequest<Route> request)
         {
-            var routeCollection = Application.Services.GetService<IHttpContextAccessor>()
+            var routeCollection = request.GetService<IHttpContextAccessor>()
                 .HttpContext.GetRouteData()
                 .Routers.OfType<RouteCollection>()
                 .First();

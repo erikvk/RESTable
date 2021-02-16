@@ -26,7 +26,6 @@ namespace RESTable.Starcounter3x
         /// </summary>
         public static IEnumerable<T> Select(IRequest<T> request)
         {
-            request.EnsureServiceAttached(Transaction);
             switch (request.Conditions.Count)
             {
                 case 0:
@@ -64,7 +63,6 @@ namespace RESTable.Starcounter3x
         /// </summary>
         public static int Insert(IRequest<T> request)
         {
-            request.EnsureServiceAttached(Transaction);
             var count = 0;
             Transaction.Run(db => count = request.GetInputEntities().Count());
             return count;
@@ -85,7 +83,6 @@ namespace RESTable.Starcounter3x
         /// </summary>
         public static int Delete(IRequest<T> request)
         {
-            request.EnsureServiceAttached(Transaction);
             var count = 0;
             Transaction.Run(db => request.GetInputEntities().ForEach(entity =>
             {

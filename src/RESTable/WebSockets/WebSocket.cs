@@ -18,7 +18,7 @@ namespace RESTable.WebSockets
     /// <inheritdoc cref="ITraceable" />
     /// <summary>
     /// </summary>
-    public abstract class WebSocket : IWebSocket, IWebSocketInternal, ITraceable, IAsyncDisposable
+    public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvider, ITraceable, IAsyncDisposable
     {
         static WebSocket() => BinaryCache = new BinaryCache();
         private static BinaryCache BinaryCache { get; }
@@ -85,6 +85,8 @@ namespace RESTable.WebSockets
 
         public Task LifetimeTask { get; private set; }
 
+        public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
+
         internal async Task ConnectTo(ITerminal terminal, ITerminalResource resource)
         {
             await ReleaseTerminal();
@@ -100,7 +102,7 @@ namespace RESTable.WebSockets
 
         internal void SetContext(IRequest upgradeRequest)
         {
-            Context = new WebSocketContext(this, Client);
+            Context = new WebSocketContext(this, Client, upgradeRequest);
             Headers = upgradeRequest.Headers;
         }
 
@@ -525,11 +527,12 @@ namespace RESTable.WebSockets
         /// <inheritdoc />
         public override int GetHashCode() => Id.GetHashCode();
 
-        protected WebSocket(string webSocketId, Client client)
+        protected WebSocket(string webSocketId, RESTableContext context, Client client)
         {
             Id = webSocketId;
             Status = WebSocketStatus.Waiting;
             Client = client;
+            Context = context;
             CancellationTokenSource = new CancellationTokenSource();
         }
     }

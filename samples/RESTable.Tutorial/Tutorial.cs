@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
-using RESTable.AspNetCore;
 using RESTable.Excel;
 using RESTable.OData;
 using RESTable.ProtocolProviders;
@@ -45,14 +44,18 @@ namespace RESTable.Tutorial
             .AddHttpContextAccessor()
             .AddMvc(o => o.EnableEndpointRouting = false);
 
-        public void Configure(IApplicationBuilder app) => app
-            .UseMvcWithDefaultRoute()
-            .UseRESTable
+        public void Configure(IApplicationBuilder app)
+        {
+            app.UseMvcWithDefaultRoute();
+            app.UseWebSockets();
+            RESTableConfig.Init
             (
                 uri: "/restable",
                 requireApiKey: true,
-                configFilePath: "./Config.xml"
+                configFilePath: "./Config.xml",
+                services: app.ApplicationServices
             );
+        }
     }
 
     /// <summary>
@@ -64,16 +67,33 @@ namespace RESTable.Tutorial
     {
         public string Name { get; set; }
 
-        public bool HasSecretIdentity => Id == "Secret Identity";
-
-        public Gender Gender => Sex switch
+        public bool HasSecretIdentity
         {
-            "Male Characters" => Male,
-            "Female Characters" => Female,
-            _ => Other
-        };
+            get => Id == "Secret Identity";
+            set => Id = value ? "Secret Identity" : "Public Identity";
+        }
 
-        public int? YearIntroduced => Year == 0 ? (int?) null : Year;
+        public Gender Gender
+        {
+            get => Sex switch
+            {
+                "Male Characters" => Male,
+                "Female Characters" => Female,
+                _ => Other
+            };
+            set => Sex = value switch
+            {
+                Male => "Male Characters",
+                Female => "Female Characters",
+                _ => "Other"
+            };
+        }
+
+        public int? YearIntroduced
+        {
+            get => Year == 0 ? (int?) null : Year;
+            set => Year = value.GetValueOrDefault();
+        }
 
         [RESTableMember(hide: true)] public int Year { get; set; }
         [RESTableMember(hide: true)] public string Id { get; set; }
@@ -127,7 +147,6 @@ namespace RESTable.Tutorial
             };
         }
     }
-
 
     #endregion
 

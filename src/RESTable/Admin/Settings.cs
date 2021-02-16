@@ -16,16 +16,10 @@ namespace RESTable.Admin
         private const string description = "The Settings resource contains the current " +
                                            "settings for the RESTable instance.";
         
-        public static ushort _Port => Instance.Port;
         public static string _Uri => Instance.Uri;
         public static bool _PrettyPrint => Instance.PrettyPrint;
         public static int _NumberOfErrorsToKeep => Instance.NumberOfErrorsToKeep;
         public static LineEndings _LineEndings => Instance.LineEndings;
-
-        /// <summary>
-        /// The port of the RESTable REST API
-        /// </summary>
-        public ushort Port { get; private set; }
 
         /// <summary>
         /// The URI of the RESTable REST API
@@ -71,7 +65,6 @@ namespace RESTable.Admin
 
         internal static void Init
         (
-            ushort port,
             string uri,
             bool prettyPrint,
             int numberOfErrorsToKeep,
@@ -80,7 +73,6 @@ namespace RESTable.Admin
         {
             Instance = new Settings
             {
-                Port = port,
                 Uri = uri,
                 PrettyPrint = prettyPrint,
                 NumberOfErrorsToKeep = numberOfErrorsToKeep,

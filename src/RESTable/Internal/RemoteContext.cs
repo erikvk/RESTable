@@ -12,7 +12,7 @@ namespace RESTable.Internal
         protected override WebSocket CreateWebSocket() => throw new NotImplementedException();
         protected override bool IsWebSocketUpgrade { get; } = false;
 
-        public override IRequest CreateRequest(string uri, Method method = Method.GET, object body = null, Headers headers = null)
+        public override IRequest CreateRequest(Method method = Method.GET, string uri = "/", object body = null, Headers headers = null)
         {
             return new RemoteRequest(this, method, uri, body, headers);
         }

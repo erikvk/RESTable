@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.Internal.Auth;
 using RESTable.Meta;
@@ -14,13 +16,14 @@ namespace RESTable.Requests
     /// and define the root for each ITraceable tree. They also hold WebSocket connections
     /// and Client access rights.
     /// </summary>
-    public abstract class RESTableContext
+    public abstract class RESTableContext : IDisposable, IAsyncDisposable
     {
         internal string InitialTraceId { get; }
         private const int MaximumStackDepth = 500;
         private WebSocket webSocket;
         private int StackDepth;
         internal bool IsBottomOfStack => StackDepth < 1;
+        public IServiceProvider Services { get; }
 
         internal void IncreaseDepth()
         {
@@ -98,7 +101,7 @@ namespace RESTable.Requests
             error = null;
             return true;
         }
-        
+
         /// <summary>
         /// Creates a request in this context for a resource type, using the given method and optional protocol id and 
         /// view name. If the protocol ID is null, the default protocol will be used. T must be a registered resource type.
@@ -122,42 +125,18 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Creates a request in this context for a given resource, using the given method and optional protocol id and 
-        /// view name. If the protocol ID is null, the default protocol will be used. T must be a registered resource type.
-        /// </summary>
-        /// <param name="resource">The resource to create a request for</param>
-        /// <param name="method">The method to perform, for example GET</param>
-        /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
-        /// protocol ID is null, the default protocol will be used.</param>0
-        /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
-        public virtual IRequest<T> CreateRequest<T>(IResource<T> resource, Method method = GET, string protocolId = "restable", string viewName = null)
-            where T : class
-        {
-            var parameters = new RequestParameters
-            (
-                context: this,
-                method: method,
-                resource: resource,
-                protocolIdentifier: protocolId,
-                viewName: viewName
-            );
-            return new Request<T>(resource, parameters);
-        }
-
-        /// <summary>
         /// Creates a request in this context using the given parameters.
         /// </summary>
-        /// <param name="uri">The URI of the request</param>
         /// <param name="method">The method to perform</param>
+        /// <param name="uri">The URI of the request</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public virtual IRequest CreateRequest(string uri, Method method = GET, object body = null, Headers headers = null)
+        public virtual IRequest CreateRequest(Method method = GET, string uri = "/", object body = null, Headers headers = null)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
             {
                 WebSocket = CreateWebSocket();
-                WebSocket.Context = this;
             }
             var parameters = new RequestParameters(this, method, uri, headers);
             parameters.SetBody(body);
@@ -241,12 +220,14 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Creates a new context for a client.
+        /// Creates a new context for a client, with scoped services
         /// </summary>
         /// <param name="client">The client of the context</param>
-        protected RESTableContext(Client client)
+        /// <param name="services">The services to use in this context</param>
+        protected RESTableContext(Client client, IServiceProvider services = null)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
+            Services = services ?? new ServiceCollection().BuildServiceProvider();
             InitialTraceId = NextId;
             StackDepth = 0;
         }
@@ -272,6 +253,22 @@ namespace RESTable.Requests
                 var bytes = BitConverter.GetBytes(IdNr += 1);
                 return Convert.ToBase64String(bytes);
             }
+        }
+
+        public void Dispose()
+        {
+            if (Services is IAsyncDisposable asyncDisposable)
+                asyncDisposable.DisposeAsync().AsTask().Wait();
+            if (Services is IDisposable disposable)
+                disposable.Dispose();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Services is IAsyncDisposable asyncDisposable)
+                await asyncDisposable.DisposeAsync();
+            if (Services is IDisposable disposable)
+                disposable.Dispose();
         }
     }
 }

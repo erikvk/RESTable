@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.AspNetCore;
 using RESTable.Excel;
 using RESTable.Starcounter3x;
 
@@ -21,7 +20,8 @@ namespace RESTable.Example
         public void Configure(IApplicationBuilder app)
         {
             app.UseMvcWithDefaultRoute();
-            app.UseRESTable();
+            app.UseWebSockets();
+            RESTableConfig.Init(services: app.ApplicationServices);
         }
     }
 }

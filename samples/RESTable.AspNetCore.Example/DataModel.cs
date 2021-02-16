@@ -22,7 +22,7 @@ namespace RESTable.Example
 
         public Job Job
         {
-            get => SQLite<Job>.Select($"WHERE RowId={JobRowId}").ToEnumerable().FirstOrDefault();
+            get => SQLite<Job>.Select($"WHERE RowId={JobRowId}").FirstOrDefaultAsync().Result;
             set
             {
                 SQLite<Job>.Insert(value).Wait();

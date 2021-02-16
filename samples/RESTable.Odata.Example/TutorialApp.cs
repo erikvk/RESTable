@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.OData;
+using RESTable.ProtocolProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -16,24 +18,16 @@ namespace RESTable.SQLite.Example
     {
         public static void Main()
         {
+            var services = new ServiceCollection()
+                .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("\\data"))
+                .AddSingleton<IProtocolProvider>(new ODataProtocolProvider());
+
             RESTableConfig.Init
             (
-                port: 8282,
-                uri: "/api",
                 requireApiKey: true,
-                configFilePath: "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteEntityResourceProvider("\\data")},
-                protocolProviders: new[] {new ODataProtocolProvider()}
+                configFilePath: "./Config.xml",
+                services: services.BuildServiceProvider()
             );
-
-            // The 'port' argument sets the HTTP port on which to register the REST handlers
-            // The 'uri' argument sets the root uri of the REST API
-            // The 'requireApiKey' parameter is set to 'true'. API keys are required in all incoming requests.
-            // The 'configFilePath' points towards the configuration file, which contains API keys. In this case,
-            //   this file is located in the project folder.
-            // The 'resourceProviders' parameter is used for SQLite integration (see the ExampleDatabase class below)
-            // The 'protocolProviders' parameter is used for activating OData support
-
             ExampleDatabase.Setup();
         }
     }

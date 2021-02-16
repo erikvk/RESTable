@@ -14,7 +14,7 @@ namespace RESTable.AspNetCore
         private HttpContext HttpContext { get; }
         private WebSocket WebSocket { get; set; }
 
-        public AspNetCoreWebSocket(HttpContext httpContext, string webSocketId, Client client) : base(webSocketId, client)
+        public AspNetCoreWebSocket(HttpContext httpContext, string webSocketId, RESTableContext context, Client client) : base(webSocketId, context, client)
         {
             HttpContext = httpContext;
         }

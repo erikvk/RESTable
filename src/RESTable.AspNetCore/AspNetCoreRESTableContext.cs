@@ -9,7 +9,7 @@ namespace RESTable.AspNetCore
     {
         private HttpContext HttpContext { get; }
 
-        public AspNetCoreRESTableContext(Client client, HttpContext httpContext) : base(client)
+        public AspNetCoreRESTableContext(Client client, HttpContext httpContext) : base(client, httpContext.RequestServices)
         {
             HttpContext = httpContext;
         }
@@ -17,7 +17,7 @@ namespace RESTable.AspNetCore
 
         protected override WebSocket CreateWebSocket()
         {
-            return new AspNetCoreWebSocket(HttpContext, Guid.NewGuid().ToString("N"), Client);
+            return new AspNetCoreWebSocket(HttpContext, Guid.NewGuid().ToString("N"), this, Client);
         }
     }
 }

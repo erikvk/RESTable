@@ -119,19 +119,19 @@ namespace RESTable.SQLite
         protected override Type AttributeType => typeof(SQLiteAttribute);
 
         /// <inheritdoc />
-        protected override IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Select(request);
+        protected override IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.SelectAsync(request);
 
         /// <inheritdoc />
-        protected override Task<int> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Insert(request);
+        protected override Task<int> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.InsertAsync(request);
 
         /// <inheritdoc />
-        protected override Task<int> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Update(request);
+        protected override Task<int> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.UpdateAsync(request);
 
         /// <inheritdoc />
-        protected override Task<int> DefaultDeleteAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Delete(request);
+        protected override Task<int> DefaultDeleteAsync<T>(IRequest<T> request) => SQLiteOperations<T>.DeleteAsync(request);
 
         /// <inheritdoc />
-        protected override Task<long> DefaultCountAsync<T>(IRequest<T> request) => SQLiteOperations<T>.Count(request);
+        protected override Task<long> DefaultCountAsync<T>(IRequest<T> request) => SQLiteOperations<T>.CountAsync(request);
 
         /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()

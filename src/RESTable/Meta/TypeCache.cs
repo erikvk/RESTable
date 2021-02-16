@@ -73,8 +73,8 @@ namespace RESTable.Meta
         #region Declared properties
 
         internal static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
-        internal static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCacheByActualName;
-        internal static readonly ConcurrentDictionary<Type, EntityTypeContract> EntityTypeContracts;
+        private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCacheByActualName;
+        private static readonly ConcurrentDictionary<Type, EntityTypeContract> EntityTypeContracts;
 
         internal static IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(this Type type, bool flag = false) => type
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)

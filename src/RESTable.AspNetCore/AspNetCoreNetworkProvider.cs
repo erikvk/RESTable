@@ -3,14 +3,13 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using RESTable.NetworkProviders;
 using RESTable.Requests;
 using RESTable.Results;
 using RESTable.Linq;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreNetworkProvider : INetworkProvider
+    internal class AspNetCoreNetworkProvider
     {
         private IRouteBuilder RouteBuilder { get; }
 
@@ -47,7 +46,7 @@ namespace RESTable.AspNetCore
                         return;
                     }
                     var body = aspNetCoreContext.Request.Body;
-                    await using var request = context.CreateRequest(uri, method, body, headers);
+                    await using var request = context.CreateRequest(method, uri, body, headers);
                     var result = await request.Evaluate();
                     if (result is WebSocketUpgradeSuccessful ws)
                     {

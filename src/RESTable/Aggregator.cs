@@ -108,11 +108,8 @@ namespace RESTable
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
                         await using var internalRequest = request.Context.CreateRequest
-                        (
-                            uri: uri,
-                            method: method,
-                            headers: request.Headers
-                        );
+                        (method: method,
+                            uri: uri, headers: request.Headers);
                         var result = await internalRequest.Evaluate();
                         switch (result)
                         {

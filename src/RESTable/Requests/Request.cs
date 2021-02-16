@@ -99,7 +99,6 @@ namespace RESTable.Requests
             }
         }
 
-
         public CachedProtocolProvider CachedProtocolProvider
         {
             get => Parameters.CachedProtocolProvider;
@@ -222,6 +221,8 @@ namespace RESTable.Requests
             if (Headers.Source is string sourceHeader)
                 Body = await GetBodyFromSourceHeader(sourceHeader);
 
+            await Body.Initialize();
+            
             var result = GetQuickErrorResult() ?? await RunEvaluation();
 
             if (IsWebSocketUpgrade && !(result is WebSocketUpgradeSuccessful))
@@ -344,7 +345,7 @@ namespace RESTable.Requests
                 if (source.IsInternal)
                 {
                     var result = await Context
-                        .CreateRequest(source.URI, source.Method, null, source.Headers)
+                        .CreateRequest(source.Method, source.URI, null, source.Headers)
                         .Evaluate();
                     var entities = result as IEntities;
                     if (entities == null) throw new InvalidExternalSource(source.URI, await result.GetLogMessage());

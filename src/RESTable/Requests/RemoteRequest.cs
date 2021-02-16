@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -41,7 +40,6 @@ namespace RESTable.Requests
         private RemoteContext RemoteContext { get; }
         public Method Method { get; set; }
         private RemoteResource RemoteResource { get; set; }
-        private IDictionary<Type, object> Services { get; }
         public Body Body { get; set; }
         public Type TargetType => null;
         private MetaConditions _metaConditions;
@@ -58,6 +56,7 @@ namespace RESTable.Requests
         {
             try
             {
+                await Body.Initialize();
                 var sw = Stopwatch.StartNew();
                 var method = new HttpMethod(Method.ToString());
                 var message = new HttpRequestMessage(method, URI);
@@ -155,23 +154,9 @@ namespace RESTable.Requests
             }
         }
 
-        public void EnsureServiceAttached<T>(T service) where T : class
-        {
-            if (Services.ContainsKey(typeof(T))) return;
-            Services[typeof(T)] = service;
-        }
-
-        public void EnsureServiceAttached<TService, TImplementation>(TImplementation service)
-            where TImplementation : class, TService
-            where TService : class
-        {
-            if (Services.ContainsKey(typeof(TService))) return;
-            Services[typeof(TService)] = service;
-        }
-
         public object GetService(Type serviceType)
         {
-            return Services.TryGetValue(serviceType, out var service) ? service : null;
+            return RemoteContext.Services.GetService(serviceType);
         }
 
         public RemoteRequest(RemoteContext context, Method method, string uri, object body, Headers headers)
@@ -186,7 +171,6 @@ namespace RESTable.Requests
             if (context.HasApiKey)
                 Headers.Authorization = $"apikey {context.ApiKey}";
             Method = method;
-            Services = new Dictionary<Type, object>();
             Body = new Body(ProtocolHolder, body);
             URI = new Uri(context.ServiceRoot + uri);
             LogTime = DateTime.Now;
@@ -199,7 +183,6 @@ namespace RESTable.Requests
             if (context.HasApiKey)
                 Headers.Authorization = $"apikey {context.ApiKey}";
             Method = method;
-            Services = new Dictionary<Type, object>();
             URI = uri;
             Body = bodyCopy;
             LogTime = DateTime.Now;
@@ -217,19 +200,11 @@ namespace RESTable.Requests
         public void Dispose()
         {
             Body.Dispose();
-            foreach (var disposable in Services.Values.OfType<IAsyncDisposable>())
-                disposable.DisposeAsync().AsTask().Wait();
-            foreach (var disposable in Services.Values.OfType<IDisposable>())
-                disposable.Dispose();
         }
 
         public async ValueTask DisposeAsync()
         {
             await Body.DisposeAsync();
-            foreach (var disposable in Services.Values.OfType<IAsyncDisposable>())
-                await disposable.DisposeAsync();
-            foreach (var disposable in Services.Values.OfType<IDisposable>())
-                disposable.Dispose();
         }
     }
 }

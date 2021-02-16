@@ -512,7 +512,7 @@ namespace RESTable
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            await using var request = WebSocket.Context.CreateRequest(local, GET, null, WebSocket.Headers);
+            await using var request = WebSocket.Context.CreateRequest(GET, local, null, WebSocket.Headers);
             var result = await request.Evaluate();
             switch (result)
             {
@@ -540,7 +540,7 @@ namespace RESTable
         {
             if (Query.Length == 0) return await new ShellNoQuery(WebSocket).Serialize();
             var local = Query;
-            await using var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers);
+            await using var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers);
             var result = await request.Evaluate();
             var serialized = await result.Serialize();
 

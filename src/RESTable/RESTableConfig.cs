@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTable.Admin;
@@ -13,7 +14,6 @@ using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Internal.Auth;
 using RESTable.Meta.Internal;
-using RESTable.NetworkProviders;
 using RESTable.ProtocolProviders;
 using RESTable.Resources;
 using RESTable.WebSockets;
@@ -69,32 +69,31 @@ namespace RESTable
         /// <param name="requireApiKey">Should the REST API require an API key?</param>
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
         /// <param name="lineEndings">The line endings to use when writing JSON</param>
-        /// <param name="entityResourceProviders">External entity resource providers for the RESTable instance</param>
-        /// <param name="protocolProviders">External protocol providers for the RESTable instance</param>
-        /// <param name="contentTypeProviders">External content type providers for the RESTable instance</param>
-        /// <param name="networkProviders">The network providers to register with RESTable</param>
-        /// <param name="entityTypeContractResolvers">The entity type contract resolvers to register with RESTable</param>
+        /// <param name="services">The service provider to resolve RESTable services from</param>
         public static void Init
         (
-            ushort port = 8282,
-            string uri = "/rest",
+            string uri = "/restable",
             bool requireApiKey = false,
             bool allowAllOrigins = true,
             string configFilePath = null,
             bool prettyPrint = true,
             ushort nrOfErrorsToKeep = 2000,
             LineEndings lineEndings = LineEndings.Environment,
-            IEnumerable<IEntityResourceProvider> entityResourceProviders = null,
-            IEnumerable<IProtocolProvider> protocolProviders = null,
-            IEnumerable<IContentTypeProvider> contentTypeProviders = null,
-            IEnumerable<INetworkProvider> networkProviders = null,
-            IEnumerable<IEntityTypeContractResolver> entityTypeContractResolvers = null
+            IServiceProvider services = null
         )
         {
             try
             {
+                if (Initialized) return;
+                
                 ProcessUri(ref uri);
-                Settings.Init(port, uri, prettyPrint, nrOfErrorsToKeep, lineEndings);
+                Settings.Init(uri, prettyPrint, nrOfErrorsToKeep, lineEndings);
+
+                var entityResourceProviders = services?.GetServices<IEntityResourceProvider>();
+                var protocolProviders = services?.GetServices<IProtocolProvider>();
+                var contentTypeProviders = services?.GetServices<IContentTypeProvider>();
+                var entityTypeContractResolvers = services?.GetServices<IEntityTypeContractResolver>();
+
                 EntityTypeResolverController.SetupEntityTypeResolvers(entityTypeContractResolvers?.ToArray());
                 ResourceFactory.MakeResources(entityResourceProviders?.ToArray());
                 ContentTypeController.SetupContentTypeProviders(contentTypeProviders?.ToList());
@@ -102,7 +101,6 @@ namespace RESTable
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
-                NetworkController.AddNetworkBindings(networkProviders?.ToArray());
                 Initialized = true;
                 UpdateConfiguration();
                 DatabaseIndex.Init();
@@ -118,7 +116,6 @@ namespace RESTable
                 RequireApiKey = default;
                 AllowAllOrigins = default;
                 ConfigFilePath = default;
-                NetworkController.RemoveNetworkBindings();
                 NewState();
                 throw;
             }

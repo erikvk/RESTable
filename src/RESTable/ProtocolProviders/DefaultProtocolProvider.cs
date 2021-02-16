@@ -225,13 +225,6 @@ namespace RESTable.ProtocolProviders
             toSerialize.Body.Rewind();
         }
 
-        private static void SetSelector<TRequest, TEntity>(IRequest<TRequest> request, IEntities<TEntity> entities)
-            where TRequest : class
-            where TEntity : class, TRequest
-        {
-            request.Selector = () => entities;
-        }
-
         public bool IsCompliant(IRequest request, out string invalidReason)
         {
             invalidReason = null;

@@ -1,60 +1,60 @@
-using System.IO;
+using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using RESTable.NetworkProviders;
 using RESTable.Requests;
+using RESTable.Results;
 using RESTable.WebSockets;
 
 namespace RESTable.Tests
 {
     public class MockContext : RESTableContext
     {
-        public MockContext(Client client) : base(client) { }
+        public MockContext(Client client, IServiceProvider services = null) : base(client, services) { }
 
-        protected override bool IsWebSocketUpgrade => throw new System.NotImplementedException();
+        protected override bool IsWebSocketUpgrade => false;
 
         protected override WebSocket CreateWebSocket()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 
     public class MockWebSocket : WebSocket
     {
-        public MockWebSocket(string webSocketId, Client client) : base(webSocketId, client) { }
+        public MockWebSocket(string webSocketId, RESTableContext context, Client client) : base(webSocketId, context, client) { }
 
         protected override Task Send(string text, CancellationToken token)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         protected override Task Send(byte[] data, bool asText, int offset, int length, CancellationToken token)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
-        protected override bool IsConnected => throw new System.NotImplementedException();
+        protected override bool IsConnected => throw new NotImplementedException();
 
         protected override Task SendUpgrade()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         protected override Task InitLifetimeTask(CancellationToken cancellationToken)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         protected override Task Close()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 
-    public class MockNetworkProvider : INetworkProvider
+    public class RequestMaker
     {
-        private static Client GetMockClient => Client.External
+        private Client MockClient => Client.External
         (
             clientIp: IPAddress.Parse("151.10.10.5"),
             proxyIp: null,
@@ -64,19 +64,14 @@ namespace RESTable.Tests
             cookies: new Cookies()
         );
 
-        public static Task<HttpStatusCode> MakeRequest(Method method, string uri, Stream body, Headers headers)
+        public async Task<HttpStatusCode> MakeRequest(Method method, string uri, object body, Headers headers)
         {
-            return default;
-        }
-
-        public void AddRoutes(Method[] methods, string rootUri, ushort port)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void RemoveRoutes(Method[] methods, string uri, ushort port)
-        {
-            throw new System.NotImplementedException();
+            var client = MockClient;
+            var context = new MockContext(client);
+            await using var request = context.CreateRequest(method, uri, body, headers);
+            var result = await request.Evaluate();
+            await using var serialized = await result.Serialize();
+            return serialized.Result.StatusCode;
         }
     }
 }

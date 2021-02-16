@@ -60,7 +60,7 @@ namespace RESTable
                             }
                             case '/':
                             {
-                                await using var innerRequest = request.Context.CreateRequest(argument);
+                                await using var innerRequest = request.Context.CreateRequest(uri: argument);
                                 var result = await innerRequest.Evaluate();
                                 switch (result)
                                 {
@@ -210,7 +210,7 @@ namespace RESTable
                 }
                 if (skip) continue;
                 localMapper = string.Format(localMapper, valueBuffer);
-                await using var innerRequest = request.Context.CreateRequest(localMapper);
+                await using var innerRequest = request.Context.CreateRequest(uri: localMapper);
                 var result = await innerRequest.Evaluate();
                 if (result is IEntities<object> entities)
                 {

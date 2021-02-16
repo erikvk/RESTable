@@ -1,6 +1,10 @@
 namespace RESTable.Tests
 {
-    public class RequestTests
+    public class GeneralTests
     {
+        public GeneralTests()
+        {
+            RESTableConfig.Init();
+        }
     }
 }

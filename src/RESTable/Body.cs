@@ -27,6 +27,8 @@ namespace RESTable
 
         private bool IsIngoing { get; }
 
+        private object UninitializedBodyObject { get; set; }
+
         public ContentType ContentType => IsIngoing
             ? ProtocolHolder.GetInputContentTypeProvider().ContentType
             : ProtocolHolder.GetOutputContentTypeProvider().ContentType;
@@ -101,12 +103,12 @@ namespace RESTable
         {
             ProtocolHolder = protocolHolder;
             IsIngoing = true;
-            Stream = ResolveStream(bodyObject).Result;
+            Stream = ResolveStream(bodyObject);
         }
 
-        private async Task<SwappingStream> ResolveStream(object content)
+        private SwappingStream ResolveStream(object bodyObject)
         {
-            switch (content)
+            switch (bodyObject)
             {
                 case Body body:
                 {
@@ -119,30 +121,39 @@ namespace RESTable
                 case byte[] bytes: return new SwappingStream(bytes);
                 case string str: return new SwappingStream(str.ToBytes());
                 case null: return new SwappingStream();
+                default:
+                    UninitializedBodyObject = bodyObject;
+                    return new SwappingStream();
             }
+        }
 
-            var stream = new SwappingStream();
+        public async Task Initialize()
+        {
+            if (UninitializedBodyObject == null)
+                return;
             var contentTypeProvider = ProtocolHolder.GetInputContentTypeProvider();
+            var content = UninitializedBodyObject;
             switch (content)
             {
                 case IDictionary<string, object> _:
                 case JObject _:
-                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), stream);
+                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream);
                     break;
                 case IAsyncEnumerable<object> aie:
-                    await contentTypeProvider.SerializeCollection(aie, stream);
+                    await contentTypeProvider.SerializeCollection(aie, Stream);
                     break;
                 case IEnumerable<object> ie:
-                    await contentTypeProvider.SerializeCollection(ie.ToAsyncEnumerable(), stream);
+                    await contentTypeProvider.SerializeCollection(ie.ToAsyncEnumerable(), Stream);
                     break;
                 case IEnumerable ie:
-                    await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), stream);
+                    await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), Stream);
                     break;
                 default:
-                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), stream);
+                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream);
                     break;
             }
-            return stream.Rewind();
+            Stream.Rewind();
+            UninitializedBodyObject = null;
         }
 
         /// <summary>

@@ -48,8 +48,6 @@ namespace RESTable.Requests
         public IResource Resource { get; }
         public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
         public TimeSpan TimeElapsed => Parameters.Stopwatch.Elapsed;
-        public void EnsureServiceAttached<T>(T service) where T : class { }
-        public void EnsureServiceAttached<TService, TImplementation>(TImplementation service) where TService : class where TImplementation : class, TService { }
         public object GetService(Type serviceType) => null;
 
         #endregion

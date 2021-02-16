@@ -180,18 +180,6 @@ namespace RESTable.Requests
         /// </summary>
         /// <returns></returns>
         Task<IRequest> GetCopy(string newProtocol = null);
-
-        /// <summary>
-        /// Adds a service object to this request, that is disposed when the
-        /// request is disposed.
-        /// </summary>
-        void EnsureServiceAttached<T>(T service) where T : class;
-
-        /// <summary>
-        /// Adds a service object to this request, that is disposed when the
-        /// request is disposed.
-        /// </summary>
-        void EnsureServiceAttached<TService, TImplementation>(TImplementation service) where TImplementation : class, TService where TService : class;
     }
 
     /// <summary>
