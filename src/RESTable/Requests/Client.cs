@@ -58,7 +58,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Creates a new client with the given origin type
         /// </summary>
-        private Client(OriginType origin, string host, IPAddress clientIp, IPAddress proxyIp, string userAgent, bool https, Cookies cookies)
+        public Client(OriginType origin, string host, IPAddress clientIp, IPAddress proxyIp, string userAgent, bool https, Cookies cookies)
         {
             Origin = origin;
             Host = host;
@@ -104,16 +104,6 @@ namespace RESTable.Requests
             https: false,
             cookies: new Cookies()
         ) {AccessRights = AccessRights.Root};
-
-        internal static Client Remote => new(
-            origin: (OriginType) (-1),
-            host: "localhost",
-            clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
-            proxyIp: null,
-            userAgent: null,
-            https: false,
-            cookies: new Cookies()
-        );
 
         /// <inheritdoc />
         public override string ToString()

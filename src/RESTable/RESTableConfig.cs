@@ -50,7 +50,7 @@ namespace RESTable
 
         static RESTableConfig()
         {
-            Methods = new[] {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
+            Methods = EnumMember<Method>.Values;
             var version = typeof(RESTableConfig).Assembly.GetName().Version;
             Version = $"{version.Major}.{version.Minor}.{version.Build}";
             NewState();

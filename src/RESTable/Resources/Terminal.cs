@@ -1,50 +1,48 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using RESTable.WebSockets;
 
 namespace RESTable.Resources
 {
-    /// <inheritdoc />
     /// <summary>
     /// ITerminal defines the functionality of a RESTable terminal. The terminal will be
     /// made available as a WebSocket endpoint in the API, and each ITerminal type will be
     /// instantiated, using the Create method, when targeted in a request or from the 
     /// RESTable WebSocket shell.
     /// </summary>
-    public interface ITerminal : IAsyncDisposable
+    public abstract class Terminal
     {
-        /// <summary>
-        /// The WebSocket connected to this terminal. This property is set just before the 
-        /// WebSocket is opened.
-        /// </summary>
-        IWebSocket WebSocket { set; }
+        [RESTableMember(ignore: true)] protected IWebSocket WebSocket { get; private set; }
+
+        internal void SetWebSocket(IWebSocket webSocket) => WebSocket = webSocket;
+
+        internal async Task OpenTerminal() => await Open();
 
         /// <summary>
-        /// This method is called when the WebSocket is opened, and when data can be sent
+        /// This method is called when the WebSocket is opened, and when data can be sent   
         /// and received by this terminal.
         /// </summary>
-        Task Open();
+        protected virtual Task Open() => Task.CompletedTask;
 
         /// <summary>
         /// Performs an action on string input
         /// </summary>
-        Task HandleTextInput(string input);
+        public virtual Task HandleTextInput(string input) => Task.CompletedTask;
 
         /// <summary>
         /// Performs and action on binary input
         /// </summary>
-        Task HandleBinaryInput(byte[] input);
+        public virtual Task HandleBinaryInput(byte[] input) => Task.CompletedTask;
 
         /// <summary>
         /// Does this terminal support text input?
         /// </summary>
         /// <returns></returns>
-        bool SupportsTextInput { get; }
+        public virtual bool SupportsTextInput { get; } = false;
 
         /// <summary>
         /// Does this terminal support binary input?
         /// </summary>
         /// <returns></returns>
-        bool SupportsBinaryInput { get; }
+        public virtual bool SupportsBinaryInput { get; } = false;
     }
 }

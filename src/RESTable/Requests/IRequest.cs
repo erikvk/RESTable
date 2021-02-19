@@ -8,17 +8,12 @@ using RESTable.Results;
 
 namespace RESTable.Requests
 {
-    internal interface IRequestInternal : IRequest
-    {
-        bool IsWebSocketUpgrade { get; }
-    }
-
-    internal interface IEntityRequest : IRequestInternal
+    internal interface IEntityRequest : IRequest
     {
         IMacro Macro { get; }
     }
 
-    internal interface IEntityRequest<T> : IEntityRequest, IRequestInternal, IRequest<T> where T : class
+    internal interface IEntityRequest<T> : IEntityRequest, IRequest, IRequest<T> where T : class
     {
         IEntityResource<T> EntityResource { get; }
         Func<IAsyncEnumerable<T>> EntitiesProducer { get; set; }

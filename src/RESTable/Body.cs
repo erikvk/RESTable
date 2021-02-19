@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
-using RESTable.Internal;
 using RESTable.Linq;
 using RESTable.Resources.Operations;
 using RESTable.Results;
@@ -44,7 +43,7 @@ namespace RESTable
         /// <param name="result"></param>
         public async Task Serialize(ISerializedResult result)
         {
-            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.Serialize(result, ContentTypeProvider);
+            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.SerializeResult(result, ContentTypeProvider);
         }
 
         /// <summary>
@@ -113,7 +112,7 @@ namespace RESTable
                 case Body body:
                 {
                     ProtocolHolder.Headers.ContentType = body.ContentType;
-                    body.Rewind();
+                    body.TryRewind();
                     return body.Stream;
                 }
                 case SwappingStream swappingStream: return swappingStream.Rewind();
@@ -159,16 +158,16 @@ namespace RESTable
         /// <summary>
         /// Only for outgoing streams
         /// </summary>
-        private Body(IProtocolHolder protocolHolder)
+        private Body(IProtocolHolder protocolHolder, Stream customOutputStream)
         {
             ProtocolHolder = protocolHolder;
             IsIngoing = false;
-            Stream = new SwappingStream();
+            Stream = new SwappingStream(customOutputStream);
         }
 
-        internal static Body CreateOutputBody(IProtocolHolder protocolHolder)
+        internal static Body CreateOutputBody(IProtocolHolder protocolHolder, Stream customOutputStream)
         {
-            return new(protocolHolder);
+            return new(protocolHolder, customOutputStream);
         }
 
         private const int MaxStringLength = 50_000;
@@ -203,7 +202,7 @@ namespace RESTable
             }
         }
 
-        internal async Task<Body> GetCopy()
+        public async Task<Body> GetCopy()
         {
             if (!HasContent) return default;
             var copy = new Body(ProtocolHolder);
@@ -213,10 +212,12 @@ namespace RESTable
             return copy;
         }
 
-        internal Body Rewind()
+        internal bool TryRewind()
         {
+            if (!Stream.CanSeek) 
+                return false;
             Stream.Rewind();
-            return this;
+            return true;
         }
 
         // public override string ToString()

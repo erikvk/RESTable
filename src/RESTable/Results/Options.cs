@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using RESTable.ContentTypeProviders;
-using RESTable.Internal;
 using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -58,7 +57,7 @@ namespace RESTable.Results
             var stopwatch = Stopwatch.StartNew();
             var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
             ContentTypeProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), serializedResult.Body);
-            serializedResult.Body.Rewind();
+            serializedResult.Body.TryRewind();
             stopwatch.Stop();
             TimeElapsed += stopwatch.Elapsed;
             Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);

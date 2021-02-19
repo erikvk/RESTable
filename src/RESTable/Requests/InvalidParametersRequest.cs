@@ -6,7 +6,7 @@ using RESTable.Results;
 
 namespace RESTable.Requests
 {
-    internal class InvalidParametersRequest : IRequest, IRequestInternal
+    internal class InvalidParametersRequest : IRequest
     {
         public bool IsValid { get; }
         private Exception Error { get; }
@@ -39,7 +39,6 @@ namespace RESTable.Requests
         #region Parameter bindings
 
         public RequestParameters Parameters { get; }
-        public string TraceId => Parameters.TraceId;
         public string ProtocolIdentifier => Parameters.ProtocolIdentifier;
         public RESTableContext Context => Parameters.Context;
         public CachedProtocolProvider CachedProtocolProvider => Parameters.CachedProtocolProvider;

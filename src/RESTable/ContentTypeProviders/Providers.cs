@@ -8,11 +8,11 @@
         /// <summary>
         /// A statically accessable JsonContentProvider
         /// </summary>
-        public static JsonProvider Json { get; }
+        public static NewtonsoftJsonProvider Json { get; }
 
         static Providers()
         {
-            Json = new JsonProvider();
+            Json = new NewtonsoftJsonProvider();
         }
     }
 }

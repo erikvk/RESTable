@@ -6,6 +6,6 @@
     /// </summary>
     public class BadGateway : Internal
     {
-        internal BadGateway(string uri) : base(ErrorCodes.ExternalServiceNotRESTable, "Encountered a bad gateway when connecting to " + uri) { }
+        public BadGateway(string uri) : base(ErrorCodes.ExternalServiceNotRESTable, "Encountered a bad gateway when connecting to " + uri) { }
     }
 }

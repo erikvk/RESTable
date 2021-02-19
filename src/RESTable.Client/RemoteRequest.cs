@@ -6,38 +6,29 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using RESTable.Internal;
-using RESTable.Meta;
-using RESTable.Meta.Internal;
-using RESTable.Results;
 using RESTable.Linq;
+using RESTable.Meta;
+using RESTable.Requests;
+using RESTable.Results;
 
-namespace RESTable.Requests
+namespace RESTable.Client
 {
-    internal static class HttpClientManager
+    internal class RemoteRequest : IRequest
     {
-        internal static readonly HttpClient HttpClient;
-        static HttpClientManager() => HttpClient = new HttpClient();
-    }
-
-    internal class RemoteRequest : IRequest, IRequestInternal
-    {
-        public string TraceId => ProtocolHolder.TraceId;
-        RESTableContext ITraceable.Context => RemoteContext;
+        public RESTableContext Context => ProtocolHolder.Context;
         public Headers Headers => ProtocolHolder.Headers;
         public string ProtocolIdentifier => ProtocolHolder.ProtocolIdentifier;
         public IResource Resource => RemoteResource;
         public bool HasConditions => false;
         public bool ExcludeHeaders => false;
         public bool IsValid => true;
-        public bool IsWebSocketUpgrade => false;
         public CachedProtocolProvider CachedProtocolProvider => ProtocolHolder.CachedProtocolProvider;
         public MessageType MessageType => MessageType.HttpInput;
-        public Cookies Cookies => RemoteContext.Client.Cookies;
+        public Cookies Cookies => ProtocolHolder.Context.Client.Cookies;
         public IUriComponents UriComponents => null;
 
         private IProtocolHolder ProtocolHolder { get; }
         private Uri URI { get; }
-        private RemoteContext RemoteContext { get; }
         public Method Method { get; set; }
         private RemoteResource RemoteResource { get; set; }
         public Body Body { get; set; }
@@ -156,18 +147,12 @@ namespace RESTable.Requests
 
         public object GetService(Type serviceType)
         {
-            return RemoteContext.Services.GetService(serviceType);
+            return Context.Services.GetService(serviceType);
         }
 
         public RemoteRequest(RemoteContext context, Method method, string uri, object body, Headers headers)
         {
-            ProtocolHolder = new RemoteRequestProtocolHolder
-            (
-                context: context,
-                headers: headers ?? new Headers(),
-                cachedProtocolProvider: ProtocolController.DefaultProtocolProvider
-            );
-            RemoteContext = context;
+            ProtocolHolder = new DefaultProtocolHolder(context, headers);
             if (context.HasApiKey)
                 Headers.Authorization = $"apikey {context.ApiKey}";
             Method = method;
@@ -179,7 +164,6 @@ namespace RESTable.Requests
         private RemoteRequest(RemoteContext context, IProtocolHolder protocolHolder, Method method, Uri uri, Body bodyCopy)
         {
             ProtocolHolder = protocolHolder;
-            RemoteContext = context;
             if (context.HasApiKey)
                 Headers.Authorization = $"apikey {context.ApiKey}";
             Method = method;
@@ -190,7 +174,7 @@ namespace RESTable.Requests
 
         public async Task<IRequest> GetCopy(string newProtocol = null) => new RemoteRequest
         (
-            context: RemoteContext,
+            context: (RemoteContext) Context,
             protocolHolder: ProtocolHolder,
             method: Method,
             uri: URI,

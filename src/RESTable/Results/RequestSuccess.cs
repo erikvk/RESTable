@@ -1,4 +1,5 @@
 ﻿using RESTable.Requests;
+using RESTable.Resources;
 
 namespace RESTable.Results
 {
@@ -9,6 +10,7 @@ namespace RESTable.Results
     /// </summary>
     public abstract class RequestSuccess : Success
     {
+        [RESTableMember(ignore: true)]
         public override IRequest Request { get; }
 
         internal RequestSuccess(IRequest request) : base(request)

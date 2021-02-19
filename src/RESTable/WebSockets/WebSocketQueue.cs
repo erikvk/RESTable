@@ -20,7 +20,6 @@ namespace RESTable.WebSockets
     {
         internal ConcurrentQueue<Func<Task>> ActionQueue { get; }
         internal IWebSocketInternal ToQueueFor { get; }
-        public string TraceId { get; }
         public RESTableContext Context { get; }
         public WebSocketStatus Status => ToQueueFor.Status;
         public Headers Headers => ToQueueFor.Headers;
@@ -37,7 +36,6 @@ namespace RESTable.WebSockets
         {
             ActionQueue = new ConcurrentQueue<Func<Task>>();
             ToQueueFor = webSocket;
-            TraceId = webSocket.TraceId;
             Context = webSocket.Context;
         }
 
@@ -105,7 +103,7 @@ namespace RESTable.WebSockets
             return Task.CompletedTask;
         }
 
-        public Task DirectTo<T>(ITerminalResource<T> t, ICollection<Condition<T>> a = null) where T : class, ITerminal
+        public Task DirectTo<T>(ITerminalResource<T> t, ICollection<Condition<T>> a = null) where T : Terminal
         {
             ActionQueue.Enqueue(() =>
             {

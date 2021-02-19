@@ -32,11 +32,11 @@ namespace RESTable.Meta.Internal
         public ResourceKind ResourceKind { get; }
         private bool IsDynamicTerminal { get; }
 
-        private Constructor<ITerminal> Constructor { get; }
+        private Constructor<Terminal> Constructor { get; }
 
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
 
-        internal ITerminal MakeTerminal(IEnumerable<Condition<T>> assignments = null)
+        internal Terminal MakeTerminal(IEnumerable<Condition<T>> assignments = null)
         {
             var newTerminal = Constructor();
             assignments?.ForEach(assignment =>
@@ -45,7 +45,7 @@ namespace RESTable.Meta.Internal
                     throw new BadConditionOperator(this, assignment.Operator);
                 if (!Members.TryGetValue(assignment.Key, out var property))
                 {
-                    if (newTerminal is IDynamicTerminal dynTerminal)
+                    if (newTerminal is IDictionary<string, object> dynTerminal)
                         dynTerminal[assignment.Key] = assignment.Value;
                     else throw new UnknownProperty(Type, assignment.Key);
                 }
@@ -64,14 +64,14 @@ namespace RESTable.Meta.Internal
             var attribute = typeof(T).GetCustomAttribute<RESTableAttribute>();
             InterfaceType = typeof(T).GetRESTableInterfaceType();
             ResourceKind = ResourceKind.TerminalResource;
-            ConditionBindingRule = typeof(IDynamicTerminal).IsAssignableFrom(typeof(T))
+            ConditionBindingRule = typeof(IDictionary<string, object>).IsAssignableFrom(typeof(T))
                 ? TermBindingRule.DeclaredWithDynamicFallback
-                : TermBindingRule.OnlyDeclared;
+                : TermBindingRule.OnlyDeclared; 
             Description = attribute?.Description;
             Members = typeof(T).GetDeclaredProperties();
-            Constructor = typeof(T).MakeStaticConstructor<ITerminal>();
+            Constructor = typeof(T).MakeStaticConstructor<Terminal>();
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
-            IsDynamicTerminal = typeof(IDynamicTerminal).IsAssignableFrom(typeof(T));
+            IsDynamicTerminal = typeof(IDictionary<string, object>).IsAssignableFrom(typeof(T));
 
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)

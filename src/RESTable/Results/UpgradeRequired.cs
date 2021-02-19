@@ -8,7 +8,7 @@ namespace RESTable.Results
     /// </summary>
     public class UpgradeRequired : Error
     {
-        internal UpgradeRequired(string terminalName) : base(ErrorCodes.UpgradeRequired,
+        public UpgradeRequired(string terminalName) : base(ErrorCodes.UpgradeRequired,
             $"Connections to terminal resource '{terminalName}' must include a WebSocket upgrade handshake")
         {
             StatusCode = HttpStatusCode.UpgradeRequired;

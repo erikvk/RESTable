@@ -65,9 +65,6 @@ namespace RESTable.WebSockets
         public ReadonlyCookies Cookies => Client.Cookies.AsReadonly();
 
         /// <inheritdoc />
-        public string TraceId => Id;
-
-        /// <inheritdoc />
         /// <summary>
         /// The context in which this WebSocket was opened
         /// </summary>
@@ -77,7 +74,7 @@ namespace RESTable.WebSockets
         private ulong BytesSent { get; set; }
 
         internal ITerminalResource TerminalResource => TerminalConnection?.Resource;
-        internal ITerminal Terminal => TerminalConnection?.Terminal;
+        internal Terminal Terminal => TerminalConnection?.Terminal;
 
         private WebSocketConnection TerminalConnection { get; set; }
 
@@ -87,7 +84,7 @@ namespace RESTable.WebSockets
 
         public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
 
-        internal async Task ConnectTo(ITerminal terminal, ITerminalResource resource)
+        internal async Task ConnectTo(Terminal terminal, ITerminalResource resource)
         {
             await ReleaseTerminal();
             TerminalConnection = new WebSocketConnection(this, terminal, resource);
@@ -205,7 +202,7 @@ namespace RESTable.WebSockets
         public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => DirectTo(Shell.TerminalResource);
 
         /// <inheritdoc />
-        public async Task DirectTo<T>(ITerminalResource<T> resource, ICollection<Condition<T>> assignments = null) where T : class, ITerminal
+        public async Task DirectTo<T>(ITerminalResource<T> resource, ICollection<Condition<T>> assignments = null) where T : Terminal
         {
             if (Status != WebSocketStatus.Open)
                 throw new InvalidOperationException($"Unable to send WebSocket with status '{Status}' to terminal '{resource.Name}'");
@@ -214,7 +211,7 @@ namespace RESTable.WebSockets
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(assignments);
             await Context.WebSocket.ConnectTo(newTerminal, _resource);
-            await newTerminal.Open();
+            await newTerminal.OpenTerminal();
         }
 
         #region Input

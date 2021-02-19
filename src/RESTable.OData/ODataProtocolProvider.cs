@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Web;
 using RESTable.Admin;
 using RESTable.ContentTypeProviders;
+using RESTable.ContentTypeProviders.NativeJsonProtocol;
 using RESTable.Meta;
 using RESTable.ProtocolProviders;
 using RESTable.Requests;
@@ -49,7 +50,7 @@ namespace RESTable.OData
         /// <inheritdoc />
         public IEnumerable<IContentTypeProvider> GetCustomContentTypeProviders()
         {
-            return new[] {new JsonProvider {MatchStrings = new[] {"application/json"}}};
+            return new[] {new NewtonsoftJsonProvider {MatchStrings = new[] {"application/json"}}};
         }
 
         /// <inheritdoc />
@@ -253,18 +254,23 @@ namespace RESTable.OData
             return origin.Https ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
         }
 
-        /// <inheritdoc />
-        public async Task Serialize(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
+        public void SetResultHeaders(IResult result)
         {
-            toSerialize.Headers["OData-Version"] = "4.0";
-            if (!(toSerialize.Result is IEntities entities))
+            result.Headers.ContentType = "application/json; odata.metadata=minimal; odata.streaming=true; charset=utf-8";
+            result.Headers["OData-Version"] = "4.0";
+        }
+
+        /// <inheritdoc />
+        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
+        {
+            if (toSerialize.Result is not IEntities entities)
                 return;
 
             string contextFragment;
             bool writeMetadata;
             switch (entities)
             {
-                case IAsyncEnumerable<ServiceDocument> _:
+                case IEntities<ServiceDocument> _:
                     contextFragment = null;
                     writeMetadata = false;
                     break;
@@ -274,7 +280,7 @@ namespace RESTable.OData
                     break;
             }
             await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
-            using var jwr = new ODataJsonWriter(swr) {Formatting = Settings._PrettyPrint ? Indented : None};
+            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Indented : None};
             await jwr.WriteStartObjectAsync();
             await jwr.WritePropertyNameAsync("@odata.context");
             await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}");
@@ -285,14 +291,13 @@ namespace RESTable.OData
             {
                 await jwr.WritePropertyNameAsync("@odata.count");
                 await jwr.WriteValueAsync(toSerialize.EntityCount);
-                if (toSerialize.IsPaged)
+                if (toSerialize.HasNextPage)
                 {
                     await jwr.WritePropertyNameAsync("@odata.nextLink");
                     await jwr.WriteValueAsync(MakeRelativeUri(toSerialize.GetNextPageLink()));
                 }
             }
             await jwr.WriteEndObjectAsync();
-            entities.Headers.ContentType = "application/json; odata.metadata=minimal; odata.streaming=true; charset=utf-8";
         }
     }
 }

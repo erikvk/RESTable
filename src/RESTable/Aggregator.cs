@@ -88,7 +88,7 @@ namespace RESTable
                         }
                         return list;
                     }
-                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(JsonProvider.Serializer));
+                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(NewtonsoftJsonProvider.Serializer));
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
                     {
@@ -114,7 +114,7 @@ namespace RESTable
                         switch (result)
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
-                            case Report report: return report.ReportBody.Count;
+                            case Report report: return report.Count;
                             case IEntities entities: return entities;
                             case var other:
                                 throw new Exception($"Unexpected result from {method.ToString()} request inside " +

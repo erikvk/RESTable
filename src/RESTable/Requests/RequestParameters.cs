@@ -19,9 +19,6 @@ namespace RESTable.Requests
     /// </summary>
     internal class RequestParameters : ILogable, IHeaderHolder, IProtocolHolder, ITraceable
     {
-        /// <inheritdoc />
-        public string TraceId => Context.InitialTraceId;
-
         /// <inheritdoc /> 
         public RESTableContext Context { get; }
 
@@ -54,6 +51,7 @@ namespace RESTable.Requests
             get => _body;
             set
             {
+                if (Equals(_body, value)) return;
                 _body?.DisposeAsync().AsTask().Wait();
                 _body = value;
             }

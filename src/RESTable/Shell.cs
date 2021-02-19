@@ -15,13 +15,14 @@ using static RESTable.Method;
 
 namespace RESTable
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="System.IAsyncDisposable" />
+    /// <inheritdoc cref="RESTable.Resources.Terminal" />
     /// <summary>
     /// The WebSocket shell, used to navigate and execute commands against RESTable resources
     /// from a connected WebSocket. 
     /// </summary>
     [RESTable(Description = description, GETAvailableToAll = true)]
-    public sealed class Shell : ITerminal
+    public sealed class Shell : Terminal, IAsyncDisposable
     {
         #region Private
 
@@ -178,10 +179,7 @@ namespace RESTable
         }
 
         /// <inheritdoc />
-        public IWebSocket WebSocket { private get; set; }
-
-        /// <inheritdoc />
-        public async Task HandleBinaryInput(byte[] input)
+        public override async Task HandleBinaryInput(byte[] input)
         {
             if (!(input?.Length > 0)) return;
             if (Query.Length == 0 || OnConfirm != null)
@@ -190,13 +188,13 @@ namespace RESTable
         }
 
         /// <inheritdoc />
-        public bool SupportsTextInput { get; }
+        public override bool SupportsTextInput { get; }
 
         /// <inheritdoc />
-        public bool SupportsBinaryInput { get; }
+        public override bool SupportsBinaryInput { get; }
 
         /// <inheritdoc />
-        public async Task Open()
+        protected override async Task Open()
         {
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
@@ -224,7 +222,7 @@ namespace RESTable
         private Func<Task> OnConfirm { get; set; }
 
         /// <inheritdoc />
-        public async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input)
         {
             if (OnConfirm != null)
             {

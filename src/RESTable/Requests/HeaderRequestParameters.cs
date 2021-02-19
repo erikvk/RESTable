@@ -11,6 +11,28 @@ namespace RESTable.Requests
         public Headers Headers { get; }
         public bool IsInternal { get; }
 
+        public static bool TryParse(string destinationHeader, out HeaderRequestParameters parameters, out Results.Error error)
+        {
+            try
+            {
+                parameters = new HeaderRequestParameters(destinationHeader);
+                error = null;
+                return true;
+            }
+            catch (Results.Error _error)
+            {
+                parameters = null;
+                error = _error;
+                return false;
+            }
+            catch (Exception exception)
+            {
+                parameters = null;
+                error = exception.AsError();
+                return false;
+            }
+        }
+
         public HeaderRequestParameters(string headerValue)
         {
             var matches = Regex.Match(headerValue, RegEx.HeaderRequestParameters);

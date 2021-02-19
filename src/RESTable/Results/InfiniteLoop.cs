@@ -8,7 +8,7 @@ namespace RESTable.Results
     /// </summary>
     public class InfiniteLoop : Error
     {
-        internal InfiniteLoop() : base(ErrorCodes.InfiniteLoopDetected,
+        public InfiniteLoop() : base(ErrorCodes.InfiniteLoopDetected,
             "RESTable encountered a potentially infinite loop of recursive internal calls.")
         {
             StatusCode = (HttpStatusCode) 508;

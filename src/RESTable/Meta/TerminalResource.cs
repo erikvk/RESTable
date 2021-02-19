@@ -6,7 +6,7 @@ namespace RESTable.Meta
     /// <summary>
     /// A static generic class for manually getting RESTable terminal resources by type
     /// </summary>
-    public static class TerminalResource<T> where T : class, ITerminal
+    public static class TerminalResource<T> where T : Terminal
     {
         /// <summary>
         /// Gets the terminal resource for a given type, and throws an UnknownResource exception 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using RESTable.Requests;
+using RESTable.Resources;
 
 namespace RESTable.Results
 {
@@ -16,6 +17,9 @@ namespace RESTable.Results
         /// </summary>
         internal bool IsLocked { get; set; }
 
+        [RESTableMember(ignore: true)] 
+        public Type ResourceType { get; }
+
         /// <summary>
         /// Sets the ContentDisposition header to a unique file name of a given extension
         /// </summary>
@@ -27,7 +31,10 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        protected Content(IRequest request) : base(request) { }
+        protected Content(IRequest request) : base(request)
+        {
+            ResourceType = request.Resource.Type;
+        }
 
         public void MakeNoContent()
         {

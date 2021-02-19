@@ -37,19 +37,19 @@ namespace RESTable.ContentTypeProviders
         /// <inheritdoc />
         public string ContentDispositionFileExtension => ".xml";
 
-        private static readonly JsonProvider JsonProvider;
+        private static readonly NewtonsoftJsonProvider JsonProvider;
         private static readonly byte[] XMLHeader;
 
         static XMLWriter()
         {
-            JsonProvider = new JsonProvider();
+            JsonProvider = new NewtonsoftJsonProvider();
             XMLHeader = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         }
 
         /// <inheritdoc />
-        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> entities, Stream stream, IRequest request = null)
+        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class
         {
-            var count = await JsonProvider.SerializeCollection(entities, stream, request);
+            var count = await JsonProvider.SerializeCollection(collection, stream, request);
             stream.Seek(0, SeekOrigin.Begin);
             await XmlSerializeJsonStream(stream);
             return count;

@@ -10,7 +10,7 @@ namespace RESTable.Results
     /// <summary>
     /// A result that contains a set of entities
     /// </summary>
-    internal class Entities<T> : Content, IEntities<T> where T : class
+    public class Entities<T> : Content, IEntities<T> where T : class
     {
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = new())
         {

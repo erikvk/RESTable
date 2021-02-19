@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using RESTable.AspNetCore;
 using RESTable.Excel;
 using RESTable.OData;
 using RESTable.ProtocolProviders;
@@ -17,7 +19,6 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.SQLite;
-using RESTable.WebSockets;
 using static System.StringComparison;
 using static RESTable.Method;
 using static RESTable.Tutorial.Gender;
@@ -42,6 +43,7 @@ namespace RESTable.Tutorial
             .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("./database"))
             .AddExcelContentProvider()
             .AddHttpContextAccessor()
+            .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true)
             .AddMvc(o => o.EnableEndpointRouting = false);
 
         public void Configure(IApplicationBuilder app)
@@ -55,6 +57,7 @@ namespace RESTable.Tutorial
                 configFilePath: "./Config.xml",
                 services: app.ApplicationServices
             );
+            app.UseRESTableAspNetCore();
         }
     }
 
@@ -157,20 +160,13 @@ namespace RESTable.Tutorial
     /// with a WebSocket handshake.
     /// </summary>
     [RESTable]
-    public class Chatbot : ITerminal
+    public class Chatbot : Terminal
     {
-        /// <summary>
-        /// Each time this class is instantiated, an IWebSocket instance will be assigned to the
-        /// WebSocket property. This object holds the WebSocket connection to the connected client.
-        /// We can, for example, send text to the client by making a call to WebSocket.SendText().
-        /// </summary>
-        public IWebSocket WebSocket { private get; set; }
-
         /// <summary>
         /// This method is called when the WebSocket is opened towards this Chatbot instance. A perfect
         /// time to send a welcome message.
         /// </summary>
-        public async Task Open() => await WebSocket.SendText(
+        protected override async Task Open() => await WebSocket.SendText(
             "> Hi, I'm a chatbot! Type anything, and I'll try my best to answer. I like to tell jokes... " +
             "(type QUIT to return to the shell)"
         );
@@ -178,18 +174,13 @@ namespace RESTable.Tutorial
         /// <summary>
         /// Here we inform RESTable that instances of Chatbot can handle text input
         /// </summary>
-        public bool SupportsTextInput { get; } = true;
-
-        /// <summary>
-        /// ... but not binary input
-        /// </summary>
-        public bool SupportsBinaryInput { get; } = false;
+        public override bool SupportsTextInput { get; } = true;
 
         /// <summary>
         /// This method defines the logic that is run when an incoming text message is received over the
         /// WebSocket that is assigned to this terminal.
         /// </summary>
-        public async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input)
         {
             if (string.Equals(input, "quit", OrdinalIgnoreCase))
             {
@@ -206,12 +197,6 @@ namespace RESTable.Tutorial
             var response = await ChatbotAPI.GetResponse(input);
             return response.result?.fulfillment?.speech ?? "I have no response to that. Sorry...";
         }
-
-        /// <summary>
-        /// We still need to implement this method, but it is never called, since SupportsBinaryInput is
-        /// set to false.
-        /// </summary>
-        public Task HandleBinaryInput(byte[] input) => throw new NotImplementedException();
 
         #region DialogFlow API
 
@@ -241,12 +226,6 @@ namespace RESTable.Tutorial
         }
 
         #endregion
-
-        /// <summary>
-        /// If the terminal resource has additional resources tied to an instance, this is were we release
-        /// them.
-        /// </summary>
-        public ValueTask DisposeAsync() => default;
     }
 
     /// <summary>
@@ -254,7 +233,7 @@ namespace RESTable.Tutorial
     /// each instance of this resource will work more like a chat participant.
     /// </summary>
     [RESTable]
-    public class ChatRoom : ITerminal
+    public class ChatRoom : Terminal, IAsyncDisposable
     {
         /// <summary>
         /// This collection holds all ChatRoom instances
@@ -294,7 +273,7 @@ namespace RESTable.Tutorial
         /// </summary>
         private bool Initiated;
 
-        public async Task Open()
+        protected override async Task Open()
         {
             Name = GetUniqueName(Name);
             await SendToAll($"# {Name} has joined the chat room.");
@@ -327,7 +306,7 @@ namespace RESTable.Tutorial
             await SendToAll($"# {Name} left the chat room.");
         }
 
-        public async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
                 return;
@@ -352,10 +331,7 @@ namespace RESTable.Tutorial
             await Task.WhenAll(tasks);
         }
 
-        public IWebSocket WebSocket { private get; set; }
-        public bool SupportsTextInput { get; } = true;
-        public bool SupportsBinaryInput { get; } = false;
-        public Task HandleBinaryInput(byte[] input) => throw new NotImplementedException();
+        public override bool SupportsTextInput { get; } = true;
     }
 }
 

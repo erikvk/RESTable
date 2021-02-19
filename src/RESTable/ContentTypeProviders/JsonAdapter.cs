@@ -16,7 +16,7 @@ namespace RESTable.ContentTypeProviders
     /// </summary>
     public abstract class JsonAdapter : IContentTypeProvider
     {
-        private readonly JsonProvider JsonProvider = new();
+        private readonly NewtonsoftJsonProvider JsonProvider = new();
 
         /// <summary>
         /// The RESTable default UTF8 encoding. An UTF8 encoding without BOM.
@@ -51,7 +51,7 @@ namespace RESTable.ContentTypeProviders
         protected abstract Task ProduceJsonArray(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
-        public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> entities, Stream stream, IRequest request = null);
+        public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class;
 
         /// <inheritdoc />
         public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream)
@@ -77,7 +77,7 @@ namespace RESTable.ContentTypeProviders
             try
             {
                 await ProduceJsonArray(populateStream, jsonStream);
-                await foreach(var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()))
+                await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()))
                 {
                     yield return item;
                 }

@@ -1,6 +1,7 @@
 ﻿using System;
+using RESTable.Results;
 
-namespace RESTable.Results
+namespace RESTable.Client
 {
     /// <inheritdoc />
     /// <summary>

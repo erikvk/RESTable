@@ -351,7 +351,7 @@ namespace RESTable
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, JsonProvider.Serializer);
+                            : JToken.FromObject(pair.Value, NewtonsoftJsonProvider.Serializer);
                     return _jobj;
             }
 
@@ -363,7 +363,7 @@ namespace RESTable
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, JsonProvider.Serializer);
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, NewtonsoftJsonProvider.Serializer);
                 });
             return jobj;
         }
@@ -544,7 +544,7 @@ namespace RESTable
             }
         }
 
-        internal static Error AsError(this Exception exception)
+        public static Error AsError(this Exception exception)
         {
             switch (exception)
             {
@@ -558,14 +558,14 @@ namespace RESTable
             }
         }
 
-        internal static Error AsResultOf(this Exception exception, IRequest request)
+        public static Error AsResultOf(this Exception exception, IRequest request)
         {
             var error = exception.AsError();
             if (request == null) return error;
             long? errorId = default;
             error.SetContext(request.Context);
             error.Request = request;
-            if (!(error is Forbidden) && !(request is RemoteRequest) && request.Method >= 0)
+            if (!(error is Forbidden) && request.Method >= 0)
             {
                 errorId = Admin.Error.Create(error, request).Id;
             }
@@ -592,7 +592,7 @@ namespace RESTable
         /// </summary>
         public static IUriComponents GetNextPageLink(this ISerializedResult serializedEntities, int count = -1)
         {
-            var entities = serializedEntities.Result as IEntities 
+            var entities = serializedEntities.Result as IEntities
                            ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             if (count > -1)
@@ -619,7 +619,7 @@ namespace RESTable
         /// </summary>
         public static IUriComponents GetPreviousPageLink(this ISerializedResult serializedEntities, int count = -1)
         {
-            var entities = serializedEntities.Result as IEntities 
+            var entities = serializedEntities.Result as IEntities
                            ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             var previousOffset = entities.Request.MetaConditions.Offset;
@@ -648,14 +648,14 @@ namespace RESTable
             components.MetaConditions.Add(offset);
             return components;
         }
-        
+
         /// <summary>
         /// Generates new UriComponents that encode a request for the first number of entities, calculated from an IEntities entity collection.
         /// The count parameter controls how many entities are selected. If omitted, one entity is selected.
         /// </summary>
         public static IUriComponents GetFirstLink(this ISerializedResult serializedEntities, int count = 1)
         {
-            var entities = serializedEntities.Result as IEntities 
+            var entities = serializedEntities.Result as IEntities
                            ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
@@ -669,7 +669,7 @@ namespace RESTable
         /// </summary>
         public static IUriComponents GetLastLink(this ISerializedResult serializedEntities, int count = 1)
         {
-            var entities = serializedEntities.Result as IEntities 
+            var entities = serializedEntities.Result as IEntities
                            ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
@@ -683,11 +683,51 @@ namespace RESTable
         /// </summary>
         public static IUriComponents GetAllLink(this ISerializedResult serializedEntities)
         {
-            var entities = serializedEntities.Result as IEntities 
+            var entities = serializedEntities.Result as IEntities
                            ?? throw new InvalidOperationException("Cannot create next page link for non-IEntities result");
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
             return components;
+        }
+
+        public static IContentTypeProvider GetInputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
+        {
+            var contentType = contentTypeOverride ?? protocolHolder.Headers.ContentType ?? protocolHolder.CachedProtocolProvider.DefaultInputProvider.ContentType;
+            if (!protocolHolder.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out var contentTypeProvider))
+                throw new UnsupportedContent(contentType.ToString());
+            return contentTypeProvider;
+        }
+
+        public static IContentTypeProvider GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
+        {
+            IContentTypeProvider acceptProvider = null;
+
+            var protocolProvider = protocolHolder.CachedProtocolProvider;
+            var headers = protocolHolder.Headers;
+            var contentType = contentTypeOverride;
+            if (contentType.HasValue)
+                contentType = contentType.Value;
+            else if (!(headers.Accept?.Count > 0))
+                contentType = protocolProvider.DefaultOutputProvider.ContentType;
+            if (!contentType.HasValue)
+            {
+                var containedWildcard = false;
+                var foundProvider = headers.Accept.Any(a =>
+                {
+                    if (!a.AnyType)
+                        return protocolProvider.OutputMimeBindings.TryGetValue(a.MediaType, out acceptProvider);
+                    containedWildcard = true;
+                    return false;
+                });
+                if (!foundProvider)
+                    if (containedWildcard)
+                        acceptProvider = protocolProvider.DefaultOutputProvider;
+                    else
+                        throw new NotAcceptable(headers.Accept.ToString());
+            }
+            else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MediaType, out acceptProvider))
+                throw new NotAcceptable(contentType.Value.ToString());
+            return acceptProvider;
         }
 
         /// <summary>

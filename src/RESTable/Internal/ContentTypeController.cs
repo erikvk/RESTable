@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -22,7 +21,7 @@ namespace RESTable.Internal
                 throw new InvalidContentTypeProviderException($"Provider '{provider.GetType().GetRESTableTypeName()}' cannot read or write");
         }
 
-        internal static ContentType ResolveInputContentType(IRequestInternal request = null, ContentType? contentType = null)
+        internal static ContentType ResolveInputContentType(IRequest request = null, ContentType? contentType = null)
         {
             IContentTypeProvider provider;
             if (request != null)
@@ -39,47 +38,7 @@ namespace RESTable.Internal
             }
             return default;
         }
-
-        internal static IContentTypeProvider GetInputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
-        {
-            var contentType = contentTypeOverride ?? protocolHolder.Headers.ContentType ?? protocolHolder.CachedProtocolProvider.DefaultInputProvider.ContentType;
-            if (!protocolHolder.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out var contentTypeProvider))
-                throw new UnsupportedContent(contentType.ToString());
-            return contentTypeProvider;
-        }
-
-        internal static IContentTypeProvider GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
-        {
-            IContentTypeProvider acceptProvider = null;
-
-            var protocolProvider = protocolHolder.CachedProtocolProvider;
-            var headers = protocolHolder.Headers;
-            var contentType = contentTypeOverride;
-            if (contentType.HasValue)
-                contentType = contentType.Value;
-            else if (!(headers.Accept?.Count > 0))
-                contentType = protocolProvider.DefaultOutputProvider.ContentType;
-            if (!contentType.HasValue)
-            {
-                var containedWildcard = false;
-                var foundProvider = headers.Accept.Any(a =>
-                {
-                    if (!a.AnyType)
-                        return protocolProvider.OutputMimeBindings.TryGetValue(a.MediaType, out acceptProvider);
-                    containedWildcard = true;
-                    return false;
-                });
-                if (!foundProvider)
-                    if (containedWildcard)
-                        acceptProvider = protocolProvider.DefaultOutputProvider;
-                    else
-                        throw new NotAcceptable(headers.Accept.ToString());
-            }
-            else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MediaType, out acceptProvider))
-                throw new NotAcceptable(contentType.Value.ToString());
-            return acceptProvider;
-        }
-
+        
         internal static void SetupContentTypeProviders(List<IContentTypeProvider> contentTypeProviders)
         {
             InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);

@@ -86,10 +86,16 @@ namespace RESTable.ProtocolProviders
         string MakeRelativeUri(IUriComponents components);
 
         /// <summary>
+        /// Sets protocol-specific result headers prior to serialization 
+        /// </summary>
+        /// <param name="result"></param>
+        void SetResultHeaders(IResult result);
+
+        /// <summary>
         /// Takes a result and generates an ISerializedResult entity from it, that can - for example - be returned 
         /// to a network component and streamed over a TCP connection.
         /// </summary>
-        Task Serialize(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider);
+        Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider);
 
         /// <summary>
         /// This method is called when RESTableConfig.Init() is done initializing the RESTable instance.

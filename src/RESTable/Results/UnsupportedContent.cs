@@ -9,14 +9,14 @@ namespace RESTable.Results
     /// </summary>
     public class UnsupportedContent : Error
     {
-        internal UnsupportedContent(Exception ie) : base(ErrorCodes.UnsupportedContent, ie.Message, ie)
+        public UnsupportedContent(Exception ie) : base(ErrorCodes.UnsupportedContent, ie.Message, ie)
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;
             StatusDescription = "Unsupported media type";
         }
 
         /// <inheritdoc />
-        internal UnsupportedContent(string headerValue, bool fromHeader = true) : base(ErrorCodes.UnsupportedContent,
+        public UnsupportedContent(string headerValue, bool fromHeader = true) : base(ErrorCodes.UnsupportedContent,
             $"An unsupported media type, '{headerValue}', was specified {(fromHeader ? "in the Content-Type request header" : "for this operation")}.")
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;

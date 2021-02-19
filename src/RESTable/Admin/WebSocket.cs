@@ -54,11 +54,11 @@ namespace RESTable.Admin
             .Values
             .Select(socket => new WebSocket
             {
-                Id = socket.TraceId,
-                IsThis = socket.TraceId == request.Context.WebSocket?.TraceId,
+                Id = socket.Context.TraceId,
+                IsThis = socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
                 TerminalType = socket.TerminalResource?.Name,
-                Client = JObject.FromObject(socket.GetAppProfile(), JsonProvider.Serializer),
-                Terminal = socket.Terminal == null ? null : JObject.FromObject(socket.Terminal, JsonProvider.Serializer),
+                Client = JObject.FromObject(socket.GetAppProfile(), NewtonsoftJsonProvider.Serializer),
+                Terminal = socket.Terminal == null ? null : JObject.FromObject(socket.Terminal, NewtonsoftJsonProvider.Serializer),
                 UnderlyingSocket = socket
             });
 

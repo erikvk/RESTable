@@ -66,7 +66,7 @@ namespace RESTable
                                 {
                                     case IEntities entities:
                                     {
-                                        foreach (var item in JArray.FromObject(entities, JsonProvider.Serializer))
+                                        foreach (var item in JArray.FromObject(entities, NewtonsoftJsonProvider.Serializer))
                                             yield return item;
                                         yield break;
                                     }

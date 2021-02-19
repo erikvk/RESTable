@@ -22,22 +22,20 @@ namespace RESTable.WebSockets
         }
 
         internal ITerminalResource Resource { get; private set; }
-        internal ITerminal Terminal { get; private set; }
-        public string TraceId { get; }
+        internal Terminal Terminal { get; private set; }
         public RESTableContext Context { get; private set; }
 
         private bool IsSuspended { get; set; }
 
-        internal WebSocketConnection(WebSocket webSocket, ITerminal terminal, ITerminalResource resource)
+        internal WebSocketConnection(WebSocket webSocket, Terminal terminal, ITerminalResource resource)
         {
-            TraceId = webSocket.Id;
             Context = webSocket.Context;
             if (webSocket == null || webSocket.Status == WebSocketStatus.Closed)
                 throw new WebSocketNotConnectedException();
             WebSocket = webSocket;
             Resource = resource;
             Terminal = terminal;
-            Terminal.WebSocket = this;
+            Terminal.SetWebSocket(this);
         }
 
         internal async Task Suspend()
@@ -63,7 +61,15 @@ namespace RESTable.WebSockets
 
         public async ValueTask DisposeAsync()
         {
-            await Terminal.DisposeAsync();
+            switch (Terminal)
+            {
+                case IAsyncDisposable asyncDisposable:
+                    await asyncDisposable.DisposeAsync();
+                    break;
+                case IDisposable disposable:
+                    disposable.Dispose();
+                    break;
+            }
             WebSocket = null;
             Resource = null;
             Terminal = null;
@@ -110,11 +116,11 @@ namespace RESTable.WebSockets
         public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => WebSocket.DirectToShell(assignments);
 
         /// <inheritdoc />
-        public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : class, ITerminal
+        public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : Terminal
         {
             return WebSocket.DirectTo(terminalResource, assignments);
         }
-        
+
         public string HeadersStringCache
         {
             get => WebSocket.HeadersStringCache;

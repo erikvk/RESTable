@@ -12,9 +12,6 @@ namespace RESTable.Results
     public abstract class ResultWrapper : IResult
     {
         /// <inheritdoc />
-        public string TraceId => Result.TraceId;
-
-        /// <inheritdoc />
         public RESTableContext Context => Result.Context;
 
         /// <inheritdoc />

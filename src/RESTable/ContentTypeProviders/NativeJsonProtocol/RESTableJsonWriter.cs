@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTable.Admin;
 
@@ -7,7 +9,7 @@ using RESTable.Admin;
 
 namespace RESTable.ContentTypeProviders.NativeJsonProtocol
 {
-    internal class RESTableJsonWriter : JsonTextWriter
+    public class RESTableJsonWriter : JsonTextWriter
     {
         private readonly string NewLine;
         private int BaseIndentation;
@@ -26,12 +28,35 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
             base.WriteStartObject();
         }
 
+        public override async Task WriteStartObjectAsync(CancellationToken cancellationToken = new())
+        {
+            if (CurrentDepth == 0)
+            {
+                ObjectsWritten += 1;
+                if (ObjectsWritten % 15000 == 0)
+                    await FlushAsync(cancellationToken);
+            }
+            CurrentDepth += 1;
+           await base.WriteStartObjectAsync(cancellationToken);
+        }
+
         public override void WriteEndObject()
         {
             CurrentDepth -= 1;
             base.WriteEndObject();
         }
 
+        public async Task WriteIndentationAsync(CancellationToken cancellationToken = new())
+        {
+            await WriteIndentAsync(cancellationToken);
+        }
+        
+        public override Task WriteEndObjectAsync(CancellationToken cancellationToken = new())
+        {
+            CurrentDepth -= 1;
+            return base.WriteEndObjectAsync(cancellationToken);
+        }
+        
         public RESTableJsonWriter(TextWriter textWriter, int baseIndentation) : base(textWriter)
         {
             BaseIndentation = baseIndentation;
@@ -52,13 +77,20 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
 
         protected override void WriteIndent()
         {
-            // if (Formatting != Formatting.Indented) return;
             WriteWhitespace(NewLine);
             var currentIndentCount = Top * Indentation + BaseIndentation;
             for (var i = 0; i < currentIndentCount; i++)
                 WriteIndentSpace();
         }
 
+        protected override async Task WriteIndentAsync(CancellationToken cancellationToken)
+        {
+            await WriteWhitespaceAsync(NewLine, cancellationToken);
+            var currentIndentCount = Top * Indentation + BaseIndentation;
+            for (var i = 0; i < currentIndentCount; i++)
+                await WriteIndentSpaceAsync(cancellationToken);
+        }
+        
         protected override void Dispose(bool disposing)
         {
             CurrentDepth = 0;

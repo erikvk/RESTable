@@ -11,7 +11,7 @@ namespace RESTable.WebSockets
     {
         internal static readonly IDictionary<string, WebSocket> AllSockets;
         static WebSocketController() => AllSockets = new ConcurrentDictionary<string, WebSocket>();
-        internal static void Add(WebSocket webSocket) => AllSockets[webSocket.TraceId] = webSocket;
+        internal static void Add(WebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
 
         internal static async Task RevokeAllWithKey(string key)
         {

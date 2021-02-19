@@ -13,7 +13,7 @@ namespace RESTable.WebSockets
         public Headers CustomHeaders { get; }
         internal AppProfile(WebSocket webSocket)
         {
-            WebSocketId = webSocket.TraceId;
+            WebSocketId = webSocket.Context.TraceId;
             Host = webSocket.Context.Client.Host;
             IsSSLEncrypted = webSocket.Context.Client.Https;
             ClientIP = webSocket.Context.Client.ClientIp;

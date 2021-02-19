@@ -6,28 +6,25 @@ using RESTable.Resources.Templates;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="RESTable.Resources.Templates.FeedTerminal" />
+    /// <inheritdoc cref="System.IDisposable" />
     /// <summary>
     /// Sends feed messages representing generated queries in e.g. SQL
     /// </summary>
     [RESTable]
-    public class QueryConsole : FeedTerminal
+    public class QueryConsole : FeedTerminal, IDisposable
     {
         private static TerminalSet<QueryConsole> Consoles { get; }
         static QueryConsole() => Consoles = new TerminalSet<QueryConsole>();
 
         /// <inheritdoc />
-        public override async Task Open()
+        protected override async Task Open()
         {
             await base.Open();
             Consoles.Add(this);
         }
 
-        public override ValueTask DisposeAsync()
-        {
-            Consoles.Remove(this);
-            return default;
-        }
+        public void Dispose() => Consoles.Remove(this);
 
         public static async Task Publish(string query, object[] args)
         {

@@ -30,7 +30,7 @@ namespace RESTable.Requests.Processors
             {
                 if (jobj[term.Key] != null) return;
                 object val = term.Evaluate(entity, out var actualKey);
-                jobj[actualKey] = val == null ? null : JToken.FromObject(val, JsonProvider.Serializer);
+                jobj[actualKey] = val == null ? null : JToken.FromObject(val, NewtonsoftJsonProvider.Serializer);
             });
             return jobj;
         }

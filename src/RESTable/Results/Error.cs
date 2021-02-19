@@ -39,9 +39,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public string TraceId => Context?.InitialTraceId;
-
-        /// <inheritdoc />
         public RESTableContext Context { get; private set; }
 
         /// <inheritdoc />

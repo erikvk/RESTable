@@ -14,7 +14,7 @@ using static Newtonsoft.Json.Formatting;
 namespace RESTable.Admin
 {
     [RESTable(Description = description)]
-    internal sealed class Console : FeedTerminal
+    internal sealed class Console : FeedTerminal, IDisposable
     {
         private const string description = "The Console is a terminal resource that allows a WebSocket client to receive " +
                                            "pushed updates when the REST API receives requests and WebSocket events.";
@@ -38,17 +38,13 @@ namespace RESTable.Admin
         protected override string WelcomeBody { get; } = "Use the console to receive pushed updates when the \n" +
                                                          "REST API receives requests and WebSocket events.";
 
-        public override async Task Open()
+        protected override async Task Open()
         {
             await base.Open();
             Consoles.Add(this);
         }
 
-        public override ValueTask DisposeAsync()
-        {
-            Consoles.Remove(this);
-            return default;
-        }
+        public void Dispose() => Consoles.Remove(this);
 
         #region Console
 
@@ -81,8 +77,8 @@ namespace RESTable.Admin
                             var item = new InputOutput
                             {
                                 Type = "HTTPRequestResponse",
-                                In = new LogItem {Id = request.TraceId, Message = await request.GetLogMessage()},
-                                Out = new LogItem {Id = result.TraceId, Message = await result.GetLogMessage()},
+                                In = new LogItem {Id = request.Context.TraceId, Message = await request.GetLogMessage()},
+                                Out = new LogItem {Id = result.Context.TraceId, Message = await result.GetLogMessage()},
                                 ElapsedMilliseconds = milliseconds
                             };
                             if (console.IncludeClient)
@@ -131,7 +127,7 @@ namespace RESTable.Admin
                             var item = new LogItem
                             {
                                 Type = logable.MessageType.ToString(),
-                                Id = logable.TraceId,
+                                Id = logable.Context.TraceId,
                                 Message = await logable.GetLogMessage(),
                                 Time = logable.LogTime
                             };
@@ -234,7 +230,7 @@ namespace RESTable.Admin
             }
             var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz");
             builder.Append(dateTimeString);
-            builder.Append($"[{logable.TraceId}] ");
+            builder.Append($"[{logable.Context.TraceId}] ");
             builder.Append(logable.GetLogMessage());
             if (milliseconds != null)
                 builder.Append($" ({milliseconds} ms)");

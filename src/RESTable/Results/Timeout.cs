@@ -6,7 +6,7 @@
     /// </summary>
     public class Timeout : NotFound
     {
-        internal Timeout(string uri) : base(ErrorCodes.NoResponseFromRemoteService,
+        public Timeout(string uri) : base(ErrorCodes.NoResponseFromRemoteService,
             "No response from remote service at " + uri) { }
     }
 }

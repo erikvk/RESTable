@@ -14,13 +14,11 @@ namespace RESTable.Internal
         public string URI { get; }
         public Headers Headers { get; }
         public Stream Body { get; }
-        public string TraceId { get; }
         public RESTableContext Context { get; }
         public async Task<HttpResponse> GetResponseAsync() => await MakeExternalRequestAsync(this, Method.ToString(), new Uri(URI), Body, Headers);
 
         internal HttpRequest(ITraceable trace, HeaderRequestParameters parameters, Stream body)
         {
-            TraceId = trace.TraceId;
             Context = trace.Context;
             URI = parameters.URI;
             Body = body;

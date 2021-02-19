@@ -14,7 +14,7 @@ namespace RESTable.Results
         /// </summary>
         public ulong EntityCount { get; }
 
-        internal Head(IRequest request, ulong count) : base(request)
+        public Head(IRequest request, ulong count) : base(request)
         {
             EntityCount = count;
             if (count > 0) return;

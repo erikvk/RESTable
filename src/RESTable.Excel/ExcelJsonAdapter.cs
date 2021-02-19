@@ -39,10 +39,9 @@ namespace RESTable.Excel
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> _entities, Stream stream, IRequest request = null)
+        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class
         {
-            var serializer = JsonProvider.GetSerializer();
-            if (_entities == null) return 0;
+            if (collection == null) return 0;
             try
             {
                 using var package = new ExcelPackage(stream);
@@ -115,7 +114,7 @@ namespace RESTable.Excel
                     }
                 }
 
-                await writeEntities(_entities.Select(e => (object) e));
+                await writeEntities(collection);
                 if (currentRow == 1) return 0;
                 worksheet.Cells.AutoFitColumns(0);
                 await package.SaveAsync();

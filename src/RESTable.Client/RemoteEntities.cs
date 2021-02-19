@@ -5,10 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
-using RESTable.Internal;
 using RESTable.Requests;
+using RESTable.Results;
 
-namespace RESTable.Results
+namespace RESTable.Client
 {
     /// <inheritdoc cref="Content" />
     /// <inheritdoc cref="IEntities{T}" />
@@ -18,12 +18,10 @@ namespace RESTable.Results
     internal class RemoteEntities : Content, IEntities<JObject>
     {
         public Type EntityType { get; }
-        private IRequestInternal RequestInternal { get; }
-        private IContentTypeProvider ContentTypeProvider { get; }
-
+        private IContentTypeProvider ContentTypeProvider => Request.GetOutputContentTypeProvider();
         internal ISerializedResult SerializedResult { get; }
 
-        public override IEntities<T1> ToEntities<T1>() => new DeserializedTypeEnumerable<T1>(RequestInternal, SerializedResult.Body, this, ContentTypeProvider);
+        public override IEntities<T1> ToEntities<T1>() => new DeserializedTypeEnumerable<T1>(Request, SerializedResult.Body, this, ContentTypeProvider);
 
         public IAsyncEnumerator<JObject> GetAsyncEnumerator(CancellationToken cancellationToken = new())
         {
@@ -31,11 +29,9 @@ namespace RESTable.Results
             return new StreamEnumerator<JObject>(SerializedResult.Body, ContentTypeProvider);
         }
 
-        internal RemoteEntities(IRequestInternal request) : base(request)
+        internal RemoteEntities(IRequest request) : base(request)
         {
-            RequestInternal = request;
             EntityType = typeof(JObject);
-            ContentTypeProvider = RequestInternal.GetOutputContentTypeProvider();
             SerializedResult = new SerializedResult(this);
         }
     }

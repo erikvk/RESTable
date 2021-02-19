@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using RESTable.WebSockets;
+﻿using System.Threading.Tasks;
 
 namespace RESTable.Resources.Templates
 {
@@ -28,7 +26,7 @@ namespace RESTable.Resources.Templates
     /// receive the commands OPEN, PAUSE and CLOSE, and that regurarly push messages 
     /// to all open terminals.
     /// </summary>
-    public abstract class FeedTerminal : ITerminal
+    public abstract class FeedTerminal : Terminal
     {
         /// <summary>
         /// The status of the feed
@@ -65,29 +63,17 @@ namespace RESTable.Resources.Templates
                    "> To pause, type PAUSE\n> To close, type CLOSE\n";
         }
 
-        /// <inheritdoc />
-        public virtual async Task Open()
+        protected override async Task Open()
         {
             if (ShowWelcomeText)
                 await WebSocket.SendText(GetWelcomeText());
         }
 
         /// <inheritdoc />
-        public IWebSocket WebSocket { protected get; set; }
-
-        public abstract ValueTask DisposeAsync();
+        public override bool SupportsTextInput { get; } = true;
 
         /// <inheritdoc />
-        public Task HandleBinaryInput(byte[] input) => throw new NotImplementedException();
-
-        /// <inheritdoc />
-        public bool SupportsTextInput { get; } = true;
-
-        /// <inheritdoc />
-        public bool SupportsBinaryInput { get; } = false;
-
-        /// <inheritdoc />
-        public async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input)
         {
             switch (input.ToUpperInvariant().Trim())
             {

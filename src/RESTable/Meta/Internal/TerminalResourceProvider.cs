@@ -29,6 +29,6 @@ namespace RESTable.Meta.Internal
         }
 
         private readonly MethodInfo BuildTerminalMethod;
-        private IResource MakeTerminalResource<T>() where T : class, ITerminal => new TerminalResource<T>();
+        private IResource MakeTerminalResource<T>() where T : Terminal => new TerminalResource<T>();
     }
 }

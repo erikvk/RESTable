@@ -49,7 +49,7 @@ namespace RESTable.ContentTypeProviders
         /// <summary>
         /// Serializes the entity collection to the given Stream and returns the number of entities serialized.
         /// </summary>
-        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> entities, Stream stream, IRequest request = null);
+        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class;
 
         /// <summary>
         /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RESTable.WebSockets;
 
 namespace RESTable.Resources.Templates
 {
@@ -66,20 +65,17 @@ namespace RESTable.Resources.Templates
     /// exposed by this resource. Input and output cannot be handled by the implementing class.
     /// using commands.
     /// </summary>
-    public abstract class OptionsTerminal : ITerminal
+    public abstract class OptionsTerminal : Terminal
     {
-        /// <inheritdoc />
-        public IWebSocket WebSocket { protected get; set; }
-
         private IReadOnlyDictionary<string, Option> _options { get; set; }
 
-        async Task ITerminal.Open()
+        protected override async Task Open()
         {
             _options = GetOptions().SafeToDictionary(o => o.Command, StringComparer.OrdinalIgnoreCase);
             await PrintOptions();
         }
 
-        async Task ITerminal.HandleTextInput(string input)
+        public override async Task HandleTextInput(string input)
         {
             var (command, args) = input.TSplit(" ");
             switch (command.Trim())
@@ -127,10 +123,7 @@ namespace RESTable.Resources.Templates
             await WebSocket.SendText(stringBuilder.ToString());
         }
 
-        Task ITerminal.HandleBinaryInput(byte[] input) => throw new NotImplementedException();
-        bool ITerminal.SupportsTextInput { get; } = true;
-        bool ITerminal.SupportsBinaryInput { get; } = false;
-        public ValueTask DisposeAsync() => default;
+        public override bool SupportsTextInput { get; } = true;
 
         /// <summary>
         /// Provides the options to make available in this resource

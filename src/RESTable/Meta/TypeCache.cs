@@ -76,9 +76,14 @@ namespace RESTable.Meta
         private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCacheByActualName;
         private static readonly ConcurrentDictionary<Type, EntityTypeContract> EntityTypeContracts;
 
-        internal static IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(this Type type, bool flag = false) => type
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .ParseDeclaredProperties(flag);
+        internal static IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(this Type type, bool flag = false)
+        {
+            if (type.HasAttribute<RESTableMemberAttribute>(out var memberAttribute) && memberAttribute.Ignored)
+                return new DeclaredProperty[0];
+            return type
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .ParseDeclaredProperties(flag);
+        }
 
         internal static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
             .Where(p => !p.RESTableIgnored())
@@ -99,7 +104,7 @@ namespace RESTable.Meta
         /// </summary>
         public static IReadOnlyDictionary<string, DeclaredProperty> GetDeclaredProperties(this Type type, bool groupByActualName = false)
         {
-            IEnumerable<DeclaredProperty> make(Type _type)
+            IEnumerable<DeclaredProperty> Make(Type _type)
             {
                 switch (_type)
                 {
@@ -131,7 +136,7 @@ namespace RESTable.Meta
                                 getter: m.FirstOrDefault(p => p.GetParameters().Length == 0),
                                 setter: m.FirstOrDefault(p => p.GetParameters().Length == 1)
                             ));
-                        return make(t).Select(p =>
+                        return Make(t).Select(p =>
                         {
                             var (getter, setter) = targetsByProp.SafeGet(p.ActualName);
                             if (p.IsReadable)
@@ -156,12 +161,12 @@ namespace RESTable.Meta
                             }
                             return p;
                         });
-                    case var _ when typeof(ITerminal).IsAssignableFrom(_type):
-                        return _type.FindAndParseDeclaredProperties().Except(make(typeof(ITerminal)), DeclaredProperty.NameComparer);
+                    case var _ when _type.IsSubclassOf(typeof(Terminal)):
+                        return _type.FindAndParseDeclaredProperties().Except(typeof(Terminal).GetDeclaredProperties().Values, DeclaredProperty.NameComparer);
                     case var _ when _type.IsNullable(out var underlying):
                         return underlying.GetDeclaredProperties().Values;
                     case var _ when _type.HasAttribute<RESTableViewAttribute>():
-                        return _type.FindAndParseDeclaredProperties().Union(make(_type.DeclaringType));
+                        return _type.FindAndParseDeclaredProperties().Union(Make(_type.DeclaringType));
                     case var _ when Resource.SafeGet(_type) is IEntityResource {DeclaredPropertiesFlagged: true} e:
                     default: return _type.FindAndParseDeclaredProperties();
                 }
@@ -174,7 +179,7 @@ namespace RESTable.Meta
                 if (!DeclaredPropertyCache.TryGetValue(type, out var propsByName))
                 {
                     var propertyList = new List<DeclaredProperty>();
-                    foreach (var property in make(type))
+                    foreach (var property in Make(type))
                     {
                         property.EstablishPropertyDependancies();
                         propertyList.Add(property);

@@ -1,4 +1,6 @@
-﻿namespace RESTable.Results
+﻿using RESTable.Results;
+
+namespace RESTable.Client
 {
     /// <inheritdoc />
     /// <summary>

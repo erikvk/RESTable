@@ -19,8 +19,9 @@ namespace RESTable.AspNetCore
 
         public IEnumerable<Route> Select(IRequest<Route> request)
         {
-            var routeCollection = request.GetService<IHttpContextAccessor>()
-                .HttpContext.GetRouteData()
+            var routeData = request.GetService<IHttpContextAccessor>()
+                .HttpContext.GetRouteData();
+            var routeCollection = routeData
                 .Routers.OfType<RouteCollection>()
                 .First();
             for (var i = 0; i < routeCollection.Count; i += 1)

@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using RESTable.Admin;
 using RESTable.ContentTypeProviders;
+using RESTable.ContentTypeProviders.NativeJsonProtocol;
 using RESTable.Internal;
 using RESTable.Linq;
 using RESTable.Meta;
@@ -193,36 +197,77 @@ namespace RESTable.ProtocolProviders
             }
         }
 
+        public void SetResultHeaders(IResult result)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <inheritdoc />
-        public async Task Serialize(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
+        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
         {
             switch (toSerialize.Result)
             {
-                case Report report:
-                    await contentTypeProvider.SerializeCollection(report.ReportBody.ToAsyncSingleton(), toSerialize.Body, report.Request);
-                    break;
-
                 case Head head:
-                    head.Headers.EntityCount = head.EntityCount.ToString();
+                    head.Headers["EntityCount"] = head.EntityCount.ToString();
+                    return;
+                case IEntities<object> entities when entities is Content content:
+                    await SerializeContentDataCollection((dynamic) entities, content, toSerialize, contentTypeProvider);
                     break;
-
-                case IEntities<object> entities:
-                    long entityCount = await contentTypeProvider.SerializeCollection((dynamic) entities, toSerialize.Body, entities.Request);
-                    toSerialize.Headers.EntityCount = entityCount.ToString();
-                    toSerialize.EntityCount = entityCount;
-                    if (entityCount == 0)
-                    {
-                        entities.MakeNoContent();
-                    }
-                    if (toSerialize.IsPaged)
-                    {
-                        var pager = toSerialize.GetNextPageLink();
-                        entities.Headers.Pager = pager.ToUriString();
-                    }
-                    entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
+                case Report report:
+                    await SerializeContentDataCollection((dynamic) report.ToAsyncSingleton(), report, toSerialize, contentTypeProvider);
                     break;
+                default: return;
             }
-            toSerialize.Body.Rewind();
+        }
+
+        private async Task SerializeContentDataCollection<T>(IAsyncEnumerable<T> dataCollection, Content content, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider) where T : class
+        {
+            content.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
+
+            if (contentTypeProvider is not IJsonProvider jsonProvider)
+            {
+                await contentTypeProvider.SerializeCollection(dataCollection, toSerialize.Body, content.Request);
+                return;
+            }
+
+            await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
+            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None};
+            await jwr.WriteStartObjectAsync();
+            await jwr.WritePropertyNameAsync("ResourceType");
+            await jwr.WriteValueAsync(content.ResourceType.FullName);
+            if (Settings._PrettyPrint)
+                await jwr.WriteIndentationAsync();
+            await jwr.WriteRawAsync("\"Data\": ");
+            await jwr.FlushAsync();
+            var entityCount = await jsonProvider.SerializeCollection
+            (
+                collectionObject: dataCollection,
+                stream: toSerialize.Body,
+                baseIndentation: 2,
+                request: content.Request
+            );
+            toSerialize.EntityCount = entityCount;
+            await jwr.WritePropertyNameAsync("DataCount");
+            await jwr.WriteValueAsync(entityCount);
+            await jwr.WritePropertyNameAsync("Status");
+            await jwr.WriteValueAsync("success");
+            if (toSerialize.HasPreviousPage)
+            {
+                var previousPageLink = toSerialize.GetPreviousPageLink();
+                await jwr.WritePropertyNameAsync("PreviousPage");
+                await jwr.WriteValueAsync(previousPageLink.ToUriString());
+            }
+            if (toSerialize.HasNextPage)
+            {
+                var nextPageLink = toSerialize.GetNextPageLink();
+                await jwr.WritePropertyNameAsync("NextPage");
+                await jwr.WriteValueAsync(nextPageLink.ToUriString());
+            }
+            await jwr.WriteEndObjectAsync();
+            if (entityCount == 0)
+                content.MakeNoContent();
+
+            toSerialize.Body.TryRewind();
         }
 
         public bool IsCompliant(IRequest request, out string invalidReason)

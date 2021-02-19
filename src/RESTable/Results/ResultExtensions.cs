@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace RESTable.Results
@@ -10,10 +11,10 @@ namespace RESTable.Results
         /// <summary>
         /// Serializes the result into an instance of ISerializedResult
         /// </summary>
-        public static async Task<ISerializedResult> Serialize(this IResult result)
+        public static async Task<ISerializedResult> Serialize(this IResult result, Stream customOutputStream = null)
         {
             var stopwatch = Stopwatch.StartNew();
-            var serializedResult = new SerializedResult(result);
+            var serializedResult = new SerializedResult(result, customOutputStream);
             try
             {
                 if (serializedResult.Body == null)
@@ -24,7 +25,7 @@ namespace RESTable.Results
             catch (Exception exception)
             {
                 await serializedResult.DisposeAsync();
-                return await exception.AsResultOf(result.Request).Serialize();
+                return await exception.AsResultOf(result.Request).Serialize(customOutputStream);
             }
             finally
             {

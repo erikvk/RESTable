@@ -42,43 +42,31 @@ namespace RESTable.Requests
             set => this[_Info] = value;
         }
 
-        internal string Error
+        public string Error
         {
             get => this[_Error];
             set => this[_Error] = value;
         }
 
-        internal string Elapsed
+        public string Elapsed
         {
             get => this[_Elapsed];
             set => this[_Elapsed] = value;
         }
 
-        internal string EntityCount
-        {
-            get => this[_EntityCount];
-            set => this[_EntityCount] = value;
-        }
-
-        internal string Pager
-        {
-            get => this[_Pager];
-            set => this[_Pager] = value;
-        }
-
-        internal string Metadata
+        public string Metadata
         {
             get => this[_Metadata];
             set => this[_Metadata] = value;
         }
 
-        internal string Version
+        public string Version
         {
             get => this[_Version];
             set => this[_Version] = value;
         }
 
-        internal string Vary
+        public string Vary
         {
             get => this[_Vary];
             set => this[_Vary] = value;

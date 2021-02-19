@@ -16,14 +16,16 @@ namespace RESTable.Requests
     /// and define the root for each ITraceable tree. They also hold WebSocket connections
     /// and Client access rights.
     /// </summary>
-    public abstract class RESTableContext : IDisposable, IAsyncDisposable
+    public abstract class RESTableContext : IDisposable, IAsyncDisposable, ITraceable
     {
-        internal string InitialTraceId { get; }
+        public string TraceId { get; }
         private const int MaximumStackDepth = 500;
         private WebSocket webSocket;
         private int StackDepth;
         internal bool IsBottomOfStack => StackDepth < 1;
         public IServiceProvider Services { get; }
+
+        public RESTableContext Context => this;
 
         internal void IncreaseDepth()
         {
@@ -212,11 +214,11 @@ namespace RESTable.Requests
         /// <param name="uri">The URI of the request</param>
         /// <param name="headers">The headers of the request</param>
         /// <returns></returns>
-        public ISerializedResult GetOptions(string uri, Headers headers)
+        public IResult GetOptions(string uri, Headers headers)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, uri, headers);
-            return Options.Create(parameters).Serialize();
+            return Options.Create(parameters);
         }
 
         /// <summary>
@@ -228,7 +230,7 @@ namespace RESTable.Requests
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
             Services = services ?? new ServiceCollection().BuildServiceProvider();
-            InitialTraceId = NextId;
+            TraceId = NextId;
             StackDepth = 0;
         }
 
@@ -236,13 +238,6 @@ namespace RESTable.Requests
         /// The context of internal root-level access requests
         /// </summary>
         public static RESTableContext Root => new InternalContext();
-
-        /// <summary>
-        /// The context of a remote request to some external RESTable service
-        /// </summary>
-        /// <param name="serviceRoot">The URI of the remote RESTable service, for example https://my-service.com:8282/rest</param>
-        /// <param name="apiKey">The API key to use in remote request to this service</param>
-        public static RESTableContext Remote(string serviceRoot, string apiKey = null) => new RemoteContext(serviceRoot, apiKey);
 
         private static ulong IdNr;
 
@@ -253,6 +248,16 @@ namespace RESTable.Requests
                 var bytes = BitConverter.GetBytes(IdNr += 1);
                 return Convert.ToBase64String(bytes);
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is RESTableContext context && context.TraceId == TraceId;
+        }
+
+        public override int GetHashCode()
+        {
+            return TraceId.GetHashCode();
         }
 
         public void Dispose()

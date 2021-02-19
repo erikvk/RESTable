@@ -45,7 +45,7 @@ namespace RESTable.Meta.Internal
             Validate(params Type[] types)
         {
             var entityTypes = types
-                .Where(t => !typeof(ITerminal).IsAssignableFrom(t) &&
+                .Where(t => !typeof(Terminal).IsAssignableFrom(t) &&
                             !typeof(IEvent).IsAssignableFrom(t) &&
                             !t.ImplementsGenericInterface(typeof(IBinary<>)))
                 .ToList();
@@ -56,7 +56,7 @@ namespace RESTable.Meta.Internal
                 .Where(t => typeof(IResourceWrapper).IsAssignableFrom(t))
                 .ToList();
             var terminalTypes = types
-                .Where(t => typeof(ITerminal).IsAssignableFrom(t))
+                .Where(t => typeof(Terminal).IsAssignableFrom(t))
                 .ToList();
             var binaryTypes = types
                 .Where(t => t.ImplementsGenericInterface(typeof(IBinary<>)))

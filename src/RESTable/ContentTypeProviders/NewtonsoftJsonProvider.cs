@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -11,8 +12,14 @@ using static RESTable.Admin.Settings;
 
 namespace RESTable.ContentTypeProviders
 {
-    /// <inheritdoc />
-    public class JsonProvider : IContentTypeProvider
+    public interface IJsonProvider : IContentTypeProvider
+    {
+        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, Stream stream, int baseIndentation, IRequest request = null) where T : class;
+    }
+
+    /// <inheritdoc cref="RESTable.ContentTypeProviders.IJsonProvider" />
+    /// <inheritdoc cref="RESTable.ContentTypeProviders.IContentTypeProvider" />
+    public class NewtonsoftJsonProvider : IJsonProvider, IContentTypeProvider
     {
         /// <summary>
         /// The settings that are used when serializing and deserializing JSON
@@ -44,7 +51,7 @@ namespace RESTable.ContentTypeProviders
         private const string Brief = "json";
         private const string TextPlain = "text/plain";
 
-        static JsonProvider()
+        static NewtonsoftJsonProvider()
         {
             UTF8 = RESTableConfig.DefaultEncoding;
             Settings = new JsonSerializerSettings
@@ -70,9 +77,9 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="JsonProvider"/> type
+        /// Creates a new instance of the <see cref="NewtonsoftJsonProvider"/> type
         /// </summary>
-        public JsonProvider()
+        public NewtonsoftJsonProvider()
         {
             MatchStrings = new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
             ContentDispositionFileExtension = ".json";
@@ -184,9 +191,9 @@ namespace RESTable.ContentTypeProviders
         public string[] MatchStrings { get; set; }
 
         /// <inheritdoc />
-        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> entities, Stream stream, IRequest request = null)
+        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class
         {
-            if (entities == null) return 0;
+            if (collection == null) return 0;
             await using var swr = new StreamWriter
             (
                 stream: stream,
@@ -198,7 +205,26 @@ namespace RESTable.ContentTypeProviders
             {
                 Formatting = _PrettyPrint ? Indented : None
             };
-            Serializer.Serialize(jwr, entities);
+            Serializer.Serialize(jwr, collection.ToEnumerable());
+            return jwr.ObjectsWritten;
+        }
+
+        /// <inheritdoc />
+        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, Stream stream, int baseIndentation, IRequest request = null) where T : class
+        {
+            if (collectionObject == null) return 0;
+            await using var swr = new StreamWriter
+            (
+                stream: stream,
+                encoding: UTF8,
+                bufferSize: 2048,
+                leaveOpen: true
+            );
+            using var jwr = new RESTableJsonWriter(swr, baseIndentation)
+            {
+                Formatting = _PrettyPrint ? Indented : None
+            };
+            Serializer.Serialize(jwr, collectionObject.ToEnumerable());
             return jwr.ObjectsWritten;
         }
 

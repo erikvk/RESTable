@@ -1,4 +1,5 @@
 ﻿using RESTable.Requests;
+using RESTable.Resources;
 
 namespace RESTable.Results
 {
@@ -8,27 +9,15 @@ namespace RESTable.Results
     /// </summary>
     public class Report : Content
     {
-        /// <summary>
-        /// The body of the report
-        /// </summary>
-        public ReportBody ReportBody { get; }
-
-        internal Report(IRequest request, ulong count) : base(request) => ReportBody = new ReportBody(count);
-
-        /// <inheritdoc />
-        public override string Metadata => $"{nameof(Report)};{Request.Resource};{ReportBody.Count}";
-    }
-
-    /// <summary>
-    /// Describes the body of a report
-    /// </summary>
-    public class ReportBody
-    {
-        /// <summary>
-        /// The number of entities counted
-        /// </summary>
         public ulong Count { get; }
 
-        internal ReportBody(ulong count) => Count = count;
+        public Report(IRequest request, ulong count) : base(request)
+        {
+            Count = count;
+        }
+
+        /// <inheritdoc />
+        [RESTableMember(ignore: true)]
+        public override string Metadata => $"{nameof(Report)};{Request.Resource};{Count}";
     }
 }

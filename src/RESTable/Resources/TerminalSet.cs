@@ -10,7 +10,7 @@ namespace RESTable.Resources
     /// <summary>
     /// A thread-safe set of terminals.
     /// </summary>
-    public class TerminalSet<T> : ICollection<T> where T : class, ITerminal
+    public class TerminalSet<T> : ICollection<T> where T : Terminal
     {
         private readonly IDictionary<T, byte> terminals;
 

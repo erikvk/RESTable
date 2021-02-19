@@ -97,7 +97,7 @@ namespace RESTable.WebSockets
         /// Closes the current terminal (if any) and directs the WebSocket to the provided terminal. Use this to quit from a 
         /// terminal resource and open another terminal instead.
         /// </summary>
-        Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : class, ITerminal;
+        Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : Terminal;
 
         /// <summary>
         /// The current status of this WebSocket

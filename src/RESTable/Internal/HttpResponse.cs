@@ -14,13 +14,11 @@ namespace RESTable.Internal
         public Stream Body { get; }
         public Headers Headers { get; }
         internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
-        public string TraceId { get; }
         public RESTableContext Context { get; }
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes) {Headers.Info}";
 
         private HttpResponse(ITraceable trace)
         {
-            TraceId = trace.TraceId;
             Context = trace.Context;
             Headers = new Headers();
         }

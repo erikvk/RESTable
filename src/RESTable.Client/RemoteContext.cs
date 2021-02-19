@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Net;
 using RESTable.Requests;
 using RESTable.WebSockets;
 
-namespace RESTable.Internal
+namespace RESTable.Client
 {
     internal class RemoteContext : RESTableContext
     {
@@ -17,10 +18,22 @@ namespace RESTable.Internal
             return new RemoteRequest(this, method, uri, body, headers);
         }
 
-        public override IRequest<T> CreateRequest<T>(Method method = Method.GET, string protocolId = "restable", string viewName = null) =>
+        public override IRequest<T> CreateRequest<T>(Method method = Method.GET, string protocolId = "restable", string viewName = null)
+        {
             throw new InvalidOperationException("Cannot create generic requests in remote contexts");
+        }
 
-        internal RemoteContext(string serviceRoot, string apiKey = null) : base(Client.Remote)
+        private static readonly Requests.Client RemoteClient = new(
+            origin: (OriginType) (-1),
+            host: "localhost",
+            clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
+            proxyIp: null,
+            userAgent: null,
+            https: false,
+            cookies: new Cookies()
+        );
+
+        public RemoteContext(string serviceRoot, string apiKey = null) : base(RemoteClient)
         {
             ServiceRoot = serviceRoot.TrimEnd('/');
             ApiKey = apiKey;

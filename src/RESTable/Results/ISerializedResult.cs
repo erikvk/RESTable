@@ -1,18 +1,19 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Results
 {
-    internal class SerializedResult : ISerializedResult
+    public class SerializedResult : ISerializedResult
     {
-        public string TraceId => Result.TraceId;
         public RESTableContext Context => Result.Context;
         public Headers Headers => Result.Headers;
 
         public long EntityCount { get; set; }
 
-        public bool IsPaged => EntityCount > 0 && EntityCount == (long?) Result.Request?.MetaConditions.Limit;
+        public bool HasNextPage => EntityCount > 0 && EntityCount == (long?) Result.Request?.MetaConditions.Limit;
+        public bool HasPreviousPage => EntityCount > 0 && Result.Request?.MetaConditions.Offset > 0;
 
         public string HeadersStringCache
         {
@@ -30,10 +31,10 @@ namespace RESTable.Results
         public Body Body { get; }
         public TimeSpan TimeElapsed => Result.TimeElapsed;
 
-        public SerializedResult(IResult result)
+        public SerializedResult(IResult result, Stream customOutputStream = null)
         {
             Result = result ?? throw new ArgumentNullException(nameof(result));
-            Body = result.ProtocolHolder != null ? Body.CreateOutputBody(result.ProtocolHolder) : null;
+            Body = result.ProtocolHolder != null ? Body.CreateOutputBody(result.ProtocolHolder, customOutputStream) : null;
         }
 
         public void Dispose()
@@ -74,9 +75,8 @@ namespace RESTable.Results
         /// </summary>
         long EntityCount { get; set; }
 
-        /// <summary>
-        /// Is this result paged?
-        /// </summary>
-        bool IsPaged { get; }
+        bool HasNextPage { get; }
+        
+        bool HasPreviousPage { get; }
     }
 }

@@ -1,6 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <Import Project="..\pack.props" />
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
@@ -8,7 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RESTable\RESTable.csproj" />
+      <ProjectReference Include="..\RESTable\RESTable.csproj" />
     </ItemGroup>
 
 </Project>

@@ -10,8 +10,7 @@ namespace RESTable.Internal.Logging
         private readonly string _logMessage;
         private readonly string _logContent;
         public MessageType MessageType { get; }
-        public string TraceId { get; }
-
+        
         public ValueTask<string> GetLogMessage() => new(_logMessage);
         public ValueTask<string> GetLogContent() => new(_logContent);
 
@@ -25,7 +24,6 @@ namespace RESTable.Internal.Logging
         public WebSocketEvent(MessageType direction, WebSocket webSocket, string content = null, ulong length = 0)
         {
             MessageType = direction;
-            TraceId = webSocket.TraceId;
             WebSocket = webSocket;
             ExcludeHeaders = false;
             LogTime = DateTime.Now;
