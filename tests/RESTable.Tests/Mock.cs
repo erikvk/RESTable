@@ -69,8 +69,8 @@ namespace RESTable.Tests
             var client = MockClient;
             var context = new MockContext(client);
             await using var request = context.CreateRequest(method, uri, body, headers);
-            var result = await request.Evaluate();
-            await using var serialized = await result.Serialize();
+            var result = await request.Evaluate().ConfigureAwait(false);
+            await using var serialized = await result.Serialize().ConfigureAwait(false);
             return serialized.Result.StatusCode;
         }
     }

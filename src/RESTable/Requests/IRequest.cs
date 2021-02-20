@@ -199,7 +199,7 @@ namespace RESTable.Requests
         {
             try
             {
-                return await selector(request);
+                return await selector(request).ConfigureAwait(false);
             }
             catch (Exception e)
             {

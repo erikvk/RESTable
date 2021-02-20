@@ -106,6 +106,6 @@ namespace RESTable.Results
         /// <summary>
         /// The time elapsed from the start of reqeust evaluation
         /// </summary>
-        public TimeSpan TimeElapsed { get; set; }
+        public TimeSpan TimeElapsed => Request?.TimeElapsed ?? default;
     }
 }

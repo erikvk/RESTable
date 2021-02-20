@@ -16,7 +16,7 @@ namespace RESTable.Results
 
         public MessageType MessageType => Result.MessageType;
         public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
-        public async ValueTask<string> GetLogContent() => await Body.ToStringAsync();
+        public async ValueTask<string> GetLogContent() => await Body.ToStringAsync().ConfigureAwait(false);
         public DateTime LogTime => Result.LogTime;
 
         public IResult Result { get; }
@@ -40,7 +40,7 @@ namespace RESTable.Results
         {
             if (Body == null) return;
             Body.CanClose = true;
-            await Body.DisposeAsync();
+            await Body.DisposeAsync().ConfigureAwait(false);
         }
     }
 

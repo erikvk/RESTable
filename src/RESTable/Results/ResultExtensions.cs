@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
@@ -13,24 +12,21 @@ namespace RESTable.Results
         /// </summary>
         public static async Task<ISerializedResult> Serialize(this IResult result, Stream customOutputStream = null)
         {
-            var stopwatch = Stopwatch.StartNew();
             var serializedResult = new SerializedResult(result, customOutputStream);
             try
             {
                 if (serializedResult.Body == null)
                     return serializedResult;
-                await serializedResult.Body.Serialize(serializedResult);
+                await serializedResult.Body.Serialize(serializedResult).ConfigureAwait(false);
                 return serializedResult;
             }
             catch (Exception exception)
             {
-                await serializedResult.DisposeAsync();
-                return await exception.AsResultOf(result.Request).Serialize(customOutputStream);
+                await serializedResult.DisposeAsync().ConfigureAwait(false);
+                return await exception.AsResultOf(result.Request).Serialize(customOutputStream).ConfigureAwait(false);
             }
             finally
             {
-                stopwatch.Stop();
-                result.TimeElapsed += stopwatch.Elapsed;
                 result.Headers.Elapsed = result.TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             }
         }

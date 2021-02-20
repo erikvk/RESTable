@@ -28,7 +28,7 @@ namespace RESTable.SQLite.Meta
         internal async Task Push()
         {
             if (IsRowId) return;
-            await SQLColumn.Push();
+            await SQLColumn.Push().ConfigureAwait(false);
         }
 
         /// <summary>

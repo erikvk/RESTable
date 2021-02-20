@@ -20,7 +20,7 @@ namespace RESTable.Admin
         /// <inheritdoc />
         protected override async Task Open()
         {
-            await base.Open();
+            await base.Open().ConfigureAwait(false);
             Consoles.Add(this);
         }
 
@@ -32,7 +32,7 @@ namespace RESTable.Admin
             var argsString = args == null ? null : "\r\nArgs: " + string.Join(", ", args);
             var message = $"{DateTime.UtcNow:O}: {query}{argsString}\r\n";
             var tasks = Consoles.Select(c => c.WebSocket.SendText(message));
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
     }
 }

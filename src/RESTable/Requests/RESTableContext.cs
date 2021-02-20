@@ -271,7 +271,7 @@ namespace RESTable.Requests
         public async ValueTask DisposeAsync()
         {
             if (Services is IAsyncDisposable asyncDisposable)
-                await asyncDisposable.DisposeAsync();
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
             if (Services is IDisposable disposable)
                 disposable.Dispose();
         }

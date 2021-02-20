@@ -31,7 +31,7 @@ namespace RESTable.AspNetCore
                     var options = context.GetOptions(uri, headers);
                     WriteResponse(aspNetCoreContext, options);
                     await using var remote = aspNetCoreContext.Response.Body;
-                    await using var serializedResult = await options.Serialize(remote);
+                    await using var serializedResult = await options.Serialize(remote).ConfigureAwait(false);
                 });
 
                 foreach (var method in RESTableConfig.Methods)
@@ -49,17 +49,17 @@ namespace RESTable.AspNetCore
                         }
                         var body = aspNetCoreContext.Request.Body;
                         await using var request = context.CreateRequest(method, uri, body, headers);
-                        var result = await request.Evaluate();
+                        var result = await request.Evaluate().ConfigureAwait(false);
                         if (result is WebSocketUpgradeSuccessful ws)
                         {
                             await using var webSocket = ws.WebSocket;
-                            await webSocket.LifetimeTask;
+                            await webSocket.LifetimeTask.ConfigureAwait(false);
                         }
                         else
                         {
                             WriteResponse(aspNetCoreContext, result);
                             await using var remote = aspNetCoreContext.Response.Body;
-                            await using var serializedResult = await result.Serialize(remote);
+                            await using var serializedResult = await result.Serialize(remote).ConfigureAwait(false);
                             serializedResult.Result.ThrowIfError();
                         }
                     });

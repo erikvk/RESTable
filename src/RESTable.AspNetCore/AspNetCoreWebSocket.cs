@@ -23,42 +23,42 @@ namespace RESTable.AspNetCore
         {
             var buffer = Encoding.UTF8.GetBytes(text);
             var segment = new ArraySegment<byte>(buffer);
-            await WebSocket.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken);
+            await WebSocket.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
         }
 
         protected override async Task Send(byte[] data, bool asText, int offset, int length, CancellationToken cancellationToken)
         {
             var segment = new ArraySegment<byte>(data);
-            await WebSocket.SendAsync(segment, asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, cancellationToken);
+            await WebSocket.SendAsync(segment, asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
         }
 
         protected override bool IsConnected => WebSocket.State == WebSocketState.Open;
 
         protected override async Task SendUpgrade()
         {
-            WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
         }
 
         protected override async Task InitLifetimeTask(CancellationToken cancellationToken)
         {
-            while (await ReceiveStreamAsync(cancellationToken) is var (byteArray, isBinary) && !WebSocket.CloseStatus.HasValue)
+            while (await ReceiveStreamAsync(cancellationToken).ConfigureAwait(false) is var (byteArray, isBinary) && !WebSocket.CloseStatus.HasValue)
             {
                 try
                 {
                     if (isBinary)
                     {
-                        await HandleBinaryInput(byteArray);
+                        await HandleBinaryInput(byteArray).ConfigureAwait(false);
                     }
                     else
                     {
                         var str = Encoding.UTF8.GetString(byteArray);
-                        await HandleTextInput(str);
+                        await HandleTextInput(str).ConfigureAwait(false);
                     }
                 }
                 catch (Exception e)
                 {
-                    await Send(e.Message, cancellationToken);
-                    await DisposeAsync();
+                    await Send(e.Message, cancellationToken).ConfigureAwait(false);
+                    await DisposeAsync().ConfigureAwait(false);
                 }
             }
         }
@@ -72,22 +72,22 @@ namespace RESTable.AspNetCore
             do
             {
                 ct.ThrowIfCancellationRequested();
-                result = await WebSocket.ReceiveAsync(buffer, ct);
+                result = await WebSocket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
                 if (buffer.Array != null)
-                    await ms.WriteAsync(buffer.Array, buffer.Offset, result.Count, ct);
+                    await ms.WriteAsync(buffer.Array, buffer.Offset, result.Count, ct).ConfigureAwait(false);
             } while (!result.EndOfMessage);
 
             ms.Seek(0, SeekOrigin.Begin);
             
             return (
-                data: await ms.GetBytesAsync(),
+                data: await ms.GetBytesAsync().ConfigureAwait(false),
                 isText: result.MessageType == WebSocketMessageType.Binary
             );
         }
 
         protected override async Task Close()
         {
-            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

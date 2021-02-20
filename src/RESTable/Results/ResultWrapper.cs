@@ -61,11 +61,7 @@ namespace RESTable.Results
         public IEntities<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
 
         /// <inheritdoc />
-        public TimeSpan TimeElapsed
-        {
-            get => Result.TimeElapsed;
-            set => Result.TimeElapsed = value;
-        }
+        public TimeSpan TimeElapsed => Result.TimeElapsed;
 
         public IRequest Request => Result.Request;
 

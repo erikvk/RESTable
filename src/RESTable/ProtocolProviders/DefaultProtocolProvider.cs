@@ -211,13 +211,13 @@ namespace RESTable.ProtocolProviders
                     head.Headers["EntityCount"] = head.EntityCount.ToString();
                     return;
                 case Binary binary:
-                    await binary.BinaryResult.WriteToStream(toSerialize.Body);
+                    await binary.BinaryResult.WriteToStream(toSerialize.Body).ConfigureAwait(false);
                     return;
                 case IEntities<object> entities when entities is Content content:
-                    await SerializeContentDataCollection((dynamic) entities, content, toSerialize, contentTypeProvider);
+                    await SerializeContentDataCollection((dynamic) entities, content, toSerialize, contentTypeProvider).ConfigureAwait(false);
                     break;
                 case Report report:
-                    await SerializeContentDataCollection((dynamic) report.ToAsyncSingleton(), report, toSerialize, contentTypeProvider);
+                    await SerializeContentDataCollection((dynamic) report.ToAsyncSingleton(), report, toSerialize, contentTypeProvider).ConfigureAwait(false);
                     break;
                 default: return;
             }
@@ -229,48 +229,48 @@ namespace RESTable.ProtocolProviders
 
             if (contentTypeProvider is not IJsonProvider jsonProvider)
             {
-                await contentTypeProvider.SerializeCollection(dataCollection, toSerialize.Body, content.Request);
+                await contentTypeProvider.SerializeCollection(dataCollection, toSerialize.Body, content.Request).ConfigureAwait(false);
                 return;
             }
 
             await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
             using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None};
-            await jwr.WriteStartObjectAsync();
-            await jwr.WritePropertyNameAsync("ResourceType");
-            await jwr.WriteValueAsync(content.ResourceType.FullName);
+            await jwr.WriteStartObjectAsync().ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("ResourceType").ConfigureAwait(false);
+            await jwr.WriteValueAsync(content.ResourceType.FullName).ConfigureAwait(false);
             if (Settings._PrettyPrint)
-                await jwr.WriteIndentationAsync();
-            await jwr.WriteRawAsync("\"Data\": ");
-            await jwr.FlushAsync();
+                await jwr.WriteIndentationAsync().ConfigureAwait(false);
+            await jwr.WriteRawAsync("\"Data\": ").ConfigureAwait(false);
+            await jwr.FlushAsync().ConfigureAwait(false);
             var entityCount = await jsonProvider.SerializeCollection
             (
                 collectionObject: dataCollection,
                 stream: toSerialize.Body,
                 baseIndentation: 2,
                 request: content.Request
-            );
+            ).ConfigureAwait(false);
             toSerialize.EntityCount = entityCount;
-            await jwr.WritePropertyNameAsync("DataCount");
-            await jwr.WriteValueAsync(entityCount);
-            await jwr.WritePropertyNameAsync("Status");
-            await jwr.WriteValueAsync("success");
+            await jwr.WritePropertyNameAsync("DataCount").ConfigureAwait(false);
+            await jwr.WriteValueAsync(entityCount).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("Status").ConfigureAwait(false);
+            await jwr.WriteValueAsync("success").ConfigureAwait(false);
             if (toSerialize.HasPreviousPage)
             {
                 var previousPageLink = toSerialize.GetPreviousPageLink();
-                await jwr.WritePropertyNameAsync("PreviousPage");
-                await jwr.WriteValueAsync(previousPageLink.ToUriString());
+                await jwr.WritePropertyNameAsync("PreviousPage").ConfigureAwait(false);
+                await jwr.WriteValueAsync(previousPageLink.ToUriString()).ConfigureAwait(false);
             }
             if (toSerialize.HasNextPage)
             {
                 var nextPageLink = toSerialize.GetNextPageLink();
-                await jwr.WritePropertyNameAsync("NextPage");
-                await jwr.WriteValueAsync(nextPageLink.ToUriString());
+                await jwr.WritePropertyNameAsync("NextPage").ConfigureAwait(false);
+                await jwr.WriteValueAsync(nextPageLink.ToUriString()).ConfigureAwait(false);
             }
-            await jwr.WriteEndObjectAsync();
+            await jwr.WritePropertyNameAsync("TimeElapsedMs").ConfigureAwait(false);
+            await jwr.WriteValueAsync(toSerialize.TimeElapsed.TotalMilliseconds).ConfigureAwait(false);
+            await jwr.WriteEndObjectAsync().ConfigureAwait(false);
             if (entityCount == 0)
                 content.MakeNoContent();
-
-            toSerialize.Body.TryRewind();
         }
 
         public bool IsCompliant(IRequest request, out string invalidReason)

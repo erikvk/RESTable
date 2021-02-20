@@ -22,7 +22,6 @@ namespace RESTable.Results
             Request = request;
             StatusCode = HttpStatusCode.SwitchingProtocols;
             StatusDescription = "Switching protocols";
-            TimeElapsed = request.TimeElapsed;
         }
     }
 

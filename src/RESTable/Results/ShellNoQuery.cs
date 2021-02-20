@@ -8,7 +8,6 @@ namespace RESTable.Results
         {
             StatusCode = HttpStatusCode.NoContent;
             StatusDescription = "No query";
-            TimeElapsed = default;
         }
     }
 }

@@ -19,15 +19,15 @@ namespace RESTable.SQLite
 
         public async ValueTask DisposeAsync()
         {
-            await Command.DisposeAsync();
-            await Reader.DisposeAsync();
-            await Connection.DisposeAsync();
+            await Command.DisposeAsync().ConfigureAwait(false);
+            await Reader.DisposeAsync().ConfigureAwait(false);
+            await Connection.DisposeAsync().ConfigureAwait(false);
         }
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            if (!await Reader.ReadAsync()) return false;
-            CurrentRowId = await Reader.GetFieldValueAsync<long>(0);
+            if (!await Reader.ReadAsync().ConfigureAwait(false)) return false;
+            CurrentRowId = await Reader.GetFieldValueAsync<long>(0).ConfigureAwait(false);
             return true;
         }
 

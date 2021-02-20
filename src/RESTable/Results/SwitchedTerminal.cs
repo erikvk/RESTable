@@ -9,7 +9,6 @@ namespace RESTable.Results
         {
             StatusCode = HttpStatusCode.OK;
             StatusDescription = "Switched terminal";
-            TimeElapsed = request.TimeElapsed;
         }
     }
 }

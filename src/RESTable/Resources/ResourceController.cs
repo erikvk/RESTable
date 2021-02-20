@@ -126,7 +126,7 @@ namespace RESTable.Resources
         public virtual async Task<int> InsertAsync(IRequest<TController> request)
         {
             var i = 0;
-            await foreach (var resource in request.GetInputEntitiesAsync())
+            await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 resource.Insert();
                 i += 1;
@@ -137,7 +137,7 @@ namespace RESTable.Resources
         public virtual async Task<int> UpdateAsync(IRequest<TController> request)
         {
             var i = 0;
-            await foreach (var resource in request.GetInputEntitiesAsync())
+            await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 resource.Update();
                 i += 1;
@@ -148,7 +148,7 @@ namespace RESTable.Resources
         public virtual async Task<int> DeleteAsync(IRequest<TController> request)
         {
             var i = 0;
-            await foreach (var resource in request.GetInputEntitiesAsync())
+            await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 resource.Delete();
                 i += 1;

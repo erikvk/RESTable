@@ -180,7 +180,7 @@ namespace RESTable.ContentTypeProviders
         public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body)
         {
             var json = Encoding.UTF8.GetString(body);
-            await foreach (var entity in entities)
+            await foreach (var entity in entities.ConfigureAwait(false))
             {
                 JsonConvert.PopulateObject(json, entity, Settings);
                 yield return entity;
@@ -240,7 +240,7 @@ namespace RESTable.ContentTypeProviders
                 leaveOpen: true
             );
             using var jsonReader = new JsonTextReader(streamReader);
-            await jsonReader.ReadAsync();
+            await jsonReader.ReadAsync().ConfigureAwait(false);
             switch (jsonReader.TokenType)
             {
                 case JsonToken.None: yield break;
@@ -248,11 +248,11 @@ namespace RESTable.ContentTypeProviders
                     yield return Serializer.Deserialize<T>(jsonReader);
                     break;
                 case JsonToken.StartArray:
-                    await jsonReader.ReadAsync();
+                    await jsonReader.ReadAsync().ConfigureAwait(false);
                     while (jsonReader.TokenType != JsonToken.EndArray)
                     {
                         yield return Serializer.Deserialize<T>(jsonReader);
-                        await jsonReader.ReadAsync();
+                        await jsonReader.ReadAsync().ConfigureAwait(false);
                     }
                     break;
                 case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");

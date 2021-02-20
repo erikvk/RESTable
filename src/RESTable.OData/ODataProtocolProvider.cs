@@ -266,7 +266,7 @@ namespace RESTable.OData
             switch (toSerialize.Result)
             {
                 case Binary binary:
-                    await binary.BinaryResult.WriteToStream(toSerialize.Body);
+                    await binary.BinaryResult.WriteToStream(toSerialize.Body).ConfigureAwait(false);
                     return;
                 case not IEntities: return;
             }
@@ -287,23 +287,23 @@ namespace RESTable.OData
             }
             await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
             using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Indented : None};
-            await jwr.WriteStartObjectAsync();
-            await jwr.WritePropertyNameAsync("@odata.context");
-            await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}");
-            await jwr.WritePropertyNameAsync("value");
+            await jwr.WriteStartObjectAsync().ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("@odata.context").ConfigureAwait(false);
+            await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}").ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("value").ConfigureAwait(false);
             Providers.Json.Serialize(jwr, entities);
             toSerialize.EntityCount = jwr.ObjectsWritten;
             if (writeMetadata)
             {
-                await jwr.WritePropertyNameAsync("@odata.count");
-                await jwr.WriteValueAsync(toSerialize.EntityCount);
+                await jwr.WritePropertyNameAsync("@odata.count").ConfigureAwait(false);
+                await jwr.WriteValueAsync(toSerialize.EntityCount).ConfigureAwait(false);
                 if (toSerialize.HasNextPage)
                 {
-                    await jwr.WritePropertyNameAsync("@odata.nextLink");
-                    await jwr.WriteValueAsync(MakeRelativeUri(toSerialize.GetNextPageLink()));
+                    await jwr.WritePropertyNameAsync("@odata.nextLink").ConfigureAwait(false);
+                    await jwr.WriteValueAsync(MakeRelativeUri(toSerialize.GetNextPageLink())).ConfigureAwait(false);
                 }
             }
-            await jwr.WriteEndObjectAsync();
+            await jwr.WriteEndObjectAsync().ConfigureAwait(false);
         }
     }
 }

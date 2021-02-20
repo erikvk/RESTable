@@ -33,7 +33,7 @@ namespace RESTable.SQLite
         /// Inserts a range of SQLiteTable entities into the appropriate SQLite database
         /// table and returns the number of rows affected.
         /// </summary>
-        public static async Task<int> Insert(params T[] entities) => await Insert(entities.ToAsyncEnumerable());
+        public static async Task<int> Insert(params T[] entities) => await Insert(entities.ToAsyncEnumerable()).ConfigureAwait(false);
 
         /// <summary>
         /// Inserts an IEnumerable of SQLiteTable entities into the appropriate SQLite database
@@ -49,19 +49,19 @@ namespace RESTable.SQLite
                 command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
                 for (var i = 0; i < mappings.Length; i++)
                     command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
-                await foreach (var entity in entities)
+                await foreach (var entity in entities.ConfigureAwait(false))
                 {
-                    await entity._OnInsert();
+                    await entity._OnInsert().ConfigureAwait(false);
                     for (var i = 0; i < mappings.Length; i++)
                     {
                         object propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
-                    count += await command.ExecuteNonQueryAsync();
+                    count += await command.ExecuteNonQueryAsync().ConfigureAwait(false);
                     entity.RowId = connection.LastInsertRowId;
                 }
                 return count;
-            });
+            }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -79,19 +79,19 @@ namespace RESTable.SQLite
                 command.Parameters.Add(RowIdParameter, DbType.Int64);
                 for (var i = 0; i < mappings.Length; i++)
                     command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
-                await foreach (var entity in updatedEntities)
+                await foreach (var entity in updatedEntities.ConfigureAwait(false))
                 {
-                    await entity._OnUpdate();
+                    await entity._OnUpdate().ConfigureAwait(false);
                     command.Parameters[RowIdParameter].Value = entity.RowId;
                     for (var i = 0; i < mappings.Length; i++)
                     {
                         object propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
-                    count += await command.ExecuteNonQueryAsync();
+                    count += await command.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
                 return count;
-            });
+            }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -108,14 +108,14 @@ namespace RESTable.SQLite
                 var count = 0;
                 command.CommandText = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId = {RowIdParameter}";
                 command.Parameters.Add(RowIdParameter, DbType.Int64);
-                await foreach (var entity in entities)
+                await foreach (var entity in entities.ConfigureAwait(false))
                 {
-                    await entity._OnDelete();
+                    await entity._OnDelete().ConfigureAwait(false);
                     command.Parameters[RowIdParameter].Value = entity.RowId;
-                    count += await command.ExecuteNonQueryAsync();
+                    count += await command.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
                 return count;
-            });
+            }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace RESTable.SQLite
             var sql = $"SELECT COUNT(RowId) FROM {TableMapping<T>.TableName} {where}";
             await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
             await using var command = new SQLiteCommand(sql, connection);
-            return (long) (await command.ExecuteScalarAsync() ?? 0L);
+            return (long) (await command.ExecuteScalarAsync().ConfigureAwait(false) ?? 0L);
         }
     }
 }

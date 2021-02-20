@@ -21,17 +21,17 @@ namespace RESTable.SQLite
 
         public static async Task<int> InsertAsync(IRequest<T> request)
         {
-            return await SQLite<T>.Insert(request.GetInputEntitiesAsync());
+            return await SQLite<T>.Insert(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
         public static async Task<int> UpdateAsync(IRequest<T> request)
         {
-            return await SQLite<T>.Update(request.GetInputEntitiesAsync());
+            return await SQLite<T>.Update(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
         public static async Task<int> DeleteAsync(IRequest<T> request)
         {
-            return await SQLite<T>.Delete(request.GetInputEntitiesAsync());
+            return await SQLite<T>.Delete(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
         public static async Task<long> CountAsync(IRequest<T> request)
@@ -42,9 +42,9 @@ namespace RESTable.SQLite
                 return await SQLite<T>
                     .Select(sql.ToSQLiteWhereClause())
                     .Where(post)
-                    .CountAsync();
+                    .CountAsync().ConfigureAwait(false);
             }
-            return await SQLite<T>.Count(sql.ToSQLiteWhereClause());
+            return await SQLite<T>.Count(sql.ToSQLiteWhereClause()).ConfigureAwait(false);
         }
 
         private static bool IsSQLiteQueryable(ICondition condition)

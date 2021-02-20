@@ -49,19 +49,19 @@ namespace RESTable.ContentTypeProviders
         /// <inheritdoc />
         public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class
         {
-            var count = await JsonProvider.SerializeCollection(collection, stream, request);
+            var count = await JsonProvider.SerializeCollection(collection, stream, request).ConfigureAwait(false);
             stream.Seek(0, SeekOrigin.Begin);
-            await XmlSerializeJsonStream(stream);
+            await XmlSerializeJsonStream(stream).ConfigureAwait(false);
             return count;
         }
 
         private static async Task XmlSerializeJsonStream(Stream stream)
         {
             using var streamReader = new StreamReader(stream, RESTableConfig.DefaultEncoding, false, 1024, true);
-            var json = $"{{\"entity\":{await streamReader.ReadToEndAsync()}}}";
+            var json = $"{{\"entity\":{await streamReader.ReadToEndAsync().ConfigureAwait(false)}}}";
             var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
             stream.Seek(0, SeekOrigin.Begin);
-            await stream.WriteAsync(XMLHeader, 0, XMLHeader.Length);
+            await stream.WriteAsync(XMLHeader, 0, XMLHeader.Length).ConfigureAwait(false);
             xml?.Save(stream);
         }
 

@@ -78,6 +78,6 @@ namespace RESTable.WebSockets
         }
 
         public void Dispose() => Result.Dispose();
-        public async ValueTask DisposeAsync() => await Result.DisposeAsync();
+        public async ValueTask DisposeAsync() => await Result.DisposeAsync().ConfigureAwait(false);
     }
 }

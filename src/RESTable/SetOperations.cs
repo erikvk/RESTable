@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
@@ -36,9 +37,9 @@ namespace RESTable
         {
             var jobject = await request.Expecting
             (
-                selector: async r => await r.Body.Deserialize<JObject>().FirstAsync(),
+                selector: async r => await r.Body.Deserialize<JObject>().FirstAsync().ConfigureAwait(false),
                 errorMessage: "Expected expression tree as request body"
-            );
+            ).ConfigureAwait(false);
 
             async IAsyncEnumerable<JToken> Recursor(JToken token)
             {
@@ -61,7 +62,7 @@ namespace RESTable
                             case '/':
                             {
                                 await using var innerRequest = request.Context.CreateRequest(uri: argument);
-                                var result = await innerRequest.Evaluate();
+                                var result = await innerRequest.Evaluate().ConfigureAwait(false);
                                 switch (result)
                                 {
                                     case IEntities entities:
@@ -83,13 +84,13 @@ namespace RESTable
                             case "distinct":
                                 if (arr.Count != 1)
                                     throw new ArgumentException("Distinct takes one and only one set as operand");
-                                await foreach (var item in Distinct(Recursor(arr.First)))
+                                await foreach (var item in Distinct(Recursor(arr.First)).ConfigureAwait(false))
                                     yield return item;
                                 yield break;
                             case "except":
                                 if (arr.Count != 2)
                                     throw new ArgumentException("Except takes two and only two argument sets as operands");
-                                await foreach (var item in Except(Recursor(arr[0]), Recursor(arr[1])))
+                                await foreach (var item in Except(Recursor(arr[0]), Recursor(arr[1])).ConfigureAwait(false))
                                     yield return item;
                                 yield break;
                             case "intersect":
@@ -100,7 +101,7 @@ namespace RESTable
                                 var tokens = new IAsyncEnumerable<JToken>[arr.Count];
                                 for (var i = 0; i < tokens.Length; i += 1)
                                     tokens[i] = Recursor(arr[i]);
-                                await foreach (var item in Intersect(tokens))
+                                await foreach (var item in Intersect(tokens).ConfigureAwait(false))
                                     yield return item;
                                 yield break;
                             }
@@ -111,14 +112,14 @@ namespace RESTable
                                 var tokens = new IAsyncEnumerable<JToken>[arr.Count];
                                 for (var i = 0; i < tokens.Length; i += 1)
                                     tokens[i] = Recursor(arr[i]);
-                                await foreach (var item in Union(tokens))
+                                await foreach (var item in Union(tokens).ConfigureAwait(false))
                                     yield return item;
                                 yield break;
                             }
                             case "map":
                                 if (arr.Count != 2)
                                     throw new ArgumentException("Map takes two and only two arguments");
-                                await foreach (var item in Map(Recursor(arr[0]), (string) arr[1], request))
+                                await foreach (var item in Map(Recursor(arr[0]), (string) arr[1], request).ConfigureAwait(false))
                                     yield return item;
                                 yield break;
                             default:
@@ -133,7 +134,7 @@ namespace RESTable
                 }
             }
 
-            await foreach (var token in Recursor(jobject))
+            await foreach (var token in Recursor(jobject).ConfigureAwait(false))
             {
                 yield return token switch
                 {
@@ -180,7 +181,7 @@ namespace RESTable
             var argumentCount = keys.Count;
             var valueBuffer = new object[argumentCount];
 
-            await foreach (var item in Distinct(set))
+            await foreach (var item in Distinct(set).ConfigureAwait(false))
             {
                 var obj = item as JObject ?? throw new Exception("JSON syntax error in map set. Set must be of objects");
                 var localMapper = mapper;
@@ -211,13 +212,13 @@ namespace RESTable
                 if (skip) continue;
                 localMapper = string.Format(localMapper, valueBuffer);
                 await using var innerRequest = request.Context.CreateRequest(uri: localMapper);
-                var result = await innerRequest.Evaluate();
+                var result = await innerRequest.Evaluate().ConfigureAwait(false);
                 if (result is IEntities<object> entities)
                 {
-                    await foreach (var entity in entities) 
+                    await foreach (var entity in entities.ConfigureAwait(false)) 
                         mapped.Add(entity.ToJObject());
                 }
-                else throw new Exception($"Could not get source data from '{localMapper}'. {await result.GetLogMessage()}");
+                else throw new Exception($"Could not get source data from '{localMapper}'. {await result.GetLogMessage().ConfigureAwait(false)}");
             }
             foreach (var item in mapper)
             {

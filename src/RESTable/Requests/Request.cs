@@ -52,7 +52,7 @@ namespace RESTable.Requests
         public bool IsValid => Error == null;
         public string ProtocolIdentifier => Parameters.ProtocolIdentifier;
         public TimeSpan TimeElapsed => Stopwatch.Elapsed;
-        private Stopwatch Stopwatch => Parameters.Stopwatch;
+        private Stopwatch Stopwatch { get; }
         IEntityResource<T> IEntityRequest<T>.EntityResource => Resource as IEntityResource<T>;
 
         public Func<IAsyncEnumerable<T>> GetSelector() => Selector;
@@ -68,7 +68,7 @@ namespace RESTable.Requests
         public async IAsyncEnumerable<T> GetInputEntitiesAsync()
         {
             if (EntitiesProducer == null) yield break;
-            await foreach (var item in EntitiesProducer())
+            await foreach (var item in EntitiesProducer().ConfigureAwait(false))
                 yield return item;
         }
 
@@ -148,36 +148,37 @@ namespace RESTable.Requests
 
         public async Task<IEntities<T>> EvaluateToEntities()
         {
-            var result = await Evaluate();
+            var result = await Evaluate().ConfigureAwait(false);
             if (result is Error e) throw e;
             return (IEntities<T>) result;
         }
 
         public async Task<IResult> Evaluate()
         {
+            Stopwatch.Restart();
             var sourceDelegate = GetSourceDelegate();
             var destinationDelegate = GetDestinationDelegate();
             var result = GetQuickErrorResult();
 
             if (result == null)
             {
-                Body = await sourceDelegate(Body);
-                await Body.Initialize();
-                result = await RunEvaluation();
+                Body = await sourceDelegate(Body).ConfigureAwait(false);
+                await Body.Initialize().ConfigureAwait(false);
+                result = await RunEvaluation().ConfigureAwait(false);
             }
 
             if (IsWebSocketUpgrade && !(result is WebSocketUpgradeSuccessful))
             {
-                await using var webSocket = Context.WebSocket;
+                await using var webSocket = Context.WebSocket.ConfigureAwait(false);
                 if (result is Forbidden forbidden)
                     return new WebSocketUpgradeFailed(forbidden);
-                var serialized = await result.Serialize();
-                await Context.WebSocket.Open(this);
-                await Context.WebSocket.SendSerializedResult(serialized);
+                var serialized = await result.Serialize().ConfigureAwait(false);
+                await Context.WebSocket.Open(this).ConfigureAwait(false);
+                await Context.WebSocket.SendSerializedResult(serialized).ConfigureAwait(false);
                 return new WebSocketTransferSuccess(this);
             }
 
-            result = await destinationDelegate(result);
+            result = await destinationDelegate(result).ConfigureAwait(false);
 
             result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             if (Headers.Metadata == "full" && result.Metadata is string metadata)
@@ -205,12 +206,12 @@ namespace RESTable.Requests
                             var terminalResourceInternal = (Meta.Internal.TerminalResource<T>) terminalResource;
                             var terminal = terminalResourceInternal.MakeTerminal(Conditions);
                             Context.WebSocket.SetContext(this);
-                            await Context.WebSocket.ConnectTo(terminal, terminalResourceInternal);
-                            await Context.WebSocket.Open(this);
-                            await terminal.OpenTerminal();
+                            await Context.WebSocket.ConnectTo(terminal, terminalResourceInternal).ConfigureAwait(false);
+                            await Context.WebSocket.Open(this).ConfigureAwait(false);
+                            await terminal.OpenTerminal().ConfigureAwait(false);
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
-                        return await SwitchTerminal(terminalResource);
+                        return await SwitchTerminal(terminalResource).ConfigureAwait(false);
 
                     case IBinaryResource<T> binary:
                         var binaryResult = binary.SelectBinary(this);
@@ -221,14 +222,14 @@ namespace RESTable.Requests
 
                     case IEntityResource<T> entity:
                         if (entity.RequiresAuthentication)
-                            await this.RunResourceAuthentication(entity);
+                            await this.RunResourceAuthentication(entity).ConfigureAwait(false);
                         if (MetaConditions.SafePost != null)
                         {
                             if (!entity.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
                             if (!entity.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
                         }
                         var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
-                        var result = await evaluator(this);
+                        var result = await evaluator(this).ConfigureAwait(false);
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
                         if (RESTableConfig.AllowAllOrigins)
                             result.Headers.AccessControlAllowOrigin = "*";
@@ -273,8 +274,8 @@ namespace RESTable.Requests
         {
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(Conditions);
-            await Context.WebSocket.ConnectTo(newTerminal, resource);
-            await newTerminal.OpenTerminal();
+            await Context.WebSocket.ConnectTo(newTerminal, resource).ConfigureAwait(false);
+            await newTerminal.OpenTerminal().ConfigureAwait(false);
             return new SwitchedTerminal(this);
         }
 
@@ -284,6 +285,7 @@ namespace RESTable.Requests
             Resource = resource;
             Target = resource;
             Body = parameters.Body;
+            Stopwatch = new Stopwatch();
 
             try
             {
@@ -325,14 +327,15 @@ namespace RESTable.Requests
             Exception error
         )
         {
+            Parameters = parameters;
             Resource = resource;
             Target = target;
-            Parameters = parameters;
             Body = body;
             MetaConditions = metaConditions;
             Conditions = conditions;
             Error = error;
             CachedProtocolProvider = cachedProtocolProvider;
+            Stopwatch = new Stopwatch();
         }
 
         #region Source and destination
@@ -349,7 +352,7 @@ namespace RESTable.Requests
             {
                 return async result =>
                 {
-                    var serializedResult = await result.Serialize();
+                    var serializedResult = await result.Serialize().ConfigureAwait(false);
                     await using var internalRequest = serializedResult.Context.CreateRequest
                     (
                         method: parameters.Method,
@@ -362,9 +365,9 @@ namespace RESTable.Requests
             }
             return async result =>
             {
-                var serializedResult = await result.Serialize();
+                var serializedResult = await result.Serialize().ConfigureAwait(false);
                 var externalRequest = new HttpRequest(result, parameters, serializedResult.Body);
-                var response = await externalRequest.GetResponseAsync()
+                var response = await externalRequest.GetResponseAsync().ConfigureAwait(false)
                                ?? throw new InvalidExternalDestination(externalRequest, "No response");
                 if (response.StatusCode >= HttpStatusCode.BadRequest)
                     throw new InvalidExternalDestination(externalRequest,
@@ -399,9 +402,9 @@ namespace RESTable.Requests
                         body: null,
                         headers: parameters.Headers
                     );
-                    var result = await internalRequest.Evaluate();
+                    var result = await internalRequest.Evaluate().ConfigureAwait(false);
                     if (result is not IEntities)
-                        throw new InvalidExternalSource(parameters.URI, await result.GetLogMessage());
+                        throw new InvalidExternalSource(parameters.URI, await result.GetLogMessage().ConfigureAwait(false));
                     var serialized = await result.Serialize();
                     if (serialized.Result is Error error) throw error;
                     if (serialized.EntityCount == 0) throw new InvalidExternalSource(parameters.URI, "Response was empty");
@@ -409,7 +412,7 @@ namespace RESTable.Requests
                 }
                 parameters.Headers.Accept ??= ContentType.JSON;
                 var request = new HttpRequest(this, parameters, null);
-                var response = await request.GetResponseAsync() ?? throw new InvalidExternalSource(parameters.URI, "No response");
+                var response = await request.GetResponseAsync().ConfigureAwait(false) ?? throw new InvalidExternalSource(parameters.URI, "No response");
                 if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(parameters.URI, response.LogMessage);
                 if (response.Body.CanSeek && response.Body.Length == 0)
                     throw new InvalidExternalSource(parameters.URI, "Response was empty");
@@ -440,7 +443,7 @@ namespace RESTable.Requests
                 ? ProtocolController.ResolveProtocolProvider(newProtocol)
                 : CachedProtocolProvider,
             parameters: Parameters,
-            body: await Body.GetCopy(),
+            body: await Body.GetCopy().ConfigureAwait(false),
             metaConditions: MetaConditions.GetCopy(),
             conditions: Conditions.ToList(),
             error: Error
@@ -450,6 +453,6 @@ namespace RESTable.Requests
 
         public void Dispose() => Body.Dispose();
 
-        public async ValueTask DisposeAsync() => await Body.DisposeAsync();
+        public async ValueTask DisposeAsync() => await Body.DisposeAsync().ConfigureAwait(false);
     }
 }

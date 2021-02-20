@@ -15,7 +15,7 @@ namespace RESTable.Internal
         public Headers Headers { get; }
         public Stream Body { get; }
         public RESTableContext Context { get; }
-        public async Task<HttpResponse> GetResponseAsync() => await MakeExternalRequestAsync(this, Method.ToString(), new Uri(URI), Body, Headers);
+        public async Task<HttpResponse> GetResponseAsync() => await MakeExternalRequestAsync(this, Method.ToString(), new Uri(URI), Body, Headers).ConfigureAwait(false);
 
         internal HttpRequest(ITraceable trace, HeaderRequestParameters parameters, Stream body)
         {
@@ -40,13 +40,13 @@ namespace RESTable.Internal
                 if (body != null)
                 {
                     request.ContentLength = body.Length;
-                    using (var requestStream = await request.GetRequestStreamAsync())
-                    using (body) await body.CopyToAsync(requestStream);
+                    await using var requestStream = await request.GetRequestStreamAsync().ConfigureAwait(false);
+                    await using (body) await body.CopyToAsync(requestStream).ConfigureAwait(false);
                 }
-                var webResponse = (HttpWebResponse) await request.GetResponseAsync();
+                var webResponse = (HttpWebResponse) await request.GetResponseAsync().ConfigureAwait(false);
                 var respLoc = webResponse.Headers["Location"];
                 if (webResponse.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
-                    return await MakeExternalRequestAsync(trace, method, new Uri(respLoc), body, headers);
+                    return await MakeExternalRequestAsync(trace, method, new Uri(respLoc), body, headers).ConfigureAwait(false);
                 return new HttpResponse(trace, webResponse);
             }
             catch (WebException we)

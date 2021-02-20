@@ -574,7 +574,6 @@ namespace RESTable
             error.Headers.Version = RESTableConfig.Version;
             if (errorId.HasValue)
                 error.Headers.Error = $"/restable.admin.error/id={errorId}";
-            error.TimeElapsed = request.TimeElapsed;
             return error;
         }
 
@@ -903,11 +902,11 @@ namespace RESTable
             {
                 case null: return null;
                 case MemoryStream ms: return ms.ToArray();
-                case SwappingStream ss: return await ss.GetBytesAsync();
+                case SwappingStream ss: return await ss.GetBytesAsync().ConfigureAwait(false);
                 default:
                 {
                     await using var ms = new MemoryStream();
-                    await stream.CopyToAsync(ms);
+                    await stream.CopyToAsync(ms).ConfigureAwait(false);
                     if (stream.CanSeek)
                         stream.Seek(0, SeekOrigin.Begin);
                     return ms.ToArray();

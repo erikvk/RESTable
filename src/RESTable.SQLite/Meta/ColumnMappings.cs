@@ -18,7 +18,7 @@ namespace RESTable.SQLite.Meta
         internal async Task Push()
         {
             foreach (var mapping in this)
-                await mapping.Push();
+                await mapping.Push().ConfigureAwait(false);
         }
     }
 

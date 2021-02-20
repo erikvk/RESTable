@@ -59,8 +59,8 @@ namespace RESTable.ContentTypeProviders
             await using var jsonStream = new SwappingStream();
             try
             {
-                await ProduceJsonArray(stream, jsonStream);
-                await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()))
+                await ProduceJsonArray(stream, jsonStream).ConfigureAwait(false);
+                await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()).ConfigureAwait(false))
                     yield return item;
             }
             finally
@@ -76,8 +76,8 @@ namespace RESTable.ContentTypeProviders
             await using var populateStream = new MemoryStream(body);
             try
             {
-                await ProduceJsonArray(populateStream, jsonStream);
-                await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()))
+                await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);
+                await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
                 {
                     yield return item;
                 }

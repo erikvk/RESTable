@@ -100,7 +100,7 @@ namespace RESTable.Admin
         /// </summary>
         public static async Task Register<T>(string indexName, params string[] columnNames) where T : class
         {
-            await Register<T>(indexName, columnNames.Select(columnName => (ColumnInfo) (columnName, false)).ToArray());
+            await Register<T>(indexName, columnNames.Select(columnName => (ColumnInfo) (columnName, false)).ToArray()).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace RESTable.Admin
         /// </summary>
         public static async Task Register<T>(string indexName, params (string columnName, bool descending)[] columns) where T : class
         {
-            await Register<T>(indexName, columns.Select(column => (ColumnInfo) column).ToArray());
+            await Register<T>(indexName, columns.Select(column => (ColumnInfo) column).ToArray()).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace RESTable.Admin
             SelectionCondition.Value = indexName;
 
             SelectionRequest.Selector = () => new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}.ToAsyncSingleton();
-            var result = await SelectionRequest.Evaluate();
+            var result = await SelectionRequest.Evaluate().ConfigureAwait(false);
             result.ThrowIfError();
         }
 
@@ -175,7 +175,7 @@ namespace RESTable.Admin
                 .Select(p => p.DatabaseIndexer)
                 .Where(indexer => indexer != null)
                 .Distinct())
-            await foreach (var index in indexer.SelectAsync(request))
+            await foreach (var index in indexer.SelectAsync(request).ConfigureAwait(false))
                 yield return index;
         }
 
@@ -185,12 +185,12 @@ namespace RESTable.Admin
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
             if (entities == null) return 0;
-            await foreach (var group in entities.GroupBy(index => index.Resource.Provider))
+            await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
                 if (!EntityResourceProviders.TryGetValue(@group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
-                    throw new Exception($"Unable to register index. Resource '{(await group.FirstAsync()).Resource.Name}' is not a database resource.");
+                    throw new Exception($"Unable to register index. Resource '{(await group.FirstAsync().ConfigureAwait(false)).Resource.Name}' is not a database resource.");
                 request.Selector = () => group;
-                count += await indexer.InsertAsync(request);
+                count += await indexer.InsertAsync(request).ConfigureAwait(false);
             }
             return count;
         }
@@ -200,10 +200,10 @@ namespace RESTable.Admin
         {
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
-            await foreach (var group in entities.GroupBy(index => index.Resource.Provider))
+            await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
                 request.Updater = _ => group;
-                count += await EntityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request);
+                count += await EntityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request).ConfigureAwait(false);
             }
             return count;
         }
@@ -213,10 +213,10 @@ namespace RESTable.Admin
         {
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
-            await foreach (var group in entities.GroupBy(index => index.Resource.Provider))
+            await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
                 request.Selector = () => group;
-                count += await EntityResourceProviders[@group.Key].DatabaseIndexer.DeleteAsync(request);
+                count += await EntityResourceProviders[@group.Key].DatabaseIndexer.DeleteAsync(request).ConfigureAwait(false);
             }
             return count;
         }

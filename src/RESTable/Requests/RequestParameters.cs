@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
@@ -70,8 +69,6 @@ namespace RESTable.Requests
         /// </summary>
         public bool IsWebSocketUpgrade { get; }
 
-        internal Stopwatch Stopwatch { get; } = Stopwatch.StartNew();
-
         #region Private and internal
 
         private string UnparsedUri { get; }
@@ -98,7 +95,7 @@ namespace RESTable.Requests
         async ValueTask<string> ILogable.GetLogContent()
         {
             if (!HasBody) return null;
-            return await Body.ToStringAsync();
+            return await Body.ToStringAsync().ConfigureAwait(false);
         }
 
         internal async Task<RequestParameters> GetCopy() => new(
@@ -106,7 +103,7 @@ namespace RESTable.Requests
             context: Context,
             method: Method,
             uri: Uri,
-            bodyCopy: await Body.GetCopy(),
+            bodyCopy: await Body.GetCopy().ConfigureAwait(false),
             headers: Headers,
             isWebSocketUpgrade: IsWebSocketUpgrade,
             unparsedUri: UnparsedUri,

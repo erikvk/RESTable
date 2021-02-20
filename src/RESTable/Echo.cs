@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -34,7 +35,7 @@ namespace RESTable
             var body = request.Body.Deserialize<JObject>();
             if (body != null)
             {
-                await foreach (var item in body)
+                await foreach (var item in body.ConfigureAwait(false))
                 foreach (var property in item.Properties())
                     members.Add(property);
             }

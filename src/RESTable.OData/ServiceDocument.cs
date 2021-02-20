@@ -40,6 +40,6 @@ namespace RESTable.OData
                 kind = "EntitySet",
                 name = resource.Name,
                 url = resource.Name
-            });
+            }); 
     }
 }

@@ -46,8 +46,8 @@ namespace RESTable.SQLite
         /// <inheritdoc />
         public virtual async Task<int> UpdateAsync(IRequest<TController> request) => await request
             .GetInputEntitiesAsync()
-            .WhereAwait(async entity => await entity.Update())
-            .CountAsync();
+            .WhereAwait(async entity => await entity.Update().ConfigureAwait(false))
+            .CountAsync().ConfigureAwait(false);
 
         protected ElasticSQLiteTableController() { }
 
@@ -88,7 +88,7 @@ namespace RESTable.SQLite
                 .Where(mapping => mapping != null)
                 .ToList();
             if (!toDrop.Any()) return false;
-            await TableMapping.DropColumns(toDrop);
+            await TableMapping.DropColumns(toDrop).ConfigureAwait(false);
             return true;
         }
 
@@ -102,7 +102,7 @@ namespace RESTable.SQLite
             var columnsToAdd = Columns.Keys
                 .Except(TableMapping.SQLColumnNames)
                 .Select(name => (name, type: Columns[name]));
-            await DropColumns(DroppedColumns);
+            await DropColumns(DroppedColumns).ConfigureAwait(false);
             foreach (var (name, type) in columnsToAdd.Where(c => c.type != CLRDataType.Unsupported))
             {
                 TableMapping.ColumnMappings.Add(new ColumnMapping
@@ -113,8 +113,8 @@ namespace RESTable.SQLite
                 ));
                 updated = true;
             }
-            await TableMapping.ColumnMappings.Push();
-            await TableMapping.Update();
+            await TableMapping.ColumnMappings.Push().ConfigureAwait(false);
+            await TableMapping.Update().ConfigureAwait(false);
             return updated;
         }
     }

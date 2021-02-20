@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 #pragma warning disable 1591
 
@@ -74,19 +75,19 @@ namespace RESTable.Requests.Filters
                 }
                 case 0:
                 {
-                    await foreach (var item in entities)
+                    await foreach (var item in entities.ConfigureAwait(false))
                         yield return item;
                     yield break;
                 }
                 case var positive when positive > 0:
                 {
-                    await foreach (var item in entities.Skip(positive))
+                    await foreach (var item in entities.Skip(positive).ConfigureAwait(false))
                         yield return item;
                     yield break;
                 }
                 case var negative:
                 {
-                    await foreach (var item in NegativeSkip(entities, -negative))
+                    await foreach (var item in NegativeSkip(entities, -negative).ConfigureAwait(false))
                         yield return item;
                     yield break;
                 }
@@ -101,7 +102,7 @@ namespace RESTable.Requests.Filters
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
             var queue = new Queue<T>(count);
-            await foreach (var element in source)
+            await foreach (var element in source.ConfigureAwait(false))
             {
                 queue.Enqueue(element);
                 if (queue.Count > count)

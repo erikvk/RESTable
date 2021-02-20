@@ -43,7 +43,8 @@ namespace RESTable
         /// <param name="result"></param>
         public async Task Serialize(ISerializedResult result)
         {
-            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.SerializeResult(result, ContentTypeProvider);
+            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.SerializeResult(result, ContentTypeProvider).ConfigureAwait(false);
+            TryRewind();
         }
 
         /// <summary>
@@ -136,19 +137,19 @@ namespace RESTable
             {
                 case IDictionary<string, object> _:
                 case JObject _:
-                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream);
+                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream).ConfigureAwait(false);
                     break;
                 case IAsyncEnumerable<object> aie:
-                    await contentTypeProvider.SerializeCollection(aie, Stream);
+                    await contentTypeProvider.SerializeCollection(aie, Stream).ConfigureAwait(false);
                     break;
                 case IEnumerable<object> ie:
-                    await contentTypeProvider.SerializeCollection(ie.ToAsyncEnumerable(), Stream);
+                    await contentTypeProvider.SerializeCollection(ie.ToAsyncEnumerable(), Stream).ConfigureAwait(false);
                     break;
                 case IEnumerable ie:
-                    await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), Stream);
+                    await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), Stream).ConfigureAwait(false);
                     break;
                 default:
-                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream);
+                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream).ConfigureAwait(false);
                     break;
             }
             Stream.Rewind();
@@ -188,12 +189,12 @@ namespace RESTable
                 if (Stream.Length > MaxStringLength)
                 {
                     var buffer = new char[MaxStringLength];
-                    await reader.ReadAsync(buffer, 0, buffer.Length);
+                    await reader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                     return new string(buffer);
                 }
                 else
                 {
-                    return await reader.ReadToEndAsync();
+                    return await reader.ReadToEndAsync().ConfigureAwait(false);
                 }
             }
             finally
@@ -206,7 +207,7 @@ namespace RESTable
         {
             if (!HasContent) return default;
             var copy = new Body(ProtocolHolder);
-            await Stream.CopyToAsync(copy.Stream);
+            await Stream.CopyToAsync(copy.Stream).ConfigureAwait(false);
             copy.Stream.Rewind();
             Stream.Rewind();
             return copy;
@@ -234,8 +235,8 @@ namespace RESTable
 
         public override async ValueTask DisposeAsync()
         {
-            await Stream.DisposeAsync();
-            await base.DisposeAsync();
+            await Stream.DisposeAsync().ConfigureAwait(false);
+            await base.DisposeAsync().ConfigureAwait(false);
         }
 
         internal bool CanClose

@@ -50,14 +50,14 @@ namespace RESTable.SQLite.Meta
         {
             if (Mapping == null)
                 throw new InvalidOperationException($"Cannot push the unmapped SQL column '{Name}' to the database");
-            foreach (var column in await Mapping.TableMapping.GetSqlColumns())
+            foreach (var column in await Mapping.TableMapping.GetSqlColumns().ConfigureAwait(false))
             {
                 if (column.Equals(this)) return;
                 if (string.Equals(Name, column.Name, OrdinalIgnoreCase))
                     throw new SQLiteException($"Cannot push column '{Name}' to SQLite table '{Mapping.TableMapping.TableName}'. " +
                                               $"The table already contained a column definition '({column.ToSql()})'.");
             }
-            await Database.QueryAsync($"BEGIN TRANSACTION;ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSql()};COMMIT;");
+            await Database.QueryAsync($"BEGIN TRANSACTION;ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSql()};COMMIT;").ConfigureAwait(false);
         }
 
         internal string ToSql() => $"{Name.Fnuttify()} {Type}";

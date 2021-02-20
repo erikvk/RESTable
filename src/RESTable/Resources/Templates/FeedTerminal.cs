@@ -66,7 +66,7 @@ namespace RESTable.Resources.Templates
         protected override async Task Open()
         {
             if (ShowWelcomeText)
-                await WebSocket.SendText(GetWelcomeText());
+                await WebSocket.SendText(GetWelcomeText()).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -80,18 +80,18 @@ namespace RESTable.Resources.Templates
                 case "": break;
                 case "OPEN":
                     Status = FeedStatus.OPEN;
-                    await WebSocket.SendText("> Status: OPEN\n");
+                    await WebSocket.SendText("> Status: OPEN\n").ConfigureAwait(false);
                     break;
                 case "PAUSE":
                     Status = FeedStatus.PAUSED;
-                    await WebSocket.SendText("> Status: PAUSED\n");
+                    await WebSocket.SendText("> Status: PAUSED\n").ConfigureAwait(false);
                     break;
                 case "CLOSE":
-                    await WebSocket.SendText("> Status: CLOSED\n");
-                    await WebSocket.DirectToShell();
+                    await WebSocket.SendText("> Status: CLOSED\n").ConfigureAwait(false);
+                    await WebSocket.DirectToShell().ConfigureAwait(false);
                     break;
                 case var unrecognized:
-                    await WebSocket.SendText($"> Unknown command '{unrecognized}'");
+                    await WebSocket.SendText($"> Unknown command '{unrecognized}'").ConfigureAwait(false);
                     break;
             }
         }

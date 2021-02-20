@@ -16,7 +16,6 @@ namespace RESTable.Results
         internal RequestSuccess(IRequest request) : base(request)
         {
             Request = request;
-            TimeElapsed = request.TimeElapsed;
         }
     }
 }

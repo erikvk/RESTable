@@ -39,7 +39,7 @@ namespace RESTable.Results
 
         /// <inheritdoc />
         [RESTableMember(hide: true)]
-        public TimeSpan TimeElapsed { get; set; }
+        public TimeSpan TimeElapsed => Request?.TimeElapsed ?? default;
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]

@@ -20,7 +20,7 @@ namespace RESTable.Internal.Auth
         {
             if (request.Context.Client.ResourceAuthMappings.ContainsKey(resource))
                 return;
-            var authResults = await resource.AuthenticateAsync(request);
+            var authResults = await resource.AuthenticateAsync(request).ConfigureAwait(false);
             if (authResults.Success)
                 request.Context.Client.ResourceAuthMappings[resource] = default;
             else throw new FailedResourceAuthentication(authResults.Reason);

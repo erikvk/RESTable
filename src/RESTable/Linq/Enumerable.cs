@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Results;
 
 namespace RESTable.Linq
@@ -266,7 +267,7 @@ namespace RESTable.Linq
             async IAsyncEnumerable<T> apply()
             {
                 var i = 1;
-                await foreach (var entity in source)
+                await foreach (var entity in source.ConfigureAwait(false))
                 {
                     if (i > 1) throw new AmbiguousMatch();
                     i += 1;
@@ -285,7 +286,7 @@ namespace RESTable.Linq
             async IAsyncEnumerable<T> apply()
             {
                 var i = 1;
-                await foreach (var entity in source)
+                await foreach (var entity in source.ConfigureAwait(false))
                 {
                     if (i > 1) throw new InvalidInputCount();
                     i += 1;

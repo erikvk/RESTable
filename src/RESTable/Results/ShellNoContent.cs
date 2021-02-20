@@ -1,15 +1,13 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 
 namespace RESTable.Results
 {
     internal class ShellNoContent : ShellSuccess
     {
-        internal ShellNoContent(IProtocolHolder protocolHolder, TimeSpan elapsed) : base(protocolHolder)
+        internal ShellNoContent(IProtocolHolder protocolHolder) : base(protocolHolder)
         {
             StatusCode = HttpStatusCode.NoContent;
             StatusDescription = "No content";
-            TimeElapsed = elapsed;
         }
     }
 }

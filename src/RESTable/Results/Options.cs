@@ -60,9 +60,7 @@ namespace RESTable.Results
             var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
             ContentTypeProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), serializedResult.Body);
             serializedResult.Body.TryRewind();
-            stopwatch.Stop();
-            TimeElapsed += stopwatch.Elapsed;
-            Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+            Headers.Elapsed = stopwatch.Elapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             return serializedResult;
         }
     }

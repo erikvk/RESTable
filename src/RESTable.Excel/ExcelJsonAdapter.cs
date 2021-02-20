@@ -54,7 +54,7 @@ namespace RESTable.Excel
                     {
                         case IAsyncEnumerable<IDictionary<string, object>> dicts:
                             var columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            await foreach (var dict in dicts)
+                            await foreach (var dict in dicts.ConfigureAwait(false))
                             {
                                 currentRow += 1;
                                 foreach (var (key, value) in dict)
@@ -73,7 +73,7 @@ namespace RESTable.Excel
                             break;
                         case IAsyncEnumerable<JObject> jobjects:
                             var _columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            await foreach (var jobject in jobjects)
+                            await foreach (var jobject in jobjects.ConfigureAwait(false))
                             {
                                 currentRow += 1;
                                 foreach (var (key, value) in jobject)
@@ -100,7 +100,7 @@ namespace RESTable.Excel
                                 cell.Value = property.Name;
                                 columnIndex += 1;
                             }
-                            await foreach (var entity in entities)
+                            await foreach (var entity in entities.ConfigureAwait(false))
                             {
                                 currentRow += 1;
                                 columnIndex = 1;
@@ -114,10 +114,10 @@ namespace RESTable.Excel
                     }
                 }
 
-                await writeEntities(collection);
+                await writeEntities(collection).ConfigureAwait(false);
                 if (currentRow == 1) return 0;
                 worksheet.Cells.AutoFitColumns(0);
-                await package.SaveAsync();
+                await package.SaveAsync().ConfigureAwait(false);
                 return (long) currentRow - 1;
             }
             catch (Exception e)
@@ -189,7 +189,7 @@ namespace RESTable.Excel
                 using var jwr = new RESTableFromExcelJsonTextWriter(swr);
                 using var package = new ExcelPackage(excelStream);
 
-                await jwr.WriteStartArrayAsync();
+                await jwr.WriteStartArrayAsync().ConfigureAwait(false);
 
                 var worksheet = package.Workbook?.Worksheets?.FirstOrDefault();
                 if (worksheet?.Dimension != null)
@@ -202,21 +202,21 @@ namespace RESTable.Excel
                             propertyNames[col] = worksheet.Cells[1, col].GetValue<string>();
                         for (var row = 2; row <= rows; row += 1)
                         {
-                            await jwr.WriteStartObjectAsync();
+                            await jwr.WriteStartObjectAsync().ConfigureAwait(false);
                             for (var col = 1; col <= columns; col += 1)
                             {
                                 if (propertyNames[col] is string propertyName)
                                 {
-                                    await jwr.WritePropertyNameAsync(propertyName);
-                                    await jwr.WriteValueAsync(worksheet.Cells[row, col].Value);
+                                    await jwr.WritePropertyNameAsync(propertyName).ConfigureAwait(false);
+                                    await jwr.WriteValueAsync(worksheet.Cells[row, col].Value).ConfigureAwait(false);
                                 }
                             }
-                            await jwr.WriteEndObjectAsync();
+                            await jwr.WriteEndObjectAsync().ConfigureAwait(false);
                         }
                     }
                 }
 
-                await jwr.WriteEndArrayAsync();
+                await jwr.WriteEndArrayAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {

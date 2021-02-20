@@ -74,7 +74,7 @@ namespace RESTable.Results
         /// <summary>
         /// The time it took for RESTable to generate the response.
         /// </summary>
-        TimeSpan TimeElapsed { get; set; }
+        TimeSpan TimeElapsed { get; }
 
         /// <summary>
         /// The metadata for this result, for use in the RESTable-metadata header in remote requests.

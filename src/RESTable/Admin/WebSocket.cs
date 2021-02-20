@@ -66,9 +66,9 @@ namespace RESTable.Admin
         public async Task<int> DeleteAsync(IRequest<WebSocket> request)
         {
             var count = 0;
-            await foreach (var entity in request.GetInputEntitiesAsync())
+            await foreach (var entity in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
-                await entity.UnderlyingSocket.DisposeAsync();
+                await entity.UnderlyingSocket.DisposeAsync().ConfigureAwait(false);
                 count += 1;
             }
             return count;

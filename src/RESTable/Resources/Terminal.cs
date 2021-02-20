@@ -15,7 +15,7 @@ namespace RESTable.Resources
 
         internal void SetWebSocket(IWebSocket webSocket) => WebSocket = webSocket;
 
-        internal async Task OpenTerminal() => await Open();
+        internal async Task OpenTerminal() => await Open().ConfigureAwait(false);
 
         /// <summary>
         /// This method is called when the WebSocket is opened, and when data can be sent   

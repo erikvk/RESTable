@@ -40,7 +40,7 @@ namespace RESTable.Admin
 
         protected override async Task Open()
         {
-            await base.Open();
+            await base.Open().ConfigureAwait(false);
             Consoles.Add(this);
         }
 
@@ -66,7 +66,7 @@ namespace RESTable.Admin
                             await console.PrintLines(
                                 new StringBuilder(requestStub), request,
                                 new StringBuilder(responseStub), result
-                            );
+                            ).ConfigureAwait(false);
                         }
                         break;
                     }
@@ -77,8 +77,8 @@ namespace RESTable.Admin
                             var item = new InputOutput
                             {
                                 Type = "HTTPRequestResponse",
-                                In = new LogItem {Id = request.Context.TraceId, Message = await request.GetLogMessage()},
-                                Out = new LogItem {Id = result.Context.TraceId, Message = await result.GetLogMessage()},
+                                In = new LogItem {Id = request.Context.TraceId, Message = await request.GetLogMessage().ConfigureAwait(false)},
+                                Out = new LogItem {Id = result.Context.TraceId, Message = await result.GetLogMessage().ConfigureAwait(false)},
                                 ElapsedMilliseconds = milliseconds
                             };
                             if (console.IncludeClient)
@@ -92,11 +92,11 @@ namespace RESTable.Admin
                             }
                             if (console.IncludeContent)
                             {
-                                item.In.Content = await request.GetLogContent();
-                                item.Out.Content = await serializedResult.GetLogContent();
+                                item.In.Content = await request.GetLogContent().ConfigureAwait(false);
+                                item.Out.Content = await serializedResult.GetLogContent().ConfigureAwait(false);
                             }
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            await console.ActualSocket.SendTextRaw(json);
+                            await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;
                     }
@@ -116,7 +116,7 @@ namespace RESTable.Admin
                         var requestStub = GetLogLineStub(logable);
                         foreach (var console in group)
                         {
-                            await console.PrintLine(new StringBuilder(requestStub), logable);
+                            await console.PrintLine(new StringBuilder(requestStub), logable).ConfigureAwait(false);
                         }
                         break;
                     }
@@ -128,7 +128,7 @@ namespace RESTable.Admin
                             {
                                 Type = logable.MessageType.ToString(),
                                 Id = logable.Context.TraceId,
-                                Message = await logable.GetLogMessage(),
+                                Message = await logable.GetLogMessage().ConfigureAwait(false),
                                 Time = logable.LogTime
                             };
                             if (console.IncludeClient)
@@ -136,7 +136,7 @@ namespace RESTable.Admin
                             if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
                                 item.CustomHeaders = hh.Headers;
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            await console.ActualSocket.SendTextRaw(json);
+                            await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;
                     }
@@ -166,9 +166,9 @@ namespace RESTable.Admin
             if (IncludeContent)
             {
                 builder.Append(content);
-                builder.Append(await logable.GetLogContent() ?? "null");
+                builder.Append(await logable.GetLogContent().ConfigureAwait(false) ?? "null");
             }
-            await ActualSocket.SendTextRaw(builder.ToString());
+            await ActualSocket.SendTextRaw(builder.ToString()).ConfigureAwait(false);
         }
 
         private async Task PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
@@ -201,11 +201,11 @@ namespace RESTable.Admin
             {
                 builder1.Append(content);
                 builder2.Append(content);
-                builder1.Append(await logable1.GetLogContent() ?? "null");
-                builder2.Append(await logable2.GetLogContent() ?? "null");
+                builder1.Append(await logable1.GetLogContent().ConfigureAwait(false) ?? "null");
+                builder2.Append(await logable2.GetLogContent().ConfigureAwait(false) ?? "null");
             }
-            await ActualSocket.SendTextRaw(builder1.ToString());
-            await ActualSocket.SendTextRaw(builder2.ToString());
+            await ActualSocket.SendTextRaw(builder1.ToString()).ConfigureAwait(false);
+            await ActualSocket.SendTextRaw(builder2.ToString()).ConfigureAwait(false);
         }
 
         private static string GetLogLineStub(ILogable logable, double? milliseconds = null)

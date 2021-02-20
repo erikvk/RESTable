@@ -36,7 +36,7 @@ namespace RESTable
             if (!Stream.CanRead) return new byte[0];
             try
             {
-                return await Stream.ToByteArrayAsync();
+                return await Stream.ToByteArrayAsync().ConfigureAwait(false);
             }
             finally
             {
@@ -55,7 +55,7 @@ namespace RESTable
             if (Stream.CanSeek) return;
             if (Swapped)
                 throw new InvalidOperationException("Could not make stream seekable");
-            await Swap();
+            await Swap().ConfigureAwait(false);
         }
 
         public SwappingStream()
@@ -83,7 +83,7 @@ namespace RESTable
             Position = 0;
             var fileStream = RESTableConfig.MakeTempFile();
             await using var memoryStream = (MemoryStream) Stream;
-            memoryStream.WriteTo(fileStream);
+            await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
             Stream = fileStream;
             Swapped = true;
         }
@@ -101,6 +101,7 @@ namespace RESTable
             get => Stream.Position;
             set => Stream.Position = value;
         }
+
         public override int ReadTimeout
         {
             get => Stream.ReadTimeout;
@@ -172,21 +173,21 @@ namespace RESTable
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Stream.CopyToAsync(destination, bufferSize, cancellationToken);
         public override Task FlushAsync(CancellationToken cancellationToken) => Stream.FlushAsync(cancellationToken);
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => await Stream.ReadAsync(buffer, offset, count, cancellationToken);
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new()) => await Stream.ReadAsync(buffer, cancellationToken);
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => Stream.ReadAsync(buffer, offset, count, cancellationToken);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new()) => Stream.ReadAsync(buffer, cancellationToken);
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (CheckShouldSwap(count))
-                await Swap();
-            await Stream.WriteAsync(buffer, offset, count, cancellationToken);
+                await Swap().ConfigureAwait(false);
+            await Stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
         {
             if (CheckShouldSwap(buffer.Length))
-                await Swap();
-            await Stream.WriteAsync(buffer, cancellationToken);
+                await Swap().ConfigureAwait(false);
+            await Stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         #endregion
@@ -202,8 +203,8 @@ namespace RESTable
         public override async ValueTask DisposeAsync()
         {
             if (!CanClose) return;
-            await Stream.DisposeAsync();
-            await base.DisposeAsync();
+            await Stream.DisposeAsync().ConfigureAwait(false);
+            await base.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

@@ -42,7 +42,7 @@ namespace RESTable.WebSockets
         {
             if (IsSuspended) return;
             if (duringSuspend != null)
-                await duringSuspend.DisposeAsync();
+                await duringSuspend.DisposeAsync().ConfigureAwait(false);
             duringSuspend = WebSocket;
             WebSocket = new WebSocketQueue(duringSuspend);
             IsSuspended = true;
@@ -56,7 +56,7 @@ namespace RESTable.WebSockets
             WebSocket = duringSuspend;
             duringSuspend = null;
             var tasks = queue.ActionQueue.Select(a => a());
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
         public async ValueTask DisposeAsync()
@@ -64,7 +64,7 @@ namespace RESTable.WebSockets
             switch (Terminal)
             {
                 case IAsyncDisposable asyncDisposable:
-                    await asyncDisposable.DisposeAsync();
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     break;
                 case IDisposable disposable:
                     disposable.Dispose();

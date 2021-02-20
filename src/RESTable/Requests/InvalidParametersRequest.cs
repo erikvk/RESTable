@@ -46,7 +46,7 @@ namespace RESTable.Requests
         public Headers Headers => Parameters.Headers;
         public IResource Resource { get; }
         public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
-        public TimeSpan TimeElapsed => Parameters.Stopwatch.Elapsed;
+        public TimeSpan TimeElapsed => default;
         public object GetService(Type serviceType) => null;
 
         #endregion
@@ -76,6 +76,6 @@ namespace RESTable.Requests
         }
 
         public void Dispose() => Body.Dispose();
-        public async ValueTask DisposeAsync() => await Body.DisposeAsync();
+        public async ValueTask DisposeAsync() => await Body.DisposeAsync().ConfigureAwait(false);
     }
 }

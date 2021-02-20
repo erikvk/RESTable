@@ -86,14 +86,14 @@ namespace RESTable.WebSockets
 
         internal async Task ConnectTo(Terminal terminal, ITerminalResource resource)
         {
-            await ReleaseTerminal();
+            await ReleaseTerminal().ConfigureAwait(false);
             TerminalConnection = new WebSocketConnection(this, terminal, resource);
         }
 
         private async Task ReleaseTerminal()
         {
             if (TerminalConnection != null)
-                await TerminalConnection.DisposeAsync();
+                await TerminalConnection.DisposeAsync().ConfigureAwait(false);
             TerminalConnection = null;
         }
 
@@ -111,20 +111,20 @@ namespace RESTable.WebSockets
             switch (Status)
             {
                 case WebSocketStatus.Waiting:
-                    await SendUpgrade();
+                    await SendUpgrade().ConfigureAwait(false);
                     LifetimeTask = InitLifetimeTask(CancellationTokenSource.Token);
                     Status = WebSocketStatus.Open;
                     OpenedAt = DateTime.Now;
                     if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
-                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOpen, this));
+                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOpen, this)).ConfigureAwait(false);
                     break;
                 default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");
             }
         }
 
-        public async Task HandleTextInput(string textInput) => await WebSocketController.HandleTextInput(Id, textInput);
+        public async Task HandleTextInput(string textInput) => await WebSocketController.HandleTextInput(Id, textInput).ConfigureAwait(false);
 
-        public async Task HandleBinaryInput(byte[] binaryInput) => await WebSocketController.HandleBinaryInput(Id, binaryInput);
+        public async Task HandleBinaryInput(byte[] binaryInput) => await WebSocketController.HandleBinaryInput(Id, binaryInput).ConfigureAwait(false);
 
         private IProtocolHolder ProtocolHolder { get; set; }
 
@@ -151,16 +151,16 @@ namespace RESTable.WebSockets
             WebSocketController.RemoveWebSocket(Id);
             Status = WebSocketStatus.PendingClose;
             if (StreamManifest != null)
-                await StreamManifest.DisposeAsync();
+                await StreamManifest.DisposeAsync().ConfigureAwait(false);
             StreamManifest = null;
             var terminalName = TerminalConnection?.Resource?.Name;
-            await ReleaseTerminal();
+            await ReleaseTerminal().ConfigureAwait(false);
             if (IsConnected)
-                await Close();
+                await Close().ConfigureAwait(false);
             Status = WebSocketStatus.Closed;
             ClosedAt = DateTime.Now;
             if (terminalName != Admin.Console.TypeName)
-                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketClose, this));
+                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketClose, this)).ConfigureAwait(false);
             disposed = true;
         }
 
@@ -210,8 +210,8 @@ namespace RESTable.WebSockets
                 throw new ArgumentNullException(nameof(resource));
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(assignments);
-            await Context.WebSocket.ConnectTo(newTerminal, _resource);
-            await newTerminal.OpenTerminal();
+            await Context.WebSocket.ConnectTo(newTerminal, _resource).ConfigureAwait(false);
+            await newTerminal.OpenTerminal().ConfigureAwait(false);
         }
 
         #region Input
@@ -221,12 +221,12 @@ namespace RESTable.WebSockets
             if (TerminalConnection == null) return;
             if (!TerminalConnection.Terminal.SupportsTextInput)
             {
-                await SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support text input"));
+                await SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support text input")).ConfigureAwait(false);
                 return;
             }
             if (TerminalConnection.Resource?.Name != Admin.Console.TypeName)
-                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, textData, (ulong) Encoding.UTF8.GetByteCount(textData)));
-            await TerminalConnection.Terminal.HandleTextInput(textData);
+                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, textData, (ulong) Encoding.UTF8.GetByteCount(textData))).ConfigureAwait(false);
+            await TerminalConnection.Terminal.HandleTextInput(textData).ConfigureAwait(false);
             BytesReceived += (ulong) Encoding.UTF8.GetByteCount(textData);
         }
 
@@ -235,12 +235,12 @@ namespace RESTable.WebSockets
             if (TerminalConnection == null) return;
             if (!TerminalConnection.Terminal.SupportsBinaryInput)
             {
-                await SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support binary input"));
+                await SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support binary input")).ConfigureAwait(false);
                 return;
             }
             if (TerminalConnection.Resource?.Name != Admin.Console.TypeName)
-                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, Encoding.UTF8.GetString(binaryData), (ulong) binaryData.LongLength));
-            await TerminalConnection.Terminal.HandleBinaryInput(binaryData);
+                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, Encoding.UTF8.GetString(binaryData), (ulong) binaryData.LongLength)).ConfigureAwait(false);
+            await TerminalConnection.Terminal.HandleBinaryInput(binaryData).ConfigureAwait(false);
             BytesSent += (ulong) binaryData.Length;
         }
 
@@ -254,10 +254,10 @@ namespace RESTable.WebSockets
             {
                 case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
                 case WebSocketStatus.Open:
-                    await Send(textData, CancellationTokenSource.Token);
+                    await Send(textData, CancellationTokenSource.Token).ConfigureAwait(false);
                     BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
                     if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
-                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, textData, (ulong) Encoding.UTF8.GetByteCount(textData)));
+                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, textData, (ulong) Encoding.UTF8.GetByteCount(textData))).ConfigureAwait(false);
                     break;
             }
         }
@@ -268,10 +268,10 @@ namespace RESTable.WebSockets
             {
                 case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
                 case WebSocketStatus.Open:
-                    await Send(binaryData, isText, offset, length, CancellationTokenSource.Token);
+                    await Send(binaryData, isText, offset, length, CancellationTokenSource.Token).ConfigureAwait(false);
                     BytesSent += (ulong) length;
                     if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
-                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), (ulong) binaryData.LongLength));
+                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), (ulong) binaryData.LongLength)).ConfigureAwait(false);
                     break;
             }
         }
@@ -289,14 +289,14 @@ namespace RESTable.WebSockets
         public async Task SendTextRaw(string textData)
         {
             if (Status != WebSocketStatus.Open) return;
-            await Send(textData, CancellationTokenSource.Token);
+            await Send(textData, CancellationTokenSource.Token).ConfigureAwait(false);
             BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
         }
 
         public async Task SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false)
         {
             if (!PreCheck(result)) return;
-            await SendResultInfo(result, timeElapsed, writeHeaders);
+            await SendResultInfo(result, timeElapsed, writeHeaders).ConfigureAwait(false);
         }
 
         private bool PreCheck(IResult result)
@@ -326,9 +326,9 @@ namespace RESTable.WebSockets
                 tail += $". {info}";
             if (errorInfo != null)
                 tail += $" (see {errorInfo})";
-            await _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}");
+            await _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}").ConfigureAwait(false);
             if (writeHeaders)
-                await SendJson(result.Headers, true);
+                await SendJson(result.Headers, true).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -349,21 +349,21 @@ namespace RESTable.WebSockets
                                                         "same result multiple times, set 'disposeResult' to false in the call to " +
                                                         "'SendResult()'.");
 
-                await SendResultInfo(result, timeElapsed, writeHeaders);
+                await SendResultInfo(result, timeElapsed, writeHeaders).ConfigureAwait(false);
 
                 if (body == null && serializedResult.Body != null && (!serializedResult.Body.CanSeek || serializedResult.Body.Length > 0))
-                    body = await serializedResult.Body.ToByteArrayAsync();
+                    body = await serializedResult.Body.ToByteArrayAsync().ConfigureAwait(false);
                 if (body != null)
                 {
                     if (!foundCached)
                         BinaryCache.Cache(serializedResult, body);
-                    await SendBinary(body, 0, body.Length);
+                    await SendBinary(body, 0, body.Length).ConfigureAwait(false);
                 }
             }
             finally
             {
                 if (disposeResult)
-                    await serializedResult.DisposeAsync();
+                    await serializedResult.DisposeAsync().ConfigureAwait(false);
             }
         }
 
@@ -372,7 +372,7 @@ namespace RESTable.WebSockets
         {
             var error = exception.AsError();
             error.SetContext(Context);
-            await SendResult(error);
+            await SendResult(error).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -386,10 +386,10 @@ namespace RESTable.WebSockets
                     _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
                 else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
                 var stream = Providers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
-                body = await stream.ToByteArrayAsync();
+                body = await stream.ToByteArrayAsync().ConfigureAwait(false);
                 BinaryCache.Cache(item, body);
             }
-            await _SendBinary(body, asText, 0, body.Length);
+            await _SendBinary(body, asText, 0, body.Length).ConfigureAwait(false);
         }
 
         #endregion
@@ -403,19 +403,19 @@ namespace RESTable.WebSockets
             {
                 case "OPTIONS":
                 case "MANIFEST":
-                    await SendManifest();
+                    await SendManifest().ConfigureAwait(false);
                     break;
                 case "GET":
-                    await StreamMessage(-1);
+                    await StreamMessage(-1).ConfigureAwait(false);
                     break;
                 case "NEXT" when int.TryParse(arg, out var nr) && nr > 0:
-                    await StreamMessage(nr);
+                    await StreamMessage(nr).ConfigureAwait(false);
                     break;
                 case "NEXT":
-                    await StreamMessage(1);
+                    await StreamMessage(1).ConfigureAwait(false);
                     break;
                 case "CLOSE":
-                    await CloseStream();
+                    await CloseStream().ConfigureAwait(false);
                     break;
             }
         }
@@ -435,7 +435,7 @@ namespace RESTable.WebSockets
 
             if (content == null || !(serializedResult.Body?.Length > 0))
             {
-                await SendSerializedResult(serializedResult, serializedResult.TimeElapsed, writeHeaders, disposeResult);
+                await SendSerializedResult(serializedResult, serializedResult.TimeElapsed, writeHeaders, disposeResult).ConfigureAwait(false);
                 return;
             }
             if (content.IsLocked)
@@ -448,9 +448,9 @@ namespace RESTable.WebSockets
             else if (MaxStreamBufferSize < messageSize)
                 messageSize = MaxStreamBufferSize;
             if (StreamManifest != null)
-                await StreamManifest.DisposeAsync();
+                await StreamManifest.DisposeAsync().ConfigureAwait(false);
             StreamManifest = new StreamManifest(serializedResult, messageSize);
-            await SendJson(StreamManifest);
+            await SendJson(StreamManifest).ConfigureAwait(false);
             buffer = null;
         }
 
@@ -459,7 +459,7 @@ namespace RESTable.WebSockets
         private async Task CloseStream()
         {
             await SendText($"499: Client closed request. Streamed {StreamManifest.CurrentMessageIndex} " +
-                           $"of {StreamManifest.NrOfMessages} messages.");
+                           $"of {StreamManifest.NrOfMessages} messages.").ConfigureAwait(false);
             StopStreaming();
         }
 
@@ -471,7 +471,7 @@ namespace RESTable.WebSockets
             TerminalConnection?.Unsuspend();
         }
 
-        private async Task SendManifest() => await SendJson(StreamManifest);
+        private async Task SendManifest() => await SendJson(StreamManifest).ConfigureAwait(false);
 
         private async Task StreamMessage(int nr)
         {
@@ -486,8 +486,8 @@ namespace RESTable.WebSockets
                 {
                     var read = StreamManifest.Result.Body.ReadAsync(buffer, 0, buffer.Length);
                     var message = StreamManifest.Messages[StreamManifest.CurrentMessageIndex];
-                    await read;
-                    await SendBinary(buffer, 0, (int) message.Length);
+                    await read.ConfigureAwait(false);
+                    await SendBinary(buffer, 0, (int) message.Length).ConfigureAwait(false);
                     message.IsSent = true;
                     StreamManifest.MessagesStreamed += 1;
                     StreamManifest.MessagesRemaining -= 1;
@@ -497,16 +497,16 @@ namespace RESTable.WebSockets
                 }
                 if (StreamManifest.Messages[StreamManifest.LastIndex].IsSent)
                 {
-                    await SendText($"200: OK. {StreamManifest.NrOfMessages} messages sucessfully streamed.");
+                    await SendText($"200: OK. {StreamManifest.NrOfMessages} messages sucessfully streamed.").ConfigureAwait(false);
                     StopStreaming();
                 }
             }
             catch (Exception e)
             {
-                await SendException(e);
+                await SendException(e).ConfigureAwait(false);
                 await SendText(
                     $"500: Error during streaming. Streamed {StreamManifest?.CurrentMessageIndex ?? 0} " +
-                    $"of {StreamManifest?.NrOfMessages ?? 1} messages.");
+                    $"of {StreamManifest?.NrOfMessages ?? 1} messages.").ConfigureAwait(false);
                 StopStreaming();
             }
         }

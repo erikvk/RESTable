@@ -112,7 +112,7 @@ namespace RESTable.SQLite.Example
             {
                 NumberOfSuperheroes = await SQLite<Superhero>.Count(),
                 FirstSuperheroInserted = superHeroesOrdered.FirstOrDefault(),
-                LastSuperheroInserted = superHeroesOrdered.LastOrDefault(),
+                LastSuperheroInserted = superHeroesOrdered.LastOrDefault()
             };
         }
     }

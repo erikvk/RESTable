@@ -50,9 +50,9 @@ namespace RESTable
         {
             var template = await request.Expecting
             (
-                selector: async r => await r.Body.Deserialize<Aggregator>().FirstAsync(),
+                selector: async r => await r.Body.Deserialize<Aggregator>().FirstAsync().ConfigureAwait(false),
                 errorMessage: "Expected an aggregator template as request body"
-            );
+            ).ConfigureAwait(false);
 
             async Task<object> Populator(object node)
             {
@@ -61,7 +61,7 @@ namespace RESTable
                     case Aggregator aggregator:
                         foreach (var (key, obj) in aggregator.ToList())
                         {
-                            var value = await Populator(obj);
+                            var value = await Populator(obj).ConfigureAwait(false);
                             switch (key)
                             {
                                 case "$add" when IsNumberArray(value, out var terms): return terms.Sum();
@@ -83,12 +83,12 @@ namespace RESTable
                         foreach (var item in array)
                         {
                             var obj = item.ToObject<object>();
-                            var populated = await Populator(obj);
+                            var populated = await Populator(obj).ConfigureAwait(false);
                             list.Add(populated);
                         }
                         return list;
                     }
-                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(NewtonsoftJsonProvider.Serializer));
+                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(NewtonsoftJsonProvider.Serializer)).ConfigureAwait(false);
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
                     {
@@ -108,9 +108,12 @@ namespace RESTable
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
                         await using var internalRequest = request.Context.CreateRequest
-                        (method: method,
-                            uri: uri, headers: request.Headers);
-                        var result = await internalRequest.Evaluate();
+                        (
+                            method: method,
+                            uri: uri,
+                            headers: request.Headers
+                        );
+                        var result = await internalRequest.Evaluate().ConfigureAwait(false);
                         switch (result)
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
@@ -125,7 +128,7 @@ namespace RESTable
                 }
             }
 
-            yield return await Populator(template) switch
+            yield return await Populator(template).ConfigureAwait(false) switch
             {
                 Aggregator aggregator => aggregator,
                 long integer => new Aggregator {["Result"] = integer},

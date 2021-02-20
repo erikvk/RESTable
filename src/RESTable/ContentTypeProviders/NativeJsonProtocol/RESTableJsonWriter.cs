@@ -34,10 +34,10 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
             {
                 ObjectsWritten += 1;
                 if (ObjectsWritten % 15000 == 0)
-                    await FlushAsync(cancellationToken);
+                    await FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             CurrentDepth += 1;
-           await base.WriteStartObjectAsync(cancellationToken);
+           await base.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override void WriteEndObject()
@@ -48,7 +48,7 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
 
         public async Task WriteIndentationAsync(CancellationToken cancellationToken = new())
         {
-            await WriteIndentAsync(cancellationToken);
+            await WriteIndentAsync(cancellationToken).ConfigureAwait(false);
         }
         
         public override Task WriteEndObjectAsync(CancellationToken cancellationToken = new())
@@ -85,10 +85,10 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
 
         protected override async Task WriteIndentAsync(CancellationToken cancellationToken)
         {
-            await WriteWhitespaceAsync(NewLine, cancellationToken);
+            await WriteWhitespaceAsync(NewLine, cancellationToken).ConfigureAwait(false);
             var currentIndentCount = Top * Indentation + BaseIndentation;
             for (var i = 0; i < currentIndentCount; i++)
-                await WriteIndentSpaceAsync(cancellationToken);
+                await WriteIndentSpaceAsync(cancellationToken).ConfigureAwait(false);
         }
         
         protected override void Dispose(bool disposing)
