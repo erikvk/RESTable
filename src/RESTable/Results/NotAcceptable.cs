@@ -9,8 +9,11 @@ namespace RESTable.Results
     public class NotAcceptable : Error
     {
         /// <inheritdoc />
-        public NotAcceptable(string headerValue) : base(ErrorCodes.NotAcceptable,
-            $"No supported media types were found in the Accept header. Found '{headerValue}'")
+        public NotAcceptable(string headerValue, string expected = null) : base
+        (
+            code: ErrorCodes.NotAcceptable,
+            message: $"No supported media types were found in the Accept header. Found '{headerValue}'{(expected != null ? $", expected {expected}" : null)}"
+        )
         {
             StatusCode = HttpStatusCode.NotAcceptable;
             StatusDescription = "Not acceptable";

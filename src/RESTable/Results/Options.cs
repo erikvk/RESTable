@@ -19,7 +19,8 @@ namespace RESTable.Results
         private IResource Resource { get; }
         private bool HasResource => Resource != null;
         private IContentTypeProvider ContentTypeProvider { get; }
-        
+        public sealed override IRequest Request { get; }
+
         internal static Options Create(RequestParameters parameters)
         {
             var options = new Options(parameters);
@@ -43,6 +44,7 @@ namespace RESTable.Results
 
         private Options(RequestParameters parameters) : base(parameters)
         {
+            Request = null;
             StatusCode = HttpStatusCode.OK;
             StatusDescription = "OK";
             Resource = parameters.iresource;

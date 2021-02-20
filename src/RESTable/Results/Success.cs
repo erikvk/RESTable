@@ -23,11 +23,11 @@ namespace RESTable.Results
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
-        public virtual Headers Headers { get; }
+        public Headers Headers { get; }
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
-        public virtual IRequest Request { get; }
+        public abstract IRequest Request { get; }
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
@@ -76,12 +76,12 @@ namespace RESTable.Results
         /// <inheritdoc />
         public void ThrowIfError() { }
 
-        protected Success(IProtocolHolder protocolHolder)
+        protected Success(IProtocolHolder protocolHolder, Headers headers = null)
         {
             ProtocolHolder = protocolHolder;
             Context = protocolHolder.Context;
             ExcludeHeaders = false;
-            Headers = new Headers();
+            Headers = headers ?? new Headers();
             LogTime = DateTime.Now;
             IsSuccess = true;
         }

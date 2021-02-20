@@ -75,12 +75,12 @@ namespace RESTable.OData
         private static readonly ContentType ContentType = "application/xml; charset=utf-8";
 
         /// <inheritdoc />
-        public async Task<(Stream stream, ContentType contentType)> SelectAsync(IRequest<MetadataDocument> request)
+        public BinaryResult Select(IRequest<MetadataDocument> request)
         {
-            var stream = new MemoryStream();
-            var metadata = Metadata.Get(MetadataLevel.Full);
-            await using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            async Task WriteStream(Stream stream)
             {
+                var metadata = Metadata.Get(MetadataLevel.Full);
+                await using var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true);
                 await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
                 await swr.WriteAsync("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>");
                 await swr.WriteAsync("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">");
@@ -89,10 +89,10 @@ namespace RESTable.OData
 
                 #region Print enum types
 
-                foreach (var pair in enumTypes)
+                foreach (var (key, _) in enumTypes)
                 {
-                    await swr.WriteAsync($"<EnumType Name=\"{pair.Key.FullName}\">");
-                    foreach (var member in EnumMember.GetMembers(pair.Key))
+                    await swr.WriteAsync($"<EnumType Name=\"{key.FullName}\">");
+                    foreach (var member in EnumMember.GetMembers(key))
                         await swr.WriteAsync($"<Member Name=\"{member.Name}\" Value=\"{member.NumericValue}\"/>");
                     await swr.WriteAsync("</EnumType>");
                 }
@@ -101,9 +101,8 @@ namespace RESTable.OData
 
                 #region Print complex types
 
-                foreach (var pair in complexTypes)
+                foreach (var (type, members) in complexTypes)
                 {
-                    var (type, members) = (pair.Key, pair.Value);
                     var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
                     var isOpenType = type.IsDynamic() || dynamicMembers.Any();
                     await swr.WriteAsync($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
@@ -115,9 +114,8 @@ namespace RESTable.OData
 
                 #region Print entity types
 
-                foreach (var pair in metadata.EntityResourceTypes.Where(t => t.Key != typeof(Metadata)))
+                foreach (var (type, members) in metadata.EntityResourceTypes.Where(t => t.Key != typeof(Metadata)))
                 {
-                    var (type, members) = (pair.Key, pair.Value);
                     var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
                     var isOpenType = type.IsDynamic() || dynamicMembers.Any();
                     await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
@@ -159,7 +157,8 @@ namespace RESTable.OData
 
                 #endregion
             }
-            return (stream, ContentType);
+
+            return new BinaryResult(WriteStream, ContentType);
         }
 
         private static async Task WriteMembers(TextWriter swr, IEnumerable<Member> members)

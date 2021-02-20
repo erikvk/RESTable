@@ -8,7 +8,7 @@ namespace RESTable
     /// <summary>
     /// Defines the operations of something that can be logged
     /// </summary>
-    public interface ILogable : IHeaderHolder, ITraceable
+    public interface ILogable : ITraceable
     {
         /// <summary>
         /// The log event type

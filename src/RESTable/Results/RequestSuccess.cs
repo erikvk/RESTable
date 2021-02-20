@@ -11,7 +11,7 @@ namespace RESTable.Results
     public abstract class RequestSuccess : Success
     {
         [RESTableMember(ignore: true)]
-        public override IRequest Request { get; }
+        public sealed override IRequest Request { get; }
 
         internal RequestSuccess(IRequest request) : base(request)
         {

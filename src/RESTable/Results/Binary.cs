@@ -1,5 +1,5 @@
-﻿using System.IO;
-using RESTable.Requests;
+﻿using RESTable.Requests;
+using RESTable.Resources;
 
 namespace RESTable.Results
 {
@@ -9,18 +9,17 @@ namespace RESTable.Results
     /// </summary>
     public sealed class Binary : Content
     {
-        private ISerializedResult SerializedResult { get; }
-
-        public Stream Stream => SerializedResult.Body;
+        [RESTableMember(ignore: true)]
+        public BinaryResult BinaryResult { get; }
 
         /// <inheritdoc />
-        public Binary(IRequest request, ContentType contentType) : base(request)
+        public Binary(IRequest request, BinaryResult binaryResult) : base(request, binaryResult.ContentType)
         {
-            Headers.ContentType = contentType;
-            SerializedResult = new SerializedResult(this);
+            BinaryResult = binaryResult;
         }
 
         /// <inheritdoc />
+        [RESTableMember(ignore: true)]
         public override string Metadata => $"{nameof(Binary)};{Request.Resource};";
     }
 }

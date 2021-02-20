@@ -14,9 +14,12 @@ namespace RESTable.Results
     {
         public WebSocket WebSocket { get; }
 
+        public sealed override IRequest Request { get; }
+
         internal WebSocketUpgradeSuccessful(IRequest request, WebSocket webSocket) : base(request)
         {
             WebSocket = webSocket;
+            Request = request;
             StatusCode = HttpStatusCode.SwitchingProtocols;
             StatusDescription = "Switching protocols";
             TimeElapsed = request.TimeElapsed;

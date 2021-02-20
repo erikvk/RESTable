@@ -698,6 +698,21 @@ namespace RESTable
             return contentTypeProvider;
         }
 
+        /// <summary>
+        /// Checks if the given protocol holder can accept a request with the given content type
+        /// </summary>
+        public static bool Accepts(this IProtocolHolder protocolHolder, ContentType contentType, out string acceptHeader)
+        {
+            acceptHeader = protocolHolder.Headers.Accept.ToString();
+            foreach (var acceptType in protocolHolder.Headers.Accept)
+            {
+                if (acceptType.AnyType) return true;
+                if (protocolHolder.CachedProtocolProvider.OutputMimeBindings.TryGetValue(acceptType.MediaType, out _))
+                    return true;
+            }
+            return false;
+        }
+
         public static IContentTypeProvider GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
         {
             IContentTypeProvider acceptProvider = null;

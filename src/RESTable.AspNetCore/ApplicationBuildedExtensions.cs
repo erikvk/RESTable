@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -14,6 +15,8 @@ namespace RESTable.AspNetCore
     {
         public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder)
         {
+            if (!RESTableConfig.Initialized)
+                throw new InvalidOperationException($"RESTable not initialized prior to call to {nameof(UseRESTableAspNetCore)}");
             var rootUri = Settings._Uri;
             var template = rootUri + "/{resource?}/{conditions?}/{metaconditions?}";
 

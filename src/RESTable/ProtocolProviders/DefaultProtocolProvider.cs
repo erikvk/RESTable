@@ -210,6 +210,9 @@ namespace RESTable.ProtocolProviders
                 case Head head:
                     head.Headers["EntityCount"] = head.EntityCount.ToString();
                     return;
+                case Binary binary:
+                    await binary.BinaryResult.WriteToStream(toSerialize.Body);
+                    return;
                 case IEntities<object> entities when entities is Content content:
                     await SerializeContentDataCollection((dynamic) entities, content, toSerialize, contentTypeProvider);
                     break;

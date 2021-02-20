@@ -8,20 +8,12 @@ namespace RESTable.Results
     public class SerializedResult : ISerializedResult
     {
         public RESTableContext Context => Result.Context;
-        public Headers Headers => Result.Headers;
-
+       
         public long EntityCount { get; set; }
 
         public bool HasNextPage => EntityCount > 0 && EntityCount == (long?) Result.Request?.MetaConditions.Limit;
         public bool HasPreviousPage => EntityCount > 0 && Result.Request?.MetaConditions.Offset > 0;
 
-        public string HeadersStringCache
-        {
-            get => Result.HeadersStringCache;
-            set => Result.HeadersStringCache = value;
-        }
-
-        public bool ExcludeHeaders => Result.ExcludeHeaders;
         public MessageType MessageType => Result.MessageType;
         public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
         public async ValueTask<string> GetLogContent() => await Body.ToStringAsync();
@@ -52,7 +44,7 @@ namespace RESTable.Results
         }
     }
 
-    public interface ISerializedResult : ILogable, ITraceable, IHeaderHolder, IDisposable, IAsyncDisposable
+    public interface ISerializedResult : ILogable, ITraceable, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// The result that was serialized
@@ -75,8 +67,14 @@ namespace RESTable.Results
         /// </summary>
         long EntityCount { get; set; }
 
+        /// <summary>
+        /// Is this a paged result with a next page?
+        /// </summary>
         bool HasNextPage { get; }
         
+        /// <summary>
+        /// Is this a paged result with a previous page?
+        /// </summary>
         bool HasPreviousPage { get; }
     }
 }

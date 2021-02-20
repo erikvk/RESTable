@@ -133,8 +133,8 @@ namespace RESTable.Admin
                             };
                             if (console.IncludeClient)
                                 item.Client = new ClientInfo(logable.Context.Client);
-                            if (console.IncludeHeaders && !logable.ExcludeHeaders)
-                                item.CustomHeaders = logable.Headers;
+                            if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
+                                item.CustomHeaders = hh.Headers;
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
                             await console.ActualSocket.SendTextRaw(json);
                         }
@@ -156,12 +156,12 @@ namespace RESTable.Admin
                 builder.Append(connection);
                 builder.Append(logable.Context.Client.ClientIp);
             }
-            if (IncludeHeaders && !logable.ExcludeHeaders)
+            if (IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
             {
                 builder.Append(headers);
-                if (logable.HeadersStringCache == null)
-                    logable.HeadersStringCache = string.Join(", ", logable.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
-                builder.Append(logable.HeadersStringCache);
+                if (hh.HeadersStringCache == null)
+                    hh.HeadersStringCache = string.Join(", ", hh.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
+                builder.Append(hh.HeadersStringCache);
             }
             if (IncludeContent)
             {
@@ -182,19 +182,19 @@ namespace RESTable.Admin
             }
             if (IncludeHeaders)
             {
-                if (!logable1.ExcludeHeaders)
+                if (logable1 is IHeaderHolder {ExcludeHeaders: false} hh1)
                 {
                     builder1.Append(headers);
-                    if (logable1.HeadersStringCache == null)
-                        logable1.HeadersStringCache = string.Join(", ", logable1.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
-                    builder1.Append(logable1.HeadersStringCache);
+                    if (hh1.HeadersStringCache == null)
+                        hh1.HeadersStringCache = string.Join(", ", hh1.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
+                    builder1.Append(hh1.HeadersStringCache);
                 }
-                if (!logable2.ExcludeHeaders)
+                if (logable2 is IHeaderHolder {ExcludeHeaders: false} hh2)
                 {
                     builder2.Append(headers);
-                    if (logable2.HeadersStringCache == null)
-                        logable2.HeadersStringCache = string.Join(", ", logable2.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
-                    builder2.Append(logable2.HeadersStringCache);
+                    if (hh2.HeadersStringCache == null)
+                        hh2.HeadersStringCache = string.Join(", ", hh2.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
+                    builder2.Append(hh2.HeadersStringCache);
                 }
             }
             if (IncludeContent)

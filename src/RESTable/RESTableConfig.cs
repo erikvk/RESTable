@@ -39,7 +39,7 @@ namespace RESTable
         internal static bool AllowAllOrigins { get; private set; }
         internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
         private static string ConfigFilePath { get; set; }
-        internal static bool Initialized { get; private set; }
+        public static bool Initialized { get; private set; }
         internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
         internal static readonly string Version;
 

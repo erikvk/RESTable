@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -214,11 +213,11 @@ namespace RESTable.Requests
                         return await SwitchTerminal(terminalResource);
 
                     case IBinaryResource<T> binary:
-                        var (stream, contentType) = await binary.SelectBinary(this);
-                        var binaryResult = new Binary(this, contentType);
-                        await stream.CopyToAsync(binaryResult.Stream);
-                        binaryResult.Stream.Seek(0, SeekOrigin.Begin);
-                        return binaryResult;
+                        var binaryResult = binary.SelectBinary(this);
+                        if (!this.Accepts(binaryResult.ContentType, out var acceptHeader))
+                            throw new NotAcceptable(acceptHeader, binaryResult.ContentType.ToString());
+                        var binaryContent = new Binary(this, binaryResult);
+                        return binaryContent;
 
                     case IEntityResource<T> entity:
                         if (entity.RequiresAuthentication)

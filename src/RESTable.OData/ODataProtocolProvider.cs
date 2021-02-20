@@ -263,11 +263,17 @@ namespace RESTable.OData
         /// <inheritdoc />
         public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
         {
-            if (toSerialize.Result is not IEntities entities)
-                return;
+            switch (toSerialize.Result)
+            {
+                case Binary binary:
+                    await binary.BinaryResult.WriteToStream(toSerialize.Body);
+                    return;
+                case not IEntities: return;
+            }
 
             string contextFragment;
             bool writeMetadata;
+            var entities = (IEntities) toSerialize.Result;
             switch (entities)
             {
                 case IEntities<ServiceDocument> _:

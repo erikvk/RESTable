@@ -24,7 +24,10 @@ namespace RESTable.Results
 
         public Type EntityType => typeof(T);
 
-        internal Entities(IRequest request, IAsyncEnumerable<T> enumerable) : base(request) => Content = enumerable ?? new T[0].ToAsyncEnumerable();
+        internal Entities(IRequest request, IAsyncEnumerable<T> enumerable) : base(request)
+        {
+            Content = enumerable ?? new T[0].ToAsyncEnumerable();
+        }
 
         /// <inheritdoc />
         public override string Metadata => $"{nameof(Entities<T>)};{Request.Resource};{EntityType}";

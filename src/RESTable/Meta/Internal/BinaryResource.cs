@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -14,7 +12,7 @@ namespace RESTable.Meta.Internal
         /// <summary>
         /// Selects binary content asynchronously from a binary resource
         /// </summary>
-        Task<(Stream stream, ContentType contentType)> SelectBinary(IRequest<T> request);
+        BinaryResult SelectBinary(IRequest<T> request);
     }
 
     internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResource<T> where T : class
@@ -40,7 +38,7 @@ namespace RESTable.Meta.Internal
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
         public IEnumerable<T> Select(IRequest<T> request) => throw new InvalidOperationException();
 
-        public Task<(Stream stream, ContentType contentType)> SelectBinary(IRequest<T> request)
+        public BinaryResult SelectBinary(IRequest<T> request)
         {
             return BinarySelector(request);
         }
