@@ -13,7 +13,7 @@ namespace RESTable.SQLite.Meta
         /// <summary>
         /// Gets the table mapping for the given type
         /// </summary>
-        public static TableMapping Get => mapping ??= TableMapping.Get(typeof(T));
+        public static TableMapping Get => mapping ??= TableMapping.GetTableMapping(typeof(T));
 
         /// <summary>
         /// Gets the name from the table mapping for the given type

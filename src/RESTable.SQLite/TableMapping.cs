@@ -34,7 +34,7 @@ namespace RESTable.SQLite
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static TableMapping Get(Type type) => TableMappingByType.SafeGet(type);
+        public static TableMapping GetTableMapping(Type type) => TableMappingByType.SafeGet(type);
 
         internal static IEnumerable<TableMapping> All => TableMappingByType.Values;
 
@@ -291,7 +291,7 @@ namespace RESTable.SQLite
 
         internal static async Task<bool> Drop(Type clrClass)
         {
-            switch (Get(clrClass))
+            switch (GetTableMapping(clrClass))
             {
                 case null: return false;
                 case var declared when declared.IsDeclared: return false;

@@ -108,7 +108,7 @@ namespace RESTable.SQLite
         {
             foreach (var claimed in claimedResources)
             {
-                var tableMapping = TableMapping.Get(claimed.Type) ?? throw new SQLiteException(
+                var tableMapping = TableMapping.GetTableMapping(claimed.Type) ?? throw new SQLiteException(
                     $"A resource '{claimed}' was claimed by the SQLite resource provider, " +
                     "but had no existing table mapping");
                 tableMapping.Resource = claimed;
@@ -141,7 +141,7 @@ namespace RESTable.SQLite
                 var type = resource.Type;
                 if (type != null)
                 {
-                    if (TableMapping.Get(type) == null)
+                    if (TableMapping.GetTableMapping(type) == null)
                         TableMapping.CreateMapping(type).Wait();
                     yield return resource;
                 }

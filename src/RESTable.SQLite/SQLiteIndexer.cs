@@ -46,7 +46,7 @@ namespace RESTable.SQLite
             var count = 0;
             await foreach (var index in request.GetInputEntitiesAsync())
             {
-                var tableMapping = TableMapping.Get(index.Resource.Type);
+                var tableMapping = TableMapping.GetTableMapping(index.Resource.Type);
                 if (index.Resource == null)
                     throw new Exception("Found no resource to register index on");
                 var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
@@ -63,7 +63,7 @@ namespace RESTable.SQLite
             var count = 0;
             await foreach (var index in request.GetInputEntitiesAsync())
             {
-                var tableMapping = TableMapping.Get(index.Resource.Type);
+                var tableMapping = TableMapping.GetTableMapping(index.Resource.Type);
                 await Database.QueryAsync($"DROP INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName}");
                 var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})";
