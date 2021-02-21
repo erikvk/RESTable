@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Microsoft.CSharp.RuntimeBinder;
+using Newtonsoft.Json.Serialization;
 
 namespace RESTable.Meta
 {
@@ -18,26 +17,29 @@ namespace RESTable.Meta
         {
             try
             {
-                switch (p)
-                {
-                    case var _ when p.DeclaringType?.IsValueType == true: return p.GetValue;
-                    case var _ when p.GetIndexParameters().Any(): return null;
-                    default:
-                        var getter = p.GetGetMethod()?.CreateDelegate(typeof(Func<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
-                        return getter != null
-                            ? obj =>
-                            {
-                                try
-                                {
-                                    return ((dynamic) getter)((dynamic) obj);
-                                }
-                                catch (RuntimeBinderException)
-                                {
-                                    return p.GetValue(obj);
-                                }
-                            }
-                            : default(Getter);
-                }
+                var valueProvider = new ExpressionValueProvider(p);
+                return target => valueProvider.GetValue(target);
+
+                // switch (p)
+                // {
+                //     case var _ when p.DeclaringType?.IsValueType == true: return p.GetValue;
+                //     case var _ when p.GetIndexParameters().Any(): return null;
+                //     default:
+                //         var getter = p.GetGetMethod()?.CreateDelegate(typeof(Func<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
+                //         return getter != null
+                //             ? obj =>
+                //             {
+                //                 try
+                //                 {
+                //                     return ((dynamic) getter)((dynamic) obj);
+                //                 }
+                //                 catch (RuntimeBinderException)
+                //                 {
+                //                     return p.GetValue(obj);
+                //                 }
+                //             }
+                //             : default(Getter);
+                // }
             }
             catch
             {
@@ -52,26 +54,30 @@ namespace RESTable.Meta
         {
             try
             {
-                switch (p)
-                {
-                    case var _ when p.DeclaringType?.IsValueType == true: return p.SetValue;
-                    case var _ when p.GetIndexParameters().Any(): return null;
-                    default:
-                        var setter = p.GetSetMethod()?.CreateDelegate(typeof(Action<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
-                        return setter != null
-                            ? (obj, value) =>
-                            {
-                                try
-                                {
-                                    ((dynamic) setter)((dynamic) obj, value);
-                                }
-                                catch (RuntimeBinderException)
-                                {
-                                    p.SetValue(obj, value);
-                                }
-                            }
-                            : default(Setter);
-                }
+                var valueProvider = new ExpressionValueProvider(p);
+                return (target, value) => valueProvider.SetValue(target, value);
+
+//                switch (p)
+//                {
+//                    case var _ when p.DeclaringType?.IsValueType == true: return p.SetValue;
+//                    case var _ when p.GetIndexParameters().Any(): return null;
+//                    default:
+//                        
+//                        var setter = p.GetSetMethod()?.CreateDelegate(typeof(Action<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
+//                        return setter != null
+//                            ? (obj, value) =>
+//                            {
+//                                try
+//                                {
+//                                    ((dynamic) setter)((dynamic) obj, (dynamic) value);
+//                                }
+//                                catch (RuntimeBinderException)
+//                                {
+//                                    p.SetValue(obj, value);
+//                                }
+//                            }
+//                            : default(Setter);
+//                }
             }
             catch
             {

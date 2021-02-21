@@ -169,10 +169,11 @@ namespace RESTable.Requests
 
             if (IsWebSocketUpgrade && !(result is WebSocketUpgradeSuccessful))
             {
-                await using var webSocket = Context.WebSocket.ConfigureAwait(false);
+                await using var webSocket = Context.WebSocket;
                 if (result is Forbidden forbidden)
                     return new WebSocketUpgradeFailed(forbidden);
-                var serialized = await result.Serialize().ConfigureAwait(false);
+                await using var webSocketOutputStream = webSocket.GetOutputStream(false);
+                var serialized = await result.Serialize(webSocketOutputStream).ConfigureAwait(false);
                 await Context.WebSocket.Open(this).ConfigureAwait(false);
                 await Context.WebSocket.SendSerializedResult(serialized).ConfigureAwait(false);
                 return new WebSocketTransferSuccess(this);

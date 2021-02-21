@@ -26,10 +26,30 @@ namespace RESTable.AspNetCore
             await WebSocket.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
         }
 
-        protected override async Task Send(byte[] data, bool asText, int offset, int length, CancellationToken cancellationToken)
+        protected override async Task Send(ArraySegment<byte> data, bool asText, CancellationToken cancellationToken)
         {
-            var segment = new ArraySegment<byte>(data);
-            await WebSocket.SendAsync(segment, asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
+            await WebSocket.SendAsync(data, asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
+        }
+
+        protected override async Task<long> Send(Stream data, bool asText, CancellationToken token)
+        {
+            var buffer = new byte[4096];
+            var messageType = asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary;
+            long bytesSent = 0;
+            while (data.CanRead)
+            {
+                var readToBuffer = await data.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
+                var wsBuffer = new ArraySegment<byte>(buffer, 0, readToBuffer);
+                await WebSocket.SendAsync(wsBuffer, messageType, readToBuffer < buffer.Length, token).ConfigureAwait(false);
+                if (readToBuffer == 0) break;
+                bytesSent += readToBuffer;
+            }
+            return bytesSent;
+        }
+
+        public override Stream GetOutputStream(bool asText)
+        {
+            return new AspNetCoreWebSocketOutputStream(WebSocket, asText, CancellationTokenSource.Token);
         }
 
         protected override bool IsConnected => WebSocket.State == WebSocketState.Open;
@@ -78,7 +98,7 @@ namespace RESTable.AspNetCore
             } while (!result.EndOfMessage);
 
             ms.Seek(0, SeekOrigin.Begin);
-            
+
             return (
                 data: await ms.GetBytesAsync().ConfigureAwait(false),
                 isText: result.MessageType == WebSocketMessageType.Binary

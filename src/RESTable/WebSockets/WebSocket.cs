@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,9 +21,6 @@ namespace RESTable.WebSockets
     /// </summary>
     public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvider, ITraceable, IAsyncDisposable
     {
-        static WebSocket() => BinaryCache = new BinaryCache();
-        private static BinaryCache BinaryCache { get; }
-
         /// <summary>
         /// The ID of the WebSocket
         /// </summary>
@@ -103,7 +101,10 @@ namespace RESTable.WebSockets
             Headers = upgradeRequest.Headers;
         }
 
-        private CancellationTokenSource CancellationTokenSource { get; }
+        /// <summary>
+        /// A cancellation token source that cancels when this Websocket is closed
+        /// </summary>
+        protected CancellationTokenSource CancellationTokenSource { get; }
 
         internal async Task Open(IProtocolHolder protocolHolder)
         {
@@ -172,7 +173,17 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Sends binary or text data to the client over the WebSocket
         /// </summary>
-        protected abstract Task Send(byte[] data, bool asText, int offset, int length, CancellationToken token);
+        protected abstract Task Send(ArraySegment<byte> data, bool asText, CancellationToken token);
+
+        /// <summary>
+        /// Sends binary or text data to the client over the WebSocket
+        /// </summary>
+        protected abstract Task<long> Send(Stream data, bool asText, CancellationToken token);
+
+        /// <summary>
+        /// Returns a stream that, when written to, writes data over the websocket
+        /// </summary>
+        public abstract Stream GetOutputStream(bool asText);
 
         /// <summary>
         /// Is the WebSocket currently connected?
@@ -248,42 +259,95 @@ namespace RESTable.WebSockets
 
         #region Simple output
 
-        private async Task _SendText(string textData)
+        private async Task _SendString(string textData)
         {
             switch (Status)
             {
                 case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
                 case WebSocketStatus.Open:
+                {
                     await Send(textData, CancellationTokenSource.Token).ConfigureAwait(false);
                     BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
                     if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
-                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, textData, (ulong) Encoding.UTF8.GetByteCount(textData))).ConfigureAwait(false);
+                    {
+                        var logEvent = new WebSocketEvent
+                        (
+                            direction: MessageType.WebSocketOutput,
+                            webSocket: this,
+                            content: textData,
+                            length: (ulong) Encoding.UTF8.GetByteCount(textData)
+                        );
+                        await Admin.Console.Log(logEvent).ConfigureAwait(false);
+                    }
                     break;
+                }
             }
         }
 
-        private async Task _SendBinary(byte[] binaryData, bool isText, int offset, int length)
+        private async Task _SendArraySegment(ArraySegment<byte> binaryData, bool asText)
         {
             switch (Status)
             {
                 case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
                 case WebSocketStatus.Open:
-                    await Send(binaryData, isText, offset, length, CancellationTokenSource.Token).ConfigureAwait(false);
-                    BytesSent += (ulong) length;
+                {
+                    await Send(binaryData, asText, CancellationTokenSource.Token).ConfigureAwait(false);
+                    BytesSent += (ulong) binaryData.Count;
                     if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
-                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), (ulong) binaryData.LongLength)).ConfigureAwait(false);
+                    {
+                        var logEvent = new WebSocketEvent
+                        (
+                            direction: MessageType.WebSocketOutput,
+                            webSocket: this,
+                            content: Encoding.UTF8.GetString(binaryData),
+                            length: (ulong) binaryData.Count
+                        );
+                        await Admin.Console.Log(logEvent).ConfigureAwait(false);
+                    }
                     break;
+                }
+            }
+        }
+
+        private async Task _SendStream(Stream binaryData, bool asText)
+        {
+            switch (Status)
+            {
+                case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
+                case WebSocketStatus.Open:
+                {
+                    var sentBytes = await Send(binaryData, asText, CancellationTokenSource.Token).ConfigureAwait(false);
+                    BytesSent += (ulong) sentBytes;
+                    if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
+                    {
+                        var logEvent = new WebSocketEvent
+                        (
+                            direction: MessageType.WebSocketOutput,
+                            webSocket: this,
+                            content: null,
+                            length: BytesSent
+                        );
+                        await Admin.Console.Log(logEvent).ConfigureAwait(false);
+                    }
+                    break;
+                }
             }
         }
 
         /// <inheritdoc />
-        public Task SendText(string data) => _SendText(data);
+        public Task SendText(string data) => _SendString(data);
 
         /// <inheritdoc />
-        public Task SendText(byte[] data, int offset, int length) => _SendBinary(data, true, offset, length);
+        public Task SendText(ArraySegment<byte> data) => _SendArraySegment(data, true);
 
         /// <inheritdoc />
-        public Task SendBinary(byte[] data, int offset, int length) => _SendBinary(data, false, offset, length);
+        public Task SendText(Stream stream) => _SendStream(stream, true);
+
+        /// <inheritdoc />
+        public Task SendBinary(ArraySegment<byte> data) => _SendArraySegment(data, false);
+
+        /// <inheritdoc />
+        public Task SendBinary(Stream stream) => _SendStream(stream, false);
 
         /// <inheritdoc />
         public async Task SendTextRaw(string textData)
@@ -326,7 +390,7 @@ namespace RESTable.WebSockets
                 tail += $". {info}";
             if (errorInfo != null)
                 tail += $" (see {errorInfo})";
-            await _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}").ConfigureAwait(false);
+            await _SendString($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}").ConfigureAwait(false);
             if (writeHeaders)
                 await SendJson(result.Headers, true).ConfigureAwait(false);
         }
@@ -343,22 +407,8 @@ namespace RESTable.WebSockets
                     throw new InvalidOperationException("Unable to send a result that is already assigned to a Websocket streaming " +
                                                         "job. Streaming results are locked, and can only be streamed once.");
 
-                var foundCached = BinaryCache.TryGet(result, out var body);
-                if (!foundCached && serializedResult.Body?.CanRead == false)
-                    throw new InvalidOperationException($"Unable to send a disposed result over Websocket '{Id}'. To send the " +
-                                                        "same result multiple times, set 'disposeResult' to false in the call to " +
-                                                        "'SendResult()'.");
-
                 await SendResultInfo(result, timeElapsed, writeHeaders).ConfigureAwait(false);
-
-                if (body == null && serializedResult.Body != null && (!serializedResult.Body.CanSeek || serializedResult.Body.Length > 0))
-                    body = await serializedResult.Body.ToByteArrayAsync().ConfigureAwait(false);
-                if (body != null)
-                {
-                    if (!foundCached)
-                        BinaryCache.Cache(serializedResult, body);
-                    await SendBinary(body, 0, body.Length).ConfigureAwait(false);
-                }
+                await SendBinary(serializedResult.Body).ConfigureAwait(false);
             }
             finally
             {
@@ -379,17 +429,12 @@ namespace RESTable.WebSockets
         public async Task SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
-            if (!BinaryCache.TryGet(item, out var body))
-            {
-                Formatting _prettyPrint;
-                if (prettyPrint == null)
-                    _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
-                else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
-                var stream = Providers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
-                body = await stream.ToByteArrayAsync().ConfigureAwait(false);
-                BinaryCache.Cache(item, body);
-            }
-            await _SendBinary(body, asText, 0, body.Length).ConfigureAwait(false);
+            Formatting _prettyPrint;
+            if (prettyPrint == null)
+                _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
+            else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
+            var stream = Providers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
+            await _SendStream(stream, asText).ConfigureAwait(false);
         }
 
         #endregion
@@ -487,7 +532,7 @@ namespace RESTable.WebSockets
                     var read = StreamManifest.Result.Body.ReadAsync(buffer, 0, buffer.Length);
                     var message = StreamManifest.Messages[StreamManifest.CurrentMessageIndex];
                     await read.ConfigureAwait(false);
-                    await SendBinary(buffer, 0, (int) message.Length).ConfigureAwait(false);
+                    await SendBinary(new ArraySegment<byte>(buffer, 0, (int) message.Length)).ConfigureAwait(false);
                     message.IsSent = true;
                     StreamManifest.MessagesStreamed += 1;
                     StreamManifest.MessagesRemaining -= 1;

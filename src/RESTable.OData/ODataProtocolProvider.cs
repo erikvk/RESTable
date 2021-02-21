@@ -300,7 +300,7 @@ namespace RESTable.OData
                 if (toSerialize.HasNextPage)
                 {
                     await jwr.WritePropertyNameAsync("@odata.nextLink").ConfigureAwait(false);
-                    await jwr.WriteValueAsync(MakeRelativeUri(toSerialize.GetNextPageLink())).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink(toSerialize.EntityCount, -1))).ConfigureAwait(false);
                 }
             }
             await jwr.WriteEndObjectAsync().ConfigureAwait(false);

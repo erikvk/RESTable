@@ -42,7 +42,7 @@ namespace RESTable
         private bool _autoOptions;
         private string _protocol;
 
-        private ISerializedResult PreviousEntities { get; set; }
+        private IEntities PreviousEntities { get; set; }
 
         /// <summary>
         /// Signals that there are changes to the query that have been made pre evaluation
@@ -290,9 +290,10 @@ namespace RESTable
                             await SafeOperation(HEAD, tail?.ToBytes()).ConfigureAwait(false);
                             break;
                         case "STREAM":
-                            var serialized = await WsEvaluate(GET, null).ConfigureAwait(false);
-                            if (serialized.Result is Content)
-                                await StreamSerializedResult(serialized, serialized.TimeElapsed).ConfigureAwait(false);
+                            var result = await WsEvaluate(GET, null).ConfigureAwait(false);
+                            var serialized = await result.Serialize().ConfigureAwait(false);
+                            if (result is Content)
+                                await StreamSerializedResult(serialized, result.TimeElapsed).ConfigureAwait(false);
                             else await SendSerializedResult(serialized).ConfigureAwait(false);
                             break;
                         case "OPTIONS":
@@ -314,8 +315,7 @@ namespace RESTable
                             );
                             await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
                             var schemaResult = await schemaRequest.EvaluateToEntities().ConfigureAwait(false);
-                            var serializedSchema = await schemaResult.Serialize().ConfigureAwait(false);
-                            await SendSerializedResult(serializedSchema).ConfigureAwait(false);
+                            await SerializeAndSendResult(schemaResult);
                             break;
                         }
 
@@ -403,11 +403,25 @@ namespace RESTable
                             await Permute(p => p.GetAllLink()).ConfigureAwait(false);
                             break;
                         case "NEXT":
-                            await Permute(p => p.GetNextPageLink(tail.ToNumber() ?? -1)).ConfigureAwait(false);
+                            await Permute
+                            (
+                                asyncPermuter: async p => p.GetNextPageLink
+                                (
+                                    entityCount: await p.CountAsync().ConfigureAwait(false),
+                                    nextPageSize: tail.ToNumber() ?? -1
+                                )
+                            ).ConfigureAwait(false);
                             break;
                         case "PREV":
                         case "PREVIOUS":
-                            await Permute(p => p.GetPreviousPageLink(tail.ToNumber() ?? -1)).ConfigureAwait(false);
+                            await Permute
+                            (
+                                asyncPermuter: async p => p.GetPreviousPageLink
+                                (
+                                    entityCount: await p.CountAsync().ConfigureAwait(false),
+                                    nextPageSize: tail.ToNumber() ?? -1
+                                )
+                            ).ConfigureAwait(false);
                             break;
 
                         #region Nonsense
@@ -488,19 +502,29 @@ namespace RESTable
 
         private async Task SendHeaders() => await WebSocket.SendJson(new {WebSocket.Headers}).ConfigureAwait(false);
 
-        private async Task Permute(Func<ISerializedResult, IUriComponents> permuter)
+        private async Task EnsurePreviousEntities()
         {
-            var stopwatch = Stopwatch.StartNew();
             if (PreviousEntities == null)
             {
                 await WsGetPreliminary().ConfigureAwait(false);
                 if (PreviousEntities == null)
                 {
                     await SendResult(new ShellNoContent(WebSocket)).ConfigureAwait(false);
-                    return;
                 }
             }
+        }
+
+        private async Task Permute(Func<IEntities, IUriComponents> permuter)
+        {
+            await EnsurePreviousEntities().ConfigureAwait(false);
             var link = permuter(PreviousEntities);
+            await Navigate(link.ToString()).ConfigureAwait(false);
+        }
+
+        private async Task Permute(Func<IEntities, ValueTask<IUriComponents>> asyncPermuter)
+        {
+            await EnsurePreviousEntities().ConfigureAwait(false);
+            var link = await asyncPermuter(PreviousEntities).ConfigureAwait(false);
             await Navigate(link.ToString()).ConfigureAwait(false);
         }
 
@@ -517,8 +541,7 @@ namespace RESTable
                     break;
                 case IEntities entities:
                     query = local;
-                    var serialized = await entities.Serialize().ConfigureAwait(false);
-                    PreviousEntities = serialized;
+                    PreviousEntities = entities;
                     break;
                 case Change _:
                     query = local;
@@ -532,22 +555,20 @@ namespace RESTable
             return result;
         }
 
-        private async Task<ISerializedResult> WsEvaluate(Method method, byte[] body)
+        private async Task<IResult> WsEvaluate(Method method, byte[] body)
         {
-            if (Query.Length == 0) return await new ShellNoQuery(WebSocket).Serialize().ConfigureAwait(false);
+            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
             await using var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers);
             var result = await request.Evaluate().ConfigureAwait(false);
-            var serialized = await result.Serialize().ConfigureAwait(false);
-
             switch (result)
             {
                 case Results.Error _ when queryChangedPreEval:
                     query = previousQuery;
                     break;
-                case IEntities _:
+                case IEntities entities:
                     query = local;
-                    PreviousEntities = serialized;
+                    PreviousEntities = entities;
                     break;
                 case Change _:
                     query = local;
@@ -558,7 +579,7 @@ namespace RESTable
                     break;
             }
             queryChangedPreEval = false;
-            return serialized;
+            return result;
         }
 
         private async Task<(bool isValid, IResource resource)> ValidateQuery()
@@ -590,30 +611,8 @@ namespace RESTable
         private async Task SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
-            var serializedResult = await WsEvaluate(method, body).ConfigureAwait(false);
-            switch (serializedResult.Result)
-            {
-                case Content content:
-
-                    if (!serializedResult.Body.CanRead)
-                    {
-                        await SendResult(new UnreadableContentStream(content)).ConfigureAwait(false);
-                        break;
-                    }
-                    await serializedResult.Body.MakeSeekable().ConfigureAwait(false);
-                    if (serializedResult.Body.Length > ResultStreamThreshold)
-                    {
-                        OnConfirm = () => StreamSerializedResult(serializedResult, sw.Elapsed);
-                        await SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
-                                                      "Do you want to stream the result instead? ").ConfigureAwait(false);
-                        break;
-                    }
-                    await SendSerializedResult(serializedResult, sw.Elapsed).ConfigureAwait(false);
-                    break;
-                default:
-                    await SendSerializedResult(serializedResult, sw.Elapsed).ConfigureAwait(false);
-                    break;
-            }
+            var result = await WsEvaluate(method, body).ConfigureAwait(false);
+            await SerializeAndSendResult(result, sw.Elapsed).ConfigureAwait(true);
             sw.Stop();
         }
 
@@ -627,15 +626,15 @@ namespace RESTable
 
             if (PreviousEntities == null)
             {
-                var serialized = await WsEvaluate(GET, null).ConfigureAwait(false);
-                if (serialized.Result is not IEntities)
+                var result = await WsEvaluate(GET, null).ConfigureAwait(false);
+                if (result is not IEntities)
                 {
-                    await SendSerializedResult(serialized).ConfigureAwait(false);
+                    await SendResult(result).ConfigureAwait(false);
                     return;
                 }
             }
 
-            switch (PreviousEntities.EntityCount)
+            switch (await PreviousEntities.CountAsync())
             {
                 case 0:
                     await SendBadRequest($". No entities for to run {method} on").ConfigureAwait(false);
@@ -651,7 +650,7 @@ namespace RESTable
                     }
                     OnConfirm = runOperation;
                     await SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
-                                                  $"'{PreviousEntities.Result.Request.Resource}'. ").ConfigureAwait(false);
+                                                  $"'{PreviousEntities.Request.Resource}'. ").ConfigureAwait(false);
                     break;
             }
         }
@@ -660,6 +659,24 @@ namespace RESTable
         {
             if (result is SwitchedTerminal) return;
             await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
+            switch (result)
+            {
+                case var _ when Query == "":
+                case ShellNoQuery _:
+                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
+                    break;
+                default:
+                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
+                    break;
+            }
+        }
+
+        private async Task SerializeAndSendResult(IResult result, TimeSpan? elapsed = null)
+        {
+            if (result is SwitchedTerminal) return;
+            await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
+            await using var stream = WebSocket.GetOutputStream(false);
+            await result.Serialize(stream);
             switch (result)
             {
                 case var _ when Query == "":

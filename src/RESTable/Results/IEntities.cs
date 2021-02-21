@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace RESTable.Results
 {
@@ -23,6 +24,11 @@ namespace RESTable.Results
         /// The type of entities in the entity collection
         /// </summary>
         Type EntityType { get; }
+
+        /// <summary>
+        /// Counts the number of entities in this result
+        /// </summary>
+        ValueTask<long> CountAsync();
     }
 
     /// <inheritdoc cref="IEntities" />

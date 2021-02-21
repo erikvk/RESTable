@@ -6,7 +6,7 @@
     /// </summary>
     internal class UnreadableContentStream : Internal
     {
-        internal UnreadableContentStream(Content content) : base(ErrorCodes.UnreadableContentStream,
+        internal UnreadableContentStream(IResult content) : base(ErrorCodes.UnreadableContentStream,
             $"RESTable encountered an unreadable content stream from resource '{content.Request.Resource}'") { }
     }
 }

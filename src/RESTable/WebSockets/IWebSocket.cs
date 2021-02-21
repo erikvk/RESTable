@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -24,12 +25,22 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Sends the byte array data as text over the WebSocket.
         /// </summary>
-        Task SendText(byte[] data, int offset, int length);
+        Task SendText(ArraySegment<byte> buffer);
+
+        /// <summary>
+        /// Sends the stream data as text over the WebSocket.
+        /// </summary>
+        Task SendText(Stream stream);
 
         /// <summary>
         /// Sends the byte array data as binary over the WebSocket.
         /// </summary>
-        Task SendBinary(byte[] data, int offset, int length);
+        Task SendBinary(ArraySegment<byte> buffer);
+
+        /// <summary>
+        /// Sends the stream data as binary over the WebSocket.
+        /// </summary>
+        Task SendBinary(Stream stream);
 
         /// <summary>
         /// Sends an object over the WebSocket, serialized as JSON text. The output pretty print setting is controlled by
@@ -77,6 +88,11 @@ namespace RESTable.WebSockets
         /// <param name="disposeResult">Should the result be disposed after it is sent to the WebSocket?</param>
         Task StreamSerializedResult(ISerializedResult serializedResult, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
 
+        /// <summary>
+        /// Returns a stream that, when written to, writes data over the websocket
+        /// </summary>
+        Stream GetOutputStream(bool asText);
+        
         /// <summary>
         /// Sends an exception over the WebSocket.
         /// </summary>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -28,6 +29,8 @@ namespace RESTable.Results
         {
             Content = enumerable ?? new T[0].ToAsyncEnumerable();
         }
+
+        public ValueTask<long> CountAsync() => this.LongCountAsync();
 
         /// <inheritdoc />
         public override string Metadata => $"{nameof(Entities<T>)};{Request.Resource};{EntityType}";

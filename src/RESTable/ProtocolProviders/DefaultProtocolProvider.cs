@@ -254,17 +254,20 @@ namespace RESTable.ProtocolProviders
             await jwr.WriteValueAsync(entityCount).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("Status").ConfigureAwait(false);
             await jwr.WriteValueAsync("success").ConfigureAwait(false);
-            if (toSerialize.HasPreviousPage)
+            if (content is IEntities entities)
             {
-                var previousPageLink = toSerialize.GetPreviousPageLink();
-                await jwr.WritePropertyNameAsync("PreviousPage").ConfigureAwait(false);
-                await jwr.WriteValueAsync(previousPageLink.ToUriString()).ConfigureAwait(false);
-            }
-            if (toSerialize.HasNextPage)
-            {
-                var nextPageLink = toSerialize.GetNextPageLink();
-                await jwr.WritePropertyNameAsync("NextPage").ConfigureAwait(false);
-                await jwr.WriteValueAsync(nextPageLink.ToUriString()).ConfigureAwait(false);
+                if (toSerialize.HasPreviousPage)
+                {
+                    var previousPageLink = entities.GetPreviousPageLink(toSerialize.EntityCount);
+                    await jwr.WritePropertyNameAsync("PreviousPage").ConfigureAwait(false);
+                    await jwr.WriteValueAsync(previousPageLink.ToUriString()).ConfigureAwait(false);
+                }
+                if (toSerialize.HasNextPage)
+                {
+                    var nextPageLink = entities.GetNextPageLink(toSerialize.EntityCount, -1);
+                    await jwr.WritePropertyNameAsync("NextPage").ConfigureAwait(false);
+                    await jwr.WriteValueAsync(nextPageLink.ToUriString()).ConfigureAwait(false);
+                }
             }
             await jwr.WritePropertyNameAsync("TimeElapsedMs").ConfigureAwait(false);
             await jwr.WriteValueAsync(toSerialize.TimeElapsed.TotalMilliseconds).ConfigureAwait(false);

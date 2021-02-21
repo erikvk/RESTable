@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using RESTable.Internal;
@@ -82,10 +83,19 @@ namespace RESTable.WebSockets
         public Task SendText(string data) => WebSocket.SendText(data);
 
         /// <inheritdoc />
-        public Task SendText(byte[] data, int offset, int length) => WebSocket.SendText(data, offset, length);
+        public Task SendText(ArraySegment<byte> buffer) => WebSocket.SendText(buffer);
 
         /// <inheritdoc />
-        public Task SendBinary(byte[] data, int offset, int length) => WebSocket.SendBinary(data, offset, length);
+        public Task SendText(Stream stream) => WebSocket.SendText(stream);
+
+        /// <inheritdoc />
+        public Task SendBinary(ArraySegment<byte> buffer) => WebSocket.SendBinary(buffer);
+
+        /// <inheritdoc />
+        public Task SendBinary(Stream stream) => WebSocket.SendBinary(stream);
+
+        /// <inheritdoc />
+        public Stream GetOutputStream(bool asText) => WebSocket.GetOutputStream(asText);
 
         /// <inheritdoc />
         public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);

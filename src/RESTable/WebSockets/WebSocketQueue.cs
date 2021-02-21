@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -51,16 +52,33 @@ namespace RESTable.WebSockets
             return Task.CompletedTask;
         }
 
-        public Task SendText(byte[] d, int o, int l)
+        public Task SendText(ArraySegment<byte> buffer)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendText(d, o, l));
+            ActionQueue.Enqueue(() => ToQueueFor.SendText(buffer));
             return Task.CompletedTask;
         }
 
-        public Task SendBinary(byte[] d, int o, int l)
+        public Task SendText(Stream stream)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendBinary(d, o, l));
+            ActionQueue.Enqueue(() => ToQueueFor.SendText(stream));
             return Task.CompletedTask;
+        }
+
+        public Task SendBinary(ArraySegment<byte> buffer)
+        {
+            ActionQueue.Enqueue(() => ToQueueFor.SendBinary(buffer));
+            return Task.CompletedTask;
+        }
+
+        public Task SendBinary(Stream stream)
+        {
+            ActionQueue.Enqueue(() => ToQueueFor.SendBinary(stream));
+            return Task.CompletedTask;
+        }
+
+        public Stream GetOutputStream(bool asText)
+        {
+            throw new NotSupportedException("Can't get output stream from a suspended websocket");
         }
 
         public Task SendJson(object i, bool a = false, bool? p = null, bool ig = false)

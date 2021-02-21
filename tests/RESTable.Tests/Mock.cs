@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +30,17 @@ namespace RESTable.Tests
             throw new NotImplementedException();
         }
 
-        protected override Task Send(byte[] data, bool asText, int offset, int length, CancellationToken token)
+        protected override Task Send(ArraySegment<byte> data, bool asText, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task<long> Send(Stream data, bool asText, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Stream GetOutputStream(bool asText)
         {
             throw new NotImplementedException();
         }
