@@ -150,15 +150,13 @@ namespace RESTable.ContentTypeProviders
         /// Serializes an object into a stream
         /// </summary>
         /// <returns></returns>
-        public Stream SerializeStream(object entity, Formatting? formatting = null, bool ignoreNulls = false)
+        public void SerializeToStream(Stream stream, object entity, Formatting? formatting = null, bool ignoreNulls = false)
         {
             var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
             var serializer = ignoreNulls ? SerializerIgnoreNulls : Serializer;
-            var stream = new SwappingStream();
             using var swr = new StreamWriter(stream, UTF8, 1024, true);
             using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = _formatting};
             serializer.Serialize(jwr, entity);
-            return stream;
         }
 
         /// <inheritdoc />

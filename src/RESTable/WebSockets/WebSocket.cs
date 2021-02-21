@@ -433,8 +433,8 @@ namespace RESTable.WebSockets
             if (prettyPrint == null)
                 _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
             else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
-            var stream = Providers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
-            await _SendStream(stream, asText).ConfigureAwait(false);
+            await using var stream = GetOutputStream(false);
+            Providers.Json.SerializeToStream(stream, item, _prettyPrint, ignoreNulls);
         }
 
         #endregion
