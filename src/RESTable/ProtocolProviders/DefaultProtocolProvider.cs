@@ -18,25 +18,6 @@ using RESTable.WebSockets;
 
 namespace RESTable.ProtocolProviders
 {
-    internal class DefaultProtocolUriComponents : IUriComponents
-    {
-        public string ResourceSpecifier { get; internal set; }
-        public string ViewName { get; internal set; }
-        public IMacro Macro { get; internal set; }
-        IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
-        IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
-        public List<IUriCondition> Conditions { get; }
-        public List<IUriCondition> MetaConditions { get; }
-        public IProtocolProvider ProtocolProvider { get; }
-
-        public DefaultProtocolUriComponents(IProtocolProvider protocolProvider)
-        {
-            ProtocolProvider = protocolProvider;
-            Conditions = new List<IUriCondition>();
-            MetaConditions = new List<IUriCondition>();
-        }
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// Contains the logic for the default RESTable protocol. This protocol is used if no 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -62,20 +61,6 @@ namespace RESTable.Results
             serializedResult.Body.TryRewind();
             Headers.Elapsed = stopwatch.Elapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             return serializedResult;
-        }
-    }
-
-    internal class OptionsBody
-    {
-        public string Resource { get; }
-        public ResourceKind ResourceKind { get; }
-        public IEnumerable<Method> Methods { get; }
-
-        public OptionsBody(string resource, ResourceKind resourceKind, IEnumerable<Method> methods)
-        {
-            Resource = resource;
-            ResourceKind = resourceKind;
-            Methods = methods;
         }
     }
 }

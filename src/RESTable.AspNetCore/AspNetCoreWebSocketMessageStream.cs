@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreWebSocketOutputStream : Stream
+    internal class AspNetCoreWebSocketMessageStream : Stream
     {
         private WebSocket WebSocket { get; }
         private WebSocketMessageType MessageType { get; }
         private CancellationToken CancellationToken { get; }
 
-        public AspNetCoreWebSocketOutputStream(WebSocket webSocket, bool asText, CancellationToken cancellationToken)
+        public AspNetCoreWebSocketMessageStream(WebSocket webSocket, bool asText, CancellationToken cancellationToken)
         {
             CancellationToken.ThrowIfCancellationRequested();
             WebSocket = webSocket;

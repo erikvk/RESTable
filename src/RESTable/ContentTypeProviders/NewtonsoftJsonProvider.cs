@@ -12,11 +12,6 @@ using static RESTable.Admin.Settings;
 
 namespace RESTable.ContentTypeProviders
 {
-    public interface IJsonProvider : IContentTypeProvider
-    {
-        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, Stream stream, int baseIndentation, IRequest request = null) where T : class;
-    }
-
     /// <inheritdoc cref="RESTable.ContentTypeProviders.IJsonProvider" />
     /// <inheritdoc cref="RESTable.ContentTypeProviders.IContentTypeProvider" />
     public class NewtonsoftJsonProvider : IJsonProvider, IContentTypeProvider

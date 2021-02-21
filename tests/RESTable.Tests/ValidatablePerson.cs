@@ -1,17 +1,8 @@
-using System;
+﻿using System;
 using RESTable.Resources.Operations;
 
 namespace RESTable.Tests
 {
-    
-    public class Person
-    {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string FullName => $"{FirstName} {LastName}";
-        public DateTime DateOfBirth { get; set; }
-    }
-    
     public class ValidatablePerson : Person, IValidator<ValidatablePerson>
     {
         public bool IsValid(ValidatablePerson entity, out string invalidReason)

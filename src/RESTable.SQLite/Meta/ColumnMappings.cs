@@ -21,12 +21,4 @@ namespace RESTable.SQLite.Meta
                 await mapping.Push().ConfigureAwait(false);
         }
     }
-
-    internal static class ColumnMappingsExtensions
-    {
-        public static ColumnMappings ToColumnMappings(this IEnumerable<ColumnMapping> mappings)
-        {
-            return new ColumnMappings(mappings.Where(mapping => mapping != null));
-        }
-    }
 }

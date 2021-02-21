@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace TestProject1
+namespace RESTable.SQLite.Tests
 {
     public class UnitTest1
     {

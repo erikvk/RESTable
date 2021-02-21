@@ -68,9 +68,4 @@ namespace RESTable.SQLite
             Data = new SQLiteProceduralResourceData {BaseTypeName = BaseType.AssemblyQualifiedName};
         }
     }
-
-    internal class SQLiteProceduralResourceData
-    {
-        public string BaseTypeName { get; set; }
-    }
 }

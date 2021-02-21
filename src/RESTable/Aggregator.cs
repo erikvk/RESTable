@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
@@ -12,28 +11,9 @@ using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Results;
 using static System.StringComparison;
-using static Newtonsoft.Json.JsonToken;
 
 namespace RESTable
 {
-    internal class AggregatorTemplateConverter : CustomCreationConverter<Aggregator>
-    {
-        public override Aggregator Create(Type objectType) => new Aggregator();
-
-        public override bool CanConvert(Type objectType) => objectType == typeof(object) || base.CanConvert(objectType);
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            switch (reader.TokenType)
-            {
-                case Null:
-                case StartObject:
-                    return base.ReadJson(reader, objectType, existingValue, serializer);
-                default: return serializer.Deserialize(reader);
-            }
-        }
-    }
-
     /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="Dictionary{TKey,TValue}" />
     /// <summary>

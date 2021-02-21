@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using RESTable.Requests;
 using RESTable.Results;
 
 namespace RESTable.Client
@@ -9,9 +10,12 @@ namespace RESTable.Client
     /// </summary>
     internal sealed class RemoteOther : Success
     {
+        public override IRequest Request { get; }
+
         /// <inheritdoc />
         internal RemoteOther(IProtocolHolder protocolHolder, HttpStatusCode statusCode, string statusDescription) : base(protocolHolder)
         {
+            Request = null;
             StatusCode = statusCode;
             StatusDescription = statusDescription;
         }

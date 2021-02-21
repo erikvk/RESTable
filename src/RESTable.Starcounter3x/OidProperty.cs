@@ -1,9 +1,10 @@
 using System;
+using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using Starcounter.Database;
 
-namespace RESTable.Meta.Internal
+namespace RESTable.Starcounter3x
 {
     /// <inheritdoc />
     /// <summary>

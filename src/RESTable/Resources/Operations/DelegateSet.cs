@@ -7,24 +7,6 @@ using RESTable.Results;
 
 namespace RESTable.Resources.Operations
 {
-    public interface IEntityResourceOperationDefinition<TResource> where TResource : class
-    {
-        bool RequiresAuthentication { get; }
-        bool CanSelect { get; }
-        bool CanInsert { get; }
-        bool CanUpdate { get; }
-        bool CanDelete { get; }
-        bool CanCount { get; }
-
-        IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request);
-        Task<int> InsertAsync(IRequest<TResource> request);
-        Task<int> UpdateAsync(IRequest<TResource> request);
-        Task<int> DeleteAsync(IRequest<TResource> request);
-        ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request);
-        Task<long> CountAsync(IRequest<TResource> request);
-        IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities);
-    }
-
     internal class DelegateSet<TResource> : IEntityResourceOperationDefinition<TResource> where TResource : class
     {
         private Selector<TResource> SyncSelector { get; set; }

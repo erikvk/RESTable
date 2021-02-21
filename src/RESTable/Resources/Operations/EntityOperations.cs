@@ -4,21 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
-using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
 using RESTable.Linq;
 
 namespace RESTable.Resources.Operations
 {
-    internal static class EntityOperationExtensions
-    {
-        internal static IAsyncEnumerable<T> Validate<T>(this IAsyncEnumerable<T> entities, IEntityResource<T> resource) where T : class
-        {
-            return resource.Validate(entities);
-        }
-    }
-
     internal static class EntityOperations<T> where T : class
     {
         private static IAsyncEnumerable<T> SelectFilter(IRequest<T> request)

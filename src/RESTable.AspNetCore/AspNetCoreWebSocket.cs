@@ -49,7 +49,7 @@ namespace RESTable.AspNetCore
 
         public override Stream GetOutputStream(bool asText)
         {
-            return new AspNetCoreWebSocketOutputStream(WebSocket, asText, CancellationTokenSource.Token);
+            return new AspNetCoreWebSocketMessageStream(WebSocket, asText, CancellationTokenSource.Token);
         }
 
         protected override bool IsConnected => WebSocket.State == WebSocketState.Open;
