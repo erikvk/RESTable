@@ -78,10 +78,10 @@ namespace RESTable.WebSockets
             await WebSocket.SendBinary(stream).ConfigureAwait(false);
         }
 
-        public async Task<Stream> GetOutputStream(bool asText)
+        public async Task<Stream> GetMessageStream(bool asText)
         {
             await WaitTask.ConfigureAwait(false);
-            return await WebSocket.GetOutputStream(asText).ConfigureAwait(false);
+            return await WebSocket.GetMessageStream(asText).ConfigureAwait(false);
         }
 
         public async Task SendJson(object i, bool a = false, bool? p = null, bool ig = false)

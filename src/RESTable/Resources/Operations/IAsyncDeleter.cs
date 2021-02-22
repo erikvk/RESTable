@@ -13,6 +13,6 @@ namespace RESTable.Resources.Operations
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        Task<int> DeleteAsync(IRequest<T> request);
+        ValueTask<int> DeleteAsync(IRequest<T> request);
     }
 }

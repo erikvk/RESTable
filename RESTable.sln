@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTable.SQLite.Tests", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTable.Client", "src\RESTable.Client\RESTable.Client.csproj", "{66AE3D8E-CD1E-4C04-AA0D-A6CEEFD86079}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSenderSample", "samples\FileSenderSample\FileSenderSample.csproj", "{A71F36E4-0259-4F3B-9EF6-D44ED24DF439}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -106,6 +108,10 @@ Global
 		{66AE3D8E-CD1E-4C04-AA0D-A6CEEFD86079}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66AE3D8E-CD1E-4C04-AA0D-A6CEEFD86079}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66AE3D8E-CD1E-4C04-AA0D-A6CEEFD86079}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A71F36E4-0259-4F3B-9EF6-D44ED24DF439}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A71F36E4-0259-4F3B-9EF6-D44ED24DF439}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A71F36E4-0259-4F3B-9EF6-D44ED24DF439}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A71F36E4-0259-4F3B-9EF6-D44ED24DF439}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -128,5 +134,6 @@ Global
 		{E8791D86-18B8-4282-AB7C-D37BA8C9AA02} = {B5B66ADB-F3EA-4C7C-9227-BCCBB2DFC202}
 		{09FDC124-C02E-451F-BC2C-42A27DC10377} = {711DE637-1CC4-45B6-AC0D-828359BE5A45}
 		{66AE3D8E-CD1E-4C04-AA0D-A6CEEFD86079} = {FB5C6A18-A201-4ABE-9853-5720336A5673}
+		{A71F36E4-0259-4F3B-9EF6-D44ED24DF439} = {B5B66ADB-F3EA-4C7C-9227-BCCBB2DFC202}
 	EndGlobalSection
 EndGlobal

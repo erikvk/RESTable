@@ -273,7 +273,7 @@ namespace RESTable.Resources
         /// </summary>
         ///  <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual Task<int> DefaultInsertAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual ValueTask<int> DefaultInsertAsync<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -283,7 +283,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual Task<int> DefaultUpdateAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual ValueTask<int> DefaultUpdateAsync<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -293,7 +293,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual Task<int> DefaultDeleteAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -303,7 +303,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual Task<long> DefaultCountAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual ValueTask<long> DefaultCountAsync<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }

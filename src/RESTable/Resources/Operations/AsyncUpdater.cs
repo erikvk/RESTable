@@ -9,5 +9,5 @@ namespace RESTable.Resources.Operations
     /// the new), and returns the number of entities successfully updated.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    internal delegate Task<int> AsyncUpdater<T>(IRequest<T> request) where T : class;
+    internal delegate ValueTask<int> AsyncUpdater<T>(IRequest<T> request) where T : class;
 }

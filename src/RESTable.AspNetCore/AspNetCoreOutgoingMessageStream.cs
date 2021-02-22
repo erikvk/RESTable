@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreWebSocketMessageStream : Stream
+    internal class AspNetCoreOutgoingMessageStream : Stream
     {
         private WebSocket WebSocket { get; }
         private WebSocketMessageType MessageType { get; }
         private CancellationToken CancellationToken { get; }
 
-        public AspNetCoreWebSocketMessageStream(WebSocket webSocket, bool asText, CancellationToken cancellationToken)
+        public AspNetCoreOutgoingMessageStream(WebSocket webSocket, bool asText, CancellationToken cancellationToken)
         {
             CancellationToken.ThrowIfCancellationRequested();
             WebSocket = webSocket;
@@ -46,7 +46,7 @@ namespace RESTable.AspNetCore
             ).ConfigureAwait(false);
         }
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new CancellationToken())
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
         {
             CancellationToken.ThrowIfCancellationRequested();
             await WebSocket.SendAsync
@@ -87,7 +87,7 @@ namespace RESTable.AspNetCore
             CancellationToken.ThrowIfCancellationRequested();
             WebSocket.SendAsync
             (
-                buffer: buffer,
+                buffer: new ArraySegment<byte>(buffer, offset, count),
                 messageType: MessageType,
                 endOfMessage: false,
                 cancellationToken: CancellationToken

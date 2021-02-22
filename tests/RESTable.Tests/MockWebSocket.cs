@@ -27,7 +27,7 @@ namespace RESTable.Tests
             throw new NotImplementedException();
         }
 
-        public override Task<Stream> GetOutputStream(bool asText)
+        protected override Task<Stream> GetOutgoingMessageStream(bool asText, CancellationToken token)
         {
             throw new NotImplementedException();
         }
@@ -39,7 +39,7 @@ namespace RESTable.Tests
             throw new NotImplementedException();
         }
 
-        protected override Task InitLifetimeTask(CancellationToken cancellationToken)
+        protected override Task InitMessageReceiveListener(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

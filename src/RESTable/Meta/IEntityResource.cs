@@ -83,19 +83,18 @@ namespace RESTable.Meta
         /// The Views registered for this resource
         /// </summary>
         IReadOnlyDictionary<string, ITarget<TResource>> ViewDictionary { get; }
-        
+
         bool CanSelect { get; }
         bool CanInsert { get; }
         bool CanUpdate { get; }
         bool CanDelete { get; }
         bool CanCount { get; }
 
-        Task<int> InsertAsync(IRequest<TResource> request);
-        Task<int> UpdateAsync(IRequest<TResource> request);
-        Task<int> DeleteAsync(IRequest<TResource> request);
+        ValueTask<int> InsertAsync(IRequest<TResource> request);
+        ValueTask<int> UpdateAsync(IRequest<TResource> request);
+        ValueTask<int> DeleteAsync(IRequest<TResource> request);
         ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request);
-        Task<long> CountAsync(IRequest<TResource> request);
+        ValueTask<long> CountAsync(IRequest<TResource> request);
         IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities);
-
     }
 }

@@ -8,5 +8,5 @@ namespace RESTable.Resources.Operations
     /// them into the resource, and returns the number of entities successfully inserted.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    internal delegate Task<int> AsyncInserter<T>(IRequest<T> request) where T : class;
+    internal delegate ValueTask<int> AsyncInserter<T>(IRequest<T> request) where T : class;
 }

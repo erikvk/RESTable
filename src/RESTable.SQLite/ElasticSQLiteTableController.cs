@@ -44,7 +44,7 @@ namespace RESTable.SQLite
         public virtual IAsyncEnumerable<TController> SelectAsync(IRequest<TController> request) => Select().ToAsyncEnumerable();
 
         /// <inheritdoc />
-        public virtual async Task<int> UpdateAsync(IRequest<TController> request) => await request
+        public virtual async ValueTask<int> UpdateAsync(IRequest<TController> request) => await request
             .GetInputEntitiesAsync()
             .WhereAwait(async entity => await entity.Update().ConfigureAwait(false))
             .CountAsync().ConfigureAwait(false);

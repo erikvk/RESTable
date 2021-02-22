@@ -63,7 +63,7 @@ namespace RESTable.Admin
             });
 
         /// <inheritdoc />
-        public async Task<int> DeleteAsync(IRequest<WebSocket> request)
+        public async ValueTask<int> DeleteAsync(IRequest<WebSocket> request)
         {
             var count = 0;
             await foreach (var entity in request.GetInputEntitiesAsync().ConfigureAwait(false))

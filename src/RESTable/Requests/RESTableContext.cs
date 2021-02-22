@@ -245,8 +245,19 @@ namespace RESTable.Requests
         {
             get
             {
-                var bytes = BitConverter.GetBytes(IdNr += 1);
-                return Convert.ToBase64String(bytes);
+                var id = IdNr += 1;
+                var bytes = id switch
+                {
+                    < 1 << 8 => new[] {(byte) id},
+                    < 2 << 8 => new[] {byte.MaxValue, (byte) (id - 1 << 8)},
+                    < 3 << 8 => new[] {byte.MaxValue, byte.MaxValue, (byte) (id - 2 << 8)},
+                    < 4 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 3 << 8)},
+                    < 5 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 4 << 8)},
+                    < 6 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 5 << 8)},
+                    < 7 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 6 << 8)},
+                    _ => BitConverter.GetBytes(IdNr)
+                };
+                return Convert.ToBase64String(bytes).TrimEnd('=');
             }
         }
 

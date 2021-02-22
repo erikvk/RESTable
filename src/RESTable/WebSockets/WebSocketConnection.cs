@@ -95,7 +95,7 @@ namespace RESTable.WebSockets
         public Task SendBinary(Stream stream) => WebSocket.SendBinary(stream);
 
         /// <inheritdoc />
-        public Task<Stream> GetOutputStream(bool asText) => WebSocket.GetOutputStream(asText);
+        public Task<Stream> GetMessageStream(bool asText) => WebSocket.GetMessageStream(asText);
 
         /// <inheritdoc />
         public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false) =>

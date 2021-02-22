@@ -180,7 +180,7 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public async Task<int> InsertAsync(IRequest<DatabaseIndex> request)
+        public async ValueTask<int> InsertAsync(IRequest<DatabaseIndex> request)
         {
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
@@ -196,7 +196,7 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public async Task<int> UpdateAsync(IRequest<DatabaseIndex> request)
+        public async ValueTask<int> UpdateAsync(IRequest<DatabaseIndex> request)
         {
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
@@ -209,7 +209,7 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public async Task<int> DeleteAsync(IRequest<DatabaseIndex> request)
+        public async ValueTask<int> DeleteAsync(IRequest<DatabaseIndex> request)
         {
             var count = 0;
             var entities = request.GetInputEntitiesAsync();

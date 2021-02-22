@@ -203,22 +203,13 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, Stream stream, int baseIndentation, IRequest request = null) where T : class
+        public Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, RESTableJsonWriter textWriter)
+            where T : class
         {
-            if (collectionObject == null) return 0;
-            await using var swr = new StreamWriter
-            (
-                stream: stream,
-                encoding: UTF8,
-                bufferSize: 2048,
-                leaveOpen: true
-            );
-            using var jwr = new RESTableJsonWriter(swr, baseIndentation)
-            {
-                Formatting = _PrettyPrint ? Indented : None
-            };
-            Serializer.Serialize(jwr, collectionObject.ToEnumerable());
-            return jwr.ObjectsWritten;
+            if (collectionObject == null) return Task.FromResult<long>(0);
+            var preWritten = textWriter.ObjectsWritten;
+            Serializer.Serialize(textWriter, collectionObject.ToEnumerable());
+            return Task.FromResult(textWriter.ObjectsWritten - preWritten);
         }
 
         /// <inheritdoc />

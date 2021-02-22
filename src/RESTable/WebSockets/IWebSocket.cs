@@ -91,9 +91,9 @@ namespace RESTable.WebSockets
             bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
-        /// Returns a stream that, when written to, writes data over the websocket
+        /// Returns a stream that, when written to, writes data over the websocket over a single message until the stream is disposed
         /// </summary>
-        Task<Stream> GetOutputStream(bool asText);
+        Task<Stream> GetMessageStream(bool asText);
 
         /// <summary>
         /// Sends an exception over the WebSocket.

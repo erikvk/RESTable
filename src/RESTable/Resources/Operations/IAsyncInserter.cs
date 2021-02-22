@@ -13,6 +13,6 @@ namespace RESTable.Resources.Operations
         /// The insert method for this IInserter instance. Defines the Insert
         /// operation for a given resource.
         /// </summary>
-        Task<int> InsertAsync(IRequest<T> request);
+        ValueTask<int> InsertAsync(IRequest<T> request);
     }
 }

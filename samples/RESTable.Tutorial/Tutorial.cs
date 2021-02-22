@@ -50,13 +50,7 @@ namespace RESTable.Tutorial
         {
             app.UseMvcWithDefaultRoute();
             app.UseWebSockets();
-            RESTableConfig.Init
-            (
-                uri: "/restable",
-                requireApiKey: true,
-                configFilePath: "./Config.xml",
-                services: app.ApplicationServices
-            );
+            RESTableConfig.Init(services: app.ApplicationServices);
             app.UseRESTableAspNetCore();
         }
     }
@@ -174,7 +168,7 @@ namespace RESTable.Tutorial
         /// <summary>
         /// Here we inform RESTable that instances of Chatbot can handle text input
         /// </summary>
-        public override bool SupportsTextInput { get; } = true;
+        protected override bool SupportsTextInput { get; } = true;
 
         /// <summary>
         /// This method defines the logic that is run when an incoming text message is received over the
@@ -331,7 +325,7 @@ namespace RESTable.Tutorial
             await Task.WhenAll(tasks);
         }
 
-        public override bool SupportsTextInput { get; } = true;
+        protected override bool SupportsTextInput { get; } = true;
     }
 }
 

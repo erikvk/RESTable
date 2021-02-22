@@ -19,22 +19,22 @@ namespace RESTable.SQLite
             );
         }
 
-        public static async Task<int> InsertAsync(IRequest<T> request)
+        public static async ValueTask<int> InsertAsync(IRequest<T> request)
         {
             return await SQLite<T>.Insert(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
-        public static async Task<int> UpdateAsync(IRequest<T> request)
+        public static async ValueTask<int> UpdateAsync(IRequest<T> request)
         {
             return await SQLite<T>.Update(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
-        public static async Task<int> DeleteAsync(IRequest<T> request)
+        public static async ValueTask<int> DeleteAsync(IRequest<T> request)
         {
             return await SQLite<T>.Delete(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
-        public static async Task<long> CountAsync(IRequest<T> request)
+        public static async ValueTask<long> CountAsync(IRequest<T> request)
         {
             var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
             if (post.Any())

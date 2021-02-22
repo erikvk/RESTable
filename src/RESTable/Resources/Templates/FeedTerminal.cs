@@ -52,7 +52,7 @@ namespace RESTable.Resources.Templates
         }
 
         /// <inheritdoc />
-        public override bool SupportsTextInput { get; } = true;
+        protected override bool SupportsTextInput { get; } = true;
 
         /// <inheritdoc />
         public override async Task HandleTextInput(string input)

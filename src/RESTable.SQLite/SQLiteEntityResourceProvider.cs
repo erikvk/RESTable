@@ -122,16 +122,16 @@ namespace RESTable.SQLite
         protected override IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.SelectAsync(request);
 
         /// <inheritdoc />
-        protected override Task<int> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.InsertAsync(request);
+        protected override ValueTask<int> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.InsertAsync(request);
 
         /// <inheritdoc />
-        protected override Task<int> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.UpdateAsync(request);
+        protected override ValueTask<int> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.UpdateAsync(request);
 
         /// <inheritdoc />
-        protected override Task<int> DefaultDeleteAsync<T>(IRequest<T> request) => SQLiteOperations<T>.DeleteAsync(request);
+        protected override ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request) => SQLiteOperations<T>.DeleteAsync(request);
 
         /// <inheritdoc />
-        protected override Task<long> DefaultCountAsync<T>(IRequest<T> request) => SQLiteOperations<T>.CountAsync(request);
+        protected override ValueTask<long> DefaultCountAsync<T>(IRequest<T> request) => SQLiteOperations<T>.CountAsync(request);
 
         /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()

@@ -32,7 +32,9 @@ namespace RESTable.Resources
     {
         internal static string BaseNamespace { private get; set; }
         internal static TProvider ResourceProvider { private get; set; }
-        private static IEntityResourceProviderInternal ResourceProviderInternal => (IEntityResourceProviderInternal) ResourceProvider;
+
+        private static IEntityResourceProviderInternal ResourceProviderInternal =>
+            (IEntityResourceProviderInternal) ResourceProvider;
 
         private static void ResolveDynamicResourceName(ref string name)
         {
@@ -85,7 +87,8 @@ namespace RESTable.Resources
             ResolveDynamicResourceName(ref name);
             var methodsArray = methods.ResolveMethodRestrictions().ToArray();
 
-            var inserted = ResourceProviderInternal.InsertProceduralResource(name, description, methodsArray, (object) Data);
+            var inserted =
+                ResourceProviderInternal.InsertProceduralResource(name, description, methodsArray, (object) Data);
             if (inserted != null)
                 ResourceProviderInternal.InsertProcedural(inserted);
         }
@@ -95,10 +98,13 @@ namespace RESTable.Resources
         /// </summary>
         protected void Update()
         {
-            var procedural = ResourceProviderInternal.SelectProceduralResources()?.FirstOrDefault(item => item.Name == Name) ??
-                             throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
+            var procedural = ResourceProviderInternal.SelectProceduralResources()
+                                 ?.FirstOrDefault(item => item.Name == Name) ??
+                             throw new InvalidOperationException(
+                                 $"Cannot update resource '{Name}'. Resource has not been inserted.");
             var resource = (IResourceInternal) Meta.Resource.SafeGet(procedural.Type) ??
-                           throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
+                           throw new InvalidOperationException(
+                               $"Cannot update resource '{Name}'. Resource has not been inserted.");
             ResourceProviderInternal.SetProceduralResourceDescription(procedural, Description);
             resource.Description = Description;
             var methods = EnabledMethods.ResolveMethodRestrictions().ToArray();
@@ -111,7 +117,8 @@ namespace RESTable.Resources
         /// </summary>
         protected void Delete()
         {
-            var procedural = ResourceProviderInternal.SelectProceduralResources()?.FirstOrDefault(item => item.Name == Name);
+            var procedural = ResourceProviderInternal.SelectProceduralResources()
+                ?.FirstOrDefault(item => item.Name == Name);
             if (procedural == null) return;
             var type = procedural.Type;
             if (ResourceProviderInternal.DeleteProceduralResource(procedural))
@@ -123,7 +130,7 @@ namespace RESTable.Resources
         /// <inheritdoc />
         public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select();
 
-        public virtual async Task<int> InsertAsync(IRequest<TController> request)
+        public virtual async ValueTask<int> InsertAsync(IRequest<TController> request)
         {
             var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
@@ -134,7 +141,7 @@ namespace RESTable.Resources
             return i;
         }
 
-        public virtual async Task<int> UpdateAsync(IRequest<TController> request)
+        public virtual async ValueTask<int> UpdateAsync(IRequest<TController> request)
         {
             var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
@@ -145,7 +152,7 @@ namespace RESTable.Resources
             return i;
         }
 
-        public virtual async Task<int> DeleteAsync(IRequest<TController> request)
+        public virtual async ValueTask<int> DeleteAsync(IRequest<TController> request)
         {
             var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))

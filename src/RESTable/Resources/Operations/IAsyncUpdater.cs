@@ -13,6 +13,6 @@ namespace RESTable.Resources.Operations
         /// The update method for this IUpdater instance. Defines the Update
         /// operation for a given resource.
         /// </summary>
-        Task<int> UpdateAsync(IRequest<T> request);
+        ValueTask<int> UpdateAsync(IRequest<T> request);
     }
 }

@@ -33,16 +33,27 @@ namespace RESTable.Resources
         /// </summary>
         public virtual Task HandleBinaryInput(byte[] input) => Task.CompletedTask;
 
+        internal bool SupportsTextInputInternal => SupportsTextInput;
+        internal bool SupportsBinaryInputInternal => SupportsBinaryInput;
+
+        /// <summary>
+        /// Sends the current terminal over the websocket
+        /// </summary>
+        protected async Task SendThis()
+        {
+            await WebSocket.SendJson(this).ConfigureAwait(false);
+        }
+
         /// <summary>
         /// Does this terminal support text input?
         /// </summary>
         /// <returns></returns>
-        public virtual bool SupportsTextInput { get; } = false;
+        protected virtual bool SupportsTextInput { get; } = false;
 
         /// <summary>
         /// Does this terminal support binary input?
         /// </summary>
         /// <returns></returns>
-        public virtual bool SupportsBinaryInput { get; } = false;
+        protected virtual bool SupportsBinaryInput { get; } = false;
     }
 }

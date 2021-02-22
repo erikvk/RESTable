@@ -204,7 +204,8 @@ namespace RESTable.ProtocolProviders
             }
         }
 
-        private async Task SerializeContentDataCollection<T>(IAsyncEnumerable<T> dataCollection, Content content, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider) where T : class
+        private async Task SerializeContentDataCollection<T>(IAsyncEnumerable<T> dataCollection, Content content, ISerializedResult toSerialize,
+            IContentTypeProvider contentTypeProvider) where T : class
         {
             content.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
 
@@ -221,15 +222,8 @@ namespace RESTable.ProtocolProviders
             await jwr.WriteValueAsync(content.ResourceType.FullName).ConfigureAwait(false);
             if (Settings._PrettyPrint)
                 await jwr.WriteIndentationAsync().ConfigureAwait(false);
-            await jwr.WriteRawAsync("\"Data\": ").ConfigureAwait(false);
-            await jwr.FlushAsync().ConfigureAwait(false);
-            var entityCount = await jsonProvider.SerializeCollection
-            (
-                collectionObject: dataCollection,
-                stream: toSerialize.Body,
-                baseIndentation: 2,
-                request: content.Request
-            ).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("Data").ConfigureAwait(false);
+            var entityCount = await jsonProvider.SerializeCollection(dataCollection, jwr).ConfigureAwait(false);
             toSerialize.EntityCount = entityCount;
             await jwr.WritePropertyNameAsync("DataCount").ConfigureAwait(false);
             await jwr.WriteValueAsync(entityCount).ConfigureAwait(false);

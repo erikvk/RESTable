@@ -14,11 +14,11 @@ namespace RESTable.Resources.Operations
         bool CanCount { get; }
 
         IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request);
-        Task<int> InsertAsync(IRequest<TResource> request);
-        Task<int> UpdateAsync(IRequest<TResource> request);
-        Task<int> DeleteAsync(IRequest<TResource> request);
+        ValueTask<int> InsertAsync(IRequest<TResource> request);
+        ValueTask<int> UpdateAsync(IRequest<TResource> request);
+        ValueTask<int> DeleteAsync(IRequest<TResource> request);
         ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request);
-        Task<long> CountAsync(IRequest<TResource> request);
+        ValueTask<long> CountAsync(IRequest<TResource> request);
         IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities);
     }
 }

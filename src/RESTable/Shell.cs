@@ -63,6 +63,8 @@ namespace RESTable
             AutoGet = false;
             ReformatQueries = true;
             _protocol = "";
+            ConfirmSource = new TaskCompletionSource<byte>();
+            ConfirmSource.SetResult(default);
         }
 
         #endregion
@@ -182,16 +184,16 @@ namespace RESTable
         public override async Task HandleBinaryInput(byte[] input)
         {
             if (!(input?.Length > 0)) return;
-            if (Query.Length == 0 || OnConfirm != null)
+            if (Query.Length == 0 || AwaitingConfirmation)
                 await WebSocket.SendResult(new InvalidShellStateForBinaryInput()).ConfigureAwait(false);
             else await SafeOperation(POST, input).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public override bool SupportsTextInput { get; }
+        protected override bool SupportsTextInput { get; }
 
         /// <inheritdoc />
-        public override bool SupportsBinaryInput { get; }
+        protected override bool SupportsBinaryInput { get; }
 
         /// <inheritdoc />
         protected override async Task Open()
@@ -219,292 +221,307 @@ namespace RESTable
             else await SendQuery().ConfigureAwait(false);
         }
 
-        private Func<Task> OnConfirm { get; set; }
-        
+        private TaskCompletionSource<byte> ConfirmSource { get; set; }
+        private bool AwaitingConfirmation => !ConfirmSource.Task.IsCompleted;
+
+        private async Task Confirm(string message)
+        {
+            ConfirmSource = new TaskCompletionSource<byte>();
+            await SendConfirmRequest(message).ConfigureAwait(false);
+            await ConfirmSource.Task.ConfigureAwait(false);
+        }
+
         /// <inheritdoc />
         public override async Task HandleTextInput(string input)
         {
-            if (OnConfirm != null)
+            try
             {
+                if (AwaitingConfirmation)
+                {
+                    switch (input.FirstOrDefault())
+                    {
+                        case var _ when input.Length > 1:
+                        default:
+                            await SendConfirmRequest().ConfigureAwait(false);
+                            break;
+                        case 'Y':
+                        case 'y':
+                            ConfirmSource.SetResult(default);
+                            break;
+                        case 'N':
+                        case 'n':
+                            ConfirmSource.SetCanceled();
+                            break;
+                    }
+                    return;
+                }
+
+                if (input == " ")
+                    input = "GET";
+
                 switch (input.FirstOrDefault())
                 {
-                    case var _ when input.Length > 1:
+                    case '\0':
+                    case '\n': break;
+                    case '-':
+                    case '/':
+                        await Navigate(input).ConfigureAwait(false);
+                        break;
+                    case '[':
+                    case '{':
+                        await SafeOperation(POST, input.ToBytes()).ConfigureAwait(false);
+                        break;
+                    case var _ when input.Length > MaxInputSize:
+                        await SendBadRequest().ConfigureAwait(false);
+                        break;
                     default:
-                        await SendConfirmationRequest().ConfigureAwait(false);
-                        break;
-                    case 'Y':
-                    case 'y':
-                        await OnConfirm().ConfigureAwait(false);
-                        OnConfirm = null;
-                        break;
-                    case 'N':
-                    case 'n':
-                        OnConfirm = null;
-                        await SendCancel().ConfigureAwait(false);
-                        break;
-                }
-                return;
-            }
-
-            if (input == " ")
-                input = "GET";
-
-            switch (input.FirstOrDefault())
-            {
-                case '\0':
-                case '\n': break;
-                case '-':
-                case '/':
-                    await Navigate(input).ConfigureAwait(false);
-                    break;
-                case '[':
-                case '{':
-                    await SafeOperation(POST, input.ToBytes()).ConfigureAwait(false);
-                    break;
-                case var _ when input.Length > MaxInputSize:
-                    await SendBadRequest().ConfigureAwait(false);
-                    break;
-                default:
-                    var (command, tail) = input.TSplit(' ');
-                    switch (command.ToUpperInvariant())
-                    {
-                        case "GET":
-                            await SafeOperation(GET, tail?.ToBytes()).ConfigureAwait(false);
-                            break;
-                        case "POST":
-                            await SafeOperation(POST, tail?.ToBytes()).ConfigureAwait(false);
-                            break;
-                        case "PATCH":
-                            await UnsafeOperation(PATCH, tail?.ToBytes()).ConfigureAwait(false);
-                            break;
-                        case "PUT":
-                            await SafeOperation(PUT, tail?.ToBytes()).ConfigureAwait(false);
-                            break;
-                        case "DELETE":
-                            await UnsafeOperation(DELETE, tail?.ToBytes()).ConfigureAwait(false);
-                            break;
-                        case "REPORT":
-                            await SafeOperation(REPORT, tail?.ToBytes()).ConfigureAwait(false);
-                            break;
-                        case "HEAD":
-                            await SafeOperation(HEAD, tail?.ToBytes()).ConfigureAwait(false);
-                            break;
-                        case "STREAM":
-                            var result = await WsEvaluate(GET, null).ConfigureAwait(false);
-                            var serialized = await result.Serialize().ConfigureAwait(false);
-                            if (result is Content)
-                                await StreamSerializedResult(serialized, result.TimeElapsed).ConfigureAwait(false);
-                            else await SendSerializedResult(serialized).ConfigureAwait(false);
-                            break;
-                        case "OPTIONS":
+                        var (command, tail) = input.TSplit(' ');
+                        switch (command.ToUpperInvariant())
                         {
-                            var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
-                            if (!valid) break;
-                            await SendOptions(resource).ConfigureAwait(false);
-                            break;
-                        }
-                        case "SCHEMA":
-                        {
-                            var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
-                            if (!valid) break;
-                            var resourceCondition = new Condition<Schema>
-                            (
-                                key: "resource",
-                                op: Operators.EQUALS,
-                                value: resource.Name
-                            );
-                            await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>()
-                                .WithConditions(resourceCondition);
-                            var schemaResult = await schemaRequest.EvaluateToEntities().ConfigureAwait(false);
-                            await SerializeAndSendResult(schemaResult);
-                            break;
-                        }
-
-                        case "HEADERS":
-                        case "HEADER":
-                            tail = tail?.Trim();
-                            if (string.IsNullOrWhiteSpace(tail))
+                            case "GET":
+                                await SafeOperation(GET, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "POST":
+                                await SafeOperation(POST, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "PATCH":
+                                await UnsafeOperation(PATCH, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "PUT":
+                                await SafeOperation(PUT, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "DELETE":
+                                await UnsafeOperation(DELETE, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "REPORT":
+                                await SafeOperation(REPORT, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "HEAD":
+                                await SafeOperation(HEAD, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "STREAM":
+                                var result = await WsEvaluate(GET, null).ConfigureAwait(false);
+                                var serialized = await result.Serialize().ConfigureAwait(false);
+                                if (result is Content)
+                                    await StreamSerializedResult(serialized, result.TimeElapsed).ConfigureAwait(false);
+                                else await SendSerializedResult(serialized).ConfigureAwait(false);
+                                break;
+                            case "OPTIONS":
                             {
-                                await SendHeaders().ConfigureAwait(false);
+                                var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
+                                if (!valid) break;
+                                await SendOptions(resource).ConfigureAwait(false);
                                 break;
                             }
-                            var (key, value) = tail.TSplit('=', true);
-                            if (value == null)
+                            case "SCHEMA":
                             {
-                                await SendHeaders().ConfigureAwait(false);
+                                var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
+                                if (!valid) break;
+                                var resourceCondition = new Condition<Schema>
+                                (
+                                    key: "resource",
+                                    op: Operators.EQUALS,
+                                    value: resource.Name
+                                );
+                                await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>()
+                                    .WithConditions(resourceCondition);
+                                var schemaResult = await schemaRequest.EvaluateToEntities().ConfigureAwait(false);
+                                await SerializeAndSendResult(schemaResult);
                                 break;
                             }
-                            if (key.IsCustomHeaderName())
-                            {
-                                if (value == "null")
+
+                            case "HEADERS":
+                            case "HEADER":
+                                tail = tail?.Trim();
+                                if (string.IsNullOrWhiteSpace(tail))
                                 {
-                                    WebSocket.Headers.Remove(key);
                                     await SendHeaders().ConfigureAwait(false);
                                     break;
                                 }
-                                WebSocket.Headers[key] = value;
-                                await SendHeaders().ConfigureAwait(false);
-                            }
-                            else
-                                await WebSocket
-                                    .SendText($"400: Bad request. Cannot read or write reserved header '{key}'.")
-                                    .ConfigureAwait(false);
-                            return;
+                                var (key, value) = tail.TSplit('=', true);
+                                if (value == null)
+                                {
+                                    await SendHeaders().ConfigureAwait(false);
+                                    break;
+                                }
+                                if (key.IsCustomHeaderName())
+                                {
+                                    if (value == "null")
+                                    {
+                                        WebSocket.Headers.Remove(key);
+                                        await SendHeaders().ConfigureAwait(false);
+                                        break;
+                                    }
+                                    WebSocket.Headers[key] = value;
+                                    await SendHeaders().ConfigureAwait(false);
+                                }
+                                else
+                                    await WebSocket
+                                        .SendText($"400: Bad request. Cannot read or write reserved header '{key}'.")
+                                        .ConfigureAwait(false);
+                                return;
 
-                        case "VAR":
-                            if (string.IsNullOrWhiteSpace(tail))
-                            {
-                                await WebSocket.SendJson(this).ConfigureAwait(false);
+                            case "VAR":
+                                if (string.IsNullOrWhiteSpace(tail))
+                                {
+                                    await WebSocket.SendJson(this).ConfigureAwait(false);
+                                    break;
+                                }
+                                var (property, valueString) = tail.TSplit('=', true);
+                                if (property == null || valueString == null)
+                                {
+                                    await WebSocket
+                                        .SendText(
+                                            "Invalid property assignment syntax. Should be: VAR <property> = <value>")
+                                        .ConfigureAwait(false);
+                                    break;
+                                }
+                                if (valueString.EqualsNoCase("null"))
+                                    valueString = null;
+                                if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
+                                {
+                                    await WebSocket
+                                        .SendText($"Unknown shell property '{property}'. To list properties, type VAR")
+                                        .ConfigureAwait(false);
+                                    break;
+                                }
+                                try
+                                {
+                                    declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
+                                    await WebSocket.SendJson(this).ConfigureAwait(false);
+                                }
+                                catch (Exception e)
+                                {
+                                    await WebSocket.SendException(e).ConfigureAwait(false);
+                                }
                                 break;
-                            }
-                            var (property, valueString) = tail.TSplit('=', true);
-                            if (property == null || valueString == null)
-                            {
-                                await WebSocket
-                                    .SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>")
-                                    .ConfigureAwait(false);
+                            case "EXIT":
+                            case "QUIT":
+                            case "DISCONNECT":
+                            case "CLOSE":
+                                await Close().ConfigureAwait(false);
                                 break;
-                            }
-                            if (valueString.EqualsNoCase("null"))
-                                valueString = null;
-                            if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
-                            {
-                                await WebSocket
-                                    .SendText($"Unknown shell property '{property}'. To list properties, type VAR")
-                                    .ConfigureAwait(false);
-                                break;
-                            }
-                            try
-                            {
-                                declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
-                                await WebSocket.SendJson(this).ConfigureAwait(false);
-                            }
-                            catch (Exception e)
-                            {
-                                await WebSocket.SendException(e).ConfigureAwait(false);
-                            }
-                            break;
-                        case "EXIT":
-                        case "QUIT":
-                        case "DISCONNECT":
-                        case "CLOSE":
-                            await Close().ConfigureAwait(false);
-                            break;
 
-                        case "GO":
-                        case "NAVIGATE":
-                        case "?":
-                            if (!string.IsNullOrWhiteSpace(tail))
-                            {
-                                await Navigate(tail).ConfigureAwait(false);
+                            case "GO":
+                            case "NAVIGATE":
+                            case "?":
+                                if (!string.IsNullOrWhiteSpace(tail))
+                                {
+                                    await Navigate(tail).ConfigureAwait(false);
+                                    break;
+                                }
+                                await WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}")
+                                    .ConfigureAwait(false);
                                 break;
-                            }
-                            await WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}").ConfigureAwait(false);
-                            break;
-                        case "FIRST":
-                            await Permute(p => p.GetFirstLink(tail.ToNumber() ?? 1)).ConfigureAwait(false);
-                            break;
-                        case "LAST":
-                            await Permute(p => p.GetLastLink(tail.ToNumber() ?? 1)).ConfigureAwait(false);
-                            break;
-                        case "ALL":
-                            await Permute(p => p.GetAllLink()).ConfigureAwait(false);
-                            break;
-                        case "NEXT":
-                            await Permute
-                            (
-                                asyncPermuter: async p => p.GetNextPageLink
+                            case "FIRST":
+                                await Permute(p => p.GetFirstLink(tail.ToNumber() ?? 1)).ConfigureAwait(false);
+                                break;
+                            case "LAST":
+                                await Permute(p => p.GetLastLink(tail.ToNumber() ?? 1)).ConfigureAwait(false);
+                                break;
+                            case "ALL":
+                                await Permute(p => p.GetAllLink()).ConfigureAwait(false);
+                                break;
+                            case "NEXT":
+                                await Permute
                                 (
-                                    entityCount: await p.CountAsync().ConfigureAwait(false),
-                                    nextPageSize: tail.ToNumber() ?? -1
-                                )
-                            ).ConfigureAwait(false);
-                            break;
-                        case "PREV":
-                        case "PREVIOUS":
-                            await Permute
-                            (
-                                asyncPermuter: async p => p.GetPreviousPageLink
+                                    asyncPermuter: async p => p.GetNextPageLink
+                                    (
+                                        entityCount: await p.CountAsync().ConfigureAwait(false),
+                                        nextPageSize: tail.ToNumber() ?? -1
+                                    )
+                                ).ConfigureAwait(false);
+                                break;
+                            case "PREV":
+                            case "PREVIOUS":
+                                await Permute
                                 (
-                                    entityCount: await p.CountAsync().ConfigureAwait(false),
-                                    nextPageSize: tail.ToNumber() ?? -1
-                                )
-                            ).ConfigureAwait(false);
-                            break;
+                                    asyncPermuter: async p => p.GetPreviousPageLink
+                                    (
+                                        entityCount: await p.CountAsync().ConfigureAwait(false),
+                                        nextPageSize: tail.ToNumber() ?? -1
+                                    )
+                                ).ConfigureAwait(false);
+                                break;
 
-                        #region Nonsense
+                            #region Nonsense
 
-                        case "HELLO" when tail.EqualsNoCase("world"):
+                            case "HELLO" when tail.EqualsNoCase("world"):
 
-                            string getHelloWorld()
-                            {
-                                switch (new Random().Next(0, 7))
+                                string getHelloWorld()
                                 {
-                                    case 0: return "The world says: 'hi!'";
-                                    case 1: return "The world says: 'what's up?'";
-                                    case 2: return "The world says: 'greetings!'";
-                                    case 3: return "The world is currently busy";
-                                    case 4: return "The world cannot answer right now";
-                                    case 5: return "The world is currently out on lunch";
-                                    default: return "The world says: 'why do people keep saying that?'";
+                                    switch (new Random().Next(0, 7))
+                                    {
+                                        case 0: return "The world says: 'hi!'";
+                                        case 1: return "The world says: 'what's up?'";
+                                        case 2: return "The world says: 'greetings!'";
+                                        case 3: return "The world is currently busy";
+                                        case 4: return "The world cannot answer right now";
+                                        case 5: return "The world is currently out on lunch";
+                                        default: return "The world says: 'why do people keep saying that?'";
+                                    }
                                 }
-                            }
 
-                            await WebSocket.SendText(getHelloWorld()).ConfigureAwait(false);
-                            break;
+                                await WebSocket.SendText(getHelloWorld()).ConfigureAwait(false);
+                                break;
 
-                        case "HI":
-                        case "HELLO":
+                            case "HI":
+                            case "HELLO":
 
-                            string getGreeting()
-                            {
-                                switch (new Random().Next(0, 10))
+                                string getGreeting()
                                 {
-                                    case 0: return "Well, hello there :D";
-                                    case 1: return "Greetings, friend";
-                                    case 2: return "Hello, dear client";
-                                    case 3: return "Hello to you";
-                                    case 4: return "Hi!";
-                                    case 5: return "Nice to see you!";
-                                    case 6: return "What's up?";
-                                    case 7: return "✌️";
-                                    case 8: return "'sup";
-                                    default: return "Oh no, it's you again...";
+                                    switch (new Random().Next(0, 10))
+                                    {
+                                        case 0: return "Well, hello there :D";
+                                        case 1: return "Greetings, friend";
+                                        case 2: return "Hello, dear client";
+                                        case 3: return "Hello to you";
+                                        case 4: return "Hi!";
+                                        case 5: return "Nice to see you!";
+                                        case 6: return "What's up?";
+                                        case 7: return "✌️";
+                                        case 8: return "'sup";
+                                        default: return "Oh no, it's you again...";
+                                    }
                                 }
-                            }
 
-                            await WebSocket.SendText(getGreeting()).ConfigureAwait(false);
-                            break;
-                        case "NICE":
-                        case "THANKS":
-                        case "THANK":
+                                await WebSocket.SendText(getGreeting()).ConfigureAwait(false);
+                                break;
+                            case "NICE":
+                            case "THANKS":
+                            case "THANK":
 
-                            string getYoureWelcome()
-                            {
-                                switch (new Random().Next(0, 7))
+                                string getYoureWelcome()
                                 {
-                                    case 0: return "😎";
-                                    case 1: return "👍";
-                                    case 2: return "🙌";
-                                    case 3: return "🎉";
-                                    case 4: return "🤘";
-                                    case 5: return "You're welcome!";
-                                    default: return "✌️";
+                                    switch (new Random().Next(0, 7))
+                                    {
+                                        case 0: return "😎";
+                                        case 1: return "👍";
+                                        case 2: return "🙌";
+                                        case 3: return "🎉";
+                                        case 4: return "🤘";
+                                        case 5: return "You're welcome!";
+                                        default: return "✌️";
+                                    }
                                 }
-                            }
 
-                            await WebSocket.SendText(getYoureWelcome()).ConfigureAwait(false);
-                            break;
-                        case "CREDITS":
-                            await SendCredits().ConfigureAwait(false);
-                            break;
-                        case var unknown:
-                            await SendUnknownCommand(unknown).ConfigureAwait(false);
-                            break;
+                                await WebSocket.SendText(getYoureWelcome()).ConfigureAwait(false);
+                                break;
+                            case "CREDITS":
+                                await SendCredits().ConfigureAwait(false);
+                                break;
+                            case var unknown:
+                                await SendUnknownCommand(unknown).ConfigureAwait(false);
+                                break;
 
-                        #endregion
-                    }
-                    break;
+                            #endregion
+                        }
+                        break;
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                await SendCancel().ConfigureAwait(false);
             }
         }
 
@@ -651,14 +668,12 @@ namespace RESTable
                     await runOperation().ConfigureAwait(false);
                     break;
                 case var multiple:
-                    if (Unsafe)
+                    if (!Unsafe)
                     {
-                        await runOperation().ConfigureAwait(false);
-                        break;
+                        await Confirm($"This will run {method} on {multiple} entities in resource " +
+                                      $"'{PreviousEntities.Request.Resource}'. ").ConfigureAwait(false);
                     }
-                    OnConfirm = runOperation;
-                    await SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
-                                                  $"'{PreviousEntities.Request.Resource}'. ").ConfigureAwait(false);
+                    await runOperation().ConfigureAwait(false);
                     break;
             }
         }
@@ -683,8 +698,10 @@ namespace RESTable
         {
             if (result is SwitchedTerminal) return;
             await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
-            await using var stream = await WebSocket.GetOutputStream(false).ConfigureAwait(false);
-            await result.Serialize(stream);
+            await using (var message = await WebSocket.GetMessageStream(false).ConfigureAwait(false))
+            {
+                await result.Serialize(message);
+            }
             switch (result)
             {
                 case var _ when Query == "":
@@ -741,7 +758,7 @@ namespace RESTable
 
         private Task SendCancel() => WebSocket.SendText(CancelText);
 
-        private Task SendConfirmationRequest(string initialInfo = null) =>
+        private Task SendConfirmRequest(string initialInfo = null) =>
             WebSocket.SendText(initialInfo + ConfirmationText);
 
         private Task SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");

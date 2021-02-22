@@ -11,7 +11,7 @@ namespace RESTable.Results
     /// <summary>
     /// A result that contains a set of entities
     /// </summary>
-    public class Entities<T> : Content, IEntities<T> where T : class
+    public class Entities<T> : Content, IEntities<T>, IAsyncEnumerable<T> where T : class
     {
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = new())
         {
@@ -30,7 +30,7 @@ namespace RESTable.Results
             Content = enumerable ?? new T[0].ToAsyncEnumerable();
         }
 
-        public ValueTask<long> CountAsync() => this.LongCountAsync();
+        public ValueTask<long> CountAsync() => Content.LongCountAsync();
 
         /// <inheritdoc />
         public override string Metadata => $"{nameof(Entities<T>)};{Request.Resource};{EntityType}";

@@ -40,7 +40,7 @@ namespace RESTable.SQLite
                 yield return item;
         }
 
-        public async Task<int> InsertAsync(IRequest<DatabaseIndex> request)
+        public async ValueTask<int> InsertAsync(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -57,7 +57,7 @@ namespace RESTable.SQLite
             return count;
         }
 
-        public async Task<int> UpdateAsync(IRequest<DatabaseIndex> request)
+        public async ValueTask<int> UpdateAsync(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -73,7 +73,7 @@ namespace RESTable.SQLite
             return count;
         }
 
-        public async Task<int> DeleteAsync(IRequest<DatabaseIndex> request)
+        public async ValueTask<int> DeleteAsync(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;

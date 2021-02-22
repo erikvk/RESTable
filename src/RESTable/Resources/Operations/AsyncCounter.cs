@@ -7,5 +7,5 @@ namespace RESTable.Resources.Operations
     /// Counts the entities that satisfy certain conditions provided in the request
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    internal delegate Task<long> AsyncCounter<T>(IRequest<T> request) where T : class;
+    internal delegate ValueTask<long> AsyncCounter<T>(IRequest<T> request) where T : class;
 }

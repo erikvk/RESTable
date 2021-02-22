@@ -35,11 +35,11 @@ namespace RESTable.Resources.Operations
         public bool CanCount => AsyncCounter != null;
 
         public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request) => AsyncSelector(request);
-        public Task<int> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);
-        public Task<int> UpdateAsync(IRequest<TResource> request) => AsyncUpdater(request);
-        public Task<int> DeleteAsync(IRequest<TResource> request) => AsyncDeleter(request);
+        public ValueTask<int> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);
+        public ValueTask<int> UpdateAsync(IRequest<TResource> request) => AsyncUpdater(request);
+        public ValueTask<int> DeleteAsync(IRequest<TResource> request) => AsyncDeleter(request);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request) => AsyncAuthenticator(request);
-        public Task<long> CountAsync(IRequest<TResource> request) => AsyncCounter(request);
+        public ValueTask<long> CountAsync(IRequest<TResource> request) => AsyncCounter(request);
 
         public IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities)
         {
@@ -73,15 +73,15 @@ namespace RESTable.Resources.Operations
             if (AsyncSelector == null && SyncSelector is Selector<TResource> selector)
                 AsyncSelector = request => CallAsync(selector(request));
             if (AsyncInserter == null && SyncInserter is Inserter<TResource> inserter)
-                AsyncInserter = request => Task.FromResult(inserter(request));
+                AsyncInserter = request => new ValueTask<int>(inserter(request));
             if (AsyncUpdater == null && SyncUpdater is Updater<TResource> updater)
-                AsyncUpdater = request => Task.FromResult(updater(request));
+                AsyncUpdater = request => new ValueTask<int>(updater(request));
             if (AsyncDeleter == null && SyncDeleter is Deleter<TResource> deleter)
-                AsyncDeleter = request => Task.FromResult(deleter(request));
+                AsyncDeleter = request => new ValueTask<int>(deleter(request));
             if (AsyncAuthenticator == null && SyncAuthenticator is Authenticator<TResource> authenticator)
                 AsyncAuthenticator = request => new ValueTask<AuthResults>(authenticator(request));
             if (AsyncCounter == null && SyncCounter is Counter<TResource> counter)
-                AsyncCounter = request => Task.FromResult(counter(request));
+                AsyncCounter = request => new ValueTask<long>(counter(request));
             return this;
         }
 

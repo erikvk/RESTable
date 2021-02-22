@@ -21,7 +21,7 @@ namespace RESTable.Internal.Logging
         public DateTime LogTime { get; }
         public RESTableContext Context { get; }
 
-        public WebSocketEvent(MessageType direction, WebSocket webSocket, string content = null, ulong length = 0)
+        public WebSocketEvent(MessageType direction, WebSocket webSocket, string content = null, long length = 0)
         {
             MessageType = direction;
             WebSocket = webSocket;

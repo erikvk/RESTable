@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 
@@ -21,7 +22,7 @@ namespace RESTable.WebSockets
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
-        public static async Task HandleTextInput(string wsId, string textInput)
+        public static async Task HandleTextInput(string wsId, string textInput, CancellationToken cancellationToken)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
@@ -81,14 +82,14 @@ namespace RESTable.WebSockets
                         break;
                 }
             }
-            else await webSocket.HandleTextInputInternal(textInput).ConfigureAwait(false);
+            else await webSocket.HandleTextInputInternal(textInput, cancellationToken).ConfigureAwait(false);
         }
 
-        public static async Task HandleBinaryInput(string wsId, byte[] binaryInput)
+        public static async Task HandleBinaryInput(string wsId, byte[] binaryInput, CancellationToken cancellationToken)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
-            await webSocket.HandleBinaryInputInternal(binaryInput).ConfigureAwait(false);
+            await webSocket.HandleBinaryInputInternal(binaryInput, cancellationToken).ConfigureAwait(false);
         }
 
         public static void RemoveWebSocket(string wsId) => AllSockets.Remove(wsId);
