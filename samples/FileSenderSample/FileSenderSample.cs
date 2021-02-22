@@ -37,7 +37,7 @@ namespace FileSenderSample
     }
 
     /// <summary>
-    /// Used to make some mock file uploads
+    /// Used to make some mock file uploads, available at wss://localhost:5001/restable/mockelymock
     /// </summary>
     [RESTable]
     public class MockelyMock : Terminal
@@ -85,7 +85,7 @@ namespace FileSenderSample
     }
 
     /// <summary>
-    /// This resource gives an administrator an overview over opened file sender connections
+    /// This resource gives an administrator an overview over opened file sender connections. Available at wss://localhost:5001/restable/filesendermanager
     /// </summary>
     [RESTable]
     public class FileSenderManager : Terminal, IAsyncDisposable
@@ -158,7 +158,7 @@ namespace FileSenderSample
     }
 
     /// <summary>
-    /// This terminal is consumed by 
+    /// This resource lets clients connect and receive files. Available at wss://localhost:5001/restable/filesenderconnection
     /// </summary>
     [RESTable]
     public class FileSenderConnection : Terminal, IAsyncDisposable
