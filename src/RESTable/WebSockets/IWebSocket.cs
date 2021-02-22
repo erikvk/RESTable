@@ -70,7 +70,8 @@ namespace RESTable.WebSockets
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
         ///     (if any) and before the content is sent.</param>
         /// <param name="disposeResult">Should the serialized result be disposed after it is sent to the WebSocket?</param>
-        Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
+        Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? timeElapsed = null,
+            bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
         /// Sends an arbitrarily large result over a WebSocket, with the body split over multiple binary messages. Before sending
@@ -86,13 +87,14 @@ namespace RESTable.WebSockets
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
         ///     (if any) and before the content is sent.</param>
         /// <param name="disposeResult">Should the result be disposed after it is sent to the WebSocket?</param>
-        Task StreamSerializedResult(ISerializedResult serializedResult, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
+        Task StreamSerializedResult(ISerializedResult serializedResult, int messageSize, TimeSpan? timeElapsed = null,
+            bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
         /// Returns a stream that, when written to, writes data over the websocket
         /// </summary>
-        Stream GetOutputStream(bool asText);
-        
+        Task<Stream> GetOutputStream(bool asText);
+
         /// <summary>
         /// Sends an exception over the WebSocket.
         /// </summary>
@@ -113,7 +115,8 @@ namespace RESTable.WebSockets
         /// Closes the current terminal (if any) and directs the WebSocket to the provided terminal. Use this to quit from a 
         /// terminal resource and open another terminal instead.
         /// </summary>
-        Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : Terminal;
+        Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null)
+            where T : Terminal;
 
         /// <summary>
         /// The current status of this WebSocket

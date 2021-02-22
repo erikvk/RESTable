@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -6,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using RESTable.Requests;
+using RESTable.WebSockets;
+using WebSocket = System.Net.WebSockets.WebSocket;
 
 namespace RESTable.AspNetCore
 {
@@ -47,9 +50,10 @@ namespace RESTable.AspNetCore
             return bytesSent;
         }
 
-        public override Stream GetOutputStream(bool asText)
+        public override Task<Stream> GetOutputStream(bool asText)
         {
-            return new AspNetCoreWebSocketMessageStream(WebSocket, asText, CancellationTokenSource.Token);
+            var messageStream = new AspNetCoreWebSocketMessageStream(WebSocket, asText, CancellationTokenSource.Token);
+            return Task.FromResult<Stream>(messageStream);
         }
 
         protected override bool IsConnected => WebSocket.State == WebSocketState.Open;

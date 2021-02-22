@@ -19,136 +19,129 @@ namespace RESTable.WebSockets
     /// </summary>
     internal class WebSocketQueue : IWebSocket, IWebSocketInternal
     {
-        internal ConcurrentQueue<Func<Task>> ActionQueue { get; }
-        internal IWebSocketInternal ToQueueFor { get; }
+        internal IWebSocketInternal WebSocket { get; }
+
+        private Task WaitTask { get; }
+
         public RESTableContext Context { get; }
-        public WebSocketStatus Status => ToQueueFor.Status;
-        public Headers Headers => ToQueueFor.Headers;
-        public ReadonlyCookies Cookies => ToQueueFor.Cookies;
+        public WebSocketStatus Status => WebSocket.Status;
+        public Headers Headers => WebSocket.Headers;
+        public ReadonlyCookies Cookies => WebSocket.Cookies;
 
         /// <inheritdoc />
-        public void SetStatus(WebSocketStatus status) => ActionQueue.Enqueue(() =>
+        public async Task SetStatus(WebSocketStatus status)
         {
-            ToQueueFor.SetStatus(status);
-            return Task.CompletedTask;
-        });
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SetStatus(status);
+        }
 
-        public WebSocketQueue(IWebSocketInternal webSocket)
+        public WebSocketQueue(IWebSocketInternal webSocket, Task waitTask)
         {
-            ActionQueue = new ConcurrentQueue<Func<Task>>();
-            ToQueueFor = webSocket;
+            WaitTask = waitTask;
+            WebSocket = webSocket;
             Context = webSocket.Context;
         }
 
-        public Task SendTextRaw(string text)
+        public async Task SendTextRaw(string text)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendTextRaw(text));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendTextRaw(text).ConfigureAwait(false);
         }
 
-        public Task SendText(string d)
+        public async Task SendText(string d)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendText(d));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendText(d).ConfigureAwait(false);
         }
 
-        public Task SendText(ArraySegment<byte> buffer)
+        public async Task SendText(ArraySegment<byte> buffer)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendText(buffer));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendText(buffer).ConfigureAwait(false);
         }
 
-        public Task SendText(Stream stream)
+        public async Task SendText(Stream stream)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendText(stream));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendText(stream).ConfigureAwait(false);
         }
 
-        public Task SendBinary(ArraySegment<byte> buffer)
+        public async Task SendBinary(ArraySegment<byte> buffer)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendBinary(buffer));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendBinary(buffer).ConfigureAwait(false);
         }
 
-        public Task SendBinary(Stream stream)
+        public async Task SendBinary(Stream stream)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendBinary(stream));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendBinary(stream).ConfigureAwait(false);
         }
 
-        public Stream GetOutputStream(bool asText)
+        public async Task<Stream> GetOutputStream(bool asText)
         {
-            throw new NotSupportedException("Can't get output stream from a suspended websocket");
+            await WaitTask.ConfigureAwait(false);
+            return await WebSocket.GetOutputStream(asText).ConfigureAwait(false);
         }
 
-        public Task SendJson(object i, bool a = false, bool? p = null, bool ig = false)
+        public async Task SendJson(object i, bool a = false, bool? p = null, bool ig = false)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendJson(i, a, p, ig));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendJson(i, a, p, ig).ConfigureAwait(false);
         }
 
-        public Task SendException(Exception exception)
+        public async Task SendException(Exception exception)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendException(exception));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendException(exception).ConfigureAwait(false);
         }
 
-        public Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false, bool d = true)
+        public async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false,
+            bool d = true)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendSerializedResult(serializedResult, t, w, d));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendSerializedResult(serializedResult, t, w, d).ConfigureAwait(false);
         }
 
-        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false)
+        public async Task SendResult(IResult r, TimeSpan? t = null, bool w = false)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.SendResult(r, t, w));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.SendResult(r, t, w).ConfigureAwait(false);
         }
 
-        public Task StreamSerializedResult(ISerializedResult r, int m, TimeSpan? t = null, bool w = false, bool d = true)
+        public async Task StreamSerializedResult(ISerializedResult r, int m, TimeSpan? t = null, bool w = false,
+            bool d = true)
         {
-            ActionQueue.Enqueue(() => ToQueueFor.StreamSerializedResult(r, m, t, w, d));
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.StreamSerializedResult(r, m, t, w, d).ConfigureAwait(false);
         }
 
-        public Task DirectToShell(IEnumerable<Condition<Shell>> a = null)
+        public async Task DirectToShell(IEnumerable<Condition<Shell>> a = null)
         {
-            ActionQueue.Enqueue(() =>
-            {
-                ToQueueFor.DirectToShell(a);
-                return Task.CompletedTask;
-            });
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.DirectToShell(a).ConfigureAwait(false);
         }
 
-        public Task DirectTo<T>(ITerminalResource<T> t, ICollection<Condition<T>> a = null) where T : Terminal
+        public async Task DirectTo<T>(ITerminalResource<T> t, ICollection<Condition<T>> a = null) where T : Terminal
         {
-            ActionQueue.Enqueue(() =>
-            {
-                ToQueueFor.DirectTo(t, a);
-                return Task.CompletedTask;
-            });
-            return Task.CompletedTask;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.DirectTo(t, a).ConfigureAwait(false);
         }
 
         public string HeadersStringCache
         {
-            get => ToQueueFor.HeadersStringCache;
-            set => ToQueueFor.HeadersStringCache = value;
+            get => WebSocket.HeadersStringCache;
+            set => WebSocket.HeadersStringCache = value;
         }
 
-        public bool ExcludeHeaders => ToQueueFor.ExcludeHeaders;
-        public string ProtocolIdentifier => ToQueueFor.ProtocolIdentifier;
-        public CachedProtocolProvider CachedProtocolProvider => ToQueueFor.CachedProtocolProvider;
-
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
-            ActionQueue.Enqueue(() =>
-            {
-                var webSocket = (WebSocket) ToQueueFor;
-                return webSocket.DisposeAsync().AsTask();
-            });
-            return default;
+            await WaitTask.ConfigureAwait(false);
+            await WebSocket.DisposeAsync().ConfigureAwait(false);
         }
+
+        public bool ExcludeHeaders => WebSocket.ExcludeHeaders;
+        public string ProtocolIdentifier => WebSocket.ProtocolIdentifier;
+        public CachedProtocolProvider CachedProtocolProvider => WebSocket.CachedProtocolProvider;
     }
 }

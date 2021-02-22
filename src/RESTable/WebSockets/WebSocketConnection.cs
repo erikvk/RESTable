@@ -13,7 +13,7 @@ namespace RESTable.WebSockets
 {
     internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     {
-        private IWebSocketInternal duringSuspend;
+        private IWebSocketInternal _duringSuspend;
         private IWebSocketInternal _webSocket;
 
         internal IWebSocketInternal WebSocket
@@ -26,7 +26,9 @@ namespace RESTable.WebSockets
         internal Terminal Terminal { get; private set; }
         public RESTableContext Context { get; private set; }
 
-        private bool IsSuspended { get; set; }
+        private TaskCompletionSource<byte> SuspendTaskSource { get; set; }
+
+        private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
 
         internal WebSocketConnection(WebSocket webSocket, Terminal terminal, ITerminalResource resource)
         {
@@ -37,27 +39,25 @@ namespace RESTable.WebSockets
             Resource = resource;
             Terminal = terminal;
             Terminal.SetWebSocket(this);
+            SuspendTaskSource = new TaskCompletionSource<byte>();
         }
 
         internal async Task Suspend()
         {
-            if (IsSuspended) return;
-            if (duringSuspend != null)
-                await duringSuspend.DisposeAsync().ConfigureAwait(false);
-            duringSuspend = WebSocket;
-            WebSocket = new WebSocketQueue(duringSuspend);
-            IsSuspended = true;
+            if (_duringSuspend != null)
+                await _duringSuspend.DisposeAsync().ConfigureAwait(false);
+            _duringSuspend = WebSocket;
+            WebSocket = new WebSocketQueue(_duringSuspend, SuspendTaskSource.Task);
         }
 
-        internal async Task Unsuspend()
+        internal void Unsuspend()
         {
-            if (!IsSuspended || !(WebSocket is WebSocketQueue queue))
+            if (!IsSuspended || !(WebSocket is WebSocketQueue))
                 return;
-            IsSuspended = false;
-            WebSocket = duringSuspend;
-            duringSuspend = null;
-            var tasks = queue.ActionQueue.Select(a => a());
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            WebSocket = _duringSuspend;
+            _duringSuspend = null;
+            SuspendTaskSource.SetResult(default);
+            SuspendTaskSource = new TaskCompletionSource<byte>();
         }
 
         public async ValueTask DisposeAsync()
@@ -95,19 +95,22 @@ namespace RESTable.WebSockets
         public Task SendBinary(Stream stream) => WebSocket.SendBinary(stream);
 
         /// <inheritdoc />
-        public Stream GetOutputStream(bool asText) => WebSocket.GetOutputStream(asText);
+        public Task<Stream> GetOutputStream(bool asText) => WebSocket.GetOutputStream(asText);
 
         /// <inheritdoc />
-        public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);
+        public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false) =>
+            WebSocket.SendJson(i, at, p, ig);
 
         /// <inheritdoc />
         public Task SendResult(IResult r, TimeSpan? t = null, bool w = false) => WebSocket.SendResult(r, t, w);
 
         /// <inheritdoc />
-        public Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.SendSerializedResult(serializedResult, t, w, d);
+        public Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false,
+            bool d = true) => WebSocket.SendSerializedResult(serializedResult, t, w, d);
 
         /// <inheritdoc />
-        public Task StreamSerializedResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,
+        public Task StreamSerializedResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null,
+            bool writeHeaders = false,
             bool disposeResult = true)
         {
             return WebSocket.StreamSerializedResult(result, messageSize, timeElapsed, writeHeaders, disposeResult);
@@ -123,10 +126,12 @@ namespace RESTable.WebSockets
         public ReadonlyCookies Cookies => WebSocket.Cookies;
 
         /// <inheritdoc />
-        public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => WebSocket.DirectToShell(assignments);
+        public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) =>
+            WebSocket.DirectToShell(assignments);
 
         /// <inheritdoc />
-        public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : Terminal
+        public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null)
+            where T : Terminal
         {
             return WebSocket.DirectTo(terminalResource, assignments);
         }

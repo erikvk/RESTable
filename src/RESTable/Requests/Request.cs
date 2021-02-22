@@ -172,7 +172,7 @@ namespace RESTable.Requests
                 await using var webSocket = Context.WebSocket;
                 if (result is Forbidden forbidden)
                     return new WebSocketUpgradeFailed(forbidden);
-                await using var webSocketOutputStream = webSocket.GetOutputStream(false);
+                await using var webSocketOutputStream = await webSocket.GetOutputStream(false).ConfigureAwait(false);
                 var serialized = await result.Serialize(webSocketOutputStream).ConfigureAwait(false);
                 await Context.WebSocket.Open(this).ConfigureAwait(false);
                 await Context.WebSocket.SendSerializedResult(serialized).ConfigureAwait(false);

@@ -48,7 +48,11 @@ namespace RESTable.WebSockets
         public WebSocketStatus Status { get; private set; }
 
         /// <inheritdoc />
-        public void SetStatus(WebSocketStatus status) => Status = status;
+        public Task SetStatus(WebSocketStatus status)
+        {
+            Status = status;
+            return Task.CompletedTask;
+        }
 
         /// <inheritdoc />
         /// <summary>
@@ -183,7 +187,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Returns a stream that, when written to, writes data over the websocket
         /// </summary>
-        public abstract Stream GetOutputStream(bool asText);
+        public abstract Task<Stream> GetOutputStream(bool asText);
 
         /// <summary>
         /// Is the WebSocket currently connected?
@@ -194,7 +198,7 @@ namespace RESTable.WebSockets
         /// Sends the WebSocket upgrade and initiates the actual underlying WebSocket connection
         /// </summary>
         protected abstract Task SendUpgrade();
-
+        
         /// <summary>
         /// Initiates a task that represents the lifetime of the WebSocket, handling incoming messages and
         /// sending responses, and that is completed once the WebSocket is gracefully closed.
@@ -433,7 +437,7 @@ namespace RESTable.WebSockets
             if (prettyPrint == null)
                 _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
             else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
-            await using var stream = GetOutputStream(false);
+            await using var stream = await GetOutputStream(false);
             Providers.Json.SerializeToStream(stream, item, _prettyPrint, ignoreNulls);
         }
 
@@ -487,7 +491,8 @@ namespace RESTable.WebSockets
                 throw new InvalidOperationException("Unable to stream a result that is already assigned to a different streaming " +
                                                     "job. A result can only be streamed once.");
             content.IsLocked = true;
-            TerminalConnection?.Suspend();
+            if (TerminalConnection != null) 
+                await TerminalConnection.Suspend();
             if (messageSize < MinStreamBufferSize)
                 messageSize = MinStreamBufferSize;
             else if (MaxStreamBufferSize < messageSize)

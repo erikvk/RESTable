@@ -220,7 +220,7 @@ namespace RESTable
         }
 
         private Func<Task> OnConfirm { get; set; }
-
+        
         /// <inheritdoc />
         public override async Task HandleTextInput(string input)
         {
@@ -313,7 +313,8 @@ namespace RESTable
                                 op: Operators.EQUALS,
                                 value: resource.Name
                             );
-                            await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
+                            await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>()
+                                .WithConditions(resourceCondition);
                             var schemaResult = await schemaRequest.EvaluateToEntities().ConfigureAwait(false);
                             await SerializeAndSendResult(schemaResult);
                             break;
@@ -344,7 +345,10 @@ namespace RESTable
                                 WebSocket.Headers[key] = value;
                                 await SendHeaders().ConfigureAwait(false);
                             }
-                            else await WebSocket.SendText($"400: Bad request. Cannot read or write reserved header '{key}'.").ConfigureAwait(false);
+                            else
+                                await WebSocket
+                                    .SendText($"400: Bad request. Cannot read or write reserved header '{key}'.")
+                                    .ConfigureAwait(false);
                             return;
 
                         case "VAR":
@@ -356,14 +360,18 @@ namespace RESTable
                             var (property, valueString) = tail.TSplit('=', true);
                             if (property == null || valueString == null)
                             {
-                                await WebSocket.SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>").ConfigureAwait(false);
+                                await WebSocket
+                                    .SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>")
+                                    .ConfigureAwait(false);
                                 break;
                             }
                             if (valueString.EqualsNoCase("null"))
                                 valueString = null;
                             if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
                             {
-                                await WebSocket.SendText($"Unknown shell property '{property}'. To list properties, type VAR").ConfigureAwait(false);
+                                await WebSocket
+                                    .SendText($"Unknown shell property '{property}'. To list properties, type VAR")
+                                    .ConfigureAwait(false);
                                 break;
                             }
                             try
@@ -675,7 +683,7 @@ namespace RESTable
         {
             if (result is SwitchedTerminal) return;
             await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
-            await using var stream = WebSocket.GetOutputStream(false);
+            await using var stream = await WebSocket.GetOutputStream(false).ConfigureAwait(false);
             await result.Serialize(stream);
             switch (result)
             {
@@ -708,7 +716,8 @@ namespace RESTable
         private async Task StreamSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null)
         {
             if (serializedResult.Result is SwitchedTerminal) return;
-            await WebSocket.StreamSerializedResult(serializedResult, StreamBufferSize, elapsed, WriteHeaders).ConfigureAwait(false);
+            await WebSocket.StreamSerializedResult(serializedResult, StreamBufferSize, elapsed, WriteHeaders)
+                .ConfigureAwait(false);
             switch (serializedResult.Result)
             {
                 case var _ when Query == "":
@@ -731,11 +740,19 @@ namespace RESTable
         private const string CancelText = "Operation cancelled";
 
         private Task SendCancel() => WebSocket.SendText(CancelText);
-        private Task SendConfirmationRequest(string initialInfo = null) => WebSocket.SendText(initialInfo + ConfirmationText);
+
+        private Task SendConfirmationRequest(string initialInfo = null) =>
+            WebSocket.SendText(initialInfo + ConfirmationText);
+
         private Task SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
-        private Task SendInvalidCommandArgument(string command, string arg) => WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+
+        private Task SendInvalidCommandArgument(string command, string arg) =>
+            WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+
         private Task SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
-        private Task SendCredits() => WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © {DateTime.Now.Year}");
+
+        private Task SendCredits() =>
+            WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © {DateTime.Now.Year}");
 
         private async Task Close()
         {

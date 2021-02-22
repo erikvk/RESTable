@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace RESTable.Tests
             throw new NotImplementedException();
         }
 
-        public override Stream GetOutputStream(bool asText)
+        public override Task<Stream> GetOutputStream(bool asText)
         {
             throw new NotImplementedException();
         }
