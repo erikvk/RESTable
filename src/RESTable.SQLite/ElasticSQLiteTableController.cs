@@ -62,7 +62,7 @@ namespace RESTable.SQLite
                 TableMapping = mapping,
                 CLRTypeName = mapping.CLRClass.FullName,
                 SQLTableName = mapping.TableName,
-                Columns = mapping.ColumnMappings.ToDictionary(
+                Columns = mapping.ColumnMappings.Values.ToDictionary(
                     keySelector: columnMapping => columnMapping.CLRProperty.Name,
                     elementSelector: columnMapping => columnMapping.CLRProperty.Type),
                 DroppedColumns = new string[0]
@@ -78,7 +78,7 @@ namespace RESTable.SQLite
             var toDrop = columnNames
                 .Select(columnName =>
                 {
-                    var mapping = TableMapping.ColumnMappings.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
+                    var mapping = TableMapping.ColumnMappings.Values.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
                     if (mapping == null) return null;
                     if (mapping.IsRowId || mapping.CLRProperty.IsDeclared)
                         throw new SQLiteException($"Cannot drop column '{mapping.SQLColumn.Name}' from table '{TableMapping.TableName}'. " +
@@ -105,12 +105,12 @@ namespace RESTable.SQLite
             await DropColumns(DroppedColumns).ConfigureAwait(false);
             foreach (var (name, type) in columnsToAdd.Where(c => c.type != CLRDataType.Unsupported))
             {
-                TableMapping.ColumnMappings.Add(new ColumnMapping
+                TableMapping.ColumnMappings[name] = new ColumnMapping
                 (
                     tableMapping: TableMapping,
                     clrProperty: new CLRProperty(name, type),
                     sqlColumn: new SQLColumn(name, type.ToSQLDataType())
-                ));
+                );
                 updated = true;
             }
             await TableMapping.ColumnMappings.Push().ConfigureAwait(false);

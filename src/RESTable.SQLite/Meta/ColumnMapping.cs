@@ -40,8 +40,8 @@ namespace RESTable.SQLite.Meta
             CLRProperty = clrProperty;
             SQLColumn = sqlColumn;
             IsRowId = sqlColumn.IsRowId;
-            SQLColumn?.SetMapping(this);
-            CLRProperty?.SetMapping(this);
+            SQLColumn.SetMapping(this);
+            CLRProperty.SetMapping(this);
         }
     }
 }

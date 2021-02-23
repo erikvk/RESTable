@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using RESTable.ContentTypeProviders;
-using RESTable.Requests;
 using RESTable.Resources;
-using RESTable.Results;
 using RESTable.Linq;
 
 namespace RESTable.Internal
@@ -21,24 +19,6 @@ namespace RESTable.Internal
                 throw new InvalidContentTypeProviderException($"Provider '{provider.GetType().GetRESTableTypeName()}' cannot read or write");
         }
 
-        internal static ContentType ResolveInputContentType(IRequest request = null, ContentType? contentType = null)
-        {
-            IContentTypeProvider provider;
-            if (request != null)
-            {
-                provider = request.GetInputContentTypeProvider(contentType);
-                request.Headers.ContentType = provider.ContentType;
-                return provider.ContentType;
-            }
-            if (contentType.HasValue)
-            {
-                if (InputContentTypeProviders.TryGetValue(contentType.Value.ToString(), out provider))
-                    return provider.ContentType;
-                throw new UnsupportedContent(contentType.ToString(), false);
-            }
-            return default;
-        }
-        
         internal static void SetupContentTypeProviders(List<IContentTypeProvider> contentTypeProviders)
         {
             InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);

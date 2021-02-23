@@ -33,8 +33,7 @@ namespace RESTable.Resources
         internal static string BaseNamespace { private get; set; }
         internal static TProvider ResourceProvider { private get; set; }
 
-        private static IEntityResourceProviderInternal ResourceProviderInternal =>
-            (IEntityResourceProviderInternal) ResourceProvider;
+        private static IEntityResourceProviderInternal ResourceProviderInternal => (IEntityResourceProviderInternal) ResourceProvider;
 
         private static void ResolveDynamicResourceName(ref string name)
         {

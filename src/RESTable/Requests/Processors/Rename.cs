@@ -32,18 +32,19 @@ namespace RESTable.Requests.Processors
         {
             this.ForEach(pair =>
             {
-                var value = entity.GetValue(pair.Key.Key, StringComparison.OrdinalIgnoreCase);
+                var (key, newName) = pair;
+                var value = entity.GetValue(key.Key, StringComparison.OrdinalIgnoreCase);
                 if (value == null)
                 {
-                    value = pair.Key.Evaluate(entity, out _);
-                    entity[pair.Value] = value == null ? null : JToken.FromObject(value, NewtonsoftJsonProvider.Serializer);
+                    value = key.Evaluate(entity, out _);
+                    entity[newName] = value == null ? null : JToken.FromObject(value, NewtonsoftJsonProvider.Serializer);
                     return;
                 }
                 var property = (JProperty) value.Parent;
-                var actualKey = property.Name;
+                var actualKey = property?.Name;
                 if (actualKey != null)
                     entity.Remove(actualKey);
-                entity[pair.Value] = value;
+                entity[newName] = value;
             });
             return entity;
         }

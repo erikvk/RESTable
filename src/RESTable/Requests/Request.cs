@@ -370,8 +370,10 @@ namespace RESTable.Requests
             }
             return async result =>
             {
-                var serializedResult = await result.Serialize().ConfigureAwait(false);
-                var externalRequest = new HttpRequest(result, parameters, serializedResult.Body);
+                var externalRequest = new HttpRequest(result, parameters, async stream =>
+                {
+                    await result.Serialize(stream).ConfigureAwait(false);
+                });
                 var response = await externalRequest.GetResponseAsync().ConfigureAwait(false)
                                ?? throw new InvalidExternalDestination(externalRequest, "No response");
                 if (response.StatusCode >= HttpStatusCode.BadRequest)

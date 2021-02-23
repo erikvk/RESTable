@@ -176,8 +176,8 @@ namespace RESTable.SQLite
 
         private HashSet<string> MakeColumnNames()
         {
-            var allColumns = new HashSet<string>(ColumnMappings.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
-            var notRowId = ColumnMappings.Where(m => !m.IsRowId).ToArray();
+            var allColumns = new HashSet<string>(ColumnMappings.Values.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
+            var notRowId = ColumnMappings.Values.Where(m => !m.IsRowId).ToArray();
             var columns = string.Join(", ", notRowId.Select(c => c.SQLColumn.Name));
             var mappings = notRowId;
             var param = notRowId.Select(c => $"@{c.SQLColumn.Name}").ToArray();
@@ -195,7 +195,7 @@ namespace RESTable.SQLite
 
         internal async Task DropColumns(List<ColumnMapping> mappings)
         {
-            mappings.ForEach(mapping => ColumnMappings.Remove(mapping));
+            mappings.ForEach(mapping => ColumnMappings.Remove(mapping.CLRProperty.Name));
             ReloadColumnNames();
             var tempColumnNames = new HashSet<string>(SQLColumnNames);
             tempColumnNames.Remove("rowid");
@@ -257,14 +257,14 @@ namespace RESTable.SQLite
             await ColumnMappings.Push().ConfigureAwait(false);
             var columnNames = MakeColumnNames();
             var columns = await GetSqlColumns().ConfigureAwait(false);
-            columns.Where(column => !columnNames.Contains(column.Name)).ForEach(column => ColumnMappings.Add(new ColumnMapping
+            columns.Where(column => !columnNames.Contains(column.Name)).ForEach(column => ColumnMappings[column.Name] = new ColumnMapping
             (
                 tableMapping: this,
                 clrProperty: new CLRProperty(column.Name, column.Type.ToCLRTypeCode()),
                 sqlColumn: column
-            )));
+            ));
             ReloadColumnNames();
-            TransactMappings = ColumnMappings.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
+            TransactMappings = ColumnMappings.Values.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
         }
 
         private async Task Drop() => await Database.QueryAsync($"DROP TABLE {TableName};").ConfigureAwait(false);

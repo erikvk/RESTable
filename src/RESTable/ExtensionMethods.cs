@@ -892,7 +892,6 @@ namespace RESTable
             {
                 case null: return null;
                 case MemoryStream ms: return ms.ToArray();
-                case SwappingStream ss: return await ss.GetBytesAsync().ConfigureAwait(false);
                 default:
                 {
                     await using var ms = new MemoryStream();

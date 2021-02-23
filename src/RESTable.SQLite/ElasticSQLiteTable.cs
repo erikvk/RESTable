@@ -33,7 +33,10 @@ namespace RESTable.SQLite
         /// <summary>
         /// Creates a new instance of this ElasticSQLiteTable type
         /// </summary>
-        protected ElasticSQLiteTable() => DynamicMembers = new DynamicMemberCollection();
+        protected ElasticSQLiteTable()
+        {
+            DynamicMembers = new DynamicMemberCollection(TableMapping.GetTableMapping(GetType()));
+        }
 
         /// <inheritdoc />
         public bool TryGetValue(string memberName, out object value, out string actualMemberName)

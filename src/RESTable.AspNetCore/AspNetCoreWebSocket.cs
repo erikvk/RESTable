@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -7,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using RESTable.Requests;
-using RESTable.WebSockets;
 using WebSocket = System.Net.WebSockets.WebSocket;
 
 namespace RESTable.AspNetCore
@@ -46,11 +44,12 @@ namespace RESTable.AspNetCore
             do
             {
                 var readToBuffer = await data.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
+                if (readToBuffer == 0) return bytesSent;
                 var wsBuffer = new ArraySegment<byte>(buffer, 0, readToBuffer);
                 lastFrame = readToBuffer < buffer.Length;
                 await WebSocket.SendAsync(wsBuffer, messageType, lastFrame, token).ConfigureAwait(false);
                 bytesSent += readToBuffer;
-            } while (lastFrame == false);
+            } while (!lastFrame);
             return bytesSent;
         }
 

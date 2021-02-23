@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.WebSockets;
@@ -116,7 +115,8 @@ namespace RESTable.Requests
 
         #endregion
 
-        private RequestParameters(IResource iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, bool isWebSocketUpgrade, string unparsedUri, Exception error, MessageType messageType,
+        private RequestParameters(IResource iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, bool isWebSocketUpgrade, string unparsedUri,
+            Exception error, MessageType messageType,
             CachedProtocolProvider cachedProtocolProvider, string protocolIdentifier, string headersStringCache)
         {
             this.iresource = iresource;
@@ -196,25 +196,25 @@ namespace RESTable.Requests
                 Error = e.AsError();
             }
 
-            if (hasMacro)
-            {
-                if (Uri.Macro.OverwriteBody)
-                {
-                    if (Uri.Macro.HasBody)
-                    {
-                        Body = Uri.Macro.Body;
-                        Headers.ContentType = Providers.Json.ContentType;
-                    }
-                }
-                else
-                {
-                    if (!HasBody && Uri.Macro.HasBody)
-                    {
-                        Body = Uri.Macro.Body;
-                        Headers.ContentType = Providers.Json.ContentType;
-                    }
-                }
-            }
+            //  if (hasMacro)
+            //  {
+            //      if (Uri.Macro.OverwriteBody)
+            //      {
+            //          if (Uri.Macro.HasBody)
+            //          {
+            //              Body = Uri.Macro.Body;
+            //              Headers.ContentType = Providers.Json.ContentType;
+            //          }
+            //      }
+            //      else
+            //      {
+            //          if (!HasBody && Uri.Macro.HasBody)
+            //          {
+            //              Body = Uri.Macro.Body;
+            //              Headers.ContentType = Providers.Json.ContentType;
+            //          }
+            //      }
+            //  }
         }
 
         /// <summary>

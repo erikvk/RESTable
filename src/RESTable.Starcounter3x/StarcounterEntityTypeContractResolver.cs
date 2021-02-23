@@ -1,6 +1,5 @@
 using System;
 using RESTable.Meta;
-using RESTable.Meta.Internal;
 using RESTable.Resources;
 using Starcounter.Database;
 using Starcounter.Database.Data;

@@ -220,8 +220,6 @@ namespace RESTable.ProtocolProviders
             await jwr.WriteStartObjectAsync().ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("ResourceType").ConfigureAwait(false);
             await jwr.WriteValueAsync(content.ResourceType.FullName).ConfigureAwait(false);
-            if (Settings._PrettyPrint)
-                await jwr.WriteIndentationAsync().ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("Data").ConfigureAwait(false);
             var entityCount = await jsonProvider.SerializeCollection(dataCollection, jwr).ConfigureAwait(false);
             toSerialize.EntityCount = entityCount;

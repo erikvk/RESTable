@@ -13,20 +13,20 @@ namespace RESTable.Internal
         public Method Method { get; }
         public string URI { get; }
         public Headers Headers { get; }
-        public Stream Body { get; }
+        public Func<Stream, Task> WriteBody { get; }
         public RESTableContext Context { get; }
-        public async Task<HttpResponse> GetResponseAsync() => await MakeExternalRequestAsync(this, Method.ToString(), new Uri(URI), Body, Headers).ConfigureAwait(false);
+        public async Task<HttpResponse> GetResponseAsync() => await MakeExternalRequestAsync(this, Method.ToString(), new Uri(URI), WriteBody, Headers).ConfigureAwait(false);
 
-        internal HttpRequest(ITraceable trace, HeaderRequestParameters parameters, Stream body)
+        internal HttpRequest(ITraceable trace, HeaderRequestParameters parameters, Func<Stream, Task> writeBody)
         {
             Context = trace.Context;
             URI = parameters.URI;
-            Body = body;
+            WriteBody = writeBody;
             Headers = parameters.Headers;
             Method = parameters.Method;
         }
 
-        private static async Task<HttpResponse> MakeExternalRequestAsync(ITraceable trace, string method, Uri uri, Stream body, Headers headers)
+        private static async Task<HttpResponse> MakeExternalRequestAsync(ITraceable trace, string method, Uri uri, Func<Stream, Task> writeBody, IHeaders headers)
         {
             try
             {
@@ -37,16 +37,17 @@ namespace RESTable.Internal
                     .ForEach(pair => request.Headers[pair.Key] = pair.Value);
                 if (headers.ContentType != null) request.ContentType = headers.ContentType.ToString();
                 if (headers.Accept != null) request.Accept = headers.Accept.ToString();
-                if (body != null)
+                if (writeBody != null)
                 {
-                    request.ContentLength = body.Length;
-                    await using var requestStream = await request.GetRequestStreamAsync().ConfigureAwait(false);
-                    await using (body) await body.CopyToAsync(requestStream).ConfigureAwait(false);
+                    await using (var requestStream = await request.GetRequestStreamAsync().ConfigureAwait(false))
+                    {
+                        await writeBody(requestStream).ConfigureAwait(false);
+                    }
                 }
                 var webResponse = (HttpWebResponse) await request.GetResponseAsync().ConfigureAwait(false);
                 var respLoc = webResponse.Headers["Location"];
                 if (webResponse.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
-                    return await MakeExternalRequestAsync(trace, method, new Uri(respLoc), body, headers).ConfigureAwait(false);
+                    return await MakeExternalRequestAsync(trace, method, new Uri(respLoc), writeBody, headers).ConfigureAwait(false);
                 return new HttpResponse(trace, webResponse);
             }
             catch (WebException we)

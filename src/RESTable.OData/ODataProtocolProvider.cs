@@ -230,6 +230,7 @@ namespace RESTable.OData
 
         private static string GetServiceRoot(IEntities entities)
         {
+            if (entities == null) throw new ArgumentNullException(nameof(entities));
             var origin = entities.Request.Context.Client;
             var hostAndPath = $"{origin.Host}{Settings._Uri}-odata";
             return origin.Https ? $"https://{hostAndPath}" : $"http://{hostAndPath}";

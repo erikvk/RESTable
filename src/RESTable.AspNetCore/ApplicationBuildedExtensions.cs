@@ -32,6 +32,7 @@ namespace RESTable.AspNetCore
                     WriteResponse(aspNetCoreContext, options);
                     await using var remote = aspNetCoreContext.Response.Body;
                     await using var serializedResult = await options.Serialize(remote).ConfigureAwait(false);
+                    serializedResult.Result.ThrowIfError();
                 });
 
                 foreach (var method in RESTableConfig.Methods)

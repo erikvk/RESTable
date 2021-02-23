@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using RESTable.AspNetCore;
 using RESTable.Excel;
 using RESTable.OData;
@@ -145,82 +141,17 @@ namespace RESTable.Tutorial
         }
     }
 
+    public class BaseTable : ElasticSQLiteTable
+    {
+        public string Name { get; set; }
+    }
+
+    [RESTable]
+    public class ResourceController : SQLiteResourceController<ResourceController, BaseTable> { }
+
     #endregion
 
     #region Tutorial 2
-
-    /// <summary>
-    /// RESTable will generate an instance of this class when a client makes a GET request to /chatbot
-    /// with a WebSocket handshake.
-    /// </summary>
-    [RESTable]
-    public class Chatbot : Terminal
-    {
-        /// <summary>
-        /// This method is called when the WebSocket is opened towards this Chatbot instance. A perfect
-        /// time to send a welcome message.
-        /// </summary>
-        protected override async Task Open() => await WebSocket.SendText(
-            "> Hi, I'm a chatbot! Type anything, and I'll try my best to answer. I like to tell jokes... " +
-            "(type QUIT to return to the shell)"
-        );
-
-        /// <summary>
-        /// Here we inform RESTable that instances of Chatbot can handle text input
-        /// </summary>
-        protected override bool SupportsTextInput { get; } = true;
-
-        /// <summary>
-        /// This method defines the logic that is run when an incoming text message is received over the
-        /// WebSocket that is assigned to this terminal.
-        /// </summary>
-        public override async Task HandleTextInput(string input)
-        {
-            if (string.Equals(input, "quit", OrdinalIgnoreCase))
-            {
-                await WebSocket.DirectToShell();
-                return;
-            }
-
-            var response = await GetChatbotResponse(input);
-            await WebSocket.SendText(response);
-        }
-
-        internal static async Task<string> GetChatbotResponse(string input)
-        {
-            var response = await ChatbotAPI.GetResponse(input);
-            return response.result?.fulfillment?.speech ?? "I have no response to that. Sorry...";
-        }
-
-        #region DialogFlow API
-
-        /// <summary>
-        /// A simple API for a pre-defined DialogFlow chatbot.
-        /// </summary>
-        private static class ChatbotAPI
-        {
-            private const string AccessToken = "6d7be132f63e48bab18531ec41364673";
-
-            private static readonly AuthenticationHeaderValue Authorization = new("Bearer", AccessToken);
-            private static readonly HttpClient HttpClient = new();
-            private static readonly string SessionId = Guid.NewGuid().ToString();
-
-            /// <summary>
-            /// Sends the input to the chatbot service API, and returns the text response
-            /// </summary>
-            internal static async Task<dynamic> GetResponse(string input)
-            {
-                var uri = $"https://api.dialogflow.com/v1/query?v=20170712&query={WebUtility.UrlEncode(input)}" +
-                          $"&lang=en&sessionId={SessionId}&timezone={TimeZoneInfo.Local.DisplayName}";
-                var message = new HttpRequestMessage(HttpMethod.Get, uri) {Headers = {Authorization = Authorization}};
-                using var response = await HttpClient.SendAsync(message);
-                var responseString = await response.Content.ReadAsStringAsync();
-                return JObject.Parse(responseString);
-            }
-        }
-
-        #endregion
-    }
 
     /// <summary>
     /// "ChatRoom" is an appropriate name for the resource from the client's perspective, even though
@@ -305,18 +236,7 @@ namespace RESTable.Tutorial
             if (string.IsNullOrWhiteSpace(input))
                 return;
             if (string.Equals(input, "quit", OrdinalIgnoreCase))
-            {
                 await WebSocket.DirectToShell();
-                return;
-            }
-
-            await SendToAll($"> {Name}: {input}");
-            if (input.Length > 5 && input.StartsWith("@bot ", OrdinalIgnoreCase))
-            {
-                var message = input.Split("@bot ")[1];
-                var response = Chatbot.GetChatbotResponse(message);
-                await SendToAll($"> Chatbot: {response}");
-            }
         }
 
         private static async Task SendToAll(string message)
