@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
@@ -62,7 +63,7 @@ namespace RESTable.ProtocolProviders
         /// Takes a result and generates an ISerializedResult entity from it, that can - for example - be returned 
         /// to a network component and streamed over a TCP connection.
         /// </summary>
-        Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider);
+        Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken);
 
         /// <summary>
         /// This method is called when RESTableConfig.Init() is done initializing the RESTable instance.

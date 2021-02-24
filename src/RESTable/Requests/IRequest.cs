@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Results;
@@ -152,7 +153,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Evaluates the request synchronously and returns the result
         /// </summary>
-        Task<IResult> Evaluate();
+        Task<IResult> Evaluate(CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Is this request valid?

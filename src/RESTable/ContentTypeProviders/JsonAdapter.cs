@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 
@@ -51,22 +52,15 @@ namespace RESTable.ContentTypeProviders
         protected abstract Task ProduceJsonArray(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
-        public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class;
+        public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class;
 
         /// <inheritdoc />
         public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream)
         {
             await using var jsonStream = new SwappingStream();
-            try
-            {
-                await ProduceJsonArray(stream, jsonStream).ConfigureAwait(false);
-                await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()).ConfigureAwait(false))
-                    yield return item;
-            }
-            finally
-            {
-                jsonStream.CanClose = true;
-            }
+            await ProduceJsonArray(stream, jsonStream).ConfigureAwait(false);
+            await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()).ConfigureAwait(false))
+                yield return item;
         }
 
         /// <inheritdoc />
@@ -74,18 +68,9 @@ namespace RESTable.ContentTypeProviders
         {
             await using var jsonStream = new SwappingStream();
             await using var populateStream = new MemoryStream(body);
-            try
-            {
-                await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);
-                await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
-                {
-                    yield return item;
-                }
-            }
-            finally
-            {
-                jsonStream.CanClose = true;
-            }
+            await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);
+            await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
+                yield return item;
         }
     }
 }

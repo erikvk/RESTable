@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace RESTable.Tests
 {
     public class GeneralTests
@@ -6,5 +8,8 @@ namespace RESTable.Tests
         {
             RESTableConfig.Init();
         }
+
+        [Fact]
+        public void DoThing() { }
     }
 }

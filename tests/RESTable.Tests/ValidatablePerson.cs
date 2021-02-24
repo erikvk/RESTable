@@ -1,24 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using RESTable.Resources.Operations;
 
 namespace RESTable.Tests
 {
     public class ValidatablePerson : Person, IValidator<ValidatablePerson>
     {
-        public bool IsValid(ValidatablePerson entity, out string invalidReason)
+        public IEnumerable<InvalidMember> Validate(ValidatablePerson entity)
         {
             if (string.IsNullOrWhiteSpace(entity.FirstName))
             {
-                invalidReason = "Missing first name";
-                return false;
+                yield return this.Invalidate(e => e.FirstName, "Missing first name");
             }
             if (entity.DateOfBirth > DateTime.Now)
             {
-                invalidReason = "Invalid date of birth. Can't be in the future";
-                return false;
+                yield return this.Invalidate(e => e.DateOfBirth, "Invalid date of birth. Can't be in the future");
             }
-            invalidReason = null;
-            return true;
         }
     }
 }

@@ -41,9 +41,9 @@ namespace RESTable
         /// provider assigned to the request or response that this body belongs to.
         /// </summary>
         /// <param name="result"></param>
-        public async Task Serialize(ISerializedResult result)
+        public async Task Serialize(ISerializedResult result, CancellationToken cancellationToken)
         {
-            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.SerializeResult(result, ContentTypeProvider).ConfigureAwait(false);
+            await ProtocolHolder.CachedProtocolProvider.ProtocolProvider.SerializeResult(result, ContentTypeProvider, cancellationToken).ConfigureAwait(false);
             TryRewind();
         }
 
@@ -127,7 +127,7 @@ namespace RESTable
             }
         }
 
-        public async Task Initialize()
+        public async Task Initialize(CancellationToken cancellationToken)
         {
             if (UninitializedBodyObject == null)
                 return;
@@ -137,19 +137,19 @@ namespace RESTable
             {
                 case IDictionary<string, object> _:
                 case JObject _:
-                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
                 case IAsyncEnumerable<object> aie:
-                    await contentTypeProvider.SerializeCollection(aie, Stream).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeCollection(aie, Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
                 case IEnumerable<object> ie:
-                    await contentTypeProvider.SerializeCollection(ie.ToAsyncEnumerable(), Stream).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeCollection(ie.ToAsyncEnumerable(), Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
                 case IEnumerable ie:
-                    await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), Stream).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
                 default:
-                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
             }
             Stream.Rewind();
@@ -237,12 +237,6 @@ namespace RESTable
         {
             await Stream.DisposeAsync().ConfigureAwait(false);
             await base.DisposeAsync().ConfigureAwait(false);
-        }
-
-        internal bool CanClose
-        {
-            get => Stream.CanClose;
-            set => Stream.CanClose = value;
         }
 
         internal byte[] GetBytes() => Stream.GetBytes();

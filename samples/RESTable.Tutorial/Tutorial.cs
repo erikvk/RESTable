@@ -141,13 +141,20 @@ namespace RESTable.Tutorial
         }
     }
 
-    public class BaseTable : ElasticSQLiteTable
+    [RESTable, SQLite]
+    public class Person : ElasticSQLiteTable, IValidator<Person>
     {
         public string Name { get; set; }
+
+        public IEnumerable<InvalidMember> Validate(Person entity)
+        {
+            if (entity.Name == "Banarne")
+                yield return this.Invalidate(e => e.Name, "Banarne is not a real name!");
+        }
     }
 
     [RESTable]
-    public class ResourceController : SQLiteResourceController<ResourceController, BaseTable> { }
+    public class PersonController : SQLiteResourceController<PersonController, Person> { }
 
     #endregion
 

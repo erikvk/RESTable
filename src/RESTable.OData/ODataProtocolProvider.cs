@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using RESTable.Admin;
@@ -243,12 +244,12 @@ namespace RESTable.OData
         }
 
         /// <inheritdoc />
-        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
+        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
             switch (toSerialize.Result)
             {
                 case Binary binary:
-                    await binary.BinaryResult.WriteToStream(toSerialize.Body).ConfigureAwait(false);
+                    await binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken).ConfigureAwait(false);
                     return;
                 case not IEntities: return;
             }
@@ -269,23 +270,23 @@ namespace RESTable.OData
             }
             await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
             using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Indented : None};
-            await jwr.WriteStartObjectAsync().ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("@odata.context").ConfigureAwait(false);
-            await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}").ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("value").ConfigureAwait(false);
+            await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("@odata.context", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}", cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("value", cancellationToken).ConfigureAwait(false);
             Providers.Json.Serialize(jwr, entities);
             toSerialize.EntityCount = jwr.ObjectsWritten;
             if (writeMetadata)
             {
-                await jwr.WritePropertyNameAsync("@odata.count").ConfigureAwait(false);
-                await jwr.WriteValueAsync(toSerialize.EntityCount).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("@odata.count", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(toSerialize.EntityCount, cancellationToken).ConfigureAwait(false);
                 if (toSerialize.HasNextPage)
                 {
-                    await jwr.WritePropertyNameAsync("@odata.nextLink").ConfigureAwait(false);
-                    await jwr.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink(toSerialize.EntityCount, -1))).ConfigureAwait(false);
+                    await jwr.WritePropertyNameAsync("@odata.nextLink", cancellationToken).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink(toSerialize.EntityCount, -1)), cancellationToken).ConfigureAwait(false);
                 }
             }
-            await jwr.WriteEndObjectAsync().ConfigureAwait(false);
+            await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 }

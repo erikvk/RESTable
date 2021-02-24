@@ -41,16 +41,26 @@ namespace RESTable.Resources.Operations
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request) => AsyncAuthenticator(request);
         public ValueTask<long> CountAsync(IRequest<TResource> request) => AsyncCounter(request);
 
-        public IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities)
+        public async IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities)
         {
-            if (entities == null) return AsyncEnumerable.Empty<TResource>();
-            if (Validator == null) return entities;
-            return entities.Select(item =>
+            if (entities == null) yield break;
+            if (Validator == null)
             {
-                if (!Validator(item, out var invalidReason))
-                    throw new FailedValidation(invalidReason);
-                return item;
-            });
+                await foreach (var entity in entities.ConfigureAwait(false))
+                    yield return entity;
+                yield break;
+            }
+
+            var index = -1L;
+     
+            await foreach (var entity in entities.ConfigureAwait(false))
+            {
+                index += 1;
+                var invalidMembers = Validator(entity).ToList();
+                if (invalidMembers.Count > 0)
+                    throw new FailedValidation(new InvalidEntity(index, invalidMembers));
+                yield return entity;
+            }
         }
 
 #pragma warning disable 1998

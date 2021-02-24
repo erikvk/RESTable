@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Threading;
 using RESTable.ContentTypeProviders;
 using RESTable.Linq;
 using RESTable.Meta;
@@ -50,14 +51,14 @@ namespace RESTable.Results
             ContentTypeProvider = parameters.GetOutputContentTypeProvider();
         }
 
-        public ISerializedResult Serialize()
+        public ISerializedResult Serialize(CancellationToken cancellationToken = new())
         {
             if (!HasResource)
                 return new SerializedResult(this);
             var serializedResult = new SerializedResult(this);
             var stopwatch = Stopwatch.StartNew();
             var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
-            ContentTypeProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), serializedResult.Body);
+            ContentTypeProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), serializedResult.Body, null, cancellationToken);
             serializedResult.Body.TryRewind();
             Headers.Elapsed = stopwatch.Elapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             return serializedResult;

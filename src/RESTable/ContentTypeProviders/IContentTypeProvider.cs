@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 
@@ -49,7 +50,7 @@ namespace RESTable.ContentTypeProviders
         /// <summary>
         /// Serializes the entity collection to the given Stream and returns the number of entities serialized.
         /// </summary>
-        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class;
+        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class;
 
         /// <summary>
         /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 

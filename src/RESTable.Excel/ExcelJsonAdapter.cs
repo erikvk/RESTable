@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
@@ -39,7 +40,7 @@ namespace RESTable.Excel
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class
+        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
         {
             if (collection == null) return 0;
             try

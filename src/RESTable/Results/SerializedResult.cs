@@ -8,7 +8,7 @@ namespace RESTable.Results
     public class SerializedResult : ISerializedResult
     {
         public RESTableContext Context => Result.Context;
-       
+
         public long EntityCount { get; set; }
 
         public bool HasNextPage => EntityCount > 0 && EntityCount == (long?) Result.Request?.MetaConditions.Limit;
@@ -29,17 +29,11 @@ namespace RESTable.Results
             Body = result.ProtocolHolder != null ? Body.CreateOutputBody(result.ProtocolHolder, customOutputStream) : null;
         }
 
-        public void Dispose()
-        {
-            if (Body == null) return;
-            Body.CanClose = true;
-            Body.Dispose();
-        }
+        public void Dispose() => Body?.Dispose();
 
         public async ValueTask DisposeAsync()
         {
             if (Body == null) return;
-            Body.CanClose = true;
             await Body.DisposeAsync().ConfigureAwait(false);
         }
     }

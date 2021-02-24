@@ -21,9 +21,9 @@ namespace RESTable.Internal
 
         internal static void SetupContentTypeProviders(List<IContentTypeProvider> contentTypeProviders)
         {
+            contentTypeProviders ??= new List<IContentTypeProvider>();
             InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-            contentTypeProviders ??= new List<IContentTypeProvider>();
             contentTypeProviders.Insert(0, new XMLWriter());
             contentTypeProviders.Insert(0, Providers.Json);
             foreach (var provider in contentTypeProviders)

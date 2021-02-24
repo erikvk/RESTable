@@ -88,7 +88,6 @@ namespace RESTable
             Swapped = true;
         }
 
-        internal bool CanClose { get; set; }
         public override bool CanRead => Stream.CanRead;
         public override bool CanSeek => Stream.CanSeek;
         public override bool CanWrite => Stream.CanWrite;
@@ -121,7 +120,6 @@ namespace RESTable
 
         public override void Close()
         {
-            if (!CanClose) return;
             Stream.Close();
             base.Close();
         }
@@ -195,14 +193,12 @@ namespace RESTable
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
-            if (!CanClose) return;
             Stream.Dispose();
             base.Dispose(disposing);
         }
 
         public override async ValueTask DisposeAsync()
         {
-            if (!CanClose) return;
             await Stream.DisposeAsync().ConfigureAwait(false);
             await base.DisposeAsync().ConfigureAwait(false);
         }

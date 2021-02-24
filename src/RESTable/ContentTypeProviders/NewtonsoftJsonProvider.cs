@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -184,8 +185,9 @@ namespace RESTable.ContentTypeProviders
         public string[] MatchStrings { get; set; }
 
         /// <inheritdoc />
-        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class
+        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (collection == null) return 0;
             await using var swr = new StreamWriter
             (
@@ -203,9 +205,10 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, RESTableJsonWriter textWriter)
+        public Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, RESTableJsonWriter textWriter, CancellationToken cancellationToken)
             where T : class
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (collectionObject == null) return Task.FromResult<long>(0);
             var preWritten = textWriter.ObjectsWritten;
             Serializer.Serialize(textWriter, collectionObject.ToEnumerable());

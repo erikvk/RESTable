@@ -139,6 +139,8 @@ namespace RESTable.Meta.Internal
 
         internal static void MakeResources(IEntityResourceProvider[] externalProviders)
         {
+            externalProviders ??= new IEntityResourceProvider[0];
+
             ValidateEntityResourceProviders(externalProviders);
 
             ValidateAndBuildTypeLists

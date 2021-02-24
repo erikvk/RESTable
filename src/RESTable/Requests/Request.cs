@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -153,8 +154,9 @@ namespace RESTable.Requests
             return (IEntities<T>) result;
         }
 
-        public async Task<IResult> Evaluate()
+        public async Task<IResult> Evaluate(CancellationToken cancellationToken = new())
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Stopwatch.Restart();
             var sourceDelegate = GetSourceDelegate();
             var destinationDelegate = GetDestinationDelegate();
@@ -163,8 +165,8 @@ namespace RESTable.Requests
             if (result == null)
             {
                 Body = await sourceDelegate(Body).ConfigureAwait(false);
-                await Body.Initialize().ConfigureAwait(false);
-                result = await RunEvaluation().ConfigureAwait(false);
+                await Body.Initialize(cancellationToken).ConfigureAwait(false);
+                result = await RunEvaluation(cancellationToken).ConfigureAwait(false);
             }
 
             if (IsWebSocketUpgrade && !(result is WebSocketUpgradeSuccessful))
@@ -194,8 +196,9 @@ namespace RESTable.Requests
             return result;
         }
 
-        private async Task<IResult> RunEvaluation()
+        private async Task<IResult> RunEvaluation(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 Context.IncreaseDepth();

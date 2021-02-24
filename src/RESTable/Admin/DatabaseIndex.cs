@@ -145,26 +145,20 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public bool IsValid(DatabaseIndex entity, out string invalidReason)
+        public IEnumerable<InvalidMember> Validate(DatabaseIndex entity)
         {
             if (string.IsNullOrWhiteSpace(entity.ResourceName))
             {
-                invalidReason = "Index resource name cannot be null or whitespace";
-                return false;
+                yield return this.Invalidate(e => e.ResourceName, "Index resource name cannot be null or whitespace");
             }
             if (string.IsNullOrWhiteSpace(entity.Name))
             {
-                invalidReason = "Index name cannot be null or whitespace";
-                return false;
+                yield return this.Invalidate(e => e.Name, "Index name cannot be null or whitespace");
             }
             if (entity.Columns?.Any() != true)
             {
-                invalidReason = "No columns specified for index";
-                return false;
+                yield return this.Invalidate(e => e.Columns, "No columns specified for index");
             }
-
-            invalidReason = null;
-            return true;
         }
 
         /// <inheritdoc />

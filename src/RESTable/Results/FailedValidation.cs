@@ -1,12 +1,22 @@
-﻿namespace RESTable.Results
+﻿using RESTable.Resources.Operations;
+
+namespace RESTable.Results
 {
     /// <inheritdoc />
     /// <summary>
     /// Thrown when entity validation failed for some resource
     /// </summary>
-    internal class FailedValidation : BadRequest
+    public class FailedValidation : BadRequest
     {
-        internal FailedValidation(string info) : base(ErrorCodes.InvalidResourceEntity,
-            $"Entity validation failed{(string.IsNullOrWhiteSpace(info) ? "" : $" with error message: {info}")}") { }
+        public InvalidEntity InvalidEntity { get; }
+
+        internal FailedValidation(InvalidEntity invalidEntity) : base
+        (
+            code: ErrorCodes.InvalidResourceEntity,
+            info: "Entity validation failed"
+        )
+        {
+            InvalidEntity = invalidEntity;
+        }
     }
 }

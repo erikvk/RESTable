@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTable.Admin;
@@ -15,6 +16,7 @@ using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
 using RESTable.WebSockets;
+using Error = RESTable.Results.Error;
 
 namespace RESTable.ProtocolProviders
 {
@@ -184,7 +186,7 @@ namespace RESTable.ProtocolProviders
         }
 
         /// <inheritdoc />
-        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider)
+        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
             switch (toSerialize.Result)
             {
@@ -192,59 +194,100 @@ namespace RESTable.ProtocolProviders
                     head.Headers["EntityCount"] = head.EntityCount.ToString();
                     return;
                 case Binary binary:
-                    await binary.BinaryResult.WriteToStream(toSerialize.Body).ConfigureAwait(false);
+                    await binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken).ConfigureAwait(false);
                     return;
                 case IEntities<object> entities when entities is Content content:
-                    await SerializeContentDataCollection((dynamic) entities, content, toSerialize, contentTypeProvider).ConfigureAwait(false);
+                    await SerializeContentDataCollection((dynamic) entities, content, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
                     break;
                 case Report report:
-                    await SerializeContentDataCollection((dynamic) report.ToAsyncSingleton(), report, toSerialize, contentTypeProvider).ConfigureAwait(false);
+                    await SerializeContentDataCollection((dynamic) report.ToAsyncSingleton(), report, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
+                    break;
+                case Error error:
+                    await SerializeError(error, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
                     break;
                 default: return;
             }
         }
 
+
+        private async Task SerializeError(Error error, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        {
+            if (contentTypeProvider is not IJsonProvider)
+                return;
+
+            await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
+            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None};
+            await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync("fail", cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("ErrorType", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(error.GetType().FullName, cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+            if (error is FailedValidation failedValidation)
+            {
+                foreach (var invalidMember in failedValidation.InvalidEntity.InvalidMembers)
+                {
+                    await jwr.WritePropertyNameAsync(invalidMember.MemberName, cancellationToken).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(invalidMember.Message, cancellationToken).ConfigureAwait(false);
+                }
+                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("InvalidEntityIndex", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(failedValidation.InvalidEntity.Index, cancellationToken).ConfigureAwait(false);
+            }
+            else await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("ErrorCode", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(error.ErrorCode, cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("Message", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(error.Message, cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("MoreInfo", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(error.Headers.Error, cancellationToken).ConfigureAwait(false);
+            await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+            toSerialize.EntityCount = 0;
+        }
+
+
         private async Task SerializeContentDataCollection<T>(IAsyncEnumerable<T> dataCollection, Content content, ISerializedResult toSerialize,
-            IContentTypeProvider contentTypeProvider) where T : class
+            IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken) where T : class
         {
             content.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
 
             if (contentTypeProvider is not IJsonProvider jsonProvider)
             {
-                await contentTypeProvider.SerializeCollection(dataCollection, toSerialize.Body, content.Request).ConfigureAwait(false);
+                await contentTypeProvider.SerializeCollection(dataCollection, toSerialize.Body, content.Request, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
-            await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
+            await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
             using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None};
-            await jwr.WriteStartObjectAsync().ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("ResourceType").ConfigureAwait(false);
-            await jwr.WriteValueAsync(content.ResourceType.FullName).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("Data").ConfigureAwait(false);
-            var entityCount = await jsonProvider.SerializeCollection(dataCollection, jwr).ConfigureAwait(false);
+            await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("ResourceType", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(content.ResourceType.FullName, cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
+            var entityCount = await jsonProvider.SerializeCollection(dataCollection, jwr, cancellationToken).ConfigureAwait(false);
             toSerialize.EntityCount = entityCount;
-            await jwr.WritePropertyNameAsync("DataCount").ConfigureAwait(false);
-            await jwr.WriteValueAsync(entityCount).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("Status").ConfigureAwait(false);
-            await jwr.WriteValueAsync("success").ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("DataCount", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(entityCount, cancellationToken).ConfigureAwait(false);
             if (content is IEntities entities)
             {
                 if (toSerialize.HasPreviousPage)
                 {
                     var previousPageLink = entities.GetPreviousPageLink(toSerialize.EntityCount);
-                    await jwr.WritePropertyNameAsync("PreviousPage").ConfigureAwait(false);
-                    await jwr.WriteValueAsync(previousPageLink.ToUriString()).ConfigureAwait(false);
+                    await jwr.WritePropertyNameAsync("PreviousPage", cancellationToken).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(previousPageLink.ToUriString(), cancellationToken).ConfigureAwait(false);
                 }
                 if (toSerialize.HasNextPage)
                 {
                     var nextPageLink = entities.GetNextPageLink(toSerialize.EntityCount, -1);
-                    await jwr.WritePropertyNameAsync("NextPage").ConfigureAwait(false);
-                    await jwr.WriteValueAsync(nextPageLink.ToUriString()).ConfigureAwait(false);
+                    await jwr.WritePropertyNameAsync("NextPage", cancellationToken).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(nextPageLink.ToUriString(), cancellationToken).ConfigureAwait(false);
                 }
             }
-            await jwr.WritePropertyNameAsync("TimeElapsedMs").ConfigureAwait(false);
-            await jwr.WriteValueAsync(toSerialize.TimeElapsed.TotalMilliseconds).ConfigureAwait(false);
-            await jwr.WriteEndObjectAsync().ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(toSerialize.TimeElapsed.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
+            await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
             if (entityCount == 0)
                 content.MakeNoContent();
         }

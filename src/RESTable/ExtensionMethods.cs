@@ -519,7 +519,7 @@ namespace RESTable
         #region Requests
 
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
-
+        
         internal static string GetFriendlyTypeName(this Type type)
         {
             switch (Type.GetTypeCode(type))

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.Meta;
@@ -77,8 +78,10 @@ namespace RESTable.OData
         /// <inheritdoc />
         public BinaryResult Select(IRequest<MetadataDocument> request)
         {
-            async Task WriteStream(Stream stream)
+            async Task WriteStream(Stream stream, CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var metadata = Metadata.Get(MetadataLevel.Full);
                 await using var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true);
                 await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>").ConfigureAwait(false);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTable.Requests;
@@ -47,9 +48,9 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request = null) where T : class
+        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
         {
-            var count = await JsonProvider.SerializeCollection(collection, stream, request).ConfigureAwait(false);
+            var count = await JsonProvider.SerializeCollection(collection, stream, request, cancellationToken).ConfigureAwait(false);
             stream.Seek(0, SeekOrigin.Begin);
             await XmlSerializeJsonStream(stream).ConfigureAwait(false);
             return count;

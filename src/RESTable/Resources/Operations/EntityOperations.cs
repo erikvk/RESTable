@@ -122,6 +122,10 @@ namespace RESTable.Resources.Operations
                 request.EntitiesProducer = RequestEntitiesProducer;
                 return await request.EntityResource.InsertAsync(request).ConfigureAwait(false);
             }
+            catch (FailedValidation)
+            {
+                throw;
+            }
             catch (Exception e)
             {
                 throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e);
@@ -145,6 +149,10 @@ namespace RESTable.Resources.Operations
 
                 request.EntitiesProducer = RequestEntitiesProducer;
                 return await request.EntityResource.UpdateAsync(request).ConfigureAwait(false);
+            }
+            catch (FailedValidation)
+            {
+                throw;
             }
             catch (Exception e)
             {
@@ -170,6 +178,10 @@ namespace RESTable.Resources.Operations
 
                 request.EntitiesProducer = RequestEntitiesProducer;
                 return await request.EntityResource.UpdateAsync(request).ConfigureAwait(false);
+            }
+            catch (FailedValidation)
+            {
+                throw;
             }
             catch (Exception e)
             {
