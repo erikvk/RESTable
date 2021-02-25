@@ -35,7 +35,7 @@ namespace RESTable.Resources
 
         private static IEntityResourceProviderInternal ResourceProviderInternal => (IEntityResourceProviderInternal) ResourceProvider;
 
-        private static void ResolveDynamicResourceName(ref string name)
+        private void ResolveDynamicResourceName(ref string name)
         {
             switch (name)
             {
@@ -76,7 +76,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Inserts the current instance as a new procedural resource
         /// </summary>
-        protected void Insert()
+        protected void Insert(IRequest request)
         {
             var name = Name;
             var methods = EnabledMethods;
@@ -134,7 +134,7 @@ namespace RESTable.Resources
             var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
-                resource.Insert();
+                resource.Insert(request);
                 i += 1;
             }
             return i;

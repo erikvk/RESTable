@@ -118,12 +118,7 @@ namespace RESTable.Admin
         /// </summary>
         private static async Task Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
-            if (!RESTableConfig.Initialized)
-                throw new NotInitializedException(
-                    $"Invalid call to DatabaseIndex.Register() with index name '{indexName}' for type '{typeof(T)}'. " +
-                    "Cannot register database indexes before RESTableConfig.Init() has been called.");
             SelectionCondition.Value = indexName;
-
             SelectionRequest.Selector = () => new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}.ToAsyncSingleton();
             var result = await SelectionRequest.Evaluate().ConfigureAwait(false);
             result.ThrowIfError();

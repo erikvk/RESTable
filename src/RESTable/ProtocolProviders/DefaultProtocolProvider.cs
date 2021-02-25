@@ -6,10 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using RESTable.Admin;
 using RESTable.ContentTypeProviders;
-using RESTable.ContentTypeProviders.NativeJsonProtocol;
 using RESTable.Internal;
 using RESTable.Linq;
 using RESTable.Meta;
@@ -109,6 +106,13 @@ namespace RESTable.ProtocolProviders
                 valueLiteral: valueLiteral.UriDecode(),
                 valueTypeCode: TypeCode.String
             );
+        }
+
+        private IJsonProvider JsonProvider { get; }
+
+        public DefaultProtocolProvider(IJsonProvider jsonProvider)
+        {
+            JsonProvider = jsonProvider;
         }
 
         public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings { get; } = ExternalContentTypeProviderSettings.AllowAll;
@@ -216,7 +220,8 @@ namespace RESTable.ProtocolProviders
                 return;
 
             await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
-            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None};
+            using var jwr = JsonProvider.GetJsonWriter(swr);
+
             await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
             await jwr.WriteValueAsync("fail", cancellationToken).ConfigureAwait(false);
@@ -237,11 +242,13 @@ namespace RESTable.ProtocolProviders
             }
             else await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("ErrorCode", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(error.ErrorCode, cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(error.ErrorCode.ToString(), cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("Message", cancellationToken).ConfigureAwait(false);
             await jwr.WriteValueAsync(error.Message, cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("MoreInfo", cancellationToken).ConfigureAwait(false);
             await jwr.WriteValueAsync(error.Headers.Error, cancellationToken).ConfigureAwait(false);
+            await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
+            await jwr.WriteValueAsync(error.TimeElapsed.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
             await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
             toSerialize.EntityCount = 0;
         }
@@ -257,9 +264,9 @@ namespace RESTable.ProtocolProviders
                 await contentTypeProvider.SerializeCollection(dataCollection, toSerialize.Body, content.Request, cancellationToken).ConfigureAwait(false);
                 return;
             }
-
+            
             await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
-            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None};
+            using var jwr = JsonProvider.GetJsonWriter(swr);
             await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
             await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);

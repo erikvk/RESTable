@@ -44,7 +44,8 @@ namespace RESTable.Admin
         /// <summary>
         /// Is this resource procedural, as opposed to declared?
         /// </summary>
-        [RESTableMember(name: "IsProcedural")] public bool _IsProcedural => !IsDeclared;
+        [RESTableMember(name: "IsProcedural")]
+        public bool _IsProcedural => !IsDeclared;
 
         /// <summary>
         /// Is this resource internal?
@@ -59,12 +60,14 @@ namespace RESTable.Admin
         /// <summary>
         /// The views for this resource
         /// </summary>
-        [RESTableMember(hideIfNull: true)] public ViewInfo[] Views { get; private set; }
+        [RESTableMember(hideIfNull: true)]
+        public ViewInfo[] Views { get; private set; }
 
         /// <summary>
         /// The IResource of this resource
         /// </summary>
-        [RESTableMember(hide: true)] public IResource IResource { get; private set; }
+        [RESTableMember(hide: true)]
+        public IResource IResource { get; private set; }
 
         /// <summary>
         /// The resource provider that generated this resource
@@ -79,7 +82,8 @@ namespace RESTable.Admin
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [RESTableMember(hideIfNull: true)] public IEnumerable<Resource> InnerResources { get; private set; }
+        [RESTableMember(hideIfNull: true)]
+        public IEnumerable<Resource> InnerResources { get; private set; }
 
         private bool IsProcedural(out IProceduralEntityResource proceduralResource, out IEntityResource entityResource,
             out IEntityResourceProviderInternal provider)
@@ -132,6 +136,5 @@ namespace RESTable.Admin
                 .OrderBy(r => r.Name)
                 .Select(Make<Resource>);
         }
-
     }
 }

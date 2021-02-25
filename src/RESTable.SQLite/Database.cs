@@ -32,7 +32,7 @@ namespace RESTable.SQLite
 
         internal static async Task<int> TransactAsync(Func<SQLiteCommand, Task<int>> callback)
         {
-            return await TransactAsync((connection, command) => callback(command)).ConfigureAwait(false);
+            return await TransactAsync((_, command) => callback(command)).ConfigureAwait(false);
         }
 
         internal static async Task<int> TransactAsync(Func<SQLiteConnection, SQLiteCommand, Task<int>> callback)

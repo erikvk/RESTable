@@ -37,7 +37,7 @@ namespace RESTable.Starcounter3x
                 case 1 when request.Conditions[0] is var only && only.Operator == Operators.EQUALS:
                     if (string.Equals(ObjectNo, only.Key, StringComparison.OrdinalIgnoreCase))
                     {
-                        var objectNo = only.SafeSelect(o => (ulong) only.Value);
+                        var objectNo = only.SafeSelect(_ => (ulong) only.Value);
                         QueryConsole.Publish($"FROMID {objectNo}", null);
                         if (objectNo == 0)
                             yield break;
@@ -64,7 +64,7 @@ namespace RESTable.Starcounter3x
         public static int Insert(IRequest<T> request)
         {
             var count = 0;
-            Transaction.Run(db => count = request.GetInputEntities().Count());
+            Transaction.Run(_ => count = request.GetInputEntities().Count());
             return count;
         }
 
@@ -74,7 +74,7 @@ namespace RESTable.Starcounter3x
         public static int Update(IRequest<T> request)
         {
             var count = 0;
-            Transaction.Run(db => count = request.GetInputEntities().Count());
+            Transaction.Run(_ => count = request.GetInputEntities().Count());
             return count;
         }
 

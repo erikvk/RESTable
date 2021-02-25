@@ -1,13 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\pack.props" />
-
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
-        <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\RESTable.Json\RESTable.Json.csproj" />
       <ProjectReference Include="..\RESTable\RESTable.csproj" />
     </ItemGroup>
 

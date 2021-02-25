@@ -37,7 +37,7 @@ namespace RESTable
     {
         #region Member reflection
 
-        internal static string RESTableMemberName(this MemberInfo m, bool flagged = false)
+        public static string RESTableMemberName(this MemberInfo m, bool flagged = false)
         {
             var name = m.GetCustomAttributes().Select(a =>
             {
@@ -52,7 +52,7 @@ namespace RESTable
             return flagged ? $"${name}" : name;
         }
 
-        internal static bool RESTableIgnored(this MemberInfo m) => m.GetCustomAttribute<RESTableMemberAttribute>()?.Ignored == true ||
+        public static bool RESTableIgnored(this MemberInfo m) => m.GetCustomAttribute<RESTableMemberAttribute>()?.Ignored == true ||
                                                                    m.HasAttribute<IgnoreDataMemberAttribute>();
 
         #endregion
@@ -351,7 +351,7 @@ namespace RESTable
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, NewtonsoftJsonProvider.Serializer);
+                            : JToken.FromObject(pair.Value, Providers.Json.GetSerializer());
                     return _jobj;
             }
 
@@ -363,7 +363,7 @@ namespace RESTable
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, NewtonsoftJsonProvider.Serializer);
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Providers.Json.GetSerializer());
                 });
             return jobj;
         }
@@ -518,7 +518,7 @@ namespace RESTable
 
         #region Requests
 
-        private static readonly CultureInfo en_US = new CultureInfo("en-US");
+        private static readonly CultureInfo en_US = new("en-US");
         
         internal static string GetFriendlyTypeName(this Type type)
         {
@@ -966,7 +966,7 @@ namespace RESTable
         {
             if (methodsString == null) return null;
             if (methodsString.Trim() == "*")
-                return RESTableConfig.Methods;
+                return EnumMember<Method>.Values;
             return methodsString.Split(',')
                 .Where(s => s != "")
                 .Select(s => (Method) Enum.Parse(typeof(Method), s))

@@ -1,11 +1,10 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using RESTable.Admin;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Results;
 using RESTable.Linq;
@@ -19,16 +18,16 @@ namespace RESTable.AspNetCore
 
         public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder)
         {
-            if (!RESTableConfig.Initialized)
-                throw new InvalidOperationException($"RESTable not initialized prior to call to {nameof(UseRESTableAspNetCore)}");
-            RootUri = Settings._Uri;
+            var config = builder.ApplicationServices.GetService<RESTableConfig>();
+
+            RootUri = config.RootUri;
             Template = RootUri + "/{resource?}/{conditions?}/{metaconditions?}";
 
             builder.UseRouter(router =>
             {
                 router.MapVerb("OPTIONS", Template, HandleOptionsRequest);
 
-                foreach (var method in RESTableConfig.Methods)
+                foreach (var method in config.Methods)
                 {
                     router.MapVerb(method.ToString(), Template, context => HandleRequest(method, context));
                 }

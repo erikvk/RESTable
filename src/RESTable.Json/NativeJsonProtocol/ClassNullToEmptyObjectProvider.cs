@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using Newtonsoft.Json.Serialization;
 
-namespace RESTable.ContentTypeProviders.NativeJsonProtocol
+namespace RESTable.Json.NativeJsonProtocol
 {
     /// <inheritdoc />
     /// <summary>

@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Requests;
-using RESTable.Resources;
 using Starcounter.Database;
 using static RESTable.Requests.Operators;
 
@@ -13,18 +11,6 @@ namespace RESTable.Starcounter3x
 {
     public static class ExtensionMethods
     {
-        public static IServiceCollection AddStarcounterResourceProvider(this IServiceCollection services)
-        {
-            services.Add(new ServiceDescriptor(typeof(IEntityResourceProvider), new StarcounterDeclaredResourceProvider()));
-            return services;
-        }
-
-        public static IServiceCollection AddStarcounterEntityTypeResolver(this IServiceCollection services)
-        {
-            services.Add(new ServiceDescriptor(typeof(IEntityTypeContractResolver), new StarcounterEntityTypeContractResolver()));
-            return services;
-        }
-
         public static bool IsStarcounterDatabaseType(this MemberInfo type)
         {
             return type.HasAttribute<DatabaseAttribute>();

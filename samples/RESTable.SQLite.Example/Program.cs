@@ -19,16 +19,12 @@ namespace RESTable.SQLite.Example
     {
         public static void Main()
         {
-            var services = new ServiceCollection()
-                .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("\\data_debug2"))
-                .BuildServiceProvider();
-
-            RESTableConfig.Init
-            (
-                requireApiKey: true,
-                configFilePath: "/Config.xml",
-                services: services
-            );
+            new ServiceCollection()
+                .AddSqliteProvider("\\data_debug2")
+                .AddJsonProvider()
+                .AddRESTable(requireApiKey: true, configFilePath: "./Config.xml")
+                .BuildServiceProvider()
+                .GetService<RESTableConfig>();
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers
             // The 'uri' argument sets the root uri of the REST API

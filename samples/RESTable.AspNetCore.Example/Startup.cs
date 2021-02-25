@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Resources;
-using RESTable.Excel;
 using RESTable.OData;
 using RESTable.ProtocolProviders;
 using RESTable.SQLite;
@@ -20,22 +19,21 @@ namespace RESTable.Example
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.AddSingleton<IProtocolProvider, ODataProtocolProvider>();
-            services.AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("./database"));
-            services.AddExcelContentProvider();
-            services.AddSingleton<IEntityTypeContractResolver, MyStringPropertiesResolver>();
-            services.AddMvc(o => o.EnableEndpointRouting = false);
-            services.AddHttpContextAccessor();
-        }
+        public void ConfigureServices(IServiceCollection services) => services
+            .AddHttpContextAccessor()
+            .AddSingleton<IProtocolProvider, ODataProtocolProvider>()
+            .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("./database"))
+            .AddJsonProvider()
+            .AddExcelProvider()
+            .AddSingleton<IEntityTypeContractResolver, MyStringPropertiesResolver>()
+            .AddRESTable()
+            .AddMvc(o => o.EnableEndpointRouting = false);
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
             app.UseMvcWithDefaultRoute();
             app.UseWebSockets();
-            RESTableConfig.Init(services: app.ApplicationServices);
 
             RESTableContext.Root
                 .CreateRequest<Person>(Method.POST)

@@ -6,12 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders.NativeJsonProtocol;
+using RESTable.ContentTypeProviders;
+using RESTable.Json.NativeJsonProtocol;
 using RESTable.Requests;
 using static Newtonsoft.Json.Formatting;
 using static RESTable.Admin.Settings;
 
-namespace RESTable.ContentTypeProviders
+namespace RESTable.Json
 {
     /// <inheritdoc cref="RESTable.ContentTypeProviders.IJsonProvider" />
     /// <inheritdoc cref="RESTable.ContentTypeProviders.IContentTypeProvider" />
@@ -27,7 +28,7 @@ namespace RESTable.ContentTypeProviders
         /// <summary>
         /// UTF 8 encoding without byte order mark (BOM)
         /// </summary>
-        private static Encoding UTF8 { get; }
+        private Encoding Encoding { get; }
 
         /// <summary>
         /// The JSON serializer
@@ -49,7 +50,6 @@ namespace RESTable.ContentTypeProviders
 
         static NewtonsoftJsonProvider()
         {
-            UTF8 = RESTableConfig.DefaultEncoding;
             Settings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Include,
@@ -77,6 +77,7 @@ namespace RESTable.ContentTypeProviders
         /// </summary>
         public NewtonsoftJsonProvider()
         {
+            Encoding = RESTableConfig.DefaultEncoding;
             MatchStrings = new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
             ContentDispositionFileExtension = ".json";
             CanWrite = true;
@@ -95,6 +96,11 @@ namespace RESTable.ContentTypeProviders
                 indents = jwr.Depth;
                 return sw.ToString();
             }
+        }
+
+        JsonSerializer IJsonProvider.GetSerializer()
+        {
+            return GetSerializer();
         }
 
         /// <summary>
@@ -128,9 +134,9 @@ namespace RESTable.ContentTypeProviders
         /// <summary>
         /// Serializes the value to the given JsonTextWriter, using the default serializer
         /// </summary>
-        public void Serialize(JsonTextWriter jsonWriter, object value)
+        public void Serialize(IJsonWriter jsonWriter, object value)
         {
-            Serializer.Serialize(jsonWriter, value);
+            Serializer.Serialize((JsonTextWriter) jsonWriter, value);
         }
 
         /// <summary>
@@ -150,8 +156,8 @@ namespace RESTable.ContentTypeProviders
         {
             var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
             var serializer = ignoreNulls ? SerializerIgnoreNulls : Serializer;
-            using var swr = new StreamWriter(stream, UTF8, 1024, true);
-            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = _formatting};
+            using var swr = new StreamWriter(stream, Encoding, 1024, true);
+            using var jwr = new NewtonsoftJsonWriter(swr, 0) {Formatting = _formatting};
             serializer.Serialize(jwr, entity);
         }
 
@@ -192,11 +198,11 @@ namespace RESTable.ContentTypeProviders
             await using var swr = new StreamWriter
             (
                 stream: stream,
-                encoding: UTF8,
+                encoding: Encoding,
                 bufferSize: 2048,
                 leaveOpen: true
             );
-            using var jwr = new RESTableJsonWriter(swr, 0)
+            using var jwr = new NewtonsoftJsonWriter(swr, 0)
             {
                 Formatting = _PrettyPrint ? Indented : None
             };
@@ -205,14 +211,19 @@ namespace RESTable.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, RESTableJsonWriter textWriter, CancellationToken cancellationToken)
+        public Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, IJsonWriter textWriter, CancellationToken cancellationToken)
             where T : class
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (collectionObject == null) return Task.FromResult<long>(0);
             var preWritten = textWriter.ObjectsWritten;
-            Serializer.Serialize(textWriter, collectionObject.ToEnumerable());
+            Serializer.Serialize((NewtonsoftJsonWriter) textWriter, collectionObject.ToEnumerable());
             return Task.FromResult(textWriter.ObjectsWritten - preWritten);
+        }
+
+        public IJsonWriter GetJsonWriter(TextWriter writer)
+        {
+            return new NewtonsoftJsonWriter(writer, 0) {Formatting = _PrettyPrint ? Indented : None};
         }
 
         /// <inheritdoc />
@@ -221,7 +232,7 @@ namespace RESTable.ContentTypeProviders
             using var streamReader = new StreamReader
             (
                 stream: body,
-                encoding: UTF8,
+                encoding: Encoding,
                 detectEncodingFromByteOrderMarks: false,
                 bufferSize: 1024,
                 leaveOpen: true

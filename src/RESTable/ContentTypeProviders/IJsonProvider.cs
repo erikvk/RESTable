@@ -1,12 +1,33 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using RESTable.ContentTypeProviders.NativeJsonProtocol;
+using Newtonsoft.Json;
 
 namespace RESTable.ContentTypeProviders
 {
     public interface IJsonProvider : IContentTypeProvider
     {
-        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, RESTableJsonWriter textWriter, CancellationToken cancellationToken) where T : class;
+        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, IJsonWriter textWriter, CancellationToken cancellationToken) where T : class;
+        IJsonWriter GetJsonWriter(TextWriter writer);
+        JsonSerializer GetSerializer(); 
+        void SerializeToStream(Stream stream, object entity, Formatting? formatting = null, bool ignoreNulls = false);
+        void Populate(string json, object target);
+        void Serialize(IJsonWriter jsonWriter, object value);
+        T Deserialize<T>(byte[] bytes);
+        T Deserialize<T>(string json);
+        string Serialize(object value, Formatting? formatting = null, bool ignoreNulls = false);
+    }
+
+    public interface IJsonWriter : IDisposable
+    {
+        long ObjectsWritten { get; }
+        Task WriteStartObjectAsync(CancellationToken cancellationToken);
+        Task WritePropertyNameAsync(string status, CancellationToken cancellationToken);
+        Task WriteEndObjectAsync(CancellationToken cancellationToken);
+        Task WriteValueAsync(long invalidEntityIndex, CancellationToken cancellationToken);
+        Task WriteValueAsync(double invalidEntityIndex, CancellationToken cancellationToken);
+        Task WriteValueAsync(string fail, CancellationToken cancellationToken);
     }
 }

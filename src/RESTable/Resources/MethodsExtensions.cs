@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using RESTable.Internal;
+using RESTable.Meta;
 
 namespace RESTable.Resources
 {
@@ -10,7 +11,7 @@ namespace RESTable.Resources
         {
             var methodsSet = methods?.ToHashSet();
             if (methodsSet == null || methodsSet.Count == 0)
-                methodsSet = RESTableConfig.Methods.ToHashSet();
+                methodsSet = EnumMember<Method>.Values.ToHashSet();
             if (methodsSet.Contains(Method.GET))
             {
                 methodsSet.Add(Method.REPORT);

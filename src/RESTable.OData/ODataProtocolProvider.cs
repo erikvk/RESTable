@@ -9,13 +9,11 @@ using System.Threading.Tasks;
 using System.Web;
 using RESTable.Admin;
 using RESTable.ContentTypeProviders;
-using RESTable.ContentTypeProviders.NativeJsonProtocol;
 using RESTable.Meta;
 using RESTable.ProtocolProviders;
 using RESTable.Requests;
 using RESTable.Results;
 using RESTable.Linq;
-using static Newtonsoft.Json.Formatting;
 using static RESTable.ErrorCodes;
 using static RESTable.OData.QueryOptions;
 using static RESTable.Requests.RESTableMetaCondition;
@@ -32,7 +30,7 @@ namespace RESTable.OData
         /// <inheritdoc />
         public IEnumerable<IContentTypeProvider> GetCustomContentTypeProviders()
         {
-            return new[] {new NewtonsoftJsonProvider {MatchStrings = new[] {"application/json"}}};
+            yield return JsonProvider;
         }
 
         /// <inheritdoc />
@@ -112,6 +110,13 @@ namespace RESTable.OData
             if (options.Length != 0)
                 PopulateFromOptions(uri, options);
             return uri;
+        }
+
+        private IJsonProvider JsonProvider { get; }
+
+        public ODataProtocolProvider(IJsonProvider jsonProvider)
+        {
+            JsonProvider = jsonProvider;
         }
 
         private static void PopulateFromOptions(ODataUriComponents args, string options)
@@ -269,7 +274,7 @@ namespace RESTable.OData
                     break;
             }
             await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
-            using var jwr = new RESTableJsonWriter(swr, 0) {Formatting = Settings._PrettyPrint ? Indented : None};
+            using var jwr = JsonProvider.GetJsonWriter(swr);
             await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("@odata.context", cancellationToken).ConfigureAwait(false);
             await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}", cancellationToken).ConfigureAwait(false);

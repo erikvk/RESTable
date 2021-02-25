@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Serialization;
 using RESTable.Meta;
 
-namespace RESTable.ContentTypeProviders
+namespace RESTable.Json
 {
     /// <inheritdoc />
     /// <summary>

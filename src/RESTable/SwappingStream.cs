@@ -44,18 +44,10 @@ namespace RESTable
             }
         }
 
-        internal SwappingStream Rewind()
+        public SwappingStream Rewind()
         {
             Seek(0, SeekOrigin.Begin);
             return this;
-        }
-
-        internal async Task MakeSeekable()
-        {
-            if (Stream.CanSeek) return;
-            if (Swapped)
-                throw new InvalidOperationException("Could not make stream seekable");
-            await Swap().ConfigureAwait(false);
         }
 
         public SwappingStream()

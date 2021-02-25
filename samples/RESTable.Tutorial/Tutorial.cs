@@ -8,9 +8,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
-using RESTable.Excel;
-using RESTable.OData;
-using RESTable.ProtocolProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -35,9 +32,11 @@ namespace RESTable.Tutorial
             .Run();
 
         public void ConfigureServices(IServiceCollection services) => services
-            .AddSingleton<IProtocolProvider, ODataProtocolProvider>()
-            .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("./database"))
-            .AddExcelContentProvider()
+            .AddODataProvider()
+            .AddSqliteProvider("./database")
+            .AddExcelProvider()
+            .AddJsonProvider()
+            .AddRESTable()
             .AddHttpContextAccessor()
             .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true)
             .AddMvc(o => o.EnableEndpointRouting = false);
@@ -46,7 +45,6 @@ namespace RESTable.Tutorial
         {
             app.UseMvcWithDefaultRoute();
             app.UseWebSockets();
-            RESTableConfig.Init(services: app.ApplicationServices);
             app.UseRESTableAspNetCore();
         }
     }

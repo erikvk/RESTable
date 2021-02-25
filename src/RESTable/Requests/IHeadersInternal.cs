@@ -2,7 +2,7 @@
 
 namespace RESTable.Requests
 {
-    internal interface IHeadersInternal : IHeaders
+    public interface IHeadersInternal : IHeaders
     {
         bool TryGetCustomHeader(string key, out string value);
         void SetCustomHeader(string key, string value);

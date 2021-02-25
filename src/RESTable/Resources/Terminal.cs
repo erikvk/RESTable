@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using RESTable.WebSockets;
 
 namespace RESTable.Resources
@@ -11,9 +12,14 @@ namespace RESTable.Resources
     /// </summary>
     public abstract class Terminal
     {
-        [RESTableMember(ignore: true)] protected IWebSocket WebSocket { get; private set; }
+        protected IWebSocket WebSocket { get; private set; }
 
-        internal void SetWebSocket(IWebSocket webSocket) => WebSocket = webSocket;
+        protected IServiceProvider Services => WebSocket?.Context.Services;
+
+        internal void SetWebSocket(IWebSocket webSocket)
+        {
+            WebSocket = webSocket;
+        }
 
         internal async Task OpenTerminal() => await Open().ConfigureAwait(false);
 

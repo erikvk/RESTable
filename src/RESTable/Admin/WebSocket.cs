@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -49,18 +50,22 @@ namespace RESTable.Admin
         private WebSockets.WebSocket UnderlyingSocket { get; set; }
 
         /// <inheritdoc />
-        public IEnumerable<WebSocket> Select(IRequest<WebSocket> request) => WebSocketController
-            .AllSockets
-            .Values
-            .Select(socket => new WebSocket
-            {
-                Id = socket.Context.TraceId,
-                IsThis = socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
-                TerminalType = socket.TerminalResource?.Name,
-                Client = JObject.FromObject(socket.GetAppProfile(), NewtonsoftJsonProvider.Serializer),
-                Terminal = socket.Terminal == null ? null : JObject.FromObject(socket.Terminal, NewtonsoftJsonProvider.Serializer),
-                UnderlyingSocket = socket
-            });
+        public IEnumerable<WebSocket> Select(IRequest<WebSocket> request)
+        {
+            var jsonSerializer = request.GetService<JsonSerializer>();
+            return WebSocketController
+                .AllSockets
+                .Values
+                .Select(socket => new WebSocket
+                {
+                    Id = socket.Context.TraceId,
+                    IsThis = socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
+                    TerminalType = socket.TerminalResource?.Name,
+                    Client = JObject.FromObject(socket.GetAppProfile(), jsonSerializer),
+                    Terminal = socket.Terminal == null ? null : JObject.FromObject(socket.Terminal, jsonSerializer),
+                    UnderlyingSocket = socket
+                });
+        }
 
         /// <inheritdoc />
         public async ValueTask<int> DeleteAsync(IRequest<WebSocket> request)

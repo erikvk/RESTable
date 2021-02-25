@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace RESTable.ContentTypeProviders
+namespace RESTable.Json
 {
     internal class TypeConverter : JsonConverter<Type>
     {

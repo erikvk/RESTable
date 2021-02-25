@@ -28,6 +28,8 @@ namespace RESTable.Admin
         public bool IncludeClient { get; set; } = true;
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
+        
+        internal static IJsonProvider JsonProvider { get; set; }
 
         private IWebSocketInternal ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
 
@@ -95,7 +97,7 @@ namespace RESTable.Admin
                                 item.In.Content = await request.GetLogContent().ConfigureAwait(false);
                                 item.Out.Content = await serializedResult.GetLogContent().ConfigureAwait(false);
                             }
-                            var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
+                            var json = JsonProvider.Serialize(item, Indented, ignoreNulls: true);
                             await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;
@@ -135,7 +137,7 @@ namespace RESTable.Admin
                                 item.Client = new ClientInfo(logable.Context.Client);
                             if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
                                 item.CustomHeaders = hh.Headers;
-                            var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
+                            var json = JsonProvider.Serialize(item, Indented, ignoreNulls: true);
                             await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;

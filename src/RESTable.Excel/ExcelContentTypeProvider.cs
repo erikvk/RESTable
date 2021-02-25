@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
 using RESTable.ContentTypeProviders;
+using RESTable.Json;
 using RESTable.Meta;
 using RESTable.Requests;
 
@@ -15,7 +16,7 @@ namespace RESTable.Excel
 {
     /// <inheritdoc cref="JsonAdapter" />
     /// <inheritdoc cref="IContentTypeProvider" />
-    internal class ExcelJsonAdapter : JsonAdapter, IContentTypeProvider
+    internal class ExcelContentTypeProvider : JsonAdapter, IContentTypeProvider
     {
         private const string ExcelMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         private const string RESTableSpecific = "application/restable-excel";
@@ -38,6 +39,8 @@ namespace RESTable.Excel
 
         /// <inheritdoc />
         public override string ContentDispositionFileExtension => ".xlsx";
+
+        public ExcelContentTypeProvider(IJsonProvider jsonProvider) : base(jsonProvider) { }
 
         /// <inheritdoc />
         public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
@@ -186,7 +189,7 @@ namespace RESTable.Excel
         {
             try
             {
-                await using var swr = new StreamWriter(jsonStream, UTF8, 1024, true);
+                await using var swr = new StreamWriter(jsonStream, Encoding, 1024, true);
                 using var jwr = new RESTableFromExcelJsonTextWriter(swr);
                 using var package = new ExcelPackage(excelStream);
 

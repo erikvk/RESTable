@@ -6,20 +6,23 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using RESTable.Meta;
+using RESTable.Requests;
 
-namespace RESTable.ContentTypeProviders.NativeJsonProtocol
+namespace RESTable.Json.NativeJsonProtocol
 {
     internal class DefaultResolver : DefaultContractResolver
     {
         private static readonly JsonConverter StringEnumConverter;
         private static readonly JsonConverter TypeConverter;
         private static readonly JsonConverter AsyncEnumerableConverter;
+        private static readonly JsonConverter HeadersConverter;
 
         static DefaultResolver()
         {
             StringEnumConverter = new StringEnumConverter();
             TypeConverter = new TypeConverter();
             AsyncEnumerableConverter = new AsyncEnumerableConverter();
+            HeadersConverter = new HeadersConverter();
         }
 
         protected override string ResolveDictionaryKey(string dictionaryKey)
@@ -39,6 +42,9 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
                     break;
                 case var _ when objectType.IsSubclassOf(typeof(Type)):
                     contract.Converter = TypeConverter;
+                    break;
+                case var _ when objectType == typeof(Headers):
+                    contract.Converter = HeadersConverter;
                     break;
                 case var _ when objectType.IsEnum:
                     contract.Converter = StringEnumConverter;

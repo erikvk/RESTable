@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -41,6 +42,8 @@ namespace RESTable
                 errorMessage: "Expected expression tree as request body"
             ).ConfigureAwait(false);
 
+            var jsonSerializer = request.GetService<JsonSerializer>();
+
             async IAsyncEnumerable<JToken> Recursor(JToken token)
             {
                 switch (token)
@@ -67,7 +70,7 @@ namespace RESTable
                                 {
                                     case IEntities entities:
                                     {
-                                        foreach (var item in JArray.FromObject(entities, NewtonsoftJsonProvider.Serializer))
+                                        foreach (var item in JArray.FromObject(entities, jsonSerializer))
                                             yield return item;
                                         yield break;
                                     }

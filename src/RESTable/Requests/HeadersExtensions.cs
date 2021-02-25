@@ -4,9 +4,9 @@ using System.Linq;
 
 namespace RESTable.Requests
 {
-    internal static class HeadersExtensions
+    public static class HeadersExtensions
     {
-        internal static IEnumerable<KeyValuePair<string, string>> GetCustom(this IHeadersInternal headers, HashSet<string> whitelist = null)
+        public static IEnumerable<KeyValuePair<string, string>> GetCustom(this IHeadersInternal headers, HashSet<string> whitelist = null)
         {
             return headers.Where(pair => whitelist?.Contains(pair.Key) == true || IsCustomHeaderName(pair.Key));
         }
@@ -19,8 +19,7 @@ namespace RESTable.Requests
             "sec-websocket-extensions"
         };
 
-        internal static bool IsCustomHeaderName(this string key) => !NonCustomHeaders.Contains(key);
-
+        public static bool IsCustomHeaderName(this string key) => !NonCustomHeaders.Contains(key);
 
         internal static string _Get(this IHeadersInternal headers, string key)
         {

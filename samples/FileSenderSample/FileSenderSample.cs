@@ -8,12 +8,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable;
 using RESTable.AspNetCore;
 using RESTable.Resources;
 
 namespace FileSenderSample
 {
+    #region ASP.NET app code
+
     public class FileSenderSample
     {
         public static void Main(string[] args) => WebHost
@@ -23,65 +24,121 @@ namespace FileSenderSample
             .Run();
 
         public void ConfigureServices(IServiceCollection services) => services
-            .AddHttpContextAccessor()
+            .AddRESTable()
+            .AddJsonProvider()
             .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true) // needed since RESTable still uses synchronous JSON serialization (Newtonsoft)
+            .AddHttpContextAccessor()
             .AddMvc(o => o.EnableEndpointRouting = false);
 
-        public void Configure(IApplicationBuilder app)
-        {
-            app.UseMvcWithDefaultRoute();
-            app.UseWebSockets();
-            RESTableConfig.Init(services: app.ApplicationServices);
-            app.UseRESTableAspNetCore();
-        }
+        public void Configure(IApplicationBuilder app) => app
+            .UseWebSockets()
+            .UseRESTableAspNetCore()
+            .UseMvcWithDefaultRoute();
     }
 
+    #endregion
+
     /// <summary>
-    /// Used to make some mock file uploads, available at wss://localhost:5001/restable/mockelymock
+    /// This resource lets clients connect and receive files. Available at wss://localhost:5001/restable/filesenderconnection
     /// </summary>
     [RESTable]
-    public class MockelyMock : Terminal
+    public class FileSenderConnection : Terminal, IAsyncDisposable
     {
-        protected override async Task Open()
-        {
-            await WebSocket.SendText("I'm a mockely mock!");
-        }
+        // We store all active connections here, so we can use them from a separate resource
+        internal static TerminalSet<FileSenderConnection> ActiveConnections { get; } = new();
+
+        // Public properties are visible for the client:
+        public string Status { get; private set; } = "Stopped";
+
+        // Admin override for deactivating this connection
+        internal bool Deactivated { get; set; }
 
         /// <summary>
-        /// This resource just sends a file to all file sender connections without
-        /// asking any questions.
+        /// We expect clients to set this. We could have a mechanism where this is
+        /// required when the connection is established, and immutable when the connection is active.
         /// </summary>
+        public string Id { get; set; } = "Unknown";
+
+        /// <summary>
+        /// This is a read-only file count, set here on the server
+        /// </summary>
+        public long SentFilesCount { get; internal set; }
+
+        /// <summary>
+        /// The time this connection has been up
+        /// </summary>
+        public string Uptime => (DateTime.Now - OpenedAt).ToString("c");
+
+        /// <summary>
+        /// The IP of the connected client
+        /// </summary>
+        public string ClientIp => WebSocket.Context.Client.ClientIp;
+
+        private DateTime OpenedAt { get; set; }
+
+        protected override async Task Open()
+        {
+            OpenedAt = DateTime.Now;
+            ActiveConnections.Add(this);
+            await WebSocket.SendText($"Hi, I'm a connection named {Id}!");
+        }
+
+        public async Task SendFile(FileStream stream)
+        {
+            foreach (var manager in FileSenderManager.Managers)
+                await manager.Notify(stream, this);
+
+            await WebSocket.SendBinary(stream);
+            SentFilesCount += 1;
+        }
+
         public override async Task HandleTextInput(string input)
         {
-            var path = $"C:/SampleFiles/{input}.txt";
-            FileStream file;
-            try
+            if (Deactivated)
             {
-                file = File.OpenRead(path);
-            }
-            catch
-            {
-                await WebSocket.SendText($"Nope, {path} is not a valid path");
+                await WebSocket.SendText("OOPS, this connection is deactivated! ¯\\_(ツ)_/¯ ");
                 return;
             }
-            var startedConnections = FileSenderConnection
-                .ActiveConnections
-                .Where(c => !c.Deactivated && c.Status == "Started");
-            foreach (var connection in startedConnections)
+
+            switch (input.ToUpper())
             {
-                await connection.SendFile(file);
-                file.Seek(0, SeekOrigin.Begin);
+                case "HI":
+                    await WebSocket.SendText("Hello");
+                    break;
+                
+                case "START":
+                    await WebSocket.SendText("Started!");
+                    Status = "Started";
+                    break;
+
+                case "STOP":
+                    await WebSocket.SendText("Stopped!");
+                    Status = "Stopped";
+                    break;
+
+                case "SEND ALL":
+                    foreach (var file in MockelyMock.GetAllFilePaths().Select(File.OpenRead))
+                    {
+                        await SendFile(file);
+                    }
+                    await WebSocket.SendText("All files sent!");
+                    break;
+
+                case var blank when string.IsNullOrWhiteSpace(blank): break;
+                
+                default:
+                    await WebSocket.SendText("Unrecognized command " + input);
+                    break;
             }
         }
 
-        public static List<string> GetAllFilePaths() => new()
-        {
-            "C:/SampleFiles/Sample1.txt",
-            "C:/SampleFiles/Sample2.txt",
-            "C:/SampleFiles/Sample3.txt"
-        };
-
         protected override bool SupportsTextInput => true;
+
+        public ValueTask DisposeAsync()
+        {
+            ActiveConnections.Remove(this);
+            return default;
+        }
     }
 
     /// <summary>
@@ -158,99 +215,47 @@ namespace FileSenderSample
     }
 
     /// <summary>
-    /// This resource lets clients connect and receive files. Available at wss://localhost:5001/restable/filesenderconnection
+    /// Used to make some mock file uploads, available at wss://localhost:5001/restable/mockelymock
     /// </summary>
     [RESTable]
-    public class FileSenderConnection : Terminal, IAsyncDisposable
+    public class MockelyMock : Terminal
     {
-        // We store all active connections here, so we can use them from a separate resource
-        internal static TerminalSet<FileSenderConnection> ActiveConnections { get; } = new();
-
-        // Public properties are visible for the client:
-        public string Status { get; private set; } = "Stopped";
-
-        // Admin override for deactivating this connection
-        internal bool Deactivated { get; set; }
+        protected override async Task Open() => await WebSocket.SendText("I'm a mockely mock!");
 
         /// <summary>
-        /// We expect clients to set this. We could have a mechanism where this is
-        /// required when the connection is established, and immutable when the connection is active.
+        /// This resource just sends a file to all file sender connections without
+        /// asking any questions.
         /// </summary>
-        public string Id { get; set; } = "Unknown";
-
-        /// <summary>
-        /// This is a read-only file count, set here on the server
-        /// </summary>
-        public long SentFilesCount { get; internal set; }
-
-        /// <summary>
-        /// The time this connection has been up
-        /// </summary>
-        public string Uptime => (DateTime.Now - OpenedAt).ToString("c");
-
-        /// <summary>
-        /// The IP of the connected client
-        /// </summary>
-        public string ClientIp => WebSocket.Context.Client.ClientIp;
-
-        private DateTime OpenedAt { get; set; }
-
-        protected override async Task Open()
-        {
-            OpenedAt = DateTime.Now;
-            ActiveConnections.Add(this);
-            await WebSocket.SendText("I'm a connection!");
-        }
-
-        public async Task SendFile(FileStream stream)
-        {
-            foreach (var manager in FileSenderManager.Managers)
-                await manager.Notify(stream, this);
-
-            await WebSocket.SendBinary(stream);
-            SentFilesCount += 1;
-        }
-
         public override async Task HandleTextInput(string input)
         {
-            if (Deactivated)
+            var path = $"C:/SampleFiles/{input}.txt";
+            FileStream file;
+            try
             {
-                await WebSocket.SendText("OOPS, this connection is deactivated! ¯\\_(ツ)_/¯ ");
+                file = File.OpenRead(path);
+            }
+            catch
+            {
+                await WebSocket.SendText($"Nope, {path} is not a valid path");
                 return;
             }
-
-            switch (input.ToUpper())
+            var startedConnections = FileSenderConnection
+                .ActiveConnections
+                .Where(c => !c.Deactivated && c.Status == "Started");
+            foreach (var connection in startedConnections)
             {
-                case "START":
-                    await WebSocket.SendText("Started!");
-                    Status = "Started";
-                    break;
-
-                case "STOP":
-                    await WebSocket.SendText("Stopped!");
-                    Status = "Stopped";
-                    break;
-
-                case "SEND ALL":
-                    foreach (var file in MockelyMock.GetAllFilePaths().Select(File.OpenRead))
-                    {
-                        await SendFile(file);
-                    }
-                    await WebSocket.SendText("All files sent!");
-                    break;
-
-                default:
-                    await WebSocket.SendText("Unrecognized command " + input);
-                    break;
+                await connection.SendFile(file);
+                file.Seek(0, SeekOrigin.Begin);
             }
         }
 
-        protected override bool SupportsTextInput => true;
-
-        public ValueTask DisposeAsync()
+        public static List<string> GetAllFilePaths() => new()
         {
-            ActiveConnections.Remove(this);
-            return default;
-        }
+            "C:/SampleFiles/Sample1.txt",
+            "C:/SampleFiles/Sample2.txt",
+            "C:/SampleFiles/Sample3.txt"
+        };
+
+        protected override bool SupportsTextInput => true;
     }
 }

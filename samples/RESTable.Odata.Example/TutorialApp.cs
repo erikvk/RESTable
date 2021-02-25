@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.OData;
-using RESTable.ProtocolProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -18,16 +16,13 @@ namespace RESTable.SQLite.Example
     {
         public static void Main()
         {
-            var services = new ServiceCollection()
-                .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("\\data"))
-                .AddSingleton<IProtocolProvider>(new ODataProtocolProvider());
-
-            RESTableConfig.Init
-            (
-                requireApiKey: true,
-                configFilePath: "./Config.xml",
-                services: services.BuildServiceProvider()
-            );
+            new ServiceCollection()
+                .AddSqliteProvider("\\data")
+                .AddJsonProvider()
+                .AddODataProvider()
+                .AddRESTable(requireApiKey: true, configFilePath: "./Config.xml")
+                .BuildServiceProvider()
+                .GetService<RESTableConfig>();
             ExampleDatabase.Setup();
         }
     }

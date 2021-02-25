@@ -68,7 +68,7 @@ namespace RESTable
                         }
                         return list;
                     }
-                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(NewtonsoftJsonProvider.Serializer)).ConfigureAwait(false);
+                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(Providers.Json.GetSerializer())).ConfigureAwait(false);
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
                     {

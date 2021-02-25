@@ -3,8 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
-using RESTable.ContentTypeProviders.NativeJsonProtocol;
 using RESTable.Linq;
 
 namespace RESTable.Requests
@@ -13,7 +11,6 @@ namespace RESTable.Requests
     /// <summary>
     /// A collection of request headers. Key comparison is case insensitive.
     /// </summary>
-    [JsonConverter(typeof(HeadersConverter<Headers>))]
     public class Headers : IHeaders, IHeadersInternal
     {
         #region Response headers

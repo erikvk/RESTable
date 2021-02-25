@@ -5,6 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\src\RESTable.Json\RESTable.Json.csproj" />
         <ProjectReference Include="..\..\src\RESTable.OData\RESTable.OData.csproj" />
         <ProjectReference Include="..\..\src\RESTable.SQLite\RESTable.SQLite.csproj" />
         <ProjectReference Include="..\..\src\RESTable\RESTable.csproj" />

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace RESTable.ContentTypeProviders
+namespace RESTable.Json
 {
     internal class AsyncEnumerableConverter : JsonConverter
     {

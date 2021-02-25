@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\pack.props" />
 
@@ -8,8 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RESTable\RESTable.csproj" />
-        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.7" />
+      <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\RESTable\RESTable.csproj" />
     </ItemGroup>
 
 </Project>

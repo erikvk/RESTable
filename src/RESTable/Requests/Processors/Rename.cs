@@ -37,7 +37,7 @@ namespace RESTable.Requests.Processors
                 if (value == null)
                 {
                     value = key.Evaluate(entity, out _);
-                    entity[newName] = value == null ? null : JToken.FromObject(value, NewtonsoftJsonProvider.Serializer);
+                    entity[newName] = value == null ? null : JToken.FromObject(value, Providers.Json.GetSerializer());
                     return;
                 }
                 var property = (JProperty) value.Parent;

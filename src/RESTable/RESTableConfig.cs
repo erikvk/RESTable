@@ -27,50 +27,31 @@ namespace RESTable
     /// The main configuration class for the RESTable instance. Use Init() to 
     /// initialize the instance.
     /// </summary>
-    public static class RESTableConfig
+    public class RESTableConfig
     {
         internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
-        internal static HashSet<Uri> AllowedOrigins { get; private set; }
         internal static string[] ReservedNamespaces { get; private set; }
+        internal static HashSet<Uri> AllowedOrigins { get; private set; }
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
         internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
-        private static string ConfigFilePath { get; set; }
         public static bool Initialized { get; private set; }
-        internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
-        internal static readonly string Version;
-
+        private static string ConfigFilePath { get; set; }
+        internal static string Version { get; private set; }
+        
+        public static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
+        
         /// <summary>
         /// The REST methods available in RESTable
         /// </summary>
-        public static Method[] Methods { get; }
+        public Method[] Methods { get; }
 
-        static RESTableConfig()
-        {
-            Methods = EnumMember<Method>.Values;
-            var version = typeof(RESTableConfig).Assembly.GetName().Version;
-            Version = $"{version.Major}.{version.Minor}.{version.Build}";
-            NewState();
-        }
+        public string RootUri { get; }
 
-        /// <summary>
-        /// Initiates the RESTable interface
-        /// </summary>
-        /// <param name="port">The port that RESTable should listen on</param>
-        /// <param name="uri">The URI that RESTable should listen on. E.g. '/rest'</param>
-        /// <param name="configFilePath">The path to the config file containing API keys and 
-        /// allowed origins</param>
-        /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
-        ///  (can be changed in settings during runtime)</param>
-        /// <param name="nrOfErrorsToKeep">The number of days to save errors in the Error resource</param>
-        /// <param name="requireApiKey">Should the REST API require an API key?</param>
-        /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
-        /// <param name="lineEndings">The line endings to use when writing JSON</param>
-        /// <param name="services">The service provider to resolve RESTable services from</param>
-        public static void Init
+        public RESTableConfig
         (
             string uri = "/restable",
             bool requireApiKey = false,
@@ -82,12 +63,18 @@ namespace RESTable
             IServiceProvider services = null
         )
         {
+            Methods = EnumMember<Method>.Values;
+            var version = typeof(RESTableConfig).Assembly.GetName().Version;
+            Version = $"{version.Major}.{version.Minor}.{version.Build}";
+            NewState();
+
             try
             {
                 if (Initialized) return;
-                
+
                 ProcessUri(ref uri);
                 Settings.Init(uri, prettyPrint, nrOfErrorsToKeep, lineEndings);
+                RootUri = uri;
 
                 var entityResourceProviders = services?.GetServices<IEntityResourceProvider>();
                 var protocolProviders = services?.GetServices<IProtocolProvider>();
@@ -97,7 +84,8 @@ namespace RESTable
                 EntityTypeResolverController.SetupEntityTypeResolvers(entityTypeContractResolvers?.ToArray());
                 ResourceFactory.MakeResources(entityResourceProviders?.ToArray());
                 ContentTypeController.SetupContentTypeProviders(contentTypeProviders?.ToList());
-                ProtocolController.SetupProtocolProviders(protocolProviders?.ToList());
+                ProtocolController.SetupProtocolProviders(protocolProviders?.ToList(), services);
+                Admin.Console.JsonProvider = services?.GetService<IJsonProvider>();
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
@@ -221,7 +209,7 @@ namespace RESTable
 
         private static void RunCustomMigrationLogic() { }
 
-        private static void ReadConfig()
+        private  static void ReadConfig()
         {
             try
             {

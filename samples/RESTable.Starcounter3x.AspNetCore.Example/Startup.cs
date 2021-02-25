@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.Excel;
-using RESTable.Starcounter3x;
+using RESTable.AspNetCore;
 
 namespace RESTable.Example
 {
@@ -10,9 +9,9 @@ namespace RESTable.Example
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddStarcounter("Database=./database");
-            services.AddStarcounterResourceProvider();
-            services.AddStarcounterEntityTypeResolver();
-            services.AddExcelContentProvider();
+            services.AddJsonProvider();
+            services.AddStarcounterProvider();
+            services.AddExcelProvider();
             services.AddMvc(o => o.EnableEndpointRouting = false);
             services.AddHttpContextAccessor();
         }
@@ -21,7 +20,7 @@ namespace RESTable.Example
         {
             app.UseMvcWithDefaultRoute();
             app.UseWebSockets();
-            RESTableConfig.Init(services: app.ApplicationServices);
+            app.UseRESTableAspNetCore();
         }
     }
 }

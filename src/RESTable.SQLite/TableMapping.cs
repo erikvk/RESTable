@@ -81,7 +81,7 @@ namespace RESTable.SQLite
             get
             {
                 var results = 0;
-                Database.QueryAsync($"PRAGMA table_info({TableName})", rowAction: row => results += 1).Wait();
+                Database.QueryAsync($"PRAGMA table_info({TableName})", rowAction: _ => results += 1).Wait();
                 return results > 0;
             }
         }

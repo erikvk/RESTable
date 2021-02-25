@@ -4,12 +4,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTable.Admin;
+using RESTable.ContentTypeProviders;
 
 #pragma warning disable 1591
 
-namespace RESTable.ContentTypeProviders.NativeJsonProtocol
+namespace RESTable.Json.NativeJsonProtocol
 {
-    public class RESTableJsonWriter : JsonTextWriter
+    public class NewtonsoftJsonWriter : JsonTextWriter, IJsonWriter
     {
         private readonly string NewLine;
         private int BaseIndentation;
@@ -45,11 +46,6 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
             CurrentDepth -= 1;
             base.WriteEndObject();
         }
-
-        public async Task WriteIndentationAsync(CancellationToken cancellationToken = new())
-        {
-            await WriteIndentAsync(cancellationToken).ConfigureAwait(false);
-        }
         
         public override Task WriteEndObjectAsync(CancellationToken cancellationToken = new())
         {
@@ -57,7 +53,7 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
             return base.WriteEndObjectAsync(cancellationToken);
         }
         
-        public RESTableJsonWriter(TextWriter textWriter, int baseIndentation) : base(textWriter)
+        public NewtonsoftJsonWriter(TextWriter textWriter, int baseIndentation) : base(textWriter)
         {
             BaseIndentation = baseIndentation;
             switch (Settings._LineEndings)

@@ -170,7 +170,7 @@ namespace RESTable.Resources.Operations
                         var (json, source) = item;
                         if (json == null || source == null) return source;
                         using var sr = json.CreateReader();
-                        NewtonsoftJsonProvider.Serializer.Populate(sr, source);
+                        Providers.Json.GetSerializer().Populate(sr, source);
                         return source;
                     })
                     .ToAsyncEnumerable()
@@ -293,7 +293,7 @@ namespace RESTable.Resources.Operations
                 if (toInsert.Any())
                 {
                     innerRequest.Selector = () => toInsert
-                        .Select(item => item.ToObject<T>(NewtonsoftJsonProvider.Serializer))
+                        .Select(item => item.ToObject<T>(Providers.Json.GetSerializer()))
                         .ToAsyncEnumerable();
                     insertedCount = await Insert(innerRequest).ConfigureAwait(false);
                 }

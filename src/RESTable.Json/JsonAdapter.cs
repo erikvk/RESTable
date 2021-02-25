@@ -3,9 +3,10 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 
-namespace RESTable.ContentTypeProviders
+namespace RESTable.Json
 {
     /// <inheritdoc />
     /// <summary>
@@ -17,12 +18,10 @@ namespace RESTable.ContentTypeProviders
     /// </summary>
     public abstract class JsonAdapter : IContentTypeProvider
     {
-        private readonly NewtonsoftJsonProvider JsonProvider = new();
-
         /// <summary>
         /// The RESTable default UTF8 encoding. An UTF8 encoding without BOM.
         /// </summary>
-        protected static readonly Encoding UTF8 = RESTableConfig.DefaultEncoding;
+        protected Encoding Encoding { get; }
 
         /// <inheritdoc />
         public abstract string Name { get; }
@@ -41,6 +40,14 @@ namespace RESTable.ContentTypeProviders
 
         /// <inheritdoc />
         public abstract string ContentDispositionFileExtension { get; }
+
+        private IJsonProvider JsonProvider { get; }
+        
+        protected JsonAdapter(IJsonProvider jsonProvider)
+        {
+            Encoding = RESTableConfig.DefaultEncoding;
+            JsonProvider = jsonProvider;
+        }
 
         /// <summary>
         /// Produces JSON that is then used to deserialize to entities of the resource type. The

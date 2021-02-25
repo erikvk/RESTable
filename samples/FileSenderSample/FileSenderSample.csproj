@@ -5,10 +5,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\RESTable.AspNetCore\RESTable.AspNetCore.csproj" />
-      <ProjectReference Include="..\..\src\RESTable.Excel\RESTable.Excel.csproj" />
-      <ProjectReference Include="..\..\src\RESTable.SQLite\RESTable.SQLite.csproj" />
-      <ProjectReference Include="..\..\src\RESTable\RESTable.csproj" />
+        <ProjectReference Include="..\..\src\RESTable.AspNetCore\RESTable.AspNetCore.csproj"/>
+        <ProjectReference Include="..\..\src\RESTable.Json\RESTable.Json.csproj"/>
     </ItemGroup>
 
 </Project>

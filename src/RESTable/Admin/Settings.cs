@@ -15,7 +15,7 @@ namespace RESTable.Admin
     {
         private const string description = "The Settings resource contains the current " +
                                            "settings for the RESTable instance.";
-        
+
         public static string _Uri => Instance.Uri;
         public static bool _PrettyPrint => Instance.PrettyPrint;
         public static int _NumberOfErrorsToKeep => Instance.NumberOfErrorsToKeep;
@@ -54,7 +54,8 @@ namespace RESTable.Admin
         /// <summary>
         /// The path where temporary files are created
         /// </summary>
-        [RESTableMember(hide: true)] public string TempFilePath { get; private set; }
+        [RESTableMember(hide: true)]
+        public string TempFilePath { get; private set; }
 
         public IEnumerable<Settings> Select(IRequest<Settings> request)
         {

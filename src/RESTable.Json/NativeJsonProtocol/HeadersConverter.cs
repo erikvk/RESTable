@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTable.Requests;
 using RESTable.Linq;
+using RESTable.Requests;
 
-namespace RESTable.ContentTypeProviders.NativeJsonProtocol
+namespace RESTable.Json.NativeJsonProtocol
 {
-    internal class HeadersConverter<T> : JsonConverter<T> where T : class, IHeaders, new()
+    internal class HeadersConverter : JsonConverter<Headers>
     {
         private HashSet<string> WhitelistedNonCustomHeaders { get; }
 
@@ -25,7 +25,7 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
         /// <summary>
         /// Writes only custom headers to JSON
         /// </summary>s
-        public override void WriteJson(JsonWriter writer, T headers, JsonSerializer s)
+        public override void WriteJson(JsonWriter writer, Headers headers, JsonSerializer s)
         {
             var jobj = new JObject();
             var _headers = (IHeadersInternal) headers;
@@ -37,10 +37,10 @@ namespace RESTable.ContentTypeProviders.NativeJsonProtocol
         /// <summary>
         /// Reads only custom headers from JSON
         /// </summary>
-        public override T ReadJson(JsonReader reader, Type o, T headers, bool h, JsonSerializer s)
+        public override Headers ReadJson(JsonReader reader, Type o, Headers headers, bool h, JsonSerializer s)
         {
             IEnumerable<KeyValuePair<string, JToken>> values = JObject.Load(reader);
-            headers = headers ?? new T();
+            headers ??= new Headers();
             values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Key) || pair.Key.IsCustomHeaderName())
                 .ForEach(pair => headers[pair.Key] = pair.Value.ToObject<string>());
             return headers;

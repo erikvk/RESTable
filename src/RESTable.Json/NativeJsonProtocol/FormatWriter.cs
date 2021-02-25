@@ -2,7 +2,7 @@
 using System.IO;
 using Newtonsoft.Json;
 
-namespace RESTable.ContentTypeProviders.NativeJsonProtocol
+namespace RESTable.Json.NativeJsonProtocol
 {
     internal class FormatWriter : JsonTextWriter
     {

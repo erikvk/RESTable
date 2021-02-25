@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -97,8 +98,6 @@ namespace RESTable
         /// /// </summary>
         public long? ContentLength => Do.SafeGet<long?>(() => Stream.Length);
 
-        public Task MakeSeekable() => Stream.MakeSeekable();
-
         public Body(IProtocolHolder protocolHolder, object bodyObject = null)
         {
             ProtocolHolder = protocolHolder;
@@ -155,12 +154,15 @@ namespace RESTable
             Stream.Rewind();
             UninitializedBodyObject = null;
         }
+        
+        private Encoding Encoding { get; }
 
         /// <summary>
         /// Only for outgoing streams
         /// </summary>
         private Body(IProtocolHolder protocolHolder, Stream customOutputStream)
         {
+            Encoding = RESTableConfig.DefaultEncoding;
             ProtocolHolder = protocolHolder;
             IsIngoing = false;
             Stream = new SwappingStream(customOutputStream);
@@ -185,7 +187,7 @@ namespace RESTable
             Stream.Rewind();
             try
             {
-                using var reader = new StreamReader(Stream, RESTableConfig.DefaultEncoding, false, 1024, true);
+                using var reader = new StreamReader(Stream, Encoding, false, 1024, true);
                 if (Stream.Length > MaxStringLength)
                 {
                     var buffer = new char[MaxStringLength];

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Resources;
 using RESTable.Linq;
@@ -24,8 +25,7 @@ namespace RESTable.Internal
             contentTypeProviders ??= new List<IContentTypeProvider>();
             InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-            contentTypeProviders.Insert(0, new XMLWriter());
-            contentTypeProviders.Insert(0, Providers.Json);
+            Providers.Json = contentTypeProviders.OfType<IJsonProvider>().FirstOrDefault();
             foreach (var provider in contentTypeProviders)
             {
                 ValidateContentTypeProvider(provider);
