@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Admin;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
@@ -159,8 +160,11 @@ namespace RESTable
             get => _protocol == "" ? "restable" : _protocol;
             set
             {
-                var p = ProtocolController.ResolveProtocolProvider(value).ProtocolProvider;
-                _protocol = p.ProtocolIdentifier;
+                var provider = Services
+                    .GetService<ProtocolController>()
+                    .ResolveCachedProtocolProvider(value)
+                    .ProtocolProvider;
+                _protocol = provider.ProtocolIdentifier;
             }
         }
 
@@ -175,7 +179,7 @@ namespace RESTable
 
         public ValueTask DisposeAsync()
         {
-            WebSocket.Context.Client.ShellConfig = Providers.Json.Serialize(this);
+            WebSocket.Context.Client.ShellConfig = JsonProvider.Serialize(this);
             Reset();
             return default;
         }
@@ -195,12 +199,15 @@ namespace RESTable
         /// <inheritdoc />
         protected override bool SupportsBinaryInput { get; }
 
+        private IJsonProvider JsonProvider { get; set; }
+
         /// <inheritdoc />
         protected override async Task Open()
         {
+            JsonProvider = Services.GetService<IJsonProvider>();
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
-                Providers.Json.Populate(config, this);
+                JsonProvider.Populate(config, this);
                 await SendShellInit().ConfigureAwait(false);
                 await SendQuery().ConfigureAwait(false);
             }
@@ -317,14 +324,15 @@ namespace RESTable
                             {
                                 var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
                                 if (!valid) break;
+                                var termFactory = Services.GetService<TermFactory>();
+                                var term = termFactory.MakeConditionTerm(resource, "resource");
                                 var resourceCondition = new Condition<Schema>
                                 (
-                                    key: "resource",
+                                    term: term,
                                     op: Operators.EQUALS,
                                     value: resource.Name
                                 );
-                                await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>()
-                                    .WithConditions(resourceCondition);
+                                await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
                                 var schemaResult = await schemaRequest.EvaluateToEntities().ConfigureAwait(false);
                                 await SerializeAndSendResult(schemaResult);
                                 break;

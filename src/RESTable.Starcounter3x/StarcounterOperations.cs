@@ -92,12 +92,12 @@ namespace RESTable.Starcounter3x
             return count;
         }
 
-        internal static bool IsValid(IEntityResource resource, out string reason)
+        internal static bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
         {
             if (resource.InterfaceType != null)
             {
                 var interfaceName = resource.InterfaceType.GetRESTableTypeName();
-                var members = resource.InterfaceType.GetDeclaredProperties();
+                var members = typeCache.GetDeclaredProperties(resource.InterfaceType);
                 if (members.ContainsKey("objectno"))
                 {
                     reason = $"Invalid Interface '{interfaceName}' assigned to resource '{resource.Name}'. " +

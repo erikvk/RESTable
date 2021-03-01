@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.OData;
@@ -35,7 +36,8 @@ namespace RESTable.Example
             app.UseMvcWithDefaultRoute();
             app.UseWebSockets();
 
-            RESTableContext.Root
+            var rootContext = new RootContext(app.ApplicationServices);
+            using var personPostRequest = rootContext
                 .CreateRequest<Person>(Method.POST)
                 .WithBody(new object[]
                 {
@@ -65,8 +67,8 @@ namespace RESTable.Example
                         LastName = "Skywalker",
                         Interests = new[] {"Destiny", "Forces"}
                     }
-                })
-                .Evaluate();
+                });
+            personPostRequest.Evaluate().Wait();
         }
     }
 }

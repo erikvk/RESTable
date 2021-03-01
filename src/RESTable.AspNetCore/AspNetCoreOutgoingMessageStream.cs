@@ -14,10 +14,10 @@ namespace RESTable.AspNetCore
 
         public AspNetCoreOutgoingMessageStream(WebSocket webSocket, bool asText, CancellationToken cancellationToken)
         {
-            CancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
+            CancellationToken = cancellationToken;
             WebSocket = webSocket;
             MessageType = asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary;
-            CancellationToken = cancellationToken;
         }
 
         protected override void Dispose(bool disposing)

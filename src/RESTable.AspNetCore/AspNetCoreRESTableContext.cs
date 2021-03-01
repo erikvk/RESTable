@@ -13,6 +13,7 @@ namespace RESTable.AspNetCore
         {
             HttpContext = httpContext;
         }
+
         protected override bool IsWebSocketUpgrade => HttpContext.WebSockets.IsWebSocketRequest;
 
         protected override WebSocket CreateWebSocket()

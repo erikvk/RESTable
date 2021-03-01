@@ -64,14 +64,23 @@ namespace RESTable.Meta.Internal
         public ValueTask<int> DeleteAsync(IRequest<T> request) => Delegates.DeleteAsync(request);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<T> request) => Delegates.AuthenticateAsync(request);
         public ValueTask<long> CountAsync(IRequest<T> request) => Delegates.CountAsync(request);
-        public IAsyncEnumerable<T> Validate(IAsyncEnumerable<T> entities) => Delegates.Validate(entities);
+        public IAsyncEnumerable<T> Validate(IAsyncEnumerable<T> entities, RESTableContext context) => Delegates.Validate(entities, context);
 
         private DelegateSet<T> Delegates { get; }
 
         /// <summary>
         /// All resources are constructed here
         /// </summary>
-        internal EntityResource(string fullName, RESTableAttribute attribute, DelegateSet<T> delegates, IEntityResourceProviderInternal provider, View<T>[] views)
+        internal EntityResource
+        (
+            string fullName,
+            RESTableAttribute attribute,
+            DelegateSet<T> delegates,
+            IEntityResourceProviderInternal provider,
+            View<T>[] views,
+            TypeCache typeCache,
+            ResourceCollection resourceCollection
+        )
         {
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)
@@ -101,7 +110,7 @@ namespace RESTable.Meta.Internal
             IsDDictionary = false;
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.Id;
-            Members = typeof(T).GetDeclaredProperties();
+            Members = typeCache.GetDeclaredProperties(typeof(T));
             Delegates = delegates;
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
             views?.ForEach(view =>
@@ -112,7 +121,7 @@ namespace RESTable.Meta.Internal
                 view.SetEntityResource(this);
             });
             CheckOperationsSupport();
-            RESTableConfig.AddResource(this);
+            resourceCollection.AddResource(this);
         }
 
         private static IReadOnlyList<Method> GetAvailableMethods(Type resource)

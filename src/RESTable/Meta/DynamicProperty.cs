@@ -40,6 +40,7 @@ namespace RESTable.Meta
             Name = ActualName = name;
             DeclaredFallback = declaredFallback;
             Type = typeof(object);
+            var typeCache = ApplicationServicesAccessor.TypeCache;
 
             Getter = obj =>
             {
@@ -52,7 +53,7 @@ namespace RESTable.Meta
                     var type = obj.GetType();
                     value = Do.Try(() =>
                     {
-                        var prop = DeclaredProperty.Find(type, Name);
+                        var prop = typeCache.FindDeclaredProperty(type, Name);
                         actualKey = prop.Name;
                         return prop.GetValue(obj);
                     }, default(object));
@@ -109,7 +110,7 @@ namespace RESTable.Meta
                         break;
                     default:
                         var type = obj.GetType();
-                        Do.Try(() => DeclaredProperty.Find(type, Name)?.SetValue(obj, value));
+                        Do.Try(() => typeCache.FindDeclaredProperty(type, Name)?.SetValue(obj, value));
                         break;
                 }
             };

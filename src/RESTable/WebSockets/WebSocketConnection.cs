@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -24,10 +25,9 @@ namespace RESTable.WebSockets
         internal ITerminalResource Resource { get; private set; }
         internal Terminal Terminal { get; private set; }
         public RESTableContext Context { get; private set; }
-
         private TaskCompletionSource<byte> SuspendTaskSource { get; set; }
-
         private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
+        public CancellationToken CancellationToken => WebSocket.CancellationToken;
 
         internal WebSocketConnection(WebSocket webSocket, Terminal terminal, ITerminalResource resource)
         {
@@ -39,6 +39,7 @@ namespace RESTable.WebSockets
             Terminal = terminal;
             Terminal.SetWebSocket(this);
             SuspendTaskSource = new TaskCompletionSource<byte>();
+            SuspendTaskSource.SetResult(default);
         }
 
         internal async Task Suspend()
@@ -46,6 +47,7 @@ namespace RESTable.WebSockets
             if (_duringSuspend != null)
                 await _duringSuspend.DisposeAsync().ConfigureAwait(false);
             _duringSuspend = WebSocket;
+            SuspendTaskSource = new TaskCompletionSource<byte>();
             WebSocket = new WebSocketQueue(_duringSuspend, SuspendTaskSource.Task);
         }
 
@@ -56,7 +58,6 @@ namespace RESTable.WebSockets
             WebSocket = _duringSuspend;
             _duringSuspend = null;
             SuspendTaskSource.SetResult(default);
-            SuspendTaskSource = new TaskCompletionSource<byte>();
         }
 
         public async ValueTask DisposeAsync()

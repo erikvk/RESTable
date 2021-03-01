@@ -172,8 +172,10 @@ namespace RESTable.Requests
             }
         }
 
-        internal static void _CopyTo(this IHeadersInternal headers, KeyValuePair<string, string>[] array, int arrayIndex) =>
+        internal static void _CopyTo(this IHeadersInternal headers, KeyValuePair<string, string>[] array, int arrayIndex)
+        {
             headers.ToList().CopyTo(array, arrayIndex);
+        }
 
         internal static ICollection<string> _Keys(this IHeadersInternal headers) => headers.Select(kvp => kvp.Key).ToList();
         internal static ICollection<string> _Values(this IHeadersInternal headers) => headers.Select(kvp => kvp.Value).ToList();

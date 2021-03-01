@@ -12,12 +12,14 @@ namespace RESTable.Example
             services.AddJsonProvider();
             services.AddStarcounterProvider();
             services.AddExcelProvider();
+            services.AddRESTable();
             services.AddMvc(o => o.EnableEndpointRouting = false);
             services.AddHttpContextAccessor();
         }
 
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, RESTableConfigurator configurator)
         {
+            configurator.ConfigureRESTable();
             app.UseMvcWithDefaultRoute();
             app.UseWebSockets();
             app.UseRESTableAspNetCore();

@@ -41,7 +41,7 @@ namespace RESTable.Resources.Operations
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request) => AsyncAuthenticator(request);
         public ValueTask<long> CountAsync(IRequest<TResource> request) => AsyncCounter(request);
 
-        public async IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities)
+        public async IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context)
         {
             if (entities == null) yield break;
             if (Validator == null)
@@ -56,7 +56,7 @@ namespace RESTable.Resources.Operations
             await foreach (var entity in entities.ConfigureAwait(false))
             {
                 index += 1;
-                var invalidMembers = Validator(entity).ToList();
+                var invalidMembers = Validator(entity, context).ToList();
                 if (invalidMembers.Count > 0)
                     throw new FailedValidation(new InvalidEntity(index, invalidMembers));
                 yield return entity;

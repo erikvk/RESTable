@@ -2,9 +2,17 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Newtonsoft.Json.Serialization;
+using RESTable.ContentTypeProviders;
 
 namespace RESTable.Meta
 {
+    internal static class ApplicationServicesAccessor
+    {
+        internal static IJsonProvider JsonProvider { get; set; }
+        internal static TypeCache TypeCache { get; set; }
+        internal static ResourceCollection ResourceCollection { get; set; }
+    }
+
     /// <summary>
     /// Extension methods for deflection operations
     /// </summary>

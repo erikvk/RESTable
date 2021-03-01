@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal.Logging;
 using RESTable.Requests;
@@ -9,7 +10,6 @@ using RESTable.Resources;
 using RESTable.Resources.Templates;
 using RESTable.Results;
 using RESTable.WebSockets;
-using static Newtonsoft.Json.Formatting;
 
 namespace RESTable.Admin
 {
@@ -29,8 +29,6 @@ namespace RESTable.Admin
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
         
-        internal static IJsonProvider JsonProvider { get; set; }
-
         private IWebSocketInternal ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
 
         /// <inheritdoc />
@@ -49,9 +47,12 @@ namespace RESTable.Admin
         public void Dispose() => Consoles.Remove(this);
 
         #region Console
+        
+        private static IJsonProvider JsonProvider { get; set; }
 
         internal static async Task Log(IRequest request, ISerializedResult serializedResult)
         {
+            JsonProvider ??= request.GetService<IJsonProvider>();
             var result = serializedResult.Result;
             var milliseconds = result.TimeElapsed.TotalMilliseconds;
             if (result is WebSocketUpgradeSuccessful) return;
@@ -97,7 +98,7 @@ namespace RESTable.Admin
                                 item.In.Content = await request.GetLogContent().ConfigureAwait(false);
                                 item.Out.Content = await serializedResult.GetLogContent().ConfigureAwait(false);
                             }
-                            var json = JsonProvider.Serialize(item, Indented, ignoreNulls: true);
+                            var json = JsonProvider.Serialize(item, true, ignoreNulls: true);
                             await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;
@@ -137,7 +138,7 @@ namespace RESTable.Admin
                                 item.Client = new ClientInfo(logable.Context.Client);
                             if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
                                 item.CustomHeaders = hh.Headers;
-                            var json = JsonProvider.Serialize(item, Indented, ignoreNulls: true);
+                            var json = JsonProvider.Serialize(item, true, ignoreNulls: true);
                             await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;

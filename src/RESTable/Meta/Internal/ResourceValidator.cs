@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Newtonsoft.Json.Linq;
+using RESTable.Admin;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
@@ -12,9 +13,20 @@ using RESTable.Meta.IL;
 
 namespace RESTable.Meta.Internal
 {
-    internal static class ResourceValidator
+    public class ResourceValidator
     {
-        internal static void ValidateRuntimeInsertion(Type type, string fullName, RESTableAttribute attribute)
+        private TypeCache TypeCache { get; }
+        private ResourceCollection ResourceCollection { get; }
+        private RESTableConfiguration Configuration { get; }
+
+        public ResourceValidator(TypeCache typeCache, ResourceCollection resourceCollection, RESTableConfiguration configuration)
+        {
+            TypeCache = typeCache;
+            ResourceCollection = resourceCollection;
+            Configuration = configuration;
+        }
+
+        public void ValidateRuntimeInsertion(Type type, string fullName, RESTableAttribute attribute)
         {
             string name;
             if (fullName != null)
@@ -27,13 +39,13 @@ namespace RESTable.Meta.Internal
             if (name == null)
                 throw new InvalidResourceDeclarationException(
                     "Encountered an unknown type. No further information is available.");
-            if (RESTableConfig.ResourceByType.ContainsKey(type))
+            if (ResourceCollection.ResourceByType.ContainsKey(type))
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same type ('{type.GetRESTableTypeName()}') has already been added to RESTable");
-            if (RESTableConfig.ResourceByName.ContainsKey(name))
+            if (ResourceCollection.ResourceByName.ContainsKey(name))
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same name has already been added to RESTable");
-            attribute = attribute ?? type.GetCustomAttribute<RESTableAttribute>();
+            attribute ??= type.GetCustomAttribute<RESTableAttribute>();
             if (attribute == null)
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. The type was not decorated with the RESTableAttribute attribute, and " +
@@ -41,8 +53,7 @@ namespace RESTable.Meta.Internal
             Validate(type);
         }
 
-        internal static (List<Type> regular, List<Type> wrappers, List<Type> terminals, List<Type> binaries, List<Type> events)
-            Validate(params Type[] types)
+        public (List<Type> regular, List<Type> wrappers, List<Type> terminals, List<Type> binaries, List<Type> events) Validate(params Type[] types)
         {
             var entityTypes = types
                 .Where(t => !typeof(Terminal).IsAssignableFrom(t) &&
@@ -89,8 +100,8 @@ namespace RESTable.Meta.Internal
                 if (type.Namespace == null)
                     throw new InvalidResourceDeclarationException($"Invalid type '{type.GetRESTableTypeName()}'. Unknown namespace");
 
-                if (RESTableConfig.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
-                    type.Assembly != typeof(RESTableConfig).Assembly)
+                if (Configuration.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
+                    type.Assembly != typeof(RESTableConfigurator).Assembly)
                     throw new InvalidResourceDeclarationException(
                         $"Invalid namespace for resource type '{type.GetRESTableTypeName()}'. Namespace '{type.Namespace}' is reserved by RESTable");
 
@@ -212,7 +223,7 @@ namespace RESTable.Meta.Internal
 
                 #region Check for properties with duplicate case insensitive names
 
-                if (type.FindAndParseDeclaredProperties().ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
+                if (TypeCache.FindAndParseDeclaredProperties(type).ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
                     throw new InvalidResourceMemberException(
                         $"Invalid properties for resource '{type.GetRESTableTypeName()}'. Names of public instance properties must " +
                         $"be unique (case insensitive). Two or more property names were equivalent to '{duplicate.Name}'."
@@ -250,7 +261,7 @@ namespace RESTable.Meta.Internal
                         throw new InvalidResourceWrapperException(_types, "cannot wrap types that are declared within the scope of some other class.");
                     if (wrapped.HasAttribute<RESTableAttribute>())
                         throw new InvalidResourceWrapperException(_types, "cannot wrap types already decorated with the 'RESTableAttribute' attribute");
-                    if (wrapper.Assembly == typeof(RESTableConfig).Assembly)
+                    if (wrapper.Assembly == typeof(RESTableConfigurator).Assembly)
                         throw new InvalidResourceWrapperException(_types, "cannot wrap RESTable types");
                 }
             }

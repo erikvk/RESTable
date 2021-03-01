@@ -12,12 +12,12 @@ namespace RESTable.ContentTypeProviders
         Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, IJsonWriter textWriter, CancellationToken cancellationToken) where T : class;
         IJsonWriter GetJsonWriter(TextWriter writer);
         JsonSerializer GetSerializer(); 
-        void SerializeToStream(Stream stream, object entity, Formatting? formatting = null, bool ignoreNulls = false);
         void Populate(string json, object target);
         void Serialize(IJsonWriter jsonWriter, object value);
         T Deserialize<T>(byte[] bytes);
         T Deserialize<T>(string json);
-        string Serialize(object value, Formatting? formatting = null, bool ignoreNulls = false);
+        void SerializeToStream(Stream stream, object entity, bool? prettyPrint = null, bool ignoreNulls = false);
+        string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false);
     }
 
     public interface IJsonWriter : IDisposable

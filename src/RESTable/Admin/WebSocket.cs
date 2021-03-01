@@ -35,12 +35,12 @@ namespace RESTable.Admin
         /// <summary>
         /// An object describing the terminal
         /// </summary>
-        public JObject Terminal { get; private set; }
+        public object Terminal { get; private set; }
 
         /// <summary>
         /// An object describing the client
         /// </summary>
-        public JObject Client { get; private set; }
+        public object Client { get; private set; }
 
         /// <summary>
         /// Does this WebSocket instance represent the currently connected client websocket?
@@ -53,7 +53,8 @@ namespace RESTable.Admin
         public IEnumerable<WebSocket> Select(IRequest<WebSocket> request)
         {
             var jsonSerializer = request.GetService<JsonSerializer>();
-            return WebSocketController
+            var webSocketController = request.GetService<WebSocketController>();
+            return webSocketController
                 .AllSockets
                 .Values
                 .Select(socket => new WebSocket

@@ -139,7 +139,7 @@ namespace RESTable.SQLite
             {
                 var op = GetSQLOperator(c.Operator);
                 var key = c.Term.First.ActualName;
-                var valueLiteral = MakeSQLValueLiteral((object) c.Value);
+                var valueLiteral = MakeSQLValueLiteral(c.Value);
                 if (valueLiteral == "NULL")
                 {
                     switch (c.Operator)

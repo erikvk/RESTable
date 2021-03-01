@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using RESTable.Meta;
 using RESTable.Results;
 
 namespace RESTable.Requests
@@ -11,7 +13,8 @@ namespace RESTable.Requests
     /// </summary>
     public static class ExtensionMethods
     {
-        public static TResult Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, TResult> selector, string errorMessage) where TResource : class
+        public static TResult Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, TResult> selector, string errorMessage)
+            where TResource : class
         {
             try
             {
@@ -23,8 +26,9 @@ namespace RESTable.Requests
                 throw new BadRequest(ErrorCodes.Unknown, errorMessage, e);
             }
         }
-        
-        public static async Task<TResult> Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, Task<TResult>> selector, string errorMessage) where TResource : class
+
+        public static async Task<TResult> Expecting<TResult, TResource>(this IRequest<TResource> request, Func<IRequest<TResource>, Task<TResult>> selector, string errorMessage)
+            where TResource : class
         {
             try
             {
@@ -111,6 +115,62 @@ namespace RESTable.Requests
             if (request == null) return null;
             return WithConditions(request, conditions: conditionsArray);
         }
+
+        /// <summary>
+        /// Sets the given conditions to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithCondition<T>(this IRequest<T> request, string key, Operators op, object value) where T : class
+        {
+            if (request == null) return null;
+            return WithConditions(request, (key, op, value));
+        }
+
+        /// <summary>
+        /// Sets the given conditions to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithCondition<T>(this IRequest<T> request, string key, Operators op, object value, out Condition<T> condition) where T : class
+        {
+            if (request == null)
+            {
+                condition = null;
+                return null;
+            }
+            var termFactory = request.GetService<TermFactory>();
+            var target = request.Target;
+            condition = new Condition<T>
+            (
+                term: termFactory.MakeConditionTerm(target, key),
+                op: op,
+                value: value
+            );
+            return WithConditions(request, condition);
+        }
+
+        /// <summary>
+        /// Sets the given conditions to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithConditions<T>(this IRequest<T> request, params (string key, Operators op, object value)[] conditions) where T : class
+        {
+            if (request == null) return null;
+            var termFactory = request.GetService<TermFactory>();
+            var target = request.Target;
+
+            IEnumerable<Condition<T>> Converter()
+            {
+                foreach (var (key, op, value) in conditions)
+                {
+                    yield return new Condition<T>
+                    (
+                        term: termFactory.MakeConditionTerm(target, key),
+                        op: op,
+                        value: value
+                    );
+                }
+            }
+
+            return WithConditions(request, conditions: Converter());
+        }
+
 
         /// <summary>
         /// Sets the given selector to the request, and returns the request

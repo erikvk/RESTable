@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
@@ -20,7 +20,7 @@ namespace RESTable
     /// A resource for creating arbitrary aggregated reports from multiple
     /// internal requests.
     /// </summary>
-    [RESTable(Method.GET, Description = description), JsonConverter(typeof(AggregatorTemplateConverter))]
+    [RESTable(Method.GET, Description = description)]
     public class Aggregator : Dictionary<string, object>, IAsyncSelector<Aggregator>
     {
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
@@ -33,6 +33,8 @@ namespace RESTable
                 selector: async r => await r.Body.Deserialize<Aggregator>().FirstAsync().ConfigureAwait(false),
                 errorMessage: "Expected an aggregator template as request body"
             ).ConfigureAwait(false);
+
+            var jsonProvider = request.GetService<IJsonProvider>();
 
             async Task<object> Populator(object node)
             {
@@ -49,10 +51,10 @@ namespace RESTable
                                 case "$mul" when IsNumberArray(value, out var terms): return terms.Aggregate((x, y) => x * y);
                                 case "$mod" when IsNumberArray(value, out var terms, 2): return terms[0] % terms[1];
 
-                                case "$add": throw GetArithmeticException(key);
-                                case "$sub": throw GetArithmeticException(key);
+                                case "$add":
+                                case "$sub":
                                 case "$mul": throw GetArithmeticException(key);
-                                case "$mod": throw GetArithmeticException(key, "For $mod, the integer list must have a length of exacly 2");
+                                case "$mod": throw GetArithmeticException(key, "For $mod, the integer list must have a length of exactly 2");
                             }
                             aggregator[key] = value;
                         }
@@ -68,7 +70,7 @@ namespace RESTable
                         }
                         return list;
                     }
-                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(Providers.Json.GetSerializer())).ConfigureAwait(false);
+                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(jsonProvider.GetSerializer())).ConfigureAwait(false);
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
                     {

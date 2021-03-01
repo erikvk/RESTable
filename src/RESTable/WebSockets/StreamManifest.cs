@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using RESTable.Resources;
 using RESTable.Results;
 
 #pragma warning disable 414
@@ -11,7 +11,7 @@ namespace RESTable.WebSockets
     internal class StreamManifest : IDisposable, IAsyncDisposable
     {
         internal ISerializedResult Result { get; }
-        
+
         internal int CurrentMessageIndex { get; set; }
         internal int BufferSize { get; }
         internal int LastIndex { get; }
@@ -23,14 +23,13 @@ namespace RESTable.WebSockets
         public int MessagesStreamed { get; internal set; }
         public string ContentType { get; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public readonly string EntityType;
-
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public readonly long EntityCount;
+        [RESTableMember(hideIfNull: true)] 
+        public string EntityType { get; }
+        
+        public long EntityCount { get; }
 
         public StreamManifestMessage[] Messages { get; }
-        public readonly StreamCommand[] Commands = _Commands;
+        public StreamCommand[] Commands { get; } = _Commands;
 
         private static readonly StreamCommand[] _Commands =
         {

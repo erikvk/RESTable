@@ -1,4 +1,3 @@
-using System;
 using RESTable.Requests;
 
 namespace RESTable.Meta
@@ -42,20 +41,13 @@ namespace RESTable.Meta
         /// </summary>
         internal Getter Getter { get; set; }
 
+        public bool ReadOnly { get; set; }
+        
         /// <inheritdoc />
         public override bool IsReadable => Getter != null;
 
         /// <inheritdoc />
-        public override bool IsWritable => Setter != null;
+        public override bool IsWritable => !ReadOnly && Setter != null;
 
-        /// <summary>
-        /// Parses an input property name string and returns a Property describing the 
-        /// corresponding resource property.
-        /// </summary>
-        public static Property Parse(string keyString, Type resource, bool dynamic)
-        {
-            if (dynamic) return DynamicProperty.Parse(keyString);
-            return DeclaredProperty.Find(resource, keyString);
-        }
     }
 }

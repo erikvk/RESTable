@@ -44,14 +44,14 @@ namespace RESTable.Meta.Internal
         /// <inheritdoc />
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
 
-        internal View(Type viewType)
+        internal View(Type viewType, TypeCache typeCache)
         {
             var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
             Type = viewType;
             Name = viewAttribute.CustomName ?? viewType.Name;
             ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
             AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType);
-            Members = viewType.GetDeclaredProperties();
+            Members = typeCache.GetDeclaredProperties(viewType);
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions
                 ? TermBindingRule.DeclaredWithDynamicFallback

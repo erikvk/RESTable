@@ -67,8 +67,8 @@ namespace RESTable.ProtocolProviders
                 case "":
                 case "_":
                     uri.ResourceSpecifier = context.WebSocket?.Status == WebSocketStatus.Waiting
-                        ? Shell.TerminalResource.Name
-                        : EntityResource<AvailableResource>.ResourceSpecifier;
+                        ? ResourceCollection.GetResourceSpecifier<Shell>()
+                        : ResourceCollection.GetResourceSpecifier<AvailableResource>();
                     break;
                 case var resource when resourceOrMacro[0] != '$':
                     uri.ResourceSpecifier = resource;
@@ -109,9 +109,11 @@ namespace RESTable.ProtocolProviders
         }
 
         private IJsonProvider JsonProvider { get; }
+        private ResourceCollection ResourceCollection { get; }
 
-        public DefaultProtocolProvider(IJsonProvider jsonProvider)
+        public DefaultProtocolProvider(IJsonProvider jsonProvider, ResourceCollection resourceCollection)
         {
+            ResourceCollection = resourceCollection;
             JsonProvider = jsonProvider;
         }
 
@@ -237,8 +239,11 @@ namespace RESTable.ProtocolProviders
                     await jwr.WriteValueAsync(invalidMember.Message, cancellationToken).ConfigureAwait(false);
                 }
                 await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
-                await jwr.WritePropertyNameAsync("InvalidEntityIndex", cancellationToken).ConfigureAwait(false);
-                await jwr.WriteValueAsync(failedValidation.InvalidEntity.Index, cancellationToken).ConfigureAwait(false);
+                if (failedValidation.InvalidEntity.Index is long index)
+                {
+                    await jwr.WritePropertyNameAsync("InvalidEntityIndex", cancellationToken).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(index, cancellationToken).ConfigureAwait(false);
+                }
             }
             else await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("ErrorCode", cancellationToken).ConfigureAwait(false);
@@ -264,7 +269,7 @@ namespace RESTable.ProtocolProviders
                 await contentTypeProvider.SerializeCollection(dataCollection, toSerialize.Body, content.Request, cancellationToken).ConfigureAwait(false);
                 return;
             }
-            
+
             await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
             using var jwr = JsonProvider.GetJsonWriter(swr);
             await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);

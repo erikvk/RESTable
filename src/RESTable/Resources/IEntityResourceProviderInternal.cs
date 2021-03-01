@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RESTable.Meta;
+using RESTable.Meta.Internal;
 
 namespace RESTable.Resources
 {
@@ -87,5 +88,9 @@ namespace RESTable.Resources
         /// Removes the procedural resource belonging to the given type
         /// </summary>
         bool RemoveProceduralResource(Type type);
+
+        TypeCache TypeCache { get; set; }
+        ResourceValidator ResourceValidator { get; set; }
+        ResourceCollection ResourceCollection { get; set; }
     }
 }

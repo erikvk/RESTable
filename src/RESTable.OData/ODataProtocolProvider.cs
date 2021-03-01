@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
-using RESTable.Admin;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 using RESTable.ProtocolProviders;
@@ -95,13 +95,14 @@ namespace RESTable.OData
             var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
             var options = uriMatch.Groups["options"].Value.TrimStart('?');
             var uri = new ODataUriComponents(this);
+            var resourceCollection = context.Services.GetService<ResourceCollection>();
             switch (entitySet)
             {
                 case "":
-                    uri.ResourceSpecifier = Resource<ServiceDocument>.ResourceSpecifier;
+                    uri.ResourceSpecifier = resourceCollection.GetResourceSpecifier<ServiceDocument>();
                     break;
                 case "$metadata":
-                    uri.ResourceSpecifier = Resource<MetadataDocument>.ResourceSpecifier;
+                    uri.ResourceSpecifier = resourceCollection.GetResourceSpecifier<MetadataDocument>();
                     break;
                 default:
                     uri.ResourceSpecifier = entitySet;
@@ -113,10 +114,12 @@ namespace RESTable.OData
         }
 
         private IJsonProvider JsonProvider { get; }
+        private RESTableConfiguration Configuration { get; }
 
-        public ODataProtocolProvider(IJsonProvider jsonProvider)
+        public ODataProtocolProvider(IJsonProvider jsonProvider, RESTableConfiguration configuration)
         {
             JsonProvider = jsonProvider;
+            Configuration = configuration;
         }
 
         private static void PopulateFromOptions(ODataUriComponents args, string options)
@@ -234,11 +237,11 @@ namespace RESTable.OData
             }
         }
 
-        private static string GetServiceRoot(IEntities entities)
+        private string GetServiceRoot(IEntities entities)
         {
             if (entities == null) throw new ArgumentNullException(nameof(entities));
             var origin = entities.Request.Context.Client;
-            var hostAndPath = $"{origin.Host}{Settings._Uri}-odata";
+            var hostAndPath = $"{origin.Host}{Configuration.RootUri}-odata";
             return origin.Https ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
         }
 
@@ -273,13 +276,13 @@ namespace RESTable.OData
                     writeMetadata = true;
                     break;
             }
-            await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
+            await using var swr = new StreamWriter(toSerialize.Body, Encoding.Default, 4096, true);
             using var jwr = JsonProvider.GetJsonWriter(swr);
             await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("@odata.context", cancellationToken).ConfigureAwait(false);
             await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}", cancellationToken).ConfigureAwait(false);
             await jwr.WritePropertyNameAsync("value", cancellationToken).ConfigureAwait(false);
-            Providers.Json.Serialize(jwr, entities);
+            JsonProvider.Serialize(jwr, entities);
             toSerialize.EntityCount = jwr.ObjectsWritten;
             if (writeMetadata)
             {

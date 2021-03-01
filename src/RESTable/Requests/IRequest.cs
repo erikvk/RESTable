@@ -35,7 +35,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The target to use when binding conditions and selecting entities for this request
         /// </summary>
-        ITarget<T> Target { get; }
+        new ITarget<T> Target { get; }
 
         /// <summary>
         /// Selects, processes and returns the input entities for this request. Use this in Inserters and
@@ -110,10 +110,10 @@ namespace RESTable.Requests
         IResource Resource { get; }
 
         /// <summary>
-        /// The type of the request target
+        /// The target of the request
         /// </summary>
-        Type TargetType { get; }
-
+        ITarget Target { get; }
+        
         /// <summary>
         /// Does this request have conditions?
         /// </summary>

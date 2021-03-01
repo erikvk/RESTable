@@ -13,7 +13,7 @@ namespace RESTable.Internal
         internal IDictionary<string, IContentTypeProvider> OutputMimeBindings { get; }
         internal IContentTypeProvider DefaultInputProvider => InputMimeBindings.FirstOrDefault().Value;
         internal IContentTypeProvider DefaultOutputProvider => OutputMimeBindings.FirstOrDefault().Value;
-
+        
         public CachedProtocolProvider(IProtocolProvider protocolProvider)
         {
             ProtocolProvider = protocolProvider;

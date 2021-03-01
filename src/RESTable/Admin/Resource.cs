@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using static RESTable.Internal.EntityResourceProviderController;
 
 namespace RESTable.Admin
 {
@@ -85,25 +85,6 @@ namespace RESTable.Admin
         [RESTableMember(hideIfNull: true)]
         public IEnumerable<Resource> InnerResources { get; private set; }
 
-        private bool IsProcedural(out IProceduralEntityResource proceduralResource, out IEntityResource entityResource,
-            out IEntityResourceProviderInternal provider)
-        {
-            proceduralResource = null;
-            entityResource = null;
-            provider = null;
-
-            if (IResource is IEntityResource _entityResource)
-                entityResource = _entityResource;
-            else return false;
-            if (!EntityResourceProviders.TryGetValue(entityResource.Provider, out provider) || !(provider is IProceduralEntityResourceProvider))
-                return false;
-            var resource = entityResource;
-            if (provider.SelectProceduralResources().FirstOrDefault(r => r.Name == resource.Name) is IProceduralEntityResource _dynamicResource)
-                proceduralResource = _dynamicResource;
-            else return false;
-            return true;
-        }
-
         internal static T Make<T>(IResource iresource) where T : Resource, new()
         {
             if (iresource == null) return null;
@@ -131,7 +112,8 @@ namespace RESTable.Admin
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return RESTableConfig.Resources
+            return request
+                .GetService<ResourceCollection>()
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.Name)
                 .Select(Make<Resource>);

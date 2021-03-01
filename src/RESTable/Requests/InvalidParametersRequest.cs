@@ -12,8 +12,7 @@ namespace RESTable.Requests
         public bool IsValid { get; }
         private Exception Error { get; }
         public Task<IResult> Evaluate(CancellationToken cancellationToken = new()) => Task.FromResult<IResult>(Error.AsResultOf(this));
-
-        public Type TargetType => null;
+        public ITarget Target => null;
         public bool HasConditions => false;
 
         #region Logable

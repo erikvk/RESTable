@@ -57,7 +57,7 @@ namespace RESTable.Starcounter3x
             var hasOtherIndex = true;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
-                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
+                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.InternalOperator.SQL, c.Value);
                 if (value == null)
                 {
                     switch (c.Operator)
@@ -94,7 +94,7 @@ namespace RESTable.Starcounter3x
             var hasOtherIndex = false;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
-                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
+                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.InternalOperator.SQL, c.Value);
                 if (value == null)
                 {
                     switch (c.Operator)

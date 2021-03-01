@@ -7,10 +7,9 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
-using RESTable.Json.NativeJsonProtocol;
+using RESTable.Meta;
 using RESTable.Requests;
 using static Newtonsoft.Json.Formatting;
-using static RESTable.Admin.Settings;
 
 namespace RESTable.Json
 {
@@ -21,63 +20,56 @@ namespace RESTable.Json
         /// <summary>
         /// The settings that are used when serializing and deserializing JSON
         /// </summary>
-        private static JsonSerializerSettings Settings { get; }
+        private JsonSerializerSettings SerializerSettings { get; }
 
-        private static JsonSerializerSettings SettingsIgnoreNulls { get; }
+        private JsonSettings JsonSettings { get; }
 
-        /// <summary>
-        /// UTF 8 encoding without byte order mark (BOM)
-        /// </summary>
-        private Encoding Encoding { get; }
+        private JsonSerializerSettings SerialzerSettingsIgnoreNulls { get; }
 
         /// <summary>
         /// The JSON serializer
         /// </summary>
-        internal static JsonSerializer Serializer { get; }
+        internal JsonSerializer Serializer { get; }
 
         /// <summary>
         /// Creates a new JSON.net JsonSerializer with the current RESTable serialization settings
         /// </summary>
         /// <returns></returns>
-        public static JsonSerializer GetSerializer() => JsonSerializer.Create(Settings);
+        public JsonSerializer GetSerializer() => JsonSerializer.Create(SerializerSettings);
 
-        private static JsonSerializer SerializerIgnoreNulls { get; }
+        private JsonSerializer SerializerIgnoreNulls { get; }
 
         private const string JsonMimeType = "application/json";
         private const string RESTableSpecific = "application/restable-json";
         private const string Brief = "json";
         private const string TextPlain = "text/plain";
 
-        static NewtonsoftJsonProvider()
+        /// <summary>
+        /// Creates a new instance of the <see cref="NewtonsoftJsonProvider"/> type
+        /// </summary>
+        public NewtonsoftJsonProvider(TypeCache typeCache, JsonSettings jsonSettings)
         {
-            Settings = new JsonSerializerSettings
+            JsonSettings = jsonSettings;
+            SerializerSettings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Include,
                 DateParseHandling = DateParseHandling.DateTime,
                 DateFormatHandling = DateFormatHandling.IsoDateFormat,
                 DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                ContractResolver = new DefaultResolver(),
+                ContractResolver = new DefaultResolver(typeCache),
                 FloatParseHandling = FloatParseHandling.Decimal
             };
-            Serializer = JsonSerializer.Create(Settings);
-            SettingsIgnoreNulls = new JsonSerializerSettings
+            Serializer = JsonSerializer.Create(SerializerSettings);
+            SerialzerSettingsIgnoreNulls = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore,
-                DateParseHandling = Settings.DateParseHandling,
-                DateFormatHandling = Settings.DateFormatHandling,
-                DateTimeZoneHandling = Settings.DateTimeZoneHandling,
-                ContractResolver = Settings.ContractResolver,
-                FloatParseHandling = Settings.FloatParseHandling
+                DateParseHandling = SerializerSettings.DateParseHandling,
+                DateFormatHandling = SerializerSettings.DateFormatHandling,
+                DateTimeZoneHandling = SerializerSettings.DateTimeZoneHandling,
+                ContractResolver = SerializerSettings.ContractResolver,
+                FloatParseHandling = SerializerSettings.FloatParseHandling
             };
-            SerializerIgnoreNulls = JsonSerializer.Create(SettingsIgnoreNulls);
-        }
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="NewtonsoftJsonProvider"/> type
-        /// </summary>
-        public NewtonsoftJsonProvider()
-        {
-            Encoding = RESTableConfig.DefaultEncoding;
+            SerializerIgnoreNulls = JsonSerializer.Create(SerialzerSettingsIgnoreNulls);
             MatchStrings = new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
             ContentDispositionFileExtension = ".json";
             CanWrite = true;
@@ -107,11 +99,11 @@ namespace RESTable.Json
         /// A general-purpose serializer. Serializes the given value using the formatting, and optionally - a type. If no 
         /// formatting is given, the formatting defined in Settings is used.
         /// </summary>
-        public string Serialize(object value, Formatting? formatting = null, bool ignoreNulls = false)
+        public string Serialize(object value, bool? prettyPrint, bool ignoreNulls = false)
         {
-            var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
-            var settings = ignoreNulls ? SettingsIgnoreNulls : Settings;
-            return JsonConvert.SerializeObject(value, _formatting, settings);
+            var formatting = prettyPrint ?? JsonSettings.PrettyPrint ? Indented : None;
+            var settings = ignoreNulls ? SerialzerSettingsIgnoreNulls : SerializerSettings;
+            return JsonConvert.SerializeObject(value, formatting, settings);
         }
 
         /// <summary>
@@ -119,7 +111,7 @@ namespace RESTable.Json
         /// </summary>
         public T Deserialize<T>(string json)
         {
-            return JsonConvert.DeserializeObject<T>(json, Settings);
+            return JsonConvert.DeserializeObject<T>(json, SerializerSettings);
         }
 
         /// <summary>
@@ -128,7 +120,7 @@ namespace RESTable.Json
         public T Deserialize<T>(byte[] bytes)
         {
             var json = Encoding.UTF8.GetString(bytes);
-            return JsonConvert.DeserializeObject<T>(json, Settings);
+            return JsonConvert.DeserializeObject<T>(json, SerializerSettings);
         }
 
         /// <summary>
@@ -145,19 +137,19 @@ namespace RESTable.Json
         public void Populate(string json, object target)
         {
             if (string.IsNullOrWhiteSpace(json)) return;
-            JsonConvert.PopulateObject(json, target, Settings);
+            JsonConvert.PopulateObject(json, target, SerializerSettings);
         }
 
         /// <summary>
         /// Serializes an object into a stream
         /// </summary>
         /// <returns></returns>
-        public void SerializeToStream(Stream stream, object entity, Formatting? formatting = null, bool ignoreNulls = false)
+        public void SerializeToStream(Stream stream, object entity, bool? prettyPrint, bool ignoreNulls = false)
         {
-            var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
+            var formatting = prettyPrint ?? JsonSettings.PrettyPrint ? Indented : None;
             var serializer = ignoreNulls ? SerializerIgnoreNulls : Serializer;
-            using var swr = new StreamWriter(stream, Encoding, 1024, true);
-            using var jwr = new NewtonsoftJsonWriter(swr, 0) {Formatting = _formatting};
+            using var swr = new StreamWriter(stream, JsonSettings.Encoding, 1024, true);
+            using var jwr = new NewtonsoftJsonWriter(swr, JsonSettings.LineEndings, 0) {Formatting = formatting};
             serializer.Serialize(jwr, entity);
         }
 
@@ -182,7 +174,7 @@ namespace RESTable.Json
             var json = Encoding.UTF8.GetString(body);
             await foreach (var entity in entities.ConfigureAwait(false))
             {
-                JsonConvert.PopulateObject(json, entity, Settings);
+                JsonConvert.PopulateObject(json, entity, SerializerSettings);
                 yield return entity;
             }
         }
@@ -198,13 +190,13 @@ namespace RESTable.Json
             await using var swr = new StreamWriter
             (
                 stream: stream,
-                encoding: Encoding,
+                encoding: JsonSettings.Encoding,
                 bufferSize: 2048,
                 leaveOpen: true
             );
-            using var jwr = new NewtonsoftJsonWriter(swr, 0)
+            using var jwr = new NewtonsoftJsonWriter(swr, JsonSettings.LineEndings, 0)
             {
-                Formatting = _PrettyPrint ? Indented : None
+                Formatting = JsonSettings.PrettyPrint ? Indented : None
             };
             Serializer.Serialize(jwr, collection.ToEnumerable());
             return jwr.ObjectsWritten;
@@ -223,7 +215,7 @@ namespace RESTable.Json
 
         public IJsonWriter GetJsonWriter(TextWriter writer)
         {
-            return new NewtonsoftJsonWriter(writer, 0) {Formatting = _PrettyPrint ? Indented : None};
+            return new NewtonsoftJsonWriter(writer, JsonSettings.LineEndings, 0) {Formatting = JsonSettings.PrettyPrint ? Indented : None};
         }
 
         /// <inheritdoc />
@@ -232,7 +224,7 @@ namespace RESTable.Json
             using var streamReader = new StreamReader
             (
                 stream: body,
-                encoding: Encoding,
+                encoding: JsonSettings.Encoding,
                 detectEncodingFromByteOrderMarks: false,
                 bufferSize: 1024,
                 leaveOpen: true

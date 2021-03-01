@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -41,13 +40,13 @@ namespace RESTable.Xml
 
         private IJsonProvider JsonProvider { get; }
         private byte[] XMLHeader { get; }
-        private Encoding Encoding { get; }
+        private XmlSettings XmlSettings { get; }
 
-        public XmlContentTypeProvider(IJsonProvider jsonProvider)
+        public XmlContentTypeProvider(IJsonProvider jsonProvider, XmlSettings xmlSettings)
         {
             JsonProvider = jsonProvider;
-            Encoding = RESTableConfig.DefaultEncoding;
-            XMLHeader = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+            XmlSettings = xmlSettings;
+            XMLHeader = xmlSettings.Encoding.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         }
 
         /// <inheritdoc />
@@ -61,7 +60,7 @@ namespace RESTable.Xml
 
         private async Task XmlSerializeJsonStream(Stream stream)
         {
-            using var streamReader = new StreamReader(stream, Encoding, false, 1024, true);
+            using var streamReader = new StreamReader(stream, XmlSettings.Encoding, false, 1024, true);
             var json = $"{{\"entity\":{await streamReader.ReadToEndAsync().ConfigureAwait(false)}}}";
             var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
             stream.Seek(0, SeekOrigin.Begin);

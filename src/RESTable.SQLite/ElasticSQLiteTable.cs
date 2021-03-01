@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RESTable.Meta;
+﻿using RESTable.Meta;
 using RESTable.Resources;
 
 namespace RESTable.SQLite
@@ -16,8 +15,7 @@ namespace RESTable.SQLite
         /// </summary>
         [
             SQLiteMember(ignore: true),
-            RESTableMember(hide: true),
-            JsonExtensionData(ReadData = true, WriteData = true)
+            RESTableMember(hide: true, mergeOntoOwner: true)
         ]
         public DynamicMemberCollection DynamicMembers { get; }
 

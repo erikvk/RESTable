@@ -46,7 +46,7 @@ namespace RESTable.SQLite
         /// <inheritdoc />
         public virtual async ValueTask<int> UpdateAsync(IRequest<TController> request) => await request
             .GetInputEntitiesAsync()
-            .WhereAwait(async entity => await entity.Update().ConfigureAwait(false))
+            .WhereAwait(async entity => await entity.Update(request).ConfigureAwait(false))
             .CountAsync().ConfigureAwait(false);
 
         protected ElasticSQLiteTableController() { }
@@ -73,7 +73,7 @@ namespace RESTable.SQLite
         /// </summary>
         /// <param name="columnNames"></param>
         /// <returns></returns>
-        protected async Task<bool> DropColumns(params string[] columnNames)
+        protected async Task<bool> DropColumns(IRequest request, params string[] columnNames)
         {
             var toDrop = columnNames
                 .Select(columnName =>
@@ -88,7 +88,7 @@ namespace RESTable.SQLite
                 .Where(mapping => mapping != null)
                 .ToList();
             if (!toDrop.Any()) return false;
-            await TableMapping.DropColumns(toDrop).ConfigureAwait(false);
+            await TableMapping.DropColumns(request, toDrop).ConfigureAwait(false);
             return true;
         }
 
@@ -96,13 +96,13 @@ namespace RESTable.SQLite
         /// Updates the column definition and pushes it to the SQL table
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> Update()
+        public async Task<bool> Update(IRequest request)
         {
             var updated = false;
             var columnsToAdd = Columns.Keys
                 .Except(TableMapping.SQLColumnNames)
                 .Select(name => (name, type: Columns[name]));
-            await DropColumns(DroppedColumns).ConfigureAwait(false);
+            await DropColumns(request, DroppedColumns).ConfigureAwait(false);
             foreach (var (name, type) in columnsToAdd.Where(c => c.type != CLRDataType.Unsupported))
             {
                 TableMapping.ColumnMappings[name] = new ColumnMapping

@@ -10,10 +10,7 @@ namespace RESTable.Requests.Filters
     /// </summary>
     public class OrderByAscending : OrderBy
     {
-        /// <inheritdoc />
-        public OrderByAscending(IEntityResource resource, string key, ICollection<string> dynamicMembers) : base(resource, key, dynamicMembers) { }
-
-        private OrderByAscending(IEntityResource resource, Term term) : base(resource, term) { }
+        public OrderByAscending(IEntityResource resource, Term term) : base(resource, term) { }
 
         /// <inheritdoc />
         public override IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities)

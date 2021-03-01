@@ -20,25 +20,29 @@ namespace RESTable.Meta
             bool hidden = false,
             bool hiddenIfNull = false,
             bool isEnum = false,
+            bool mergeOntoOwner = false,
+            bool readOnly = false,
             string customDateTimeFormat = null,
             Operators allowedConditionOperators = Operators.All
         ) : base
         (
-            $"{owner.FullName}.{name}".GetHashCode(),
-            name,
-            actualName ?? name,
-            type,
-            order,
-            attributes,
-            skipConditions,
-            hidden,
-            hiddenIfNull,
-            isEnum,
-            customDateTimeFormat,
-            allowedConditionOperators,
-            owner,
-            getter,
-            setter
+            metadataToken: $"{owner.FullName}.{name}".GetHashCode(),
+            name: name,
+            actualName: actualName ?? name,
+            type: type,
+            order: order,
+            attributes: attributes,
+            skipConditions: skipConditions,
+            hidden: hidden,
+            hiddenIfNull: hiddenIfNull,
+            isEnum: isEnum,
+            customDateTimeFormat: customDateTimeFormat,
+            allowedConditionOperators: allowedConditionOperators,
+            owner: owner,
+            getter: getter,
+            setter: setter,
+            mergeOntoOwner: mergeOntoOwner,
+            readOnly: readOnly
         ) { }
     }
 
@@ -56,25 +60,29 @@ namespace RESTable.Meta
             bool hidden = false,
             bool hiddenIfNull = false,
             bool isEnum = false,
+            bool mergeOntoOwner = false,
+            bool readOnly = false,
             string customDateTimeFormat = null,
             Operators allowedConditionOperators = Operators.All
         ) : base
         (
-            $"{typeof(TOwner).FullName}.{name}".GetHashCode(),
-            name,
-            actualName ?? name,
-            typeof(TPropertyType),
-            order,
-            attributes,
-            skipConditions,
-            hidden,
-            hiddenIfNull,
-            isEnum,
-            customDateTimeFormat,
-            allowedConditionOperators,
-            typeof(TOwner),
-            getter == null ? default(Getter) : o => getter((TOwner) o),
-            setter == null ? default(Setter) : (o, v) => setter((TOwner) o, (TPropertyType) v)
+            metadataToken: $"{typeof(TOwner).FullName}.{name}".GetHashCode(),
+            name: name,
+            actualName: actualName ?? name,
+            type: typeof(TPropertyType),
+            order: order,
+            attributes: attributes,
+            skipConditions: skipConditions,
+            hidden: hidden,
+            hiddenIfNull: hiddenIfNull,
+            isEnum: isEnum,
+            customDateTimeFormat: customDateTimeFormat,
+            allowedConditionOperators: allowedConditionOperators,
+            owner: typeof(TOwner),
+            getter: getter == null ? default(Getter) : o => getter((TOwner) o),
+            setter: setter == null ? default(Setter) : (o, v) => setter((TOwner) o, (TPropertyType) v),
+            mergeOntoOwner: mergeOntoOwner,
+            readOnly: readOnly
         ) { }
     }
 }

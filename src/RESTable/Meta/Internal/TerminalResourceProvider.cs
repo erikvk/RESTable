@@ -7,28 +7,33 @@ using RESTable.Linq;
 
 namespace RESTable.Meta.Internal
 {
-    internal class TerminalResourceProvider
+    public class TerminalResourceProvider
     {
-        internal void RegisterTerminalTypes(List<Type> terminalTypes)
-        {
-            terminalTypes.OrderBy(t => t.GetRESTableTypeName()).ForEach(type =>
-            {
-                var resource = (IResource) BuildTerminalMethod.MakeGenericMethod(type).Invoke(this, null);
-                RESTableConfig.AddResource(resource);
-            });
-            Shell.TerminalResource = Meta.TerminalResource<Shell>.Get;
-        }
+        private MethodInfo BuildTerminalMethod { get; }
+        private TypeCache TypeCache { get; }
+        private ResourceCollection ResourceCollection { get; }
 
-        internal TerminalResourceProvider()
+        public TerminalResourceProvider(TypeCache typeCache, ResourceCollection resourceCollection)
         {
             BuildTerminalMethod = typeof(TerminalResourceProvider).GetMethod
             (
                 name: nameof(MakeTerminalResource),
                 bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic
             );
+            TypeCache = typeCache;
+            ResourceCollection = resourceCollection;
         }
 
-        private readonly MethodInfo BuildTerminalMethod;
-        private IResource MakeTerminalResource<T>() where T : Terminal => new TerminalResource<T>();
+        public void RegisterTerminalTypes(List<Type> terminalTypes)
+        {
+            terminalTypes.OrderBy(t => t.GetRESTableTypeName()).ForEach(type =>
+            {
+                var resource = (IResource) BuildTerminalMethod.MakeGenericMethod(type).Invoke(this, null);
+                ResourceCollection.AddResource(resource);
+            });
+            Shell.TerminalResource = ResourceCollection.GetTerminalResource<Shell>();
+        }
+
+        private IResource MakeTerminalResource<T>() where T : Terminal => new TerminalResource<T>(TypeCache);
     }
 }

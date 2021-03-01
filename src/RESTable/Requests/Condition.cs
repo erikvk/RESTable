@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -19,16 +17,12 @@ namespace RESTable.Requests
     /// </summary>
     public class Condition<T> : ICondition, IUriCondition where T : class
     {
-        private static readonly IDictionary<IUriCondition, Condition<T>> ConditionCache;
-        static Condition() => ConditionCache = new ConcurrentDictionary<IUriCondition, Condition<T>>(UriCondition.EqualityComparer);
-
         /// <inheritdoc cref="ICondition" />
         /// <inheritdoc cref="IUriCondition" />
         public string Key => Term.Key;
 
         private Operators _operator;
 
-        /// <inheritdoc />
         /// <summary>
         /// The operator of the condition, specifies the operation of the truth
         /// evaluation. Should the condition check for equality, for example?
@@ -54,7 +48,7 @@ namespace RESTable.Requests
         /// The second operand for the operation defined by the operator. Defines
         /// the object for comparison.
         /// </summary>
-        public dynamic Value
+        public object Value
         {
             get => _value;
             set
@@ -94,47 +88,21 @@ namespace RESTable.Requests
         internal Type Type => Term.IsDeclared ? Term.LastAs<DeclaredProperty>()?.Type : null;
         public bool IsOfType<T1>() => Type == typeof(T1);
 
-        /// <inheritdoc />
-        [Pure]
-        public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class => new Condition<T1>
-        (
-            term: EntityResource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
-                  ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, ".", TermBindingRule.DeclaredWithDynamicFallback),
-            op: Operator,
-            value: Value
-        );
+        //   /// <summary>
+        //   /// Creates a new condition for the resource type T using a key, operator and value
+        //   /// </summary>
+        //   /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
+        //   /// <param name="op">The operator denoting the operation to evaluate for the property</param>
+        //   /// <param name="value">The value to compare the property referenced by the key with</param>
+        //   public Condition(string key, Operators op, object value) : this
+        //   (
+        //       term: EntityResource<T>.SafeGet?.MakeConditionTerm(key)
+        //             ?? typeof(T).MakeOrGetCachedTerm(key, ".", TermBindingRule.DeclaredWithDynamicFallback),
+        //       op: op,
+        //       value: value
+        //   ) { }
 
-        /// <inheritdoc />
-        [Pure]
-        public bool TryRedirect<T1>(out Condition<T1> condition, string newKey = null) where T1 : class
-        {
-            try
-            {
-                condition = Redirect<T1>(newKey);
-                return true;
-            }
-            catch
-            {
-                condition = null;
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Creates a new condition for the resource type T using a key, operator and value
-        /// </summary>
-        /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
-        /// <param name="op">The operator denoting the operation to evaluate for the property</param>
-        /// <param name="value">The value to compare the property referenced by the key with</param>
-        public Condition(string key, Operators op, object value) : this
-        (
-            term: EntityResource<T>.SafeGet?.MakeConditionTerm(key)
-                  ?? typeof(T).MakeOrGetCachedTerm(key, ".", TermBindingRule.DeclaredWithDynamicFallback),
-            op: op,
-            value: value
-        ) { }
-
-        private Condition(Term term, Operators op, object value)
+        public Condition(Term term, Operators op, object value)
         {
             Term = term;
             _operator = op;
@@ -194,12 +162,19 @@ namespace RESTable.Requests
         /// <param name="conditions">The parsed conditions (if successful)</param>
         /// <param name="error">The error encountered (if unsuccessful)</param>
         /// <returns>True if and only if the uri conditions were sucessfully parsed</returns>
-        public static bool TryParse(IReadOnlyCollection<IUriCondition> uriConditions, ITarget<T> target, out List<Condition<T>> conditions,
-            out Error error)
+        public static bool TryParse
+        (
+            IReadOnlyCollection<IUriCondition> uriConditions,
+            ITarget<T> target,
+            out List<Condition<T>> conditions,
+            out Error error,
+            TermFactory termFactory,
+            ConditionCache<T> cache
+        )
         {
             try
             {
-                conditions = Parse(uriConditions, target);
+                conditions = Parse(uriConditions, target, termFactory, cache);
                 error = null;
                 return true;
             }
@@ -214,18 +189,18 @@ namespace RESTable.Requests
         /// <summary>
         /// Parses and checks the semantics of Conditions object from a conditions of a REST request URI
         /// </summary>
-        public static List<Condition<T>> Parse(IReadOnlyCollection<IUriCondition> uriConditions, ITarget<T> target)
+        public static List<Condition<T>> Parse(IReadOnlyCollection<IUriCondition> uriConditions, ITarget<T> target, TermFactory termFactory, ConditionCache<T> cache)
         {
             var list = new List<Condition<T>>(uriConditions.Count);
             list.AddRange(uriConditions.Select(c =>
             {
-                if (ConditionCache.TryGetValue(c, out var cond))
+                if (cache.TryGetValue(c, out var cond))
                     return cond;
-                var term = target.MakeConditionTerm(c.Key);
+                var term = termFactory.MakeConditionTerm(target, c.Key);
                 var last = term.Last;
                 if (!last.AllowedConditionOperators.HasFlag(c.Operator))
                     throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
-                return ConditionCache[c] = new Condition<T>
+                return cache[c] = new Condition<T>
                 (
                     term: term,
                     op: c.Operator,

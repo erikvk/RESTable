@@ -47,7 +47,7 @@ namespace RESTable.Meta.Internal
         public ResourceKind ResourceKind { get; }
         private BinarySelector<T> BinarySelector { get; }
 
-        internal BinaryResource(BinarySelector<T> binarySelector)
+        internal BinaryResource(BinarySelector<T> binarySelector, TypeCache typeCache)
         {
             Name = typeof(T).GetRESTableTypeName() ?? throw new Exception();
             Type = typeof(T);
@@ -59,7 +59,7 @@ namespace RESTable.Meta.Internal
             (_, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
             Description = attribute.Description;
             BinarySelector = binarySelector;
-            Members = typeof(T).GetDeclaredProperties();
+            Members = typeCache.GetDeclaredProperties(typeof(T));
             GETAvailableToAll = attribute.GETAvailableToAll;
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)

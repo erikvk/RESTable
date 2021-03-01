@@ -43,7 +43,8 @@ namespace RESTable.Meta
             Type rootType,
             string outputTermComponentSeparator,
             Term stub,
-            ObservedChangeHandler handleObservedChange
+            ObservedChangeHandler handleObservedChange,
+            TypeCache typeCache
         )
         {
             OutputTermComponentSeparator = outputTermComponentSeparator;
@@ -62,7 +63,7 @@ namespace RESTable.Meta
                     var link = new PropertyLink(this, rootWard, new AnyIndexProperty(elementType, owner));
                     recurseTree(elementType, link);
                 }
-                foreach (var property in owner.GetDeclaredProperties().Values)
+                foreach (var property in typeCache.GetDeclaredProperties(owner).Values)
                 {
                     var link = new PropertyLink(this, rootWard, property);
                     recurseTree(property.Type, link);

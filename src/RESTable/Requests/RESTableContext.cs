@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.Internal;
 using RESTable.Internal.Auth;
 using RESTable.Meta;
 using RESTable.Results;
@@ -20,7 +19,6 @@ namespace RESTable.Requests
     {
         public string TraceId { get; }
         private const int MaximumStackDepth = 500;
-        private WebSocket webSocket;
         private int StackDepth;
         internal bool IsBottomOfStack => StackDepth < 1;
         public IServiceProvider Services { get; }
@@ -39,6 +37,8 @@ namespace RESTable.Requests
             StackDepth -= 1;
         }
 
+        private WebSocket webSocket;
+
         /// <summary>
         /// The websocket connected with this context
         /// </summary>
@@ -47,7 +47,7 @@ namespace RESTable.Requests
             get => webSocket;
             set
             {
-                WebSocketController.Add(value);
+                Services.GetService<WebSocketController>().Add(value);
                 webSocket = value;
             }
         }
@@ -87,10 +87,11 @@ namespace RESTable.Requests
         /// <returns></returns>
         public bool TryAuthenticate(ref string uri, out Unauthorized error, Headers headers = null)
         {
-            Client.AccessRights = RESTableConfig.RequireApiKey switch
+            var configuration = Services.GetService<RESTableConfiguration>();
+            Client.AccessRights = configuration.RequireApiKey switch
             {
-                true => Authenticator.GetAccessRights(ref uri, headers),
-                false => AccessRights.Root
+                true => Services.GetService<Authenticator>().GetAccessRights(ref uri, headers),
+                false => Services.GetService<RootAccess>()
             };
             if (Client.AccessRights == null)
             {
@@ -114,7 +115,8 @@ namespace RESTable.Requests
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
         public virtual IRequest<T> CreateRequest<T>(Method method = GET, string protocolId = "restable", string viewName = null) where T : class
         {
-            var resource = Resource<T>.SafeGet ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
+            var resourceCollection = Services.GetService<ResourceCollection>();
+            var resource = resourceCollection.SafeGetResource<T>() ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
             var parameters = new RequestParameters
             (
                 context: this,
@@ -226,18 +228,13 @@ namespace RESTable.Requests
         /// </summary>
         /// <param name="client">The client of the context</param>
         /// <param name="services">The services to use in this context</param>
-        protected RESTableContext(Client client, IServiceProvider services = null)
+        protected RESTableContext(Client client, IServiceProvider services)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
-            Services = services ?? new ServiceCollection().BuildServiceProvider();
+            Services = services ?? throw new ArgumentNullException(nameof(services));
             TraceId = NextId;
             StackDepth = 0;
         }
-
-        /// <summary>
-        /// The context of internal root-level access requests
-        /// </summary>
-        public static RESTableContext Root => new InternalContext();
 
         private static ulong IdNr;
 

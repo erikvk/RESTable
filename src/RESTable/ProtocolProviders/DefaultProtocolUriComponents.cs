@@ -5,6 +5,7 @@ namespace RESTable.ProtocolProviders
 {
     internal class DefaultProtocolUriComponents : IUriComponents
     {
+        public string ProtocolIdentifier { get; }
         public string ResourceSpecifier { get; internal set; }
         public string ViewName { get; internal set; }
         public IMacro Macro { get; internal set; }
@@ -16,6 +17,7 @@ namespace RESTable.ProtocolProviders
 
         public DefaultProtocolUriComponents(IProtocolProvider protocolProvider)
         {
+            ProtocolIdentifier = protocolProvider.ProtocolIdentifier;
             ProtocolProvider = protocolProvider;
             Conditions = new List<IUriCondition>();
             MetaConditions = new List<IUriCondition>();

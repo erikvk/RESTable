@@ -95,7 +95,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The internal location, has root access to all resources
         /// </summary>
-        public static Client Internal => new(
+        public static Client GetInternal(RootAccess rootAccess) => new(
             origin: OriginType.Internal,
             host: "localhost",
             clientIp: new IPAddress(new byte[] {127, 0, 0, 1}),
@@ -103,7 +103,7 @@ namespace RESTable.Requests
             userAgent: null,
             https: false,
             cookies: new Cookies()
-        ) {AccessRights = AccessRights.Root};
+        ) {AccessRights = rootAccess};
 
         /// <inheritdoc />
         public override string ToString()

@@ -10,6 +10,8 @@ namespace RESTable.Requests
     /// </summary>
     public class UriComponents : IUriComponents
     {
+        public string ProtocolIdentifier { get; }
+
         /// <inheritdoc />
         public string ResourceSpecifier { get; }
 
@@ -27,10 +29,9 @@ namespace RESTable.Requests
         public List<IUriCondition> MetaConditions { get; }
 
         /// <inheritdoc />
-        public IProtocolProvider ProtocolProvider { get; }
-
-        /// <inheritdoc />
         public IMacro Macro { get; }
+
+        public IProtocolProvider ProtocolProvider { get; }
 
         /// <inheritdoc />
         IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
@@ -38,24 +39,32 @@ namespace RESTable.Requests
         /// <inheritdoc />
         IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
 
-        public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions,
-            IEnumerable<IUriCondition> metaConditions, IProtocolProvider protocolProvider, IMacro macro)
+        public UriComponents
+        (
+            IProtocolProvider protocolProvider,
+            string resourceSpecifier,
+            string viewName,
+            IEnumerable<IUriCondition> conditions,
+            IEnumerable<IUriCondition> metaConditions,
+            IMacro macro
+        )
         {
+            ProtocolIdentifier = protocolProvider.ProtocolIdentifier;
+            ProtocolProvider = protocolProvider;
             ResourceSpecifier = resourceSpecifier;
             ViewName = viewName;
             Conditions = conditions.ToList();
             MetaConditions = metaConditions.ToList();
-            ProtocolProvider = protocolProvider;
             Macro = macro;
         }
 
         internal UriComponents(IUriComponents existing)
         {
+            ProtocolIdentifier = existing.ProtocolIdentifier;
             ResourceSpecifier = existing.ResourceSpecifier;
             ViewName = existing.ViewName;
             Conditions = existing.Conditions.ToList();
             MetaConditions = existing.MetaConditions.ToList();
-            ProtocolProvider = existing.ProtocolProvider;
             Macro = existing.Macro;
         }
 

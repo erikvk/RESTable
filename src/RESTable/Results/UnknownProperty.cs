@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+﻿using System;
 using RESTable.Meta;
 using RESTable.Resources;
 
@@ -10,7 +10,9 @@ namespace RESTable.Results
     /// </summary>
     internal class UnknownProperty : NotFound
     {
-        internal UnknownProperty(MemberInfo type, string searchString) : base(ErrorCodes.UnknownProperty,
-            $"Could not find any property in {(type.HasAttribute<RESTableViewAttribute>() ? $"view '{type.Name}' or type '{Resource.Get(type.DeclaringType)?.Name}'" : $"type '{type.Name}'")} by '{searchString}'.") { }
+        internal UnknownProperty(Type targetType, IResource resource, string searchString) : base
+        (
+            code: ErrorCodes.UnknownProperty,
+            info: $"Could not find any property in {(targetType.HasAttribute<RESTableViewAttribute>() ? $"view '{targetType.Name}' or type '{resource.Name}'" : $"type '{targetType.Name}'")} by '{searchString}'.") { }
     }
-}
+} 

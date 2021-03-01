@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using RESTable.Requests;
+﻿using RESTable.Requests;
+using RESTable.Resources;
 
 namespace RESTable.Internal.Logging
 {
@@ -7,7 +7,8 @@ namespace RESTable.Internal.Logging
     {
         public string ClientIP;
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public string ProxyIP;
+        [RESTableMember(hideIfNull: true)] 
+        public string ProxyIP { get; set; }
 
         public string Protocol;
         public string UserAgent;

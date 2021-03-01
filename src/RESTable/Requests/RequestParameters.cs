@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.WebSockets;
@@ -72,7 +73,7 @@ namespace RESTable.Requests
 
         private string UnparsedUri { get; }
         internal IResource iresource;
-        internal IResource IResource => iresource ??= Resource.Find(Uri.ResourceSpecifier);
+        internal IResource IResource => iresource ??= Context.Services.GetService<ResourceCollection>().FindResource(Uri.ResourceSpecifier);
         internal Exception Error { get; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
         bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true} e;
@@ -97,7 +98,8 @@ namespace RESTable.Requests
             return await Body.ToStringAsync().ConfigureAwait(false);
         }
 
-        internal async Task<RequestParameters> GetCopy() => new(
+        internal async Task<RequestParameters> GetCopy() => new
+        (
             iresource: iresource,
             context: Context,
             method: Method,
@@ -116,8 +118,7 @@ namespace RESTable.Requests
         #endregion
 
         private RequestParameters(IResource iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, bool isWebSocketUpgrade, string unparsedUri,
-            Exception error, MessageType messageType,
-            CachedProtocolProvider cachedProtocolProvider, string protocolIdentifier, string headersStringCache)
+            Exception error, MessageType messageType, CachedProtocolProvider cachedProtocolProvider, string protocolIdentifier, string headersStringCache)
         {
             this.iresource = iresource;
             Context = context;
@@ -150,8 +151,9 @@ namespace RESTable.Requests
             iresource = resource;
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = new URI(resourceSpecifier: resource.Name, viewName: viewName);
-            ProtocolIdentifier = protocolIdentifier?.ToLower() ?? ProtocolController.DefaultProtocolProvider.ProtocolProvider.ProtocolIdentifier;
-            CachedProtocolProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
+            var protocolController = context.Services.GetService<ProtocolController>();
+            ProtocolIdentifier = protocolIdentifier?.ToLower() ?? protocolController.DefaultProtocolProvider.ProtocolProvider.ProtocolIdentifier;
+            CachedProtocolProvider = protocolController.ResolveCachedProtocolProvider(protocolIdentifier);
         }
 
         /// <summary>

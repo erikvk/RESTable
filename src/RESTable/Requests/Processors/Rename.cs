@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 using RESTable.Linq;
 
@@ -15,13 +14,10 @@ namespace RESTable.Requests.Processors
     /// </summary>
     public class Rename : Dictionary<Term, string>, IProcessor
     {
-        internal Rename(IEntityResource resource, string keys, out ICollection<string> dynamicDomain)
+        internal Rename(IEnumerable<(Term term, string newName)> terms, out ICollection<string> dynamicDomain)
         {
-            keys.Split(',').ForEach(keyString =>
-            {
-                var (termKey, newName) = keyString.TSplit(keys.Contains("->") ? "->" : "-%3E");
-                Add(resource.MakeOutputTerm(termKey.ToLower(), null), newName);
-            });
+            foreach (var (term, newName) in terms) 
+                Add(term, newName);
             dynamicDomain = Values;
         }
 
@@ -30,6 +26,7 @@ namespace RESTable.Requests.Processors
 
         private JObject Renamed(JObject entity)
         {
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             this.ForEach(pair =>
             {
                 var (key, newName) = pair;
@@ -37,7 +34,7 @@ namespace RESTable.Requests.Processors
                 if (value == null)
                 {
                     value = key.Evaluate(entity, out _);
-                    entity[newName] = value == null ? null : JToken.FromObject(value, Providers.Json.GetSerializer());
+                    entity[newName] = value == null ? null : JToken.FromObject(value, jsonProvider.GetSerializer());
                     return;
                 }
                 var property = (JProperty) value.Parent;

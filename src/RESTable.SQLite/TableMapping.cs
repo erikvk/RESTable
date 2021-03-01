@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using RESTable.Admin;
+using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -193,7 +194,7 @@ namespace RESTable.SQLite
             RemoveTable(this);
         }
 
-        internal async Task DropColumns(List<ColumnMapping> mappings)
+        internal async Task DropColumns(IRequest request, List<ColumnMapping> mappings)
         {
             mappings.ForEach(mapping => ColumnMappings.Remove(mapping.CLRProperty.Name));
             ReloadColumnNames();
@@ -208,14 +209,14 @@ namespace RESTable.SQLite
                         $"  SELECT {columnsSQL} FROM {tempName};" +
                         $"DROP TABLE {tempName};" +
                         "COMMIT;PRAGMA foreign_keys=on;";
-            await using var indexRequest = RESTableContext.Root
+            var rootContext = new RootContext(services: request);
+            await using var indexRequest = rootContext
                 .CreateRequest<DatabaseIndex>()
-                .WithConditions(new Condition<DatabaseIndex>
-                (
+                .WithCondition(
                     key: nameof(DatabaseIndex.ResourceName),
                     op: Operators.EQUALS,
                     value: Resource.Name
-                ));
+                );
             var entities = await indexRequest.EvaluateToEntities().ConfigureAwait(false);
             var tableIndexesToKeep = await entities
                 .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))

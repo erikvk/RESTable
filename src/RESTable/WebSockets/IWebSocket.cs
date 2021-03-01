@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -118,6 +119,11 @@ namespace RESTable.WebSockets
         Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null)
             where T : Terminal;
 
+        /// <summary>
+        /// A cancellation token that is cancelled when this WebSocket is closed
+        /// </summary>
+        CancellationToken CancellationToken { get; }
+        
         /// <summary>
         /// The current status of this WebSocket
         /// </summary>

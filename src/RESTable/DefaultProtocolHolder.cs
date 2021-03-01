@@ -1,4 +1,5 @@
-﻿using RESTable.Internal;
+﻿using Microsoft.Extensions.DependencyInjection;
+using RESTable.Internal;
 using RESTable.Requests;
 
 namespace RESTable
@@ -20,7 +21,7 @@ namespace RESTable
         {
             Context = context;
             Headers = headers ?? new Headers();
-            CachedProtocolProvider = ProtocolController.DefaultProtocolProvider;
+            CachedProtocolProvider = Context.Services.GetService<ProtocolController>().DefaultProtocolProvider;
         }
     }
 }

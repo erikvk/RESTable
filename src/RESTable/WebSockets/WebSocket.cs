@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Internal.Logging;
@@ -58,7 +58,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// The headers contained in the WebSocket upgrade request
         /// </summary>
-        public Headers Headers { get; internal set; }
+        public Headers Headers => ProtocolHolder.Headers;
 
         /// <inheritdoc />
         /// <summary>
@@ -70,7 +70,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// The context in which this WebSocket was opened
         /// </summary>
-        public RESTableContext Context { get; internal set; }
+        public RESTableContext Context { get; private set; }
 
         private long BytesReceived { get; set; }
         private long TotalSentBytesCount { get; set; }
@@ -99,24 +99,22 @@ namespace RESTable.WebSockets
             TerminalConnection = null;
         }
 
-        internal void SetContext(IRequest upgradeRequest)
-        {
-            Context = new WebSocketContext(this, Client, upgradeRequest);
-            Headers = upgradeRequest.Headers;
-        }
-
         /// <summary>
         /// A cancellation token source that cancels when this Websocket is closed
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; }
 
+        public CancellationToken CancellationToken => CancellationTokenSource.Token;
+
         /// <summary>
         /// Sends the websocket upgrade and open this websocket for a single transfer or
         /// a terminal connection lifetime.
         /// </summary>
-        internal async Task Open(IProtocolHolder protocolHolder, bool acceptIncomingMessages = true)
+        internal async Task Open(IRequest upgradeRequest, bool acceptIncomingMessages = true)
         {
-            ProtocolHolder = protocolHolder;
+            ProtocolHolder = upgradeRequest;
+            Context = new WebSocketContext(this, Client, upgradeRequest);
+
             switch (Status)
             {
                 case WebSocketStatus.Waiting:
@@ -163,12 +161,12 @@ namespace RESTable.WebSockets
             OngoingTasks.Add(RunTask());
         }
 
-        public void HandleTextInput(string textInput)
+        protected void HandleTextInput(string textInput)
         {
             RunWebSocketMessageTask(WebSocketController.HandleTextInput(Id, textInput, CancellationTokenSource.Token));
         }
 
-        public void HandleBinaryInput(byte[] binaryInput)
+        protected void HandleBinaryInput(byte[] binaryInput)
         {
             RunWebSocketMessageTask(WebSocketController.HandleBinaryInput(Id, binaryInput, CancellationTokenSource.Token));
         }
@@ -270,7 +268,7 @@ namespace RESTable.WebSockets
             if (resource == null)
                 throw new ArgumentNullException(nameof(resource));
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
-            var newTerminal = _resource.MakeTerminal(assignments);
+            var newTerminal = _resource.MakeTerminal(Context, assignments);
             await Context.WebSocket.ConnectTo(newTerminal, _resource).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
         }
@@ -433,12 +431,6 @@ namespace RESTable.WebSockets
             TotalSentBytesCount += Encoding.UTF8.GetByteCount(textData);
         }
 
-        public async Task SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false)
-        {
-            if (!PreCheck(result)) return;
-            await SendResultInfo(result, timeElapsed, writeHeaders).ConfigureAwait(false);
-        }
-
         private bool PreCheck(IResult result)
         {
             switch (Status)
@@ -474,21 +466,19 @@ namespace RESTable.WebSockets
                 await SendJson(result.Headers, true).ConfigureAwait(false);
         }
 
+        public async Task SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false)
+        {
+            if (!PreCheck(result)) return;
+            await SendResultInfo(result, timeElapsed, writeHeaders).ConfigureAwait(false);
+        }
+
         /// <inheritdoc />
         public async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? timeElapsed = null,
             bool writeHeaders = false, bool disposeResult = true)
         {
             try
             {
-                var result = serializedResult.Result;
-                if (!PreCheck(result)) return;
-
-                if (result is Content {IsLocked: true})
-                    throw new InvalidOperationException(
-                        "Unable to send a result that is already assigned to a Websocket streaming " +
-                        "job. Streaming results are locked, and can only be streamed once.");
-
-                await SendResultInfo(result, timeElapsed, writeHeaders).ConfigureAwait(false);
+                await SendResult(serializedResult.Result, timeElapsed, writeHeaders).ConfigureAwait(false);
                 await SendBinary(serializedResult.Body).ConfigureAwait(false);
             }
             finally
@@ -506,18 +496,15 @@ namespace RESTable.WebSockets
             await SendResult(error).ConfigureAwait(false);
         }
 
+        private IJsonProvider JsonProvider { get; }
+        private WebSocketController WebSocketController { get; }
+
         /// <inheritdoc />
         public async Task SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
-            Formatting _prettyPrint;
-            if (prettyPrint == null)
-                _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
-            else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
-            await using (var message = await GetMessageStream(false).ConfigureAwait(false))
-            {
-                Providers.Json.SerializeToStream(message, item, _prettyPrint, ignoreNulls);
-            }
+            await using var message = await GetMessageStream(false).ConfigureAwait(false);
+            JsonProvider.SerializeToStream(message, item, prettyPrint, ignoreNulls);
         }
 
         #endregion
@@ -665,6 +652,8 @@ namespace RESTable.WebSockets
             Context = context;
             CancellationTokenSource = new CancellationTokenSource();
             OngoingTasks = new HashSet<Task>();
+            JsonProvider = context.Services.GetService<IJsonProvider>();
+            WebSocketController = context.Services.GetService<WebSocketController>();
         }
     }
 }

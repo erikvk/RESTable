@@ -1,18 +1,20 @@
+using System.Collections.Generic;
+using System.Linq;
 using RESTable.Meta;
 using RESTable.Resources;
 
 namespace RESTable.Internal
 {
-    internal static class EntityTypeResolverController
+    public class EntityTypeResolverController
     {
-        internal static void SetupEntityTypeResolvers(IEntityTypeContractResolver[] resolvers)
+        internal IEntityTypeContractResolver[] EntityTypeResolvers { get; }
+
+        public EntityTypeResolverController(IEnumerable<IEntityTypeContractResolver> entityTypeResolvers)
         {
-            EntityTypeResolvers = resolvers ?? new IEntityTypeContractResolver[0];
+            EntityTypeResolvers = entityTypeResolvers.ToArray();
         }
 
-        internal static IEntityTypeContractResolver[] EntityTypeResolvers { get; private set; }
-
-        internal static void InvokeContractResolvers(EntityTypeContract contract)
+        internal void InvokeContractResolvers(EntityTypeContract contract)
         {
             foreach (var resolver in EntityTypeResolvers)
             {

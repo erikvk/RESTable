@@ -6,13 +6,31 @@ using RESTable.Linq;
 
 namespace RESTable.Internal.Auth
 {
-    internal class AccessRights : ReadOnlyDictionary<IResource, Method[]>
+    public class RootAccess : AccessRights
     {
-        static AccessRights() => Root = new AccessRights(null);
-        internal static AccessRights Root { get; }
-        internal static void ReloadRoot() => RESTableConfig.Resources.ForEach(r => Root[r] = EnumMember<Method>.Values);
+        private ResourceCollection ResourceCollection { get; }
+
+        public RootAccess(ResourceCollection resourceCollection) : base(null)
+        {
+            ResourceCollection = resourceCollection;
+            Load();
+        }
+
+        internal void Load()
+        {
+            Clear();
+            ResourceCollection.ForEach(r => this[r] = EnumMember<Method>.Values);
+        }
+    }
+
+    public class AccessRights : ReadOnlyDictionary<IResource, Method[]>
+    {
         internal string ApiKey { get; }
-        private AccessRights(string apiKey) : base(new Dictionary<IResource, Method[]>()) => ApiKey = apiKey;
+
+        protected AccessRights(string apiKey) : base(new Dictionary<IResource, Method[]>())
+        {
+            ApiKey = apiKey;
+        }
 
         internal static AccessRights ToAccessRights(IEnumerable<AccessRight> accessRights, string apiKeyHash)
         {

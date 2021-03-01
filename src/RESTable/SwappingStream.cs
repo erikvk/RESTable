@@ -73,12 +73,19 @@ namespace RESTable
         private async Task Swap()
         {
             Position = 0;
-            var fileStream = RESTableConfig.MakeTempFile();
+            var fileStream = MakeTempFile();
             await using var memoryStream = (MemoryStream) Stream;
             await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
             Stream = fileStream;
             Swapped = true;
         }
+        
+        private FileStream MakeTempFile() => File.Create
+        (
+            path: $"{Path.GetTempPath()}{Guid.NewGuid()}.restable",
+            bufferSize: 1048576,
+            options: FileOptions.Asynchronous | FileOptions.DeleteOnClose
+        );
 
         public override bool CanRead => Stream.CanRead;
         public override bool CanSeek => Stream.CanSeek;

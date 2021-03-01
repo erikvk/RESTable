@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -30,10 +31,12 @@ namespace RESTable.Admin
         public IEnumerable<TermCache> Select(IRequest<TermCache> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return RESTableConfig.Resources.Select(r => new TermCache
+            var termCache = request.GetService<Requests.TermCache>();
+            var resourceCollection = request.GetService<ResourceCollection>();
+            return resourceCollection.Select(r => new TermCache
             {
                 Type = r.Type.GetRESTableTypeName(),
-                Terms = TypeCache.TermCache
+                Terms = termCache
                     .Where(pair => pair.Key.Type == r.Type.GetRESTableTypeName())
                     .Select(pair => pair.Value.Key)
                     .ToArray()
@@ -43,13 +46,14 @@ namespace RESTable.Admin
         public int Delete(IRequest<TermCache> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
+            var termCache = request.GetService<Requests.TermCache>();
             var count = 0;
             request.GetInputEntities().ForEach(e =>
             {
-                TypeCache.TermCache
+                termCache
                     .Where(pair => pair.Key.Type == e.Type)
                     .Select(pair => pair.Key).ToList()
-                    .ForEach(key => TypeCache.TermCache.TryRemove(key, out _));
+                    .ForEach(key => termCache.Remove(key));
                 count += 1;
             });
             return count;

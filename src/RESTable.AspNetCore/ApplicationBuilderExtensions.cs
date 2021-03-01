@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -18,7 +19,9 @@ namespace RESTable.AspNetCore
 
         public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder)
         {
-            var config = builder.ApplicationServices.GetService<RESTableConfig>();
+            if (!RESTableConfigurator.IsConfigured)
+                throw new InvalidOperationException($"RESTable must be configured prior to call to {nameof(UseRESTableAspNetCore)}");
+            var config = builder.ApplicationServices.GetService<RESTableConfiguration>();
 
             RootUri = config.RootUri;
             Template = RootUri + "/{resource?}/{conditions?}/{metaconditions?}";

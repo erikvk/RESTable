@@ -13,12 +13,6 @@ namespace RESTable.Requests.Filters
         internal IEntityResource Resource { get; }
         internal bool Skip { get; set; }
 
-        internal OrderBy(IEntityResource resource, string key, ICollection<string> dynamicMembers)
-        {
-            Resource = resource;
-            Term = resource.MakeOutputTerm(key, dynamicMembers);
-        }
-
         internal OrderBy(IEntityResource resource, Term term)
         {
             Resource = resource;

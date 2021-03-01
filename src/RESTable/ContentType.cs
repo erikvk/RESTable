@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using Newtonsoft.Json;
 
 namespace RESTable
 {
     /// <summary>
     /// Describes a content type
     /// </summary>
-    [JsonConverter(typeof(ContentTypeConverter))]
     public struct ContentType
     {
         /// <summary>

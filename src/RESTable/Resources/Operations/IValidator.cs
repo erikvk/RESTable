@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
 {
@@ -14,7 +15,7 @@ namespace RESTable.Resources.Operations
         /// Validates the entity given as input. If invalid, include a reason in the out parameter to inform the
         /// user of the validation error. Return true if and only if the entity is valid.
         /// </summary>
-        IEnumerable<InvalidMember> Validate(T entity);
+        IEnumerable<InvalidMember> Validate(T entity, RESTableContext context);
     }
 
     public static class ValidatorExtensions

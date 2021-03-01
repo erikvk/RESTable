@@ -20,9 +20,10 @@ namespace RESTable.SQLite.Example
                 .AddSqliteProvider("\\data")
                 .AddJsonProvider()
                 .AddODataProvider()
-                .AddRESTable(requireApiKey: true, configFilePath: "./Config.xml")
+                .AddRESTable()
                 .BuildServiceProvider()
-                .GetService<RESTableConfig>();
+                .GetService<RESTableConfigurator>()
+                .ConfigureRESTable(requireApiKey: true, configFilePath: "./Config.xml");
             ExampleDatabase.Setup();
         }
     }

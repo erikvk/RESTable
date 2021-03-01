@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Generic;   
 using RESTable.ProtocolProviders;
 
 namespace RESTable.Requests
@@ -8,6 +8,11 @@ namespace RESTable.Requests
     /// </summary>
     public interface IUriComponents
     {
+        /// <summary>
+        /// Specifies the protocol for the request
+        /// </summary>
+        string ProtocolIdentifier { get; }
+
         /// <summary>
         /// Specifies the resource for the request
         /// </summary>

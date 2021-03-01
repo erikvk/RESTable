@@ -6,25 +6,19 @@
     public struct AuthResults
     {
         internal readonly bool Success;
-        internal readonly string Reason;
+        internal readonly string FailedReason;
 
         /// <summary>
-        /// Creates a new AuthenticationResults with the given success status and reason.
-        /// Reason is only used when success is false.
+        /// Creates a new AuthenticationResults with the given success status and failedReason.
+        /// failedReason is only used when success is false.
         /// </summary>
-        public AuthResults(bool success, string reason = null)
+        public AuthResults(bool success = true, string failedReason = null)
         {
             Success = success;
-            Reason = reason;
+            FailedReason = failedReason;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="input"></param>
-        public static implicit operator AuthResults((bool success, string reason) input)
-        {
-            return new AuthResults(input.success,input.reason);
-        }
+        public static implicit operator AuthResults(string failedReason) => new(false, failedReason);
+        public static implicit operator AuthResults(bool success) => new(success);
     }
 }

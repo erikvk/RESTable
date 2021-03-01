@@ -1,13 +1,16 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Newtonsoft.Json.Serialization;
 using RESTable.Internal;
 using RESTable.Resources;
 using RESTable.Meta.IL;
+using RESTable.Meta.Internal;
+using RESTable.Requests;
+using RESTable.Results;
 
 namespace RESTable.Meta
 {
@@ -15,83 +18,46 @@ namespace RESTable.Meta
     /// The type cache keeps track of discovered types and provides
     /// fast access to their declared properties.
     /// </summary>limit
-    public static class TypeCache
+    public class TypeCache
     {
-        static TypeCache()
+        internal ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache { get; }
+        private ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCacheByActualName { get; }
+        private ConcurrentDictionary<Type, EntityTypeContract> EntityTypeContracts { get; }
+        private EntityTypeResolverController EntityTypeResolverController { get; }
+        internal TermFactory TermFactory { get; }
+        private ResourceCollection ResourceCollection { get; }
+
+        public TypeCache
+        (
+            EntityTypeResolverController entityTypeResolverController,
+            ResourceCollection resourceCollection,
+            TermCache termCache
+        )
         {
+            EntityTypeResolverController = entityTypeResolverController;
+            ResourceCollection = resourceCollection;
             DeclaredPropertyCache = new ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>>();
             DeclaredPropertyCacheByActualName = new ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>>();
-            TermCache = new ConcurrentDictionary<(string, string, TermBindingRule), Term>();
-            PropertyMonitoringTreeCache = new ConcurrentDictionary<Type, PropertyMonitoringTree>();
             EntityTypeContracts = new ConcurrentDictionary<Type, EntityTypeContract>();
+            TermFactory = new TermFactory(this, termCache, resourceCollection);
         }
-
-        #region Terms
-
-        internal static readonly ConcurrentDictionary<(string Type, string Key, TermBindingRule BindingRule), Term> TermCache;
-
-        /// <summary>
-        /// Condition terms are terms that refer to properties in resources, or for
-        /// use in conditions.
-        /// </summary>
-        internal static Term MakeConditionTerm(this ITarget target, string key) => target.Type.MakeOrGetCachedTerm
-        (
-            key: key,
-            componentSeparator: ".",
-            bindingRule: target.ConditionBindingRule
-        );
-
-        /// <summary>
-        /// Output terms are terms that refer to properties in RESTable output. If they refer to
-        /// a property in the dynamic domain, they are not cached. 
-        /// </summary>
-        internal static Term MakeOutputTerm(this IEntityResource target, string key, ICollection<string> dynamicDomain) =>
-            dynamicDomain == null
-                ? MakeOrGetCachedTerm(target.Type, key, ".", target.OutputBindingRule)
-                : Term.Parse(target.Type, key, ".", target.OutputBindingRule, dynamicDomain);
-
-        /// <summary>
-        /// Creates a new term for the given type, with the given key, component separator and binding rule. If a term with
-        /// the given key already existed, simply returns that one.
-        /// </summary>
-        public static Term MakeOrGetCachedTerm(this Type resource, string key, string componentSeparator, TermBindingRule bindingRule)
-        {
-            var tuple = (resource.GetRESTableTypeName(), key.ToLower(), bindingRule);
-            if (!TermCache.TryGetValue(tuple, out var term))
-                term = TermCache[tuple] = Term.Parse(resource, key, componentSeparator, bindingRule, null);
-            return term;
-        }
-
-        internal static void ClearTermsFor<T>() => TermCache
-            .Where(pair => pair.Key.Type == typeof(T).GetRESTableTypeName())
-            .Select(pair => pair.Key)
-            .ToList()
-            .ForEach(key => TermCache.TryRemove(key, out _));
-
-        #endregion
 
         #region Declared properties
 
-        internal static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
-        private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCacheByActualName;
-        private static readonly ConcurrentDictionary<Type, EntityTypeContract> EntityTypeContracts;
-
-        internal static IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(this Type type, bool flag = false)
+        internal IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(Type type, bool flag = false)
         {
             if (type.HasAttribute<RESTableMemberAttribute>(out var memberAttribute) && memberAttribute.Ignored)
                 return new DeclaredProperty[0];
-            return type
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .ParseDeclaredProperties(flag);
+            return ParseDeclaredProperties(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), flag);
         }
 
-        internal static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
+        internal IEnumerable<DeclaredProperty> ParseDeclaredProperties(IEnumerable<PropertyInfo> props, bool flag) => props
             .Where(p => !p.RESTableIgnored())
             .Where(p => !p.GetIndexParameters().Any())
             .Select(p => new DeclaredProperty(p, flag))
             .OrderBy(p => p.Order);
 
-        public static EntityTypeContract GetEntityTypeContract(Type type)
+        public EntityTypeContract GetEntityTypeContract(Type type)
         {
             if (EntityTypeContracts.TryGetValue(type, out var value))
                 return value;
@@ -102,7 +68,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the declared properties for a given type
         /// </summary>
-        public static IReadOnlyDictionary<string, DeclaredProperty> GetDeclaredProperties(this Type type, bool groupByActualName = false)
+        public IReadOnlyDictionary<string, DeclaredProperty> GetDeclaredProperties(Type type, bool groupByActualName = false)
         {
             IEnumerable<DeclaredProperty> Make(Type _type)
             {
@@ -110,11 +76,17 @@ namespace RESTable.Meta
                 {
                     case null: return new DeclaredProperty[0];
                     case var _ when _type.IsInterface:
-                        return new[] {_type}
-                            .Concat(_type.GetInterfaces())
-                            .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-                            .ParseDeclaredProperties(false);
+                    {
+                        return ParseDeclaredProperties
+                        (
+                            props: new[] {_type}
+                                .Concat(_type.GetInterfaces())
+                                .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public)),
+                            flag: false
+                        );
+                    }
                     case var _ when _type.GetRESTableInterfaceType() is Type t:
+                    {
                         var interfaceName = t.GetRESTableTypeName();
                         var targetsByProp = _type
                             .GetInterfaceMap(t)
@@ -131,7 +103,7 @@ namespace RESTable.Meta
                                     return m.Name.Split("set_")[1];
                                 return null;
                             })
-                            .Where(group => group.Key != null)
+                            .Where(group => @group.Key != null)
                             .ToDictionary(m => m.Key, m => (
                                 getter: m.FirstOrDefault(p => p.GetParameters().Length == 0),
                                 setter: m.FirstOrDefault(p => p.GetParameters().Length == 1)
@@ -161,14 +133,23 @@ namespace RESTable.Meta
                             }
                             return p;
                         });
+                    }
                     case var _ when _type.IsSubclassOf(typeof(Terminal)):
-                        return _type.FindAndParseDeclaredProperties().Except(typeof(Terminal).GetDeclaredProperties().Values, DeclaredProperty.NameComparer);
+                    {
+                        return FindAndParseDeclaredProperties(_type).Except(GetDeclaredProperties(typeof(Terminal)).Values, DeclaredProperty.NameComparer);
+                    }
                     case var _ when _type.IsNullable(out var underlying):
-                        return underlying.GetDeclaredProperties().Values;
+                    {
+                        return GetDeclaredProperties(underlying).Values;
+                    }
                     case var _ when _type.HasAttribute<RESTableViewAttribute>():
-                        return _type.FindAndParseDeclaredProperties().Union(Make(_type.DeclaringType));
-                    case var _ when Resource.SafeGet(_type) is IEntityResource {DeclaredPropertiesFlagged: true} e:
-                    default: return _type.FindAndParseDeclaredProperties();
+                    {
+                        return FindAndParseDeclaredProperties(_type).Union(Make(_type.DeclaringType));
+                    }
+                    default:
+                    {
+                        return FindAndParseDeclaredProperties(_type);
+                    }
                 }
             }
 
@@ -181,7 +162,7 @@ namespace RESTable.Meta
                     var propertyList = new List<DeclaredProperty>();
                     foreach (var property in Make(type))
                     {
-                        property.EstablishPropertyDependancies();
+                        EstablishPropertyDependancies(property);
                         propertyList.Add(property);
                     }
                     var contract = EntityTypeContracts[type] = new EntityTypeContract(type, propertyList);
@@ -203,40 +184,70 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the DeclaredProperty for a given PropertyInfo
         /// </summary>
-        public static DeclaredProperty GetDeclaredProperty(this PropertyInfo member)
+        public DeclaredProperty GetDeclaredProperty(PropertyInfo member)
         {
             var declaringType = member.DeclaringType;
             if (declaringType.GetRESTableTypeName() == null)
                 throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
-            declaringType.GetDeclaredProperties(true).TryGetValue(member.Name, out var property);
+            GetDeclaredProperties(declaringType, true).TryGetValue(member.Name, out var property);
             return property;
         }
 
+
         /// <summary>
-        /// Gets the DeclaredProperty for a given JsonProperty
+        /// Parses a declared property from a key string and a type
         /// </summary>
-        public static DeclaredProperty GetDeclaredProperty(this JsonProperty member)
+        /// <param name="type">The type to match the property from</param>
+        /// <param name="key">The string to match a property from</param>
+        /// <returns></returns>
+        public DeclaredProperty FindDeclaredProperty(Type type, string key)
         {
-            var declaringType = member.DeclaringType;
-            if (declaringType.GetRESTableTypeName() == null)
-                throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
-            declaringType.GetDeclaredProperties().TryGetValue(member.PropertyName, out var property);
-            return property;
+            var isDictionary = typeof(IDictionary).IsAssignableFrom(type) ||
+                               type.ImplementsGenericInterface(typeof(IDictionary<,>));
+            if (!isDictionary && typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                var elementType = type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p)
+                    ? p[0]
+                    : typeof(object);
+                var collectionReadonly = typeof(IList).IsAssignableFrom(type) || type.ImplementsGenericInterface(typeof(IList<>));
+                switch (key)
+                {
+                    case "-": return new LastIndexProperty(elementType, collectionReadonly, type);
+                    case var _ when int.TryParse(key, out var integer):
+                        return new IndexProperty(integer, key, elementType, collectionReadonly, type);
+                }
+            }
+
+            if (!GetDeclaredProperties(type).TryGetValue(key, out var prop))
+            {
+                if (type.IsNullable(out var underlying))
+                    type = underlying;
+                var resource = ResourceCollection.SafeGetResource(type);
+                throw new UnknownProperty(type, resource, key);
+            }
+            return prop;
         }
 
-        #endregion
-
-        #region Property monitoring trees
-
-        internal static readonly IDictionary<Type, PropertyMonitoringTree> PropertyMonitoringTreeCache;
-
         /// <summary>
-        /// Gets a property monitoring tree for a given type
+        /// Parses a declared property from a key string and a type
         /// </summary>
-        public static PropertyMonitoringTree GetPropertyMonitoringTree(this Type rootType, Term stub, string outputTermComponentSeparator,
-            ObservedChangeHandler handleObservedChange)
+        /// <param name="type">The type to match the property from</param>
+        /// <param name="key">The string to match a property from</param>
+        /// <param name="declaredProperty">The declared property found</param>
+        /// <returns></returns>
+        public bool TryFindDeclaredProperty(Type type, string key, out DeclaredProperty declaredProperty)
         {
-            return new PropertyMonitoringTree(rootType, outputTermComponentSeparator, stub, handleObservedChange);
+            return GetDeclaredProperties(type).TryGetValue(key, out declaredProperty);
+        }
+        
+        internal void EstablishPropertyDependancies(DeclaredProperty property)
+        {
+            if (property.HasAttribute<DefinesAttribute>(out var dAttribute) && dAttribute.Terms is string[] dArgs && dArgs.Any())
+            {
+                foreach (var term in dArgs.Select(name => TermFactory.MakeOrGetCachedTerm(property.Owner, name, ".", TermBindingRule.OnlyDeclared)))
+                    property.DefinesPropertyTerms.Add(term);
+                property.DefinesOtherProperties = true;
+            }
         }
 
         #endregion

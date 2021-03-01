@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -29,7 +30,8 @@ namespace RESTable.Admin
         public IEnumerable<DeclaredProperty> Properties { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<PropertyCache> Select(IRequest<PropertyCache> request) => TypeCache
+        public IEnumerable<PropertyCache> Select(IRequest<PropertyCache> request) => request
+            .GetService<TypeCache>()
             .DeclaredPropertyCache
             .Select(item => new PropertyCache
             {

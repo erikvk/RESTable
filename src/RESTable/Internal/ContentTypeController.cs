@@ -7,33 +7,34 @@ using RESTable.Linq;
 
 namespace RESTable.Internal
 {
-    internal static class ContentTypeController
+    public class ContentTypeController
     {
-        internal static IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; private set; }
-        internal static IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; private set; }
+        internal IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; }
+        internal IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; }
 
-        private static void ValidateContentTypeProvider(IContentTypeProvider provider)
+        public ContentTypeController(IEnumerable<IContentTypeProvider> contentTypeProviders)
         {
-            if (provider == null)
-                throw new InvalidContentTypeProviderException("External content type provider cannot be null");
-            if (!provider.CanRead && !provider.CanWrite)
-                throw new InvalidContentTypeProviderException($"Provider '{provider.GetType().GetRESTableTypeName()}' cannot read or write");
-        }
-
-        internal static void SetupContentTypeProviders(List<IContentTypeProvider> contentTypeProviders)
-        {
-            contentTypeProviders ??= new List<IContentTypeProvider>();
             InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-            Providers.Json = contentTypeProviders.OfType<IJsonProvider>().FirstOrDefault();
-            foreach (var provider in contentTypeProviders)
+
+            var contentTypeProvidersList = contentTypeProviders.ToList();
+            
+            foreach (var provider in contentTypeProvidersList)
             {
                 ValidateContentTypeProvider(provider);
                 if (provider.CanRead)
                     provider.MatchStrings?.ForEach(mimeType => InputContentTypeProviders[mimeType] = provider);
                 if (provider.CanWrite)
                     provider.MatchStrings?.ForEach(mimeType => OutputContentTypeProviders[mimeType] = provider);
-            }
+            }            
+        }
+
+        private void ValidateContentTypeProvider(IContentTypeProvider provider)
+        {
+            if (provider == null)
+                throw new InvalidContentTypeProviderException("External content type provider cannot be null");
+            if (!provider.CanRead && !provider.CanWrite)
+                throw new InvalidContentTypeProviderException($"Provider '{provider.GetType().GetRESTableTypeName()}' cannot read or write");
         }
     }
 }

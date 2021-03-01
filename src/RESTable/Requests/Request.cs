@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
@@ -16,6 +17,7 @@ using RESTable.Internal.Auth;
 using RESTable.Linq;
 using static RESTable.ErrorCodes;
 using static RESTable.Method;
+using Error = RESTable.Results.Error;
 
 namespace RESTable.Requests
 {
@@ -24,7 +26,7 @@ namespace RESTable.Requests
         public RequestParameters Parameters { get; }
         public IResource<T> Resource { get; }
         public ITarget<T> Target { get; }
-        public Type TargetType => typeof(T);
+        ITarget IRequest.Target => Target;
         private Exception Error { get; set; }
         private bool IsEvaluating { get; set; }
         private Headers _responseHeaders;
@@ -85,6 +87,7 @@ namespace RESTable.Requests
         ValueTask<string> ILogable.GetLogContent() => LogItem.GetLogContent();
         public DateTime LogTime { get; } = DateTime.Now;
         bool IHeaderHolder.ExcludeHeaders => HeaderHolder.ExcludeHeaders;
+        private RESTableConfiguration Configuration { get; }
 
         public Body Body
         {
@@ -190,7 +193,7 @@ namespace RESTable.Requests
             result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             if (Headers.Metadata == "full" && result.Metadata is string metadata)
                 result.Headers.Metadata = metadata;
-            result.Headers.Version = RESTableConfig.Version;
+            result.Headers.Version = Configuration.Version;
             if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
                 throw loop;
             return result;
@@ -211,11 +214,10 @@ namespace RESTable.Requests
                             throw new UpgradeRequired(terminalResource.Name);
                         if (IsWebSocketUpgrade)
                         {
-                            var terminalResourceInternal = (Meta.Internal.TerminalResource<T>) terminalResource;
-                            var terminal = terminalResourceInternal.MakeTerminal(Conditions);
-                            Context.WebSocket.SetContext(this);
-                            await Context.WebSocket.ConnectTo(terminal, terminalResourceInternal).ConfigureAwait(false);
+                            var terminalResourceInternal = (TerminalResource<T>) terminalResource;
+                            var terminal = terminalResourceInternal.MakeTerminal(Context, Conditions);
                             await Context.WebSocket.Open(this).ConfigureAwait(false);
+                            await Context.WebSocket.ConnectTo(terminal, terminalResourceInternal).ConfigureAwait(false);
                             await terminal.OpenTerminal().ConfigureAwait(false);
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
@@ -230,7 +232,10 @@ namespace RESTable.Requests
 
                     case IEntityResource<T> entity:
                         if (entity.RequiresAuthentication)
-                            await this.RunResourceAuthentication(entity).ConfigureAwait(false);
+                        {
+                            var authenticator = this.GetService<Authenticator>();
+                            await authenticator.RunResourceAuthentication(this, entity).ConfigureAwait(false);
+                        }
                         if (MetaConditions.SafePost != null)
                         {
                             if (!entity.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
@@ -239,7 +244,7 @@ namespace RESTable.Requests
                         var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
                         var result = await evaluator(this).ConfigureAwait(false);
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
-                        if (RESTableConfig.AllowAllOrigins)
+                        if (Configuration.AllowAllOrigins)
                             result.Headers.AccessControlAllowOrigin = "*";
                         else if (Headers.Origin is string origin)
                             result.Headers.AccessControlAllowOrigin = origin;
@@ -280,8 +285,8 @@ namespace RESTable.Requests
 
         private async Task<IResult> SwitchTerminal(ITerminalResource<T> resource)
         {
-            var _resource = (Meta.Internal.TerminalResource<T>) resource;
-            var newTerminal = _resource.MakeTerminal(Conditions);
+            var _resource = (TerminalResource<T>) resource;
+            var newTerminal = _resource.MakeTerminal(Context, Conditions);
             await Context.WebSocket.ConnectTo(newTerminal, resource).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
             return new SwitchedTerminal(this);
@@ -294,6 +299,8 @@ namespace RESTable.Requests
             Target = resource;
             Body = parameters.Body;
             Stopwatch = new Stopwatch();
+            var termFactory = parameters.Context.Services.GetService<TermFactory>();
+            Configuration = parameters.Context.Services.GetService<RESTableConfiguration>();
 
             try
             {
@@ -301,7 +308,7 @@ namespace RESTable.Requests
                     throw new ResourceIsInternal(resource);
                 if (Resource is IEntityResource<T> entityResource)
                 {
-                    MetaConditions = MetaConditions.Parse(parameters.UriComponents.MetaConditions, entityResource);
+                    MetaConditions = MetaConditions.Parse(parameters.UriComponents.MetaConditions, entityResource, termFactory);
                     if (parameters.UriComponents.ViewName != null)
                     {
                         if (!entityResource.ViewDictionary.TryGetValue(parameters.UriComponents.ViewName, out var view))
@@ -310,7 +317,10 @@ namespace RESTable.Requests
                     }
                 }
                 if (parameters.UriComponents.Conditions.Count > 0)
-                    Conditions = Condition<T>.Parse(parameters.UriComponents.Conditions, Target);
+                {
+                    var cache = this.GetService<ConditionCache<T>>();
+                    Conditions = Condition<T>.Parse(parameters.UriComponents.Conditions, Target, termFactory, cache);
+                }
                 if (parameters.Headers.UnsafeOverride)
                 {
                     MetaConditions.Unsafe = true;
@@ -445,19 +455,23 @@ namespace RESTable.Requests
 
         #endregion
 
-        public async Task<IRequest> GetCopy(string newProtocol = null) => new Request<T>
-        (
-            resource: Resource,
-            target: Target,
-            cachedProtocolProvider: newProtocol != null
-                ? ProtocolController.ResolveProtocolProvider(newProtocol)
-                : CachedProtocolProvider,
-            parameters: Parameters,
-            body: await Body.GetCopy().ConfigureAwait(false),
-            metaConditions: MetaConditions.GetCopy(),
-            conditions: Conditions.ToList(),
-            error: Error
-        );
+        public async Task<IRequest> GetCopy(string newProtocol = null)
+        {
+            var protocolController = this.GetService<ProtocolController>();
+            return new Request<T>
+            (
+                resource: Resource,
+                target: Target,
+                cachedProtocolProvider: newProtocol != null
+                    ? protocolController.ResolveCachedProtocolProvider(newProtocol)
+                    : CachedProtocolProvider,
+                parameters: Parameters,
+                body: await Body.GetCopy().ConfigureAwait(false),
+                metaConditions: MetaConditions.GetCopy(),
+                conditions: Conditions.ToList(),
+                error: Error
+            );
+        }
 
         public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
 

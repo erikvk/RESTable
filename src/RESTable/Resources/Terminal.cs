@@ -16,6 +16,8 @@ namespace RESTable.Resources
 
         protected IServiceProvider Services => WebSocket?.Context.Services;
 
+        internal IWebSocket GetWebSocket() => WebSocket;
+        
         internal void SetWebSocket(IWebSocket webSocket)
         {
             WebSocket = webSocket;

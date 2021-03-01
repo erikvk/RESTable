@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Meta;
-using RESTable.Linq;
 
 namespace RESTable.Requests.Processors
 {
@@ -14,23 +12,19 @@ namespace RESTable.Requests.Processors
     /// </summary>
     public class Select : List<Term>, IProcessor
     {
-        internal Select(IEntityResource resource, string keys, ICollection<string> dynDomain) => keys
-            .Split(',')
-            .Distinct()
-            .Select(key => resource.MakeOutputTerm(key, dynDomain))
-            .ForEach(Add);
+        public Select(IEnumerable<Term> collection) : base(collection) { }
 
-        private Select(Select other) : base(other) { }
         internal Select GetCopy() => new(this);
 
         internal JObject Apply<T>(T entity)
         {
             var jobj = new JObject();
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             ForEach(term =>
             {
                 if (jobj[term.Key] != null) return;
                 object val = term.Evaluate(entity, out var actualKey);
-                jobj[actualKey] = val == null ? null : JToken.FromObject(val, Providers.Json.GetSerializer());
+                jobj[actualKey] = val == null ? null : JToken.FromObject(val, jsonProvider.GetSerializer());
             });
             return jobj;
         }

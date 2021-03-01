@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.ProtocolProviders;
 using RESTable.Results;
@@ -13,6 +14,8 @@ namespace RESTable.Requests
     /// </summary>
     internal class URI : IUriComponents
     {
+        public string ProtocolIdentifier { get; private set; }
+
         /// <inheritdoc />
         public string ResourceSpecifier { get; private set; }
 
@@ -30,11 +33,15 @@ namespace RESTable.Requests
         internal Exception Error { get; private set; }
         internal bool HasError => Error != null;
 
-        /// <inheritdoc />
-        public IProtocolProvider ProtocolProvider { get; private set; }
+        public IProtocolProvider ProtocolProvider { get; set; }
 
-        internal static URI ParseInternal(string uriString, bool percentCharsEscaped, RESTableContext context,
-            out CachedProtocolProvider cachedProtocolProvider)
+        internal static URI ParseInternal
+        (
+            string uriString,
+            bool percentCharsEscaped,
+            RESTableContext context,
+            out CachedProtocolProvider cachedProtocolProvider
+        )
         {
             var uri = new URI();
             if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
@@ -43,7 +50,9 @@ namespace RESTable.Requests
             if (protocolString.StartsWith("-"))
                 protocolString = protocolString.Substring(1);
             var tail = groups["tail"].Value;
-            if (!ProtocolController.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
+            uri.ProtocolIdentifier = protocolString.ToLowerInvariant();
+            var protocolProviders = context.Services.GetService<ProtocolController>().CachedProtocolProviders;
+            if (!protocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {
                 uri.Error = new UnknownProtocol(protocolString);
                 return uri;
@@ -73,7 +82,6 @@ namespace RESTable.Requests
         {
             Conditions = new List<IUriCondition>();
             MetaConditions = new List<IUriCondition>();
-            ProtocolProvider = ProtocolController.DefaultProtocolProvider.ProtocolProvider;
         }
 
         internal URI(string resourceSpecifier, string viewName) : this()

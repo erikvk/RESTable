@@ -10,34 +10,41 @@ using RESTable.Results;
 
 namespace RESTable.Internal.Auth
 {
-    internal static class Authenticator
+    public class Authenticator
     {
-        internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
-        internal static void NewState() => ApiKeys = new Dictionary<string, AccessRights>();
+        internal IDictionary<string, AccessRights> ApiKeys { get; private set; }
+        internal HashSet<Uri> AllowedOrigins { get; private set; }
+
+        internal void NewState()
+        {
+            ApiKeys = new Dictionary<string, AccessRights>();
+            AllowedOrigins = new HashSet<Uri>();
+        }
+
         internal const string AuthHeaderMask = "*******";
 
-        internal static async Task RunResourceAuthentication<T>(this IRequest<T> request, IEntityResource<T> resource) where T : class
+        internal async Task RunResourceAuthentication<T>(IRequest<T> request, IEntityResource<T> resource) where T : class
         {
             if (request.Context.Client.ResourceAuthMappings.ContainsKey(resource))
                 return;
             var authResults = await resource.AuthenticateAsync(request).ConfigureAwait(false);
             if (authResults.Success)
                 request.Context.Client.ResourceAuthMappings[resource] = default;
-            else throw new FailedResourceAuthentication(authResults.Reason);
+            else throw new FailedResourceAuthentication(authResults.FailedReason);
         }
 
-        internal static AccessRights GetAccessRights(string apiKeyHash)
+        internal AccessRights GetAccessRights(string apiKeyHash)
         {
             return apiKeyHash != null && ApiKeys.TryGetValue(apiKeyHash, out var rights) ? rights : null;
         }
 
-        internal static AccessRights GetAccessRights(IHeaders headers)
+        internal AccessRights GetAccessRights(IHeaders headers)
         {
             string s = null;
             return GetAccessRights(ref s, headers);
         }
 
-        internal static AccessRights GetAccessRights(ref string uri, IHeaders headers)
+        internal AccessRights GetAccessRights(ref string uri, IHeaders headers)
         {
             string authorizationHeader;
             if (uri != null && Regex.Match(uri, RegEx.UriKey) is Match {Success: true} keyMatch)

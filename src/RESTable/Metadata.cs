@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal.Auth;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -50,17 +51,20 @@ namespace RESTable
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
             var accessrights = request.Context.Client.AccessRights;
-            yield return Make(MetadataLevel.Full, accessrights);
+            yield return Make(MetadataLevel.Full, accessrights, request.GetService<RESTableConfigurator>());
         }
 
         /// <summary>
         /// Generates metadata according to a given metadata level
         /// </summary>
-        public static Metadata Get(MetadataLevel level) => Make(level, null);
+        public static Metadata Get(MetadataLevel level, RESTableConfigurator configurator) => Make(level, null, configurator);
 
-        internal static Metadata Make(MetadataLevel level, AccessRights rights)
+        internal static Metadata Make(MetadataLevel level, AccessRights rights, RESTableConfigurator configurator)
         {
-            var domain = rights?.Keys ?? RESTableConfig.Resources;
+            var resourceCollection = configurator.ResourceCollection;
+            var typeCache = configurator.TypeCache;
+            var rootAccess = configurator.RootAccess;
+            var domain = rights?.Keys ?? resourceCollection.AllResources;
             var entityResources = domain
                 .OfType<IEntityResource>()
                 .Where(r => r.IsGlobal)
@@ -73,7 +77,7 @@ namespace RESTable
             if (level == MetadataLevel.OnlyResources)
                 return new Metadata
                 {
-                    CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
+                    CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? rootAccess),
                     EntityResources = entityResources.ToArray(),
                     TerminalResources = terminalResources.ToArray()
                 };
@@ -106,7 +110,7 @@ namespace RESTable
                             .Where(p => !p.RESTableIgnored())
                             .Select(p => p.FieldType)
                             .ForEach(parseType);
-                        type.GetDeclaredProperties().Values
+                        typeCache.GetDeclaredProperties(type).Values
                             .Where(p => !p.Hidden)
                             .Select(p => p.Type)
                             .ForEach(parseType);
@@ -114,8 +118,8 @@ namespace RESTable
                 }
             }
 
-            var entityTypes = entityResources.Select(r => r.Type).ToList();
-            var terminalTypes = terminalResources.Select(r => r.Type).ToList();
+            var entityTypes = entityResources.Select(r => r.Type).ToHashSet();
+            var terminalTypes = terminalResources.Select(r => r.Type).ToHashSet();
             entityTypes.ForEach(parseType);
             checkedTypes.ExceptWith(entityTypes);
             terminalTypes.ForEach(parseType);
@@ -123,14 +127,14 @@ namespace RESTable
 
             return new Metadata
             {
-                CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
+                CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? configurator.RootAccess),
                 EntityResources = entityResources.ToArray(),
                 TerminalResources = terminalResources.ToArray(),
                 EntityResourceTypes = new ReadOnlyDictionary<Type, Member[]>(entityTypes.ToDictionary(t => t, type =>
-                    type.GetDeclaredProperties().Values.Cast<Member>().ToArray())),
+                    typeCache.GetDeclaredProperties(type).Values.Cast<Member>().ToArray())),
                 PeripheralTypes = new ReadOnlyDictionary<Type, Member[]>(checkedTypes.ToDictionary(t => t, type =>
                 {
-                    var props = type.GetDeclaredProperties().Values;
+                    var props = typeCache.GetDeclaredProperties(type).Values;
                     var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
                         .Where(p => !p.RESTableIgnored())
                         .Select(f => new Field(f));

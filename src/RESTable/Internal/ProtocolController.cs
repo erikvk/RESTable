@@ -9,16 +9,45 @@ using RESTable.Linq;
 
 namespace RESTable.Internal
 {
-    internal static class ProtocolController
+    public class ProtocolController
     {
-        internal static IDictionary<string, CachedProtocolProvider> ProtocolProviders { get; private set; }
-        internal static CachedProtocolProvider DefaultProtocolProvider { get; private set; }
+        internal IDictionary<string, CachedProtocolProvider> CachedProtocolProviders { get; private set; }
+        internal CachedProtocolProvider DefaultProtocolProvider { get; private set; }
+        private ContentTypeController ContentTypeController { get; }
 
-        internal static CachedProtocolProvider ResolveProtocolProvider(string protocolIdentifier) => protocolIdentifier == null
+        public ProtocolController(ContentTypeController contentTypeController, IEnumerable<IProtocolProvider> protocolProviders)
+        {
+            CachedProtocolProviders = new Dictionary<string, CachedProtocolProvider>(StringComparer.OrdinalIgnoreCase);
+            ContentTypeController = contentTypeController;
+            protocolProviders.ForEach(provider =>
+            {
+                ValidateProtocolProvider(provider);
+                var cachedProvider = GetCachedProtocolProvider(provider);
+                if (provider is DefaultProtocolProvider)
+                {
+                    DefaultProtocolProvider = cachedProvider;
+                    CachedProtocolProviders[""] = cachedProvider;
+                }
+                var protocolId = provider.ProtocolIdentifier;
+                if (CachedProtocolProviders.TryGetValue(protocolId, out var existing))
+                {
+                    if (existing.GetType() == provider.GetType())
+                        throw new InvalidProtocolProviderException(
+                            $"A protocol provider of type '{existing.GetType()}' has already been added");
+                    throw new InvalidProtocolProviderException(
+                        $"Protocol identifier '{protocolId}' already claimed by a protocol provider of type '{existing.GetType()}'");
+                }
+                CachedProtocolProviders[protocolId] = cachedProvider;
+            });
+            if (!CachedProtocolProviders.Any())
+                throw new InvalidOperationException("Expected at least one protocol provider available from the service provider given to RESTableConfig");
+        }
+
+        internal CachedProtocolProvider ResolveCachedProtocolProvider(string protocolIdentifier) => protocolIdentifier == null
             ? DefaultProtocolProvider
-            : ProtocolProviders.SafeGet(protocolIdentifier) ?? throw new UnknownProtocol(protocolIdentifier);
+            : CachedProtocolProviders.SafeGet(protocolIdentifier) ?? throw new UnknownProtocol(protocolIdentifier);
 
-        private static CachedProtocolProvider GetCachedProtocolProvider(IProtocolProvider provider)
+        private CachedProtocolProvider GetCachedProtocolProvider(IProtocolProvider provider)
         {
             var cProvider = new CachedProtocolProvider(provider);
             var contentTypeProviders = provider.GetCustomContentTypeProviders()?.ToList();
@@ -49,7 +78,7 @@ namespace RESTable.Internal
             return cProvider;
         }
 
-        private static void ValidateProtocolProvider(IProtocolProvider provider)
+        private void ValidateProtocolProvider(IProtocolProvider provider)
         {
             if (provider == null)
                 throw new InvalidProtocolProviderException("External protocol provider cannot be null");
@@ -73,32 +102,6 @@ namespace RESTable.Internal
             }
         }
 
-        internal static void SetupProtocolProviders(List<IProtocolProvider> protocolProviders, IServiceProvider services)
-        {
-            protocolProviders ??= new List<IProtocolProvider>();
-            ProtocolProviders = new Dictionary<string, CachedProtocolProvider>(StringComparer.OrdinalIgnoreCase);
-            protocolProviders.ForEach(provider =>
-            {
-                ValidateProtocolProvider(provider);
-                var cachedProvider = GetCachedProtocolProvider(provider);
-                if (provider is DefaultProtocolProvider)
-                {
-                    DefaultProtocolProvider = cachedProvider;
-                    ProtocolProviders[""] = cachedProvider;
-                }
-                var protocolId = provider.ProtocolIdentifier;
-                if (ProtocolProviders.TryGetValue(protocolId, out var existing))
-                {
-                    if (existing.GetType() == provider.GetType())
-                        throw new InvalidProtocolProviderException(
-                            $"A protocol provider of type '{existing.GetType()}' has already been added");
-                    throw new InvalidProtocolProviderException(
-                        $"Protocol identifier '{protocolId}' already claimed by a protocol provider of type '{existing.GetType()}'");
-                }
-                ProtocolProviders[protocolId] = cachedProvider;
-            });
-        }
-
-        internal static void OnInit() => ProtocolProviders.Values.ForEach(c => c.ProtocolProvider.OnInit());
+        internal void OnInit() => CachedProtocolProviders.Values.ForEach(c => c.ProtocolProvider.OnInit());
     }
 }

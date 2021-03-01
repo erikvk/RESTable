@@ -36,7 +36,7 @@ namespace RESTable.SQLite
         }
 
         /// <inheritdoc />
-        protected override bool IsValid(IEntityResource resource, out string reason)
+        protected override bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
         {
             reason = null;
             return true;

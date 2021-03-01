@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
 using RESTable.Linq;
+using RESTable.Resources.Operations;
 
 namespace RESTable.Meta.Internal
 {
@@ -36,7 +38,7 @@ namespace RESTable.Meta.Internal
 
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
 
-        internal Terminal MakeTerminal(IEnumerable<Condition<T>> assignments = null)
+        internal Terminal MakeTerminal(RESTableContext context, IEnumerable<Condition<T>> assignments = null)
         {
             var newTerminal = Constructor();
             assignments?.ForEach(assignment =>
@@ -47,14 +49,23 @@ namespace RESTable.Meta.Internal
                 {
                     if (newTerminal is IDictionary<string, object> dynTerminal)
                         dynTerminal[assignment.Key] = assignment.Value;
-                    else throw new UnknownProperty(Type, assignment.Key);
+                    else throw new UnknownProperty(Type, this, assignment.Key);
                 }
                 else property.SetValue(newTerminal, assignment.Value);
             });
+            if (newTerminal is T t && t is IValidator<T> validator)
+            {
+                var invalidMembers = validator.Validate(t, context).ToList();
+                if (invalidMembers.Count > 0)
+                {
+                    var invalidEntity = new InvalidEntity(null, invalidMembers);
+                    throw new FailedValidation(invalidEntity);
+                }
+            }
             return newTerminal;
         }
 
-        internal TerminalResource()
+        internal TerminalResource(TypeCache typeCache)
         {
             Name = typeof(T).GetRESTableTypeName() ?? throw new Exception();
             Type = typeof(T);
@@ -66,9 +77,9 @@ namespace RESTable.Meta.Internal
             ResourceKind = ResourceKind.TerminalResource;
             ConditionBindingRule = typeof(IDictionary<string, object>).IsAssignableFrom(typeof(T))
                 ? TermBindingRule.DeclaredWithDynamicFallback
-                : TermBindingRule.OnlyDeclared; 
+                : TermBindingRule.OnlyDeclared;
             Description = attribute?.Description;
-            Members = typeof(T).GetDeclaredProperties();
+            Members = typeCache.GetDeclaredProperties(typeof(T));
             Constructor = typeof(T).MakeStaticConstructor<Terminal>();
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
             IsDynamicTerminal = typeof(IDictionary<string, object>).IsAssignableFrom(typeof(T));

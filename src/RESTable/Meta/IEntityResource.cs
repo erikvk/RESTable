@@ -95,6 +95,6 @@ namespace RESTable.Meta
         ValueTask<int> DeleteAsync(IRequest<TResource> request);
         ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request);
         ValueTask<long> CountAsync(IRequest<TResource> request);
-        IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities);
+        IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context);
     }
 }

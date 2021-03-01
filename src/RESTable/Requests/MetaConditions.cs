@@ -78,7 +78,7 @@ namespace RESTable.Requests
         private static string AllMetaConditions =>
             $"{string.Join(", ", Enum.GetNames(typeof(RESTableMetaCondition)).Except(new[] {"New", "Delete"}))}";
 
-        internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource)
+        internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource, TermFactory termFactory)
         {
             if (uriMetaConditions?.Any() != true) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
@@ -144,20 +144,53 @@ namespace RESTable.Requests
                         mc.Offset = (Offset) (int) value;
                         break;
                     case RESTableMetaCondition.Order_asc:
-                        mc.OrderBy = new OrderByAscending(resource, (string) value, dynamicDomain);
+                    {
+                        var term = termFactory.MakeOutputTerm(resource, (string) value, dynamicDomain);
+                        mc.OrderBy = new OrderByAscending(resource, term);
                         break;
+                    }
                     case RESTableMetaCondition.Order_desc:
-                        mc.OrderBy = new OrderByDescending(resource, (string) value, dynamicDomain);
+                    {
+                        var term = termFactory.MakeOutputTerm(resource, (string) value, dynamicDomain);
+                        mc.OrderBy = new OrderByDescending(resource, term);
                         break;
+                    }
                     case RESTableMetaCondition.Select:
-                        mc.Select = new Select(resource, (string) value, dynamicDomain);
+                    {
+                        var selectKeys = (string) value;
+                        var terms = selectKeys
+                            .Split(',')
+                            .Distinct()
+                            .Select(selectKey => termFactory.MakeOutputTerm(resource, selectKey, dynamicDomain));
+                        mc.Select = new Select(terms);
                         break;
+                    }
                     case RESTableMetaCondition.Add:
-                        mc.Add = new Add(resource, (string) value, dynamicDomain);
+                    {
+                        var addKeys = (string) value;
+                        var terms = addKeys
+                            .ToLower()
+                            .Split(',')
+                            .Distinct()
+                            .Select(addKey => termFactory.MakeOutputTerm(resource, addKey, dynamicDomain));
+                        mc.Add = new Add(terms);
                         break;
+                    }
                     case RESTableMetaCondition.Rename:
-                        mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
+                    {
+                        var renameKeys = (string) value;
+                        var terms = renameKeys.Split(',').Select(keyString =>
+                        {
+                            var (termKey, newName) = keyString.TSplit(renameKeys.Contains("->") ? "->" : "-%3E");
+                            return
+                            (
+                                termFactory.MakeOutputTerm(resource, termKey.ToLowerInvariant(), null),
+                                newName
+                            );
+                        });
+                        mc.Rename = new Rename(terms, out dynamicDomain);
                         break;
+                    }
                     case RESTableMetaCondition.Distinct:
                         if ((bool) value)
                             mc.Distinct = new Distinct();

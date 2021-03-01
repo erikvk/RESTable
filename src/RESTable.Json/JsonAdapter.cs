@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
@@ -18,11 +17,6 @@ namespace RESTable.Json
     /// </summary>
     public abstract class JsonAdapter : IContentTypeProvider
     {
-        /// <summary>
-        /// The RESTable default UTF8 encoding. An UTF8 encoding without BOM.
-        /// </summary>
-        protected Encoding Encoding { get; }
-
         /// <inheritdoc />
         public abstract string Name { get; }
 
@@ -45,7 +39,6 @@ namespace RESTable.Json
         
         protected JsonAdapter(IJsonProvider jsonProvider)
         {
-            Encoding = RESTableConfig.DefaultEncoding;
             JsonProvider = jsonProvider;
         }
 

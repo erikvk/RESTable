@@ -2,13 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
-using RESTable.Internal;
-using RESTable.Results;
-using RESTable.Linq;
 
 namespace RESTable.Meta
 {
@@ -17,10 +11,9 @@ namespace RESTable.Meta
     /// A term denotes a node in a static or dynamic member tree. Contains a chain of properties, 
     /// used in queries to refer to properties and properties of properties.
     /// </summary>
-    [JsonConverter(typeof(ToStringConverter))]
     public class Term : IEnumerable<Property>
     {
-        private readonly List<Property> Store;
+        internal readonly List<Property> Store;
         private readonly string ComponentSeparator;
 
         /// <summary>
@@ -75,7 +68,7 @@ namespace RESTable.Meta
         /// they are created.
         /// </summary>
         private IDictionary<string, bool> Flags { get; set; }
-        
+
         /// <summary>
         /// Returns true if and only if all properties in the term has a given flag
         /// </summary>
@@ -92,47 +85,24 @@ namespace RESTable.Meta
         /// </summary>
         public int Count => Store.Count;
 
-        private static readonly NoCaseComparer Comparer = new NoCaseComparer();
-
-        private Term(string componentSeparator)
+        public Term(string componentSeparator)
         {
             Store = new List<Property>();
             ComponentSeparator = componentSeparator;
         }
 
-        #region Public create methods, not used internally
-
-        /// <summary>
-        /// Create a new term for a given type, with a key describing the target property
-        /// </summary>
-        public static Term Create<T>(string key) where T : class => Create(typeof(T), key);
-
-        /// <summary>
-        /// Create a new term for a given type, with a key describing the target property
-        /// </summary>
-        public static Term Create(Type type, string key, string componentSeparator = ".") => type.MakeOrGetCachedTerm
-        (
-            key: key,
-            componentSeparator: componentSeparator,
-            bindingRule: TermBindingRule.DeclaredWithDynamicFallback
-        );
-
-        /// <summary>
-        /// Create a new term from a given PropertyInfo
-        /// </summary>
-        public static Term Create(PropertyInfo propertyInfo) => propertyInfo.DeclaringType.MakeOrGetCachedTerm
-        (
-            key: propertyInfo.Name,
-            componentSeparator: ".",
-            bindingRule: TermBindingRule.DeclaredWithDynamicFallback
-        );
-
-        #endregion
-
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <inheritdoc />
         public IEnumerator<Property> GetEnumerator() => Store.GetEnumerator();
+
+        internal void SetCommonProperties()
+        {
+            IsDeclared = Store.All(p => p is DeclaredProperty);
+            ConditionSkip = Store.Any(p => p is DeclaredProperty {SkipConditions: true} s);
+            Key = GetKey();
+            ActualNamesKey = GetActualNameKey();
+        }
 
         /// <summary>
         /// The empty term, used when building terms
@@ -142,72 +112,6 @@ namespace RESTable.Meta
             var empty = new Term(componentSeparator);
             empty.SetCommonProperties();
             return empty;
-        }
-
-        /// <summary>
-        /// Parses a term key string and returns a term describing it. All terms are created here.
-        /// The main caller is TypeCache.MakeTerm, but it's also called from places that use a 
-        /// dynamic domain (processors).
-        /// </summary>
-        internal static Term Parse(Type resource, string key, string componentSeparator, TermBindingRule bindingRule, ICollection<string> dynDomain)
-        {
-            var term = new Term(componentSeparator);
-
-            Property propertyMaker(string str)
-            {
-                if (string.IsNullOrWhiteSpace(str))
-                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"Invalid condition '{str}'");
-                if (dynDomain?.Contains(str, Comparer) == true)
-                    return DynamicProperty.Parse(str);
-
-                Property make(Type type)
-                {
-                    switch (bindingRule)
-                    {
-                        case TermBindingRule.DeclaredWithDynamicFallback:
-                            try
-                            {
-                                return DeclaredProperty.Find(type, str);
-                            }
-                            catch (UnknownProperty)
-                            {
-                                return DynamicProperty.Parse(str);
-                            }
-                        case TermBindingRule.DynamicWithDeclaredFallback: return DynamicProperty.Parse(str, true);
-                        case TermBindingRule.OnlyDeclared:
-                            try
-                            {
-                                return DeclaredProperty.Find(type, str);
-                            }
-                            catch (UnknownProperty)
-                            {
-                                if (type.GetSubclasses().Any(subClass => DeclaredProperty.TryFind(subClass, str, out _)))
-                                    return DynamicProperty.Parse(str);
-                                throw;
-                            }
-                        default: throw new Exception();
-                    }
-                }
-
-                switch (term.Store.LastOrDefault())
-                {
-                    case null: return make(resource);
-                    case DeclaredProperty stat: return make(stat.Type);
-                    default: return DynamicProperty.Parse(str);
-                }
-            }
-
-            key.Split(componentSeparator).ForEach(s => term.Store.Add(propertyMaker(s)));
-            term.SetCommonProperties();
-            return term;
-        }
-
-        private void SetCommonProperties()
-        {
-            IsDeclared = Store.All(p => p is DeclaredProperty);
-            ConditionSkip = Store.Any(p => p is DeclaredProperty {SkipConditions: true} s);
-            Key = GetKey();
-            ActualNamesKey = GetActualNameKey();
         }
 
         /// <summary>

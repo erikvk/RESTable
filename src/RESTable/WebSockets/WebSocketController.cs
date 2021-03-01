@@ -8,13 +8,20 @@ using RESTable.ContentTypeProviders;
 
 namespace RESTable.WebSockets
 {
-    internal static class WebSocketController
+    public class WebSocketController
     {
-        internal static readonly IDictionary<string, WebSocket> AllSockets;
-        static WebSocketController() => AllSockets = new ConcurrentDictionary<string, WebSocket>();
-        internal static void Add(WebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
+        internal readonly IDictionary<string, WebSocket> AllSockets;
+        private IJsonProvider JsonProvider { get; }
 
-        internal static async Task RevokeAllWithKey(string key)
+        public WebSocketController(IJsonProvider jsonProvider)
+        {
+            AllSockets = new ConcurrentDictionary<string, WebSocket>();
+            JsonProvider = jsonProvider;
+        }
+
+        internal void Add(WebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
+
+        internal async Task RevokeAllWithKey(string key)
         {
             var tasks = AllSockets.Values
                 .Where(webSocket => webSocket.Client.AccessRights.ApiKey == key)
@@ -22,7 +29,7 @@ namespace RESTable.WebSockets
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
-        public static async Task HandleTextInput(string wsId, string textInput, CancellationToken cancellationToken)
+        public async Task HandleTextInput(string wsId, string textInput, CancellationToken cancellationToken)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
@@ -42,7 +49,7 @@ namespace RESTable.WebSockets
                     case "#TERMINAL" when tail is string json:
                         try
                         {
-                            Providers.Json.Populate(json, webSocket.Terminal);
+                            JsonProvider.Populate(json, webSocket.Terminal);
                             await webSocket.SendText("Terminal updated").ConfigureAwait(false);
                             await webSocket.SendJson(webSocket.Terminal).ConfigureAwait(false);
                         }
@@ -58,7 +65,7 @@ namespace RESTable.WebSockets
                         try
                         {
                             var profile = webSocket.GetAppProfile();
-                            Providers.Json.Populate(json, profile);
+                            JsonProvider.Populate(json, profile);
                             await webSocket.SendText("Profile updated").ConfigureAwait(false);
                             await webSocket.SendJson(webSocket.GetAppProfile()).ConfigureAwait(false);
                         }
@@ -85,13 +92,13 @@ namespace RESTable.WebSockets
             else await webSocket.HandleTextInputInternal(textInput, cancellationToken).ConfigureAwait(false);
         }
 
-        public static async Task HandleBinaryInput(string wsId, byte[] binaryInput, CancellationToken cancellationToken)
+        public async Task HandleBinaryInput(string wsId, byte[] binaryInput, CancellationToken cancellationToken)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
             await webSocket.HandleBinaryInputInternal(binaryInput, cancellationToken).ConfigureAwait(false);
         }
 
-        public static void RemoveWebSocket(string wsId) => AllSockets.Remove(wsId);
+        public void RemoveWebSocket(string wsId) => AllSockets.Remove(wsId);
     }
 }

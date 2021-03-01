@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using RESTable.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
+using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using static RESTable.Internal.EntityResourceProviderController;
 
 namespace RESTable.Admin
 {
@@ -59,7 +58,8 @@ namespace RESTable.Admin
             get => _resourceName;
             set
             {
-                if (!Meta.Resource.TryFind<IEntityResource>(value, out var resource, out var error))
+                var resourceCollection = ApplicationServicesAccessor.ResourceCollection;
+                if (!resourceCollection.TryFindResource<IEntityResource>(value, out var resource, out var error))
                     throw error;
                 Resource = resource;
                 _resourceName = Resource.Name;
@@ -82,65 +82,9 @@ namespace RESTable.Admin
         /// The columns on which this index is registered
         /// </summary>
         public ColumnInfo[] Columns { get; set; }
-
-        [JsonConstructor]
-        public DatabaseIndex(string resourceName)
-        {
-            if (string.IsNullOrWhiteSpace(resourceName))
-                throw new Exception("Found no resource to register the index on. The 'ResourceName' " +
-                                    "property was null or empty");
-            ResourceName = resourceName;
-        }
-
-        #region Public helpers
-
-        /// <summary>
-        /// Creates an ascending database index for the table T with a given name on the given column(s).
-        /// If an index with the same name already exists, does nothing.
-        /// </summary>
-        public static async Task Register<T>(string indexName, params string[] columnNames) where T : class
-        {
-            await Register<T>(indexName, columnNames.Select(columnName => (ColumnInfo) (columnName, false)).ToArray()).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Creates a database index for the table T with a given name on the given column(s).
-        /// If an index with the same name already exists, does nothing.
-        /// </summary>
-        public static async Task Register<T>(string indexName, params (string columnName, bool descending)[] columns) where T : class
-        {
-            await Register<T>(indexName, columns.Select(column => (ColumnInfo) column).ToArray()).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Creates a database index for a table type with a given name on a given list of columns.
-        /// If an index with the same name already exists, does nothing.
-        /// </summary>
-        private static async Task Register<T>(string indexName, params ColumnInfo[] columns) where T : class
-        {
-            SelectionCondition.Value = indexName;
-            SelectionRequest.Selector = () => new DatabaseIndex(typeof(T).GetRESTableTypeName()) {Name = indexName, Columns = columns}.ToAsyncSingleton();
-            var result = await SelectionRequest.Evaluate().ConfigureAwait(false);
-            result.ThrowIfError();
-        }
-
-        #endregion
-
-        private static Condition<DatabaseIndex> SelectionCondition { get; set; }
-
-        private static IRequest<DatabaseIndex> SelectionRequest { get; set; }
-        //internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
-        //static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
-
-        internal static void Init()
-        {
-            SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            SelectionRequest = RESTableContext.Root.CreateRequest<DatabaseIndex>(Method.PUT);
-            SelectionRequest.Conditions.Add(SelectionCondition);
-        }
-
+        
         /// <inheritdoc />
-        public IEnumerable<InvalidMember> Validate(DatabaseIndex entity)
+        public IEnumerable<InvalidMember> Validate(DatabaseIndex entity, RESTableContext context)
         {
             if (string.IsNullOrWhiteSpace(entity.ResourceName))
             {
@@ -159,8 +103,11 @@ namespace RESTable.Admin
         /// <inheritdoc />
         public async IAsyncEnumerable<DatabaseIndex> SelectAsync(IRequest<DatabaseIndex> request)
         {
-            foreach (var indexer in EntityResourceProviders
-                .Values
+            var entityResourceProviders = request
+                .GetService<ResourceFactory>()
+                .EntityResourceProviders
+                .Values;
+            foreach (var indexer in entityResourceProviders
                 .Select(p => p.DatabaseIndexer)
                 .Where(indexer => indexer != null)
                 .Distinct())
@@ -174,9 +121,12 @@ namespace RESTable.Admin
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
             if (entities == null) return 0;
+            var entityResourceProviders = request
+                .GetService<ResourceFactory>()
+                .EntityResourceProviders;
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
-                if (!EntityResourceProviders.TryGetValue(@group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
+                if (!entityResourceProviders.TryGetValue(@group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
                     throw new Exception($"Unable to register index. Resource '{(await group.FirstAsync().ConfigureAwait(false)).Resource.Name}' is not a database resource.");
                 request.Selector = () => group;
                 count += await indexer.InsertAsync(request).ConfigureAwait(false);
@@ -189,10 +139,13 @@ namespace RESTable.Admin
         {
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
+            var entityResourceProviders = request
+                .GetService<ResourceFactory>()
+                .EntityResourceProviders;
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
                 request.Updater = _ => group;
-                count += await EntityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request).ConfigureAwait(false);
+                count += await entityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request).ConfigureAwait(false);
             }
             return count;
         }
@@ -202,10 +155,13 @@ namespace RESTable.Admin
         {
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
+            var entityResourceProviders = request
+                .GetService<ResourceFactory>()
+                .EntityResourceProviders;
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
                 request.Selector = () => group;
-                count += await EntityResourceProviders[@group.Key].DatabaseIndexer.DeleteAsync(request).ConfigureAwait(false);
+                count += await entityResourceProviders[@group.Key].DatabaseIndexer.DeleteAsync(request).ConfigureAwait(false);
             }
             return count;
         }

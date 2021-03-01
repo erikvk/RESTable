@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
-using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -41,7 +41,8 @@ namespace RESTable
             }
             var echo = new Echo(members);
             request.Conditions.Clear();
-            TypeCache.ClearTermsFor<Echo>();
+            var termCache = request.GetService<TermCache>();
+            termCache.ClearTermsFor<Echo>();
             yield return echo;
         }
     }

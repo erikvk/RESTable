@@ -55,7 +55,7 @@ namespace RESTable.Resources
                 }
                 else name = $"{BaseNamespace}.{name}";
             }
-            if (RESTableConfig.ResourceByName.ContainsKey(name))
+            if (ResourceProviderInternal.ResourceCollection.ResourceByName.ContainsKey(name))
                 throw new Exception($"Invalid resource name '{name}'. Name already in use.");
         }
 
@@ -71,7 +71,7 @@ namespace RESTable.Resources
         protected static IEnumerable<TController> Select() => ResourceProviderInternal
             .SelectProceduralResources()
             .OrderBy(r => r.Name)
-            .Select(r => Make<TController>(Meta.Resource.SafeGet(r.Name)));
+            .Select(r => Make<TController>(ResourceProviderInternal.ResourceCollection.SafeGetResource(r.Name)));
 
         /// <summary>
         /// Inserts the current instance as a new procedural resource
@@ -101,7 +101,7 @@ namespace RESTable.Resources
                                  ?.FirstOrDefault(item => item.Name == Name) ??
                              throw new InvalidOperationException(
                                  $"Cannot update resource '{Name}'. Resource has not been inserted.");
-            var resource = (IResourceInternal) Meta.Resource.SafeGet(procedural.Type) ??
+            var resource = (IResourceInternal) ResourceProviderInternal.ResourceCollection.SafeGetResource(procedural.Type) ??
                            throw new InvalidOperationException(
                                $"Cannot update resource '{Name}'. Resource has not been inserted.");
             ResourceProviderInternal.SetProceduralResourceDescription(procedural, Description);

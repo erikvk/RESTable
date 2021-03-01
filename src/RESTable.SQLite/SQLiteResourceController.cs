@@ -52,7 +52,7 @@ namespace RESTable.SQLite
             foreach (var resource in await request.GetInputEntitiesAsync().ToListAsync().ConfigureAwait(false))
             {
                 resource.Update();
-                await resource.Definition.Update().ConfigureAwait(false);
+                await resource.Definition.Update(request).ConfigureAwait(false);
                 i += 1;
             }
             return i;

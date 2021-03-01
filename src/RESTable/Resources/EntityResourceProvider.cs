@@ -9,7 +9,6 @@ using RESTable.Requests;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
 using static System.Reflection.BindingFlags;
-using Resource = RESTable.Meta.Resource;
 
 namespace RESTable.Resources
 {
@@ -31,28 +30,50 @@ namespace RESTable.Resources
 
         #region Helpers
 
-        private void InsertProcedural(IProceduralEntityResource resource)
+        private void InsertProcedural(IProceduralEntityResource resource, ResourceValidator validator)
         {
             var attribute = new RESTableProceduralAttribute(resource.Methods) {Description = resource.Description};
             var type = resource.Type;
-            ResourceValidator.ValidateRuntimeInsertion(type, resource.Name, attribute);
-            ResourceValidator.Validate(type);
+            validator.ValidateRuntimeInsertion(type, resource.Name, attribute);
+            validator.Validate(type);
             var inserted = _InsertResource(type, resource.Name, attribute);
             ReceiveClaimed(new[] {inserted});
         }
 
         private bool RemoveProceduralResource(Type resourceType)
         {
-            var iresource = Resource.SafeGet(resourceType);
+            var iresource = ResourceCollection.SafeGetResource(resourceType);
             if (iresource == null) return true;
             return RemoveResource(iresource);
         }
+
+        TypeCache IEntityResourceProviderInternal.TypeCache
+        {
+            get => TypeCache;
+            set => TypeCache = value;
+        }
+
+        ResourceValidator IEntityResourceProviderInternal.ResourceValidator
+        {
+            get => ResourceValidator;
+            set => ResourceValidator = value;
+        }
+
+        ResourceCollection IEntityResourceProviderInternal.ResourceCollection
+        {
+            get => ResourceCollection;
+            set => ResourceCollection = value;
+        }
+
+        private ResourceValidator ResourceValidator { get; set; }
+        private TypeCache TypeCache { get; set; }
+        private ResourceCollection ResourceCollection { get; set; }
 
         private bool RemoveResource(IResource resource)
         {
             if (resource is IEntityResource er && er.Provider == Id)
             {
-                RESTableConfig.RemoveResource(resource);
+                ResourceCollection.RemoveResource(resource);
                 return true;
             }
             return false;
@@ -66,9 +87,9 @@ namespace RESTable.Resources
         void IEntityResourceProviderInternal.ReceiveClaimed(ICollection<IEntityResource> claimedResources) => ReceiveClaimed(claimedResources);
         void IEntityResourceProviderInternal.ModifyResourceAttribute(Type type, RESTableAttribute attribute) => ModifyResourceAttribute(type, attribute);
         bool IEntityResourceProviderInternal.RemoveProceduralResource(Type resourceType) => RemoveProceduralResource(resourceType);
-        void IEntityResourceProviderInternal.InsertProcedural(IProceduralEntityResource resource) => InsertProcedural(resource);
+        void IEntityResourceProviderInternal.InsertProcedural(IProceduralEntityResource resource) => InsertProcedural(resource, ResourceValidator);
         bool IEntityResourceProviderInternal.Include(Type type) => Include(type);
-        void IEntityResourceProviderInternal.MakeClaimProcedural() => SelectProceduralResources().ForEach(InsertProcedural);
+        void IEntityResourceProviderInternal.MakeClaimProcedural() => SelectProceduralResources().ForEach(r => InsertProcedural(r, ResourceValidator));
         void IEntityResourceProviderInternal.Validate() => Validate();
 
         IProceduralEntityResource IEntityResourceProviderInternal.InsertProceduralResource(string n, string d, Method[] m, dynamic data)
@@ -89,7 +110,7 @@ namespace RESTable.Resources
         void IEntityResourceProviderInternal.MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
         {
             var resource = _InsertResource(type);
-            if (!IsValid(resource, out var reason))
+            if (!IsValid(resource, TypeCache, out var reason))
                 throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
                                                               $"type '{type.GetRESTableTypeName()}': " + reason);
         });
@@ -97,7 +118,7 @@ namespace RESTable.Resources
         void IEntityResourceProviderInternal.MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
         {
             var resource = _InsertWrapperResource(type, type.GetWrappedType());
-            if (!IsValid(resource, out var reason))
+            if (!IsValid(resource, TypeCache, out var reason))
                 throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
                                                               $"type '{type.GetRESTableTypeName()}': " + reason);
         });
@@ -162,7 +183,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <param name="resource">The resource to check validity for</param>
         /// <param name="reason">Return the reason for this Type not being valid</param>
-        protected virtual bool IsValid(IEntityResource resource, out string reason)
+        protected virtual bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
         {
             reason = null;
             return true;
@@ -382,7 +403,7 @@ namespace RESTable.Resources
         /// Removes the resource corresponding with the given resource type from the RESTable instance
         /// </summary>
         /// <returns>True if and only if a resource was successfully removed</returns>
-        private bool RemoveResource<TResource>() where TResource : class, TBase => RemoveResource(Resource<TResource>.SafeGet);
+        private bool RemoveResource<TResource>() where TResource : class, TBase => RemoveResource(ResourceCollection.SafeGetResource<TResource>());
 
         #endregion
 
@@ -415,13 +436,15 @@ namespace RESTable.Resources
             string fullName = null,
             RESTableAttribute attribute = null,
             DelegateSet<TResource> delegates = null
-        ) where TResource : class, TBase => new Meta.Internal.EntityResource<TResource>
+        ) where TResource : class, TBase => new EntityResource<TResource>
         (
             fullName: fullName ?? typeof(TResource).GetRESTableTypeName(),
             attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTableAttribute>(),
             delegates: ResolveDelegateSet<TResource, TResource>(delegates),
             views: GetViews<TResource>(),
-            provider: this
+            provider: this,
+            typeCache: TypeCache,
+            resourceCollection: ResourceCollection
         );
 
         private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>
@@ -431,13 +454,15 @@ namespace RESTable.Resources
             DelegateSet<TWrapped> delegates = null
         )
             where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class, TBase => new Meta.Internal.EntityResource<TWrapped>
+            where TWrapped : class, TBase => new EntityResource<TWrapped>
         (
             fullName: fullName ?? typeof(TWrapper).GetRESTableTypeName(),
             attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTableAttribute>(),
             delegates: ResolveDelegateSet<TWrapper, TWrapped>(delegates),
             views: GetWrappedViews<TWrapper, TWrapped>(),
-            provider: this
+            provider: this,
+            typeCache: TypeCache,
+            resourceCollection: ResourceCollection
         );
 
         private DelegateSet<TResource> ResolveDelegateSet<TTarget, TResource>(DelegateSet<TResource> delegates)
@@ -455,17 +480,17 @@ namespace RESTable.Resources
             .SetDelegatesToNullWhereNotImplemented()
             .SetAsyncDelegatesToSyncWhereNull();
 
-        private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)
+        private View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)
             .GetNestedTypes()
             .Where(nested => nested.HasAttribute<RESTableViewAttribute>())
-            .Select(view => new View<TResource>(view))
+            .Select(view => new View<TResource>(view, TypeCache))
             .ToArray();
 
-        private static View<TWrapped>[] GetWrappedViews<TWrapper, TWrapped>() where TWrapper : ResourceWrapper<TWrapped>
+        private View<TWrapped>[] GetWrappedViews<TWrapper, TWrapped>() where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => typeof(TWrapper)
             .GetNestedTypes()
             .Where(nested => nested.HasAttribute<RESTableViewAttribute>())
-            .Select(view => new View<TWrapped>(view))
+            .Select(view => new View<TWrapped>(view, TypeCache))
             .ToArray();
 
         #endregion

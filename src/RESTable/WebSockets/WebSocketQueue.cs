@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -26,6 +27,7 @@ namespace RESTable.WebSockets
         public WebSocketStatus Status => WebSocket.Status;
         public Headers Headers => WebSocket.Headers;
         public ReadonlyCookies Cookies => WebSocket.Cookies;
+        public CancellationToken CancellationToken => WebSocket.CancellationToken;
 
         /// <inheritdoc />
         public async Task SetStatus(WebSocketStatus status)

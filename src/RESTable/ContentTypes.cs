@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 namespace RESTable
 {
@@ -7,7 +6,6 @@ namespace RESTable
     /// <summary>
     /// A collection of ContentType instances
     /// </summary>
-    [JsonConverter(typeof(ContentTypesConverter))]
     public class ContentTypes : List<ContentType>
     {
         /// <inheritdoc />

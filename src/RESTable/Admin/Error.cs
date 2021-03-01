@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -89,16 +90,6 @@ namespace RESTable.Admin
         {
             Counter += 1;
             Id = Counter;
-            var errorsToKeep = Settings._NumberOfErrorsToKeep;
-            if (Counter > errorsToKeep && Counter % DeleteBatch == 0)
-            {
-                var cutoffId = Counter - errorsToKeep;
-                var entitiesToDelete = InMemoryOperations<Error>
-                    .Select()
-                    .Where(e => e.Id <= cutoffId)
-                    .ToList();
-                InMemoryOperations<Error>.Delete(entitiesToDelete);
-            }
             Uri = uri;
             Method = method;
             Headers = headers;
@@ -118,12 +109,22 @@ namespace RESTable.Admin
             var innerStackTrace = errorResult.InnerException?.StackTrace;
             var nl = Environment.NewLine;
             var stackTrace = string.Join($"{nl}§§§ INNER: §§§{nl}", errorStackTrace, innerStackTrace);
-            var totalMessage = errorResult.TotalMessage();
+            var totalMessage = errorResult.ToString();
+            var errorsToKeep = request.GetService<RESTableConfiguration>().NrOfErrorsToKeep;
+            if (Counter > errorsToKeep && Counter % DeleteBatch == 0)
+            {
+                var cutoffId = Counter - errorsToKeep;
+                var entitiesToDelete = InMemoryOperations<Error>
+                    .Select()
+                    .Where(existingError => existingError.Id <= cutoffId)
+                    .ToList();
+                InMemoryOperations<Error>.Delete(entitiesToDelete);
+            }
             var error = new Error
             (
                 uri: uri,
                 method: request.Method,
-                headers: resource is IEntityResource {RequiresAuthentication: true} e
+                headers: resource is IEntityResource {RequiresAuthentication: true}
                     ? null
                     : request.Headers.StringJoin(" | ", dict => dict.Select(header => header.Key.ToLower() switch
                     {

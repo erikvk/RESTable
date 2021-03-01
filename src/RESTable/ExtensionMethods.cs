@@ -10,6 +10,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CSharp.RuntimeBinder;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
@@ -22,6 +23,7 @@ using RESTable.Requests.Processors;
 using RESTable.Resources;
 using RESTable.Results;
 using RESTable.Linq;
+using RESTable.ProtocolProviders;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
@@ -39,21 +41,15 @@ namespace RESTable
 
         public static string RESTableMemberName(this MemberInfo m, bool flagged = false)
         {
-            var name = m.GetCustomAttributes().Select(a =>
-            {
-                switch (a)
-                {
-                    case RESTableMemberAttribute rma: return rma.Name;
-                    case DataMemberAttribute dma: return dma.Name;
-                    case JsonPropertyAttribute jpa: return jpa.PropertyName;
-                    default: return null;
-                }
-            }).FirstOrDefault(a => a != null) ?? m.Name;
+            string name;
+            if (m.HasAttribute<RESTableMemberAttribute>(out var attribute) && attribute.Name != null)
+                name = attribute.Name;
+            else name = m.Name;
             return flagged ? $"${name}" : name;
         }
 
         public static bool RESTableIgnored(this MemberInfo m) => m.GetCustomAttribute<RESTableMemberAttribute>()?.Ignored == true ||
-                                                                   m.HasAttribute<IgnoreDataMemberAttribute>();
+                                                                 m.HasAttribute<IgnoreDataMemberAttribute>();
 
         #endregion
 
@@ -342,6 +338,8 @@ namespace RESTable
         /// </summary>
         internal static JObject ToJObject(this object entity)
         {
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            
             switch (entity)
             {
                 case JObject j: return j;
@@ -351,19 +349,19 @@ namespace RESTable
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, Providers.Json.GetSerializer());
+                            : JToken.FromObject(pair.Value, jsonProvider.GetSerializer());
                     return _jobj;
             }
 
             var jobj = new JObject();
-            entity.GetType()
-                .GetDeclaredProperties()
+            var typeCache = ApplicationServicesAccessor.TypeCache;
+            typeCache.GetDeclaredProperties(entity.GetType())
                 .Values
                 .Where(p => !p.Hidden)
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Providers.Json.GetSerializer());
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, jsonProvider.GetSerializer());
                 });
             return jobj;
         }
@@ -519,7 +517,7 @@ namespace RESTable
         #region Requests
 
         private static readonly CultureInfo en_US = new("en-US");
-        
+
         internal static string GetFriendlyTypeName(this Type type)
         {
             switch (Type.GetTypeCode(type))
@@ -562,18 +560,16 @@ namespace RESTable
         {
             var error = exception.AsError();
             if (request == null) return error;
-            long? errorId = default;
             error.SetContext(request.Context);
             error.Request = request;
-            if (!(error is Forbidden) && request.Method >= 0)
+            if (error is not Forbidden && request.Method >= 0)
             {
-                errorId = Admin.Error.Create(error, request).Id;
+                var errorId = Admin.Error.Create(error, request).Id;
+                error.Headers.Error = $"/restable.admin.error/id={errorId}";
             }
             if (request.Headers.Metadata.EqualsNoCase("full"))
                 error.Headers.Metadata = error.Metadata;
-            error.Headers.Version = RESTableConfig.Version;
-            if (errorId.HasValue)
-                error.Headers.Error = $"/restable.admin.error/id={errorId}";
+            error.Headers.Version = request.GetService<RESTableConfiguration>().Version;
             return error;
         }
 
@@ -851,23 +847,6 @@ namespace RESTable
             return str != null ? Encoding.UTF8.GetBytes(str) : null;
         }
 
-        internal static string TotalMessage(this Exception e)
-        {
-            var message = new StringBuilder();
-            if (string.IsNullOrWhiteSpace(e.Message))
-                message.Append(e.Message);
-            var ie = e.InnerException;
-            while (ie != null)
-            {
-                if (!string.IsNullOrWhiteSpace(ie.Message))
-                    message.Append(ie.Message);
-                if (ie.InnerException != null)
-                    message.Append(" | ");
-                ie = ie.InnerException;
-            }
-            return message.ToString().Replace("\r\n", " | ");
-        }
-
         internal static byte[] ToByteArray(this Stream stream)
         {
             switch (stream)
@@ -944,7 +923,7 @@ namespace RESTable
         {
             var protocolProvider = uriComponents.ProtocolProvider;
             var uriString = protocolProvider.MakeRelativeUri(uriComponents);
-            if (ProtocolController.DefaultProtocolProvider.ProtocolProvider.Equals(protocolProvider))
+            if (protocolProvider is DefaultProtocolProvider)
                 return uriString;
             return $"-{protocolProvider.ProtocolIdentifier}{uriString}";
         }

@@ -40,7 +40,14 @@ namespace RESTable.Excel
         /// <inheritdoc />
         public override string ContentDispositionFileExtension => ".xlsx";
 
-        public ExcelContentTypeProvider(IJsonProvider jsonProvider) : base(jsonProvider) { }
+        private TypeCache TypeCache { get; }
+        private ExcelSettings ExcelSettings { get; }
+        
+        public ExcelContentTypeProvider(IJsonProvider jsonProvider, ExcelSettings excelSettings, TypeCache typeCache) : base(jsonProvider)
+        {
+            TypeCache = typeCache;
+            ExcelSettings = excelSettings;
+        }
 
         /// <inheritdoc />
         public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
@@ -95,7 +102,7 @@ namespace RESTable.Excel
                             }
                             break;
                         default:
-                            var properties = typeof(T).GetDeclaredProperties().Values.Where(p => !p.Hidden).ToList();
+                            var properties = TypeCache.GetDeclaredProperties(typeof(T)).Values.Where(p => !p.Hidden).ToList();
                             var columnIndex = 1;
                             foreach (var property in properties)
                             {
@@ -121,7 +128,7 @@ namespace RESTable.Excel
                 await writeEntities(collection).ConfigureAwait(false);
                 if (currentRow == 1) return 0;
                 worksheet.Cells.AutoFitColumns(0);
-                await package.SaveAsync().ConfigureAwait(false);
+                await package.SaveAsync(cancellationToken).ConfigureAwait(false);
                 return (long) currentRow - 1;
             }
             catch (Exception e)
@@ -189,7 +196,7 @@ namespace RESTable.Excel
         {
             try
             {
-                await using var swr = new StreamWriter(jsonStream, Encoding, 1024, true);
+                await using var swr = new StreamWriter(jsonStream, ExcelSettings.Encoding, 1024, true);
                 using var jwr = new RESTableFromExcelJsonTextWriter(swr);
                 using var package = new ExcelPackage(excelStream);
 

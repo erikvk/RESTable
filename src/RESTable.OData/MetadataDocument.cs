@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -78,11 +78,12 @@ namespace RESTable.OData
         /// <inheritdoc />
         public BinaryResult Select(IRequest<MetadataDocument> request)
         {
+            var configurator = request.GetService<RESTableConfigurator>();
             async Task WriteStream(Stream stream, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var metadata = Metadata.Get(MetadataLevel.Full);
+                var metadata = Metadata.Get(MetadataLevel.Full, configurator);
                 await using var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true);
                 await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>").ConfigureAwait(false);
                 await swr.WriteAsync("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>").ConfigureAwait(false);
@@ -193,8 +194,6 @@ namespace RESTable.OData
                         case var _ when type.IsNullable(out var t): return GetEdmTypeName(t);
                         case var _ when type.ImplementsGenericInterface(typeof(IDictionary<,>), out var p) && p[0] == typeof(string):
                             return "global.RESTable.DynamicResource";
-                        case var _ when typeof(JValue).IsAssignableFrom(type): return "Edm.PrimitiveType";
-                        case var _ when typeof(JToken).IsAssignableFrom(type): return "Edm.ComplexType";
                         case var _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p): return $"Collection({GetEdmTypeName(p[0])})";
                         default: return $"global.{type.FullName}";
                     }
@@ -221,6 +220,6 @@ namespace RESTable.OData
         /// We have to know whether the member is of dynamic type. If it is, the type has to be 
         /// declared as open.
         /// </summary>
-        private static bool IsDynamicMember(Member member) => member.Type == typeof(object) || typeof(JToken).IsAssignableFrom(member.Type);
+        private static bool IsDynamicMember(Member member) => member.Type == typeof(object);
     }
 }

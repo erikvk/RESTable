@@ -42,7 +42,9 @@ namespace RESTable.Starcounter3x
             customDateTimeFormat: null,
             getter: GetOid,
             owner: owner,
-            setter: null
+            readOnly: false,
+            setter: null,
+            mergeOntoOwner: false
         ) { }
     }
 }

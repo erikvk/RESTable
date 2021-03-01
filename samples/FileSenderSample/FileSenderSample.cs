@@ -8,8 +8,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable;
 using RESTable.AspNetCore;
+using RESTable.Requests;
 using RESTable.Resources;
+using RESTable.Resources.Operations;
+using RESTable.WebSockets;
 
 namespace FileSenderSample
 {
@@ -27,13 +31,13 @@ namespace FileSenderSample
             .AddRESTable()
             .AddJsonProvider()
             .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true) // needed since RESTable still uses synchronous JSON serialization (Newtonsoft)
-            .AddHttpContextAccessor()
-            .AddMvc(o => o.EnableEndpointRouting = false);
+            .AddHttpContextAccessor();
 
-        public void Configure(IApplicationBuilder app) => app
-            .UseWebSockets()
-            .UseRESTableAspNetCore()
-            .UseMvcWithDefaultRoute();
+        public void Configure(IApplicationBuilder app, RESTableConfigurator configurator)
+        {
+            configurator.ConfigureRESTable();
+            app.UseWebSockets().UseRESTableAspNetCore();
+        }
     }
 
     #endregion
@@ -42,7 +46,7 @@ namespace FileSenderSample
     /// This resource lets clients connect and receive files. Available at wss://localhost:5001/restable/filesenderconnection
     /// </summary>
     [RESTable]
-    public class FileSenderConnection : Terminal, IAsyncDisposable
+    public class FileSenderConnection : Terminal, IAsyncDisposable, IValidator<FileSenderConnection>
     {
         // We store all active connections here, so we can use them from a separate resource
         internal static TerminalSet<FileSenderConnection> ActiveConnections { get; } = new();
@@ -57,7 +61,8 @@ namespace FileSenderSample
         /// We expect clients to set this. We could have a mechanism where this is
         /// required when the connection is established, and immutable when the connection is active.
         /// </summary>
-        public string Id { get; set; } = "Unknown";
+        [RESTableMember(readOnly: true)]
+        public string Id { get; set; }
 
         /// <summary>
         /// This is a read-only file count, set here on the server
@@ -76,6 +81,18 @@ namespace FileSenderSample
 
         private DateTime OpenedAt { get; set; }
 
+        public IEnumerable<InvalidMember> Validate(FileSenderConnection entity, RESTableContext context)
+        {
+            foreach (var existing in ActiveConnections)
+            {
+                if (existing.Id == entity.Id)
+                    throw new Exception($"A connection with id {existing.Id} is already connected");
+            }
+            
+            if (string.IsNullOrWhiteSpace(entity.Id))
+                yield return this.Invalidate(i => i.Id, "Expected a non-null, non-whitespace ID for this connection");
+        }
+
         protected override async Task Open()
         {
             OpenedAt = DateTime.Now;
@@ -83,13 +100,11 @@ namespace FileSenderSample
             await WebSocket.SendText($"Hi, I'm a connection named {Id}!");
         }
 
-        public async Task SendFile(FileStream stream)
+        public async Task FileSent(string fileName, long fileLength)
         {
-            foreach (var manager in FileSenderManager.Managers)
-                await manager.Notify(stream, this);
-
-            await WebSocket.SendBinary(stream);
             SentFilesCount += 1;
+            foreach (var manager in FileSenderManager.Managers)
+                await manager.Notify(fileName, fileLength, this);
         }
 
         public override async Task HandleTextInput(string input)
@@ -105,7 +120,7 @@ namespace FileSenderSample
                 case "HI":
                     await WebSocket.SendText("Hello");
                     break;
-                
+
                 case "START":
                     await WebSocket.SendText("Started!");
                     Status = "Started";
@@ -119,13 +134,14 @@ namespace FileSenderSample
                 case "SEND ALL":
                     foreach (var file in MockelyMock.GetAllFilePaths().Select(File.OpenRead))
                     {
-                        await SendFile(file);
+                        await WebSocket.SendBinary(file);
+                        await FileSent(file.Name, file.Length);
                     }
                     await WebSocket.SendText("All files sent!");
                     break;
 
                 case var blank when string.IsNullOrWhiteSpace(blank): break;
-                
+
                 default:
                     await WebSocket.SendText("Unrecognized command " + input);
                     break;
@@ -161,9 +177,9 @@ namespace FileSenderSample
             return default;
         }
 
-        public async Task Notify(FileStream fileStream, FileSenderConnection connection)
+        public async Task Notify(string fileName, long fileLength, FileSenderConnection connection)
         {
-            await WebSocket.SendText($"{DateTime.Now:HH:mm:ss} A file with path {fileStream.Name} ({fileStream.Length} bytes) was sent to the following connection:");
+            await WebSocket.SendText($"{DateTime.Now:HH:mm:ss} A file with path {fileName} ({fileLength} bytes) was sent to the following connection:");
             await WebSocket.SendJson(connection);
         }
 
@@ -239,13 +255,21 @@ namespace FileSenderSample
                 await WebSocket.SendText($"Nope, {path} is not a valid path");
                 return;
             }
-            var startedConnections = FileSenderConnection
+            var combinedTerminals = FileSenderConnection
                 .ActiveConnections
-                .Where(c => !c.Deactivated && c.Status == "Started");
-            foreach (var connection in startedConnections)
+                .Where(c => !c.Deactivated && c.Status == "Started")    
+                .CombineTerminals();
+            
+            if (combinedTerminals.Count == 0)
             {
-                await connection.SendFile(file);
-                file.Seek(0, SeekOrigin.Begin);
+                await WebSocket.SendText("No started connections");
+                return;
+            }
+
+            await combinedTerminals.CombinedWebSocket.SendBinary(file);
+            foreach (var terminal in combinedTerminals)
+            {
+                await terminal.FileSent(file.Name, file.Length);
             }
         }
 

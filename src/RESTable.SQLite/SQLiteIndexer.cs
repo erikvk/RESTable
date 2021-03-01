@@ -26,8 +26,9 @@ namespace RESTable.SQLite
                 var tableName = groups["table"].Value;
                 var mapping = TableMapping.All.FirstOrDefault(m => m.TableName.EqualsNoCase(tableName));
                 if (mapping == null) throw new Exception($"Unknown SQLite table '{tableName}'");
-                return new DatabaseIndex(mapping.Resource.Name)
+                return new DatabaseIndex
                 {
+                    ResourceName = mapping.Resource.Name,
                     Name = groups["name"].Value,
                     Columns = groups["columns"].Captures.Select(column =>
                     {

@@ -41,8 +41,9 @@ namespace RESTable.Tutorial
             .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true)
             .AddMvc(o => o.EnableEndpointRouting = false);
 
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, RESTableConfigurator configurator)
         {
+            configurator.ConfigureRESTable();
             app.UseMvcWithDefaultRoute();
             app.UseWebSockets();
             app.UseRESTableAspNetCore();
@@ -144,7 +145,7 @@ namespace RESTable.Tutorial
     {
         public string Name { get; set; }
 
-        public IEnumerable<InvalidMember> Validate(Person entity)
+        public IEnumerable<InvalidMember> Validate(Person entity, RESTableContext context)
         {
             if (entity.Name == "Banarne")
                 yield return this.Invalidate(e => e.Name, "Banarne is not a real name!");

@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Results;
 using RESTable.Linq;
+using RESTable.Meta;
 
 namespace RESTable.Resources.Operations
 {
@@ -116,7 +118,7 @@ namespace RESTable.Resources.Operations
                 {
                     var selector = request.GetSelector() ?? (() => request.Body.Deserialize<T>());
                     var entities = selector();
-                    return entities?.InputLimit(limit)?.Validate(request.EntityResource) ?? throw new MissingDataSource(request);
+                    return entities?.InputLimit(limit)?.Validate(request.EntityResource, request.Context) ?? throw new MissingDataSource(request);
                 }
 
                 request.EntitiesProducer = RequestEntitiesProducer;
@@ -144,7 +146,7 @@ namespace RESTable.Resources.Operations
                     var selector = request.GetSelector() ?? DefaultSelector;
                     var updater = request.GetUpdater() ?? DefaultUpdater;
                     var entities = selector()?.UnsafeLimit(!request.MetaConditions.Unsafe);
-                    return updater(entities)?.Validate(request.EntityResource) ?? throw new MissingDataSource(request);
+                    return updater(entities)?.Validate(request.EntityResource, request.Context) ?? throw new MissingDataSource(request);
                 }
 
                 request.EntitiesProducer = RequestEntitiesProducer;
@@ -160,7 +162,7 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static async Task<int> SafePostUpdate(IEntityRequest<T> request, ICollection<(JObject json, T source)> items)
+        private static async Task<int> SafePostUpdate(IEntityRequest<T> request, IJsonProvider jsonProvider, ICollection<(JObject json, T source)> items)
         {
             try
             {
@@ -170,11 +172,11 @@ namespace RESTable.Resources.Operations
                         var (json, source) = item;
                         if (json == null || source == null) return source;
                         using var sr = json.CreateReader();
-                        Providers.Json.GetSerializer().Populate(sr, source);
+                        jsonProvider.GetSerializer().Populate(sr, source);
                         return source;
                     })
                     .ToAsyncEnumerable()
-                    .Validate(request.EntityResource);
+                    .Validate(request.EntityResource, request.Context);
 
                 request.EntitiesProducer = RequestEntitiesProducer;
                 return await request.EntityResource.UpdateAsync(request).ConfigureAwait(false);
@@ -285,15 +287,16 @@ namespace RESTable.Resources.Operations
         {
             try
             {
+                var jsonProvider = request.GetService<IJsonProvider>();
                 await using var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
                 var (toInsert, toUpdate) = await GetSafePostTasks(request, innerRequest).ConfigureAwait(false);
                 var (updatedCount, insertedCount) = (0, 0);
                 if (toUpdate.Any())
-                    updatedCount = await SafePostUpdate(innerRequest, toUpdate).ConfigureAwait(false);
+                    updatedCount = await SafePostUpdate(innerRequest, jsonProvider, toUpdate).ConfigureAwait(false);
                 if (toInsert.Any())
                 {
                     innerRequest.Selector = () => toInsert
-                        .Select(item => item.ToObject<T>(Providers.Json.GetSerializer()))
+                        .Select(item => item.ToObject<T>(jsonProvider.GetSerializer()))
                         .ToAsyncEnumerable();
                     insertedCount = await Insert(innerRequest).ConfigureAwait(false);
                 }
@@ -313,13 +316,18 @@ namespace RESTable.Resources.Operations
         {
             var toInsert = new List<JObject>();
             var toUpdate = new List<(JObject json, T source)>();
+            var termFactory = request.GetService<TermFactory>();
             try
             {
                 var body = request.Body;
                 if (!body.HasContent) return (toInsert, toUpdate);
                 var conditions = request.MetaConditions.SafePost
                     .Split(',')
-                    .Select(s => new Condition<T>(s, Operators.EQUALS, null))
+                    .Select(key =>
+                    {
+                        var term = termFactory.MakeConditionTerm(request.Target, key);
+                        return new Condition<T>(term, Operators.EQUALS, null);
+                    })
                     .ToList();
                 await foreach (var entity in body.Deserialize<JObject>().ConfigureAwait(false))
                 {

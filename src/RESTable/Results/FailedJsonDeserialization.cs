@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System;
 
 namespace RESTable.Results
 {
@@ -8,7 +8,7 @@ namespace RESTable.Results
     /// </summary>
     internal class FailedJsonDeserialization : BadRequest
     {
-        internal FailedJsonDeserialization(JsonReaderException ie) : base(ErrorCodes.FailedJsonDeserialization,
+        internal FailedJsonDeserialization(Exception ie) : base(ErrorCodes.FailedJsonDeserialization,
             $"JSON syntax error: {ie.Message}", ie) { }
     }
 }

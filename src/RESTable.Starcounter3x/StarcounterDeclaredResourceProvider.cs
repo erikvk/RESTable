@@ -11,7 +11,7 @@ namespace RESTable.Starcounter3x
     {
         protected override Type AttributeType { get; } = null;
         protected override IDatabaseIndexer DatabaseIndexer { get; } = null;
-        
+
         protected override void Validate() { }
 
         protected override bool Include(Type type)
@@ -26,7 +26,6 @@ namespace RESTable.Starcounter3x
         protected override int DefaultUpdate<T>(IRequest<T> request) => StarcounterOperations<T>.Update(request);
         protected override int DefaultDelete<T>(IRequest<T> request) => StarcounterOperations<T>.Delete(request);
 
-        protected override bool IsValid(IEntityResource resource, out string reason) =>
-            StarcounterOperations<object>.IsValid(resource, out reason);
+        protected override bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason) => StarcounterOperations<object>.IsValid(resource, typeCache, out reason);
     }
 }

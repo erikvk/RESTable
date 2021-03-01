@@ -7,20 +7,16 @@ namespace RESTable.Tests
 {
     public class RequestMaker
     {
-        private Client MockClient => Client.External
-        (
-            clientIp: IPAddress.Parse("151.10.10.5"),
-            proxyIp: null,
-            userAgent: "Some User-Agent!",
-            host: "the host header",
-            https: true,
-            cookies: new Cookies()
-        );
+        private RESTableFixture Fixture { get; }
+
+        public RequestMaker(RESTableFixture fixture)
+        {
+            Fixture = fixture;
+        }
 
         public async Task<HttpStatusCode> MakeRequest(Method method, string uri, object body, Headers headers)
         {
-            var client = MockClient;
-            var context = new MockContext(client);
+            var context = new MockContext(Fixture.ServiceProvider);
             await using var request = context.CreateRequest(method, uri, body, headers);
             var result = await request.Evaluate().ConfigureAwait(false);
             await using var serialized = await result.Serialize().ConfigureAwait(false);
