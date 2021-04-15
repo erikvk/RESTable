@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace RESTable.WebSockets
 {
-    internal class MultipleWebSocketsMessageStream : Stream
+    internal class CombinedWebSocketsMessageStream : Stream, IAsyncDisposable
     {
         private WebSocketMessageType MessageType { get; }
         private CancellationToken CancellationToken { get; }
         private Stream[] MessageStreams { get; }
 
-        public MultipleWebSocketsMessageStream(IEnumerable<Stream> messageStreams, bool asText, CancellationToken cancellationToken)
+        public CombinedWebSocketsMessageStream(IEnumerable<Stream> messageStreams, bool asText, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             MessageStreams = messageStreams.ToArray();
@@ -25,14 +25,8 @@ namespace RESTable.WebSockets
         protected override void Dispose(bool disposing)
         {
             if (disposing)
-                DisposeAsync().AsTask().Wait(CancellationToken);
-        }
-
-        public override async ValueTask DisposeAsync()
-        {
-            foreach (var stream in MessageStreams)
             {
-                await stream.DisposeAsync().ConfigureAwait(false);
+                DisposeAsync().AsTask().Wait(CancellationToken);
             }
         }
 
@@ -40,6 +34,15 @@ namespace RESTable.WebSockets
         {
             CancellationToken.ThrowIfCancellationRequested();
             return Task.WhenAll(MessageStreams.Select(s => s.WriteAsync(buffer, offset, count, cancellationToken)));
+        }
+
+#if NETSTANDARD2_1
+        public override async ValueTask DisposeAsync()
+        {
+            foreach (var stream in MessageStreams)
+            {
+                await stream.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
@@ -54,11 +57,22 @@ namespace RESTable.WebSockets
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             CancellationToken.ThrowIfCancellationRequested();
-            for (var index = 0; index < MessageStreams.Length; index++)
+            foreach (var stream in MessageStreams)
             {
-                MessageStreams[index].Write(buffer);
+                stream.Write(buffer);
             }
         }
+#else
+        public ValueTask DisposeAsync()
+        {
+            foreach (var stream in MessageStreams)
+            {
+                stream.Dispose();
+            }
+            base.Dispose();
+            return default;
+        }
+#endif
 
         public override void Write(byte[] buffer, int offset, int count)
         {

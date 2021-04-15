@@ -114,7 +114,7 @@ namespace RESTable.SQLite.Example
         }
     }
 
-    [SQLite(CustomTableName = "Heroes"), RESTable]
+    [SQLite(customTableName: "Heroes"), RESTable]
     public class Superhero : SQLiteTable
     {
         public string Name { get; set; }

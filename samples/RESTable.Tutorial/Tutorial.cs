@@ -33,28 +33,23 @@ namespace RESTable.Tutorial
 
         public void ConfigureServices(IServiceCollection services) => services
             .AddODataProvider()
-            .AddSqliteProvider("./database")
+            .AddSqliteProvider(dbPath: "./database")
             .AddExcelProvider()
             .AddJsonProvider()
             .AddRESTable()
             .AddHttpContextAccessor()
-            .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true)
-            .AddMvc(o => o.EnableEndpointRouting = false);
+            .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
 
-        public void Configure(IApplicationBuilder app, RESTableConfigurator configurator)
-        {
-            configurator.ConfigureRESTable();
-            app.UseMvcWithDefaultRoute();
-            app.UseWebSockets();
-            app.UseRESTableAspNetCore();
-        }
+        public void Configure(IApplicationBuilder app) => app
+            .UseWebSockets()
+            .UseRESTableAspNetCore();
     }
 
     /// <summary>
     /// Database is a subset of https://github.com/fivethirtyeight/data/tree/master/comic-characters
     /// - which is, in turn, taken from Marvel and DC Comics respective sites.
     /// </summary>
-    [SQLite(CustomTableName = "Heroes"), RESTable]
+    [SQLite(customTableName: "Heroes"), RESTable]
     public class Superhero : SQLiteTable
     {
         public string Name { get; set; }
@@ -83,7 +78,7 @@ namespace RESTable.Tutorial
 
         public int? YearIntroduced
         {
-            get => Year == 0 ? (int?) null : Year;
+            get => Year == 0 ? null : Year;
             set => Year = value.GetValueOrDefault();
         }
 
@@ -119,7 +114,7 @@ namespace RESTable.Tutorial
             var genderCount = new int[3];
 
             await using var innerRequest = request.Context.CreateRequest<Superhero>();
-            await foreach (var superhero in await innerRequest.EvaluateToEntities())
+            await foreach (var superhero in await innerRequest.GetResultEntities())
             {
                 if (count == 0)
                     newest = superhero;
@@ -245,13 +240,11 @@ namespace RESTable.Tutorial
                 await WebSocket.DirectToShell();
         }
 
-        private static async Task SendToAll(string message)
-        {
-            var tasks = Terminals.Select(terminal => terminal.WebSocket.SendText(message));
-            await Task.WhenAll(tasks);
-        }
+        private static async Task SendToAll(string message) => await Terminals
+            .CombinedWebSocket
+            .SendText(message);
 
-        protected override bool SupportsTextInput { get; } = true;
+        protected override bool SupportsTextInput => true;
     }
 }
 

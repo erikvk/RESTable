@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.OData;
@@ -31,12 +30,12 @@ namespace RESTable.Example
             .AddMvc(o => o.EnableEndpointRouting = false);
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, RootClient rootClient)
         {
             app.UseMvcWithDefaultRoute();
             app.UseWebSockets();
 
-            var rootContext = new RootContext(app.ApplicationServices);
+            var rootContext = new RESTableContext(rootClient, app.ApplicationServices);
             using var personPostRequest = rootContext
                 .CreateRequest<Person>(Method.POST)
                 .WithBody(new object[]
@@ -68,7 +67,7 @@ namespace RESTable.Example
                         Interests = new[] {"Destiny", "Forces"}
                     }
                 });
-            personPostRequest.Evaluate().Wait();
+            personPostRequest.GetResult().Wait();
         }
     }
 }
