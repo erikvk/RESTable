@@ -95,7 +95,7 @@ namespace RESTable
                             uri: uri,
                             headers: request.Headers
                         );
-                        var result = await internalRequest.Evaluate().ConfigureAwait(false);
+                        var result = await internalRequest.GetResult().ConfigureAwait(false);
                         switch (result)
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");

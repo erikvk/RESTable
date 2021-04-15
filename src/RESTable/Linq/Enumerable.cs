@@ -157,37 +157,6 @@ namespace RESTable.Linq
         }
 
         /// <summary>
-        /// Evaluates the predicate. If the boolean condition is true, returns the result of the 'then'
-        /// function applied to the source IEnumerable. Else, returns the source IEnumerable.
-        /// </summary>
-        public static IEnumerable<T> If<T>(this IEnumerable<T> source, bool @if,
-            Func<IEnumerable<T>, IEnumerable<T>> then)
-        {
-            return @if ? then(source) : source;
-        }
-
-        /// <summary>
-        /// Evaluates the predicate. If the boolean condition is true, returns the result of the 'then'
-        /// function applied to the source IEnumerable. Else, returns the result of the 'else' function 
-        /// applied to the source IEnumerable.
-        /// </summary>
-        public static IEnumerable<T2> If<T1, T2>(this IEnumerable<T1> source, bool @if,
-            Func<IEnumerable<T1>, IEnumerable<T2>> then, Func<IEnumerable<T1>, IEnumerable<T2>> @else)
-        {
-            return @if ? then(source) : @else(source);
-        }
-
-        /// <summary>
-        /// Evaluates the predicate. If the predicate evaluates to true, returns the result of the 'then'
-        /// function applied to the source IEnumerable. Else, returns the source IEnumerable.
-        /// </summary>
-        public static IEnumerable<T> If<T>(this IEnumerable<T> source, Func<bool> @if,
-            Func<IEnumerable<T>, IEnumerable<T>> then)
-        {
-            return @if() ? then(source) : source;
-        }
-
-        /// <summary>
         /// Performs an action for each element in an IEnumerable, disregarding any exception thrown
         /// during evaluation of the action.
         /// </summary>

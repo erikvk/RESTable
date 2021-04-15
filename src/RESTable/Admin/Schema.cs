@@ -27,7 +27,13 @@ namespace RESTable.Admin
         /// </summary>
         public string Resource { private get; set; }
 
-        public Schema(IEnumerable<KeyValuePair<string, object>> collection) : base(collection) { }
+        public Schema(IEnumerable<KeyValuePair<string, object>> collection)
+        {
+            foreach (var (key, value) in collection)
+            {
+                Add(key, value);
+            }
+        }
 
         /// <inheritdoc />
         public IEnumerable<Schema> Select(IRequest<Schema> request)
@@ -42,7 +48,7 @@ namespace RESTable.Admin
                 yield break;
             yield return new Schema
             (
-                collection: resource.Members.Values.Select(p => KeyValuePair.Create(p.Name, (object) p.Type.FullName))
+                collection: resource.Members.Values.Select(p => new KeyValuePair<string, object>(p.Name, p.Type.FullName))
             );
         }
     }

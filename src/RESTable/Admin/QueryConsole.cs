@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using RESTable.Resources;
 using RESTable.Resources.Templates;
+using static System.Environment;
 
 namespace RESTable.Admin
 {
@@ -29,10 +29,9 @@ namespace RESTable.Admin
         public static async Task Publish(string query, object[] args)
         {
             if (Consoles.Count == 0) return;
-            var argsString = args == null ? null : "\r\nArgs: " + string.Join(", ", args);
-            var message = $"{DateTime.UtcNow:O}: {query}{argsString}\r\n";
-            var tasks = Consoles.Select(c => c.WebSocket.SendText(message));
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            var argsString = args == null ? null : $"{NewLine}Args: {string.Join(", ", args)}";
+            var message = $"{DateTime.UtcNow:O}: {query}{argsString}{NewLine}";
+            await Consoles.CombinedWebSocket.SendText(message);
         }
     }
 }

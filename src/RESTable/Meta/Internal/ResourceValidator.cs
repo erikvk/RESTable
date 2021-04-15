@@ -278,7 +278,7 @@ namespace RESTable.Meta.Internal
                         throw new InvalidTerminalDeclarationException(terminal, "must not be decorated with a resource provider attribute");
                     if (typeof(IOperationsInterface).IsAssignableFrom(terminal))
                         throw new InvalidTerminalDeclarationException(terminal, "must not implement any other RESTable operations interfaces");
-                    if (terminal.GetConstructor(Type.EmptyTypes) == null)
+                    if (terminal != null && terminal.GetConstructor(Type.EmptyTypes) == null)
                         throw new InvalidTerminalDeclarationException(terminal, "must define a public parameterless constructor");
                 }
             }

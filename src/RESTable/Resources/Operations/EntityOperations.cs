@@ -331,9 +331,9 @@ namespace RESTable.Resources.Operations
                     .ToList();
                 await foreach (var entity in body.Deserialize<JObject>().ConfigureAwait(false))
                 {
-                    conditions.ForEach(cond => cond.Value = entity.SafeSelect(cond.Term.Evaluate));
+                    conditions.ForEach(cond => cond.Value = entity.SafeSelect(cond.Term.GetValue));
                     innerRequest.Conditions = conditions;
-                    var result = await innerRequest.EvaluateToEntities().ConfigureAwait(false);
+                    var result = await innerRequest.GetResultEntities().ConfigureAwait(false);
                     var resultList = await result.ToListAsync().ConfigureAwait(false);
                     switch (resultList.Count)
                     {

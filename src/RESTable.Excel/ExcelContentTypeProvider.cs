@@ -42,7 +42,7 @@ namespace RESTable.Excel
 
         private TypeCache TypeCache { get; }
         private ExcelSettings ExcelSettings { get; }
-        
+
         public ExcelContentTypeProvider(IJsonProvider jsonProvider, ExcelSettings excelSettings, TypeCache typeCache) : base(jsonProvider)
         {
             TypeCache = typeCache;
@@ -50,7 +50,8 @@ namespace RESTable.Excel
         }
 
         /// <inheritdoc />
-        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
+        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken)
+            where T : class
         {
             if (collection == null) return 0;
             try
@@ -196,38 +197,45 @@ namespace RESTable.Excel
         {
             try
             {
-                await using var swr = new StreamWriter(jsonStream, ExcelSettings.Encoding, 1024, true);
-                using var jwr = new RESTableFromExcelJsonTextWriter(swr);
-                using var package = new ExcelPackage(excelStream);
-
-                await jwr.WriteStartArrayAsync().ConfigureAwait(false);
-
-                var worksheet = package.Workbook?.Worksheets?.FirstOrDefault();
-                if (worksheet?.Dimension != null)
+                var swr = new StreamWriter(jsonStream, ExcelSettings.Encoding, 4096, true);
+#if NETSTANDARD2_1
+                await using (swr)
+#else
+                using (swr)
+#endif
                 {
-                    var (rows, columns) = (worksheet.Dimension.Rows, worksheet.Dimension.Columns);
-                    if (rows > 1)
+                    using var jwr = new RESTableFromExcelJsonTextWriter(swr);
+                    using var package = new ExcelPackage(excelStream);
+
+                    await jwr.WriteStartArrayAsync().ConfigureAwait(false);
+
+                    var worksheet = package.Workbook?.Worksheets?.FirstOrDefault();
+                    if (worksheet?.Dimension != null)
                     {
-                        var propertyNames = new string[columns + 1];
-                        for (var col = 1; col <= columns; col += 1)
-                            propertyNames[col] = worksheet.Cells[1, col].GetValue<string>();
-                        for (var row = 2; row <= rows; row += 1)
+                        var (rows, columns) = (worksheet.Dimension.Rows, worksheet.Dimension.Columns);
+                        if (rows > 1)
                         {
-                            await jwr.WriteStartObjectAsync().ConfigureAwait(false);
+                            var propertyNames = new string[columns + 1];
                             for (var col = 1; col <= columns; col += 1)
+                                propertyNames[col] = worksheet.Cells[1, col].GetValue<string>();
+                            for (var row = 2; row <= rows; row += 1)
                             {
-                                if (propertyNames[col] is string propertyName)
+                                await jwr.WriteStartObjectAsync().ConfigureAwait(false);
+                                for (var col = 1; col <= columns; col += 1)
                                 {
-                                    await jwr.WritePropertyNameAsync(propertyName).ConfigureAwait(false);
-                                    await jwr.WriteValueAsync(worksheet.Cells[row, col].Value).ConfigureAwait(false);
+                                    if (propertyNames[col] is string propertyName)
+                                    {
+                                        await jwr.WritePropertyNameAsync(propertyName).ConfigureAwait(false);
+                                        await jwr.WriteValueAsync(worksheet.Cells[row, col].Value).ConfigureAwait(false);
+                                    }
                                 }
+                                await jwr.WriteEndObjectAsync().ConfigureAwait(false);
                             }
-                            await jwr.WriteEndObjectAsync().ConfigureAwait(false);
                         }
                     }
-                }
 
-                await jwr.WriteEndArrayAsync().ConfigureAwait(false);
+                    await jwr.WriteEndArrayAsync().ConfigureAwait(false);
+                }
             }
             catch (Exception e)
             {

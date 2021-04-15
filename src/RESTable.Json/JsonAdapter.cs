@@ -36,7 +36,7 @@ namespace RESTable.Json
         public abstract string ContentDispositionFileExtension { get; }
 
         private IJsonProvider JsonProvider { get; }
-        
+
         protected JsonAdapter(IJsonProvider jsonProvider)
         {
             JsonProvider = jsonProvider;
@@ -67,10 +67,17 @@ namespace RESTable.Json
         public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body)
         {
             await using var jsonStream = new SwappingStream();
-            await using var populateStream = new MemoryStream(body);
-            await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);
-            await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
-                yield return item;
+            var populateStream = new MemoryStream(body);
+#if NETSTANDARD2_1
+            await using (populateStream)
+#else
+            using (populateStream)
+#endif
+            {
+                await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);
+                await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
+                    yield return item;
+            }
         }
     }
 }

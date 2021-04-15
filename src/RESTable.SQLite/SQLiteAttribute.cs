@@ -13,6 +13,11 @@ namespace RESTable.SQLite
         /// To manually bind against a certain SQLite table, set the CustomTableName 
         /// to that table's name.
         /// </summary>
-        public string CustomTableName;
+        public string CustomTableName { get; }
+
+        public SQLiteAttribute(string customTableName = null)
+        {
+            CustomTableName = customTableName;
+        }
     }
 }

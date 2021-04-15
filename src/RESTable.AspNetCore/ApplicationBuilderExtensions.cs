@@ -1,11 +1,11 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.Internal.Auth;
 using RESTable.Requests;
 using RESTable.Results;
 using RESTable.Linq;
@@ -17,11 +17,19 @@ namespace RESTable.AspNetCore
         private static string RootUri { get; set; }
         private static string Template { get; set; }
 
+        /// <summary>
+        /// Adds ASP.NET core routings to work according to the existing RESTable configuration. If RESTable is
+        /// not configured prior to this method being called, the default configuration is used. 
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <returns></returns>
         public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder)
         {
-            if (!RESTableConfigurator.IsConfigured)
-                throw new InvalidOperationException($"RESTable must be configured prior to call to {nameof(UseRESTableAspNetCore)}");
+            var configurator = builder.ApplicationServices.GetService<RESTableConfigurator>();
+            if (!configurator.IsConfigured)
+                configurator.ConfigureRESTable();
             var config = builder.ApplicationServices.GetService<RESTableConfiguration>();
+            var authenticator = builder.ApplicationServices.GetService<Authenticator>();
 
             RootUri = config.RootUri;
             Template = RootUri + "/{resource?}/{conditions?}/{metaconditions?}";
@@ -32,7 +40,7 @@ namespace RESTable.AspNetCore
 
                 foreach (var method in config.Methods)
                 {
-                    router.MapVerb(method.ToString(), Template, context => HandleRequest(method, context));
+                    router.MapVerb(method.ToString(), Template, aspNetCoreContext => HandleRequest(method, aspNetCoreContext, authenticator));
                 }
             });
 
@@ -47,24 +55,31 @@ namespace RESTable.AspNetCore
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
             var options = context.GetOptions(uri, headers);
             WriteResponse(aspNetCoreContext, options);
-            await using var remote = aspNetCoreContext.Response.Body;
-            await using var serializedResult = await options.Serialize(remote).ConfigureAwait(false);
+            var remote = aspNetCoreContext.Response.Body;
+#if NETSTANDARD2_1
+            await using (remote)
+#else
+            using (remote)
+#endif
+            {
+                await using var serializedResult = await options.Serialize(remote).ConfigureAwait(false);
+            }
         }
 
-        private static async Task HandleRequest(Method method, HttpContext aspNetCoreContext)
+        private static async Task HandleRequest(Method method, HttpContext aspNetCoreContext, Authenticator authenticator)
         {
             var (_, uri) = aspNetCoreContext.Request.Path.Value.TSplit(RootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
             var client = GetClient(aspNetCoreContext);
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
-            if (!context.TryAuthenticate(ref uri, out var notAuthorized, headers))
+            if (!authenticator.TryAuthenticate(context, ref uri, out var notAuthorized, headers))
             {
                 WriteResponse(aspNetCoreContext, notAuthorized);
                 return;
             }
             var body = aspNetCoreContext.Request.Body;
             await using var request = context.CreateRequest(method, uri, body, headers);
-            var result = await request.Evaluate().ConfigureAwait(false);
+            var result = await request.GetResult().ConfigureAwait(false);
             switch (result)
             {
                 case WebSocketTransferSuccess:
@@ -78,8 +93,16 @@ namespace RESTable.AspNetCore
                 default:
                 {
                     WriteResponse(aspNetCoreContext, result);
-                    await using var remote = aspNetCoreContext.Response.Body;
-                    await using var serializedResult = await result.Serialize(remote).ConfigureAwait(false);
+                    var remote = aspNetCoreContext.Response.Body;
+
+#if NETSTANDARD2_1
+                    await using (remote)
+#else
+                    using (remote)
+#endif
+                    {
+                        await using var serializedResult = await result.Serialize(remote).ConfigureAwait(false);
+                    }
                     break;
                 }
             }

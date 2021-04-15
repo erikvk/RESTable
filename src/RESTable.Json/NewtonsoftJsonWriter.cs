@@ -14,11 +14,26 @@ namespace RESTable.Json
         private readonly string NewLine;
         private int BaseIndentation;
         private int CurrentDepth;
-        public long ObjectsWritten { get; private set; }
+        private bool CountObjectsWritten { get; set; }
+        private long ObjectsWritten { get; set; }
+        private int LevelToCountObjectsAt { get; set; }
+
+        public void StartCountObjectsWritten()
+        {
+            CountObjectsWritten = true;
+            LevelToCountObjectsAt = CurrentDepth;
+            ObjectsWritten = 0;
+        }
+
+        public long StopCountObjectsWritten()
+        {
+            CountObjectsWritten = false;
+            return ObjectsWritten;
+        }
 
         public override void WriteStartObject()
         {
-            if (CurrentDepth == 0)
+            if (CurrentDepth == LevelToCountObjectsAt)
             {
                 ObjectsWritten += 1;
                 if (ObjectsWritten % 15000 == 0)
@@ -37,7 +52,7 @@ namespace RESTable.Json
                     await FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             CurrentDepth += 1;
-           await base.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+            await base.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override void WriteEndObject()
@@ -45,13 +60,13 @@ namespace RESTable.Json
             CurrentDepth -= 1;
             base.WriteEndObject();
         }
-        
+
         public override Task WriteEndObjectAsync(CancellationToken cancellationToken = new())
         {
             CurrentDepth -= 1;
             return base.WriteEndObjectAsync(cancellationToken);
         }
-        
+
         public NewtonsoftJsonWriter(TextWriter textWriter, LineEndings lineEndings, int baseIndentation) : base(textWriter)
         {
             BaseIndentation = baseIndentation;
@@ -85,7 +100,7 @@ namespace RESTable.Json
             for (var i = 0; i < currentIndentCount; i++)
                 await WriteIndentSpaceAsync(cancellationToken).ConfigureAwait(false);
         }
-        
+
         protected override void Dispose(bool disposing)
         {
             CurrentDepth = 0;

@@ -43,12 +43,11 @@ namespace RESTable.Meta.IL
             one_byte_opcodes = new OpCode [0xe1];
             two_bytes_opcodes = new OpCode [0x1f];
 
-            var fields = typeof(OpCodes).GetFields(
-                BindingFlags.Public | BindingFlags.Static);
+            var fields = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static);
 
             foreach (var field in fields)
             {
-                var opcode = (OpCode) field.GetValue(null);
+                var opcode = (OpCode) (field.GetValue(null) ?? default(OpCode)); 
                 if (opcode.OpCodeType == OpCodeType.Nternal)
                     continue;
 
@@ -233,12 +232,12 @@ namespace RESTable.Meta.IL
         {
             return TargetsLocalVariable(instruction.OpCode)
                 ? GetLocalVariable(index)
-                : (object) GetParameter(index);
+                : GetParameter(index);
         }
 
         private static bool TargetsLocalVariable(OpCode opcode)
         {
-            return opcode.Name.Contains("loc");
+            return opcode.Name != null && opcode.Name.Contains("loc");
         }
 
         private LocalVariableInfo GetLocalVariable(int index)

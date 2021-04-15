@@ -372,7 +372,7 @@ namespace RESTable.WebSockets
                         (
                             direction: MessageType.WebSocketOutput,
                             webSocket: this,
-                            content: Encoding.UTF8.GetString(binaryData),
+                            content: Encoding.UTF8.GetString(binaryData.Array ?? Array.Empty<byte>()),
                             length: binaryData.Count
                         );
                         await Admin.Console.Log(logEvent).ConfigureAwait(false);
@@ -503,8 +503,15 @@ namespace RESTable.WebSockets
         public async Task SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
-            await using var message = await GetMessageStream(false).ConfigureAwait(false);
-            JsonProvider.SerializeToStream(message, item, prettyPrint, ignoreNulls);
+            var message = await GetMessageStream(false).ConfigureAwait(false);
+#if NETSTANDARD2_1
+            await using (message)
+#else
+            using (message)
+#endif
+            {
+                JsonProvider.SerializeToStream(message, item, prettyPrint, ignoreNulls);
+            }
         }
 
         #endregion

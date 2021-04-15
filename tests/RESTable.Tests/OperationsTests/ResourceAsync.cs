@@ -52,7 +52,7 @@ namespace RESTable.Tests
         public async ValueTask<AuthResults> AuthenticateAsync(IRequest<ResourceAsync> request)
         {
             request.GetService<OperationsTestsFlags>().AsyncAuthenticatorWasCalled = true;
-            return request.Headers["FailMe"] == "yes";
+            return request.Headers["FailMe"] != "yes";
         }
     }
 }

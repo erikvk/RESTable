@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +14,6 @@ namespace RESTable
         /// <summary>
         /// The underlying stream
         /// </summary>
-        [NotNull]
         protected Stream Stream { get; set; }
 
         public byte[] GetBytes()
@@ -74,12 +72,16 @@ namespace RESTable
         {
             Position = 0;
             var fileStream = MakeTempFile();
+#if NETSTANDARD2_1
             await using var memoryStream = (MemoryStream) Stream;
+#else
+            using var memoryStream = (MemoryStream) Stream;
+#endif
             await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
             Stream = fileStream;
             Swapped = true;
         }
-        
+
         private FileStream MakeTempFile() => File.Create
         (
             path: $"{Path.GetTempPath()}{Guid.NewGuid()}.restable",
@@ -91,7 +93,6 @@ namespace RESTable
         public override bool CanSeek => Stream.CanSeek;
         public override bool CanWrite => Stream.CanWrite;
         public override long Length => Stream.Length;
-        public override object InitializeLifetimeService() => Stream.InitializeLifetimeService();
         public override bool CanTimeout => Stream.CanTimeout;
 
         public override long Position
@@ -125,23 +126,16 @@ namespace RESTable
 
         #region Synchronous IO
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) => Stream.BeginRead(buffer, offset, count, callback, state);
-        public override void CopyTo(Stream destination, int bufferSize) => Stream.CopyTo(destination, bufferSize);
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+            Stream.BeginRead(buffer, offset, count, callback, state);
+
         public override int EndRead(IAsyncResult asyncResult) => Stream.EndRead(asyncResult);
         public override void EndWrite(IAsyncResult asyncResult) => Stream.EndWrite(asyncResult);
-        public override int Read(Span<byte> buffer) => Stream.Read(buffer);
         public override int ReadByte() => Stream.ReadByte();
         public override void Flush() => Stream.Flush();
         public override long Seek(long offset, SeekOrigin origin) => Stream.Seek(offset, origin);
         public override void SetLength(long value) => Stream.SetLength(value);
         public override int Read(byte[] buffer, int offset, int count) => Stream.Read(buffer, offset, count);
-
-        public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            if (CheckShouldSwap(buffer.Length))
-                Swap().Wait();
-            Stream.Write(buffer);
-        }
 
         public override void WriteByte(byte value)
         {
@@ -170,8 +164,10 @@ namespace RESTable
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Stream.CopyToAsync(destination, bufferSize, cancellationToken);
         public override Task FlushAsync(CancellationToken cancellationToken) => Stream.FlushAsync(cancellationToken);
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => Stream.ReadAsync(buffer, offset, count, cancellationToken);
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new()) => Stream.ReadAsync(buffer, cancellationToken);
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            Stream.ReadAsync(buffer, offset, count, cancellationToken);
+
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -180,6 +176,21 @@ namespace RESTable
             await Stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
+        #endregion
+
+#if NETSTANDARD2_1
+        public override void CopyTo(Stream destination, int bufferSize) => Stream.CopyTo(destination, bufferSize);
+        public override int Read(Span<byte> buffer) => Stream.Read(buffer);
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            if (CheckShouldSwap(buffer.Length))
+                Swap().Wait();
+            Stream.Write(buffer);
+        }
+        
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new()) => Stream.ReadAsync(buffer, cancellationToken);
+
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
         {
             if (CheckShouldSwap(buffer.Length))
@@ -187,19 +198,26 @@ namespace RESTable
             await Stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
-        #endregion
+        public override async ValueTask DisposeAsync()
+        {
+            await Stream.DisposeAsync().ConfigureAwait(false);
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+
+#else
+        public ValueTask DisposeAsync()
+        {
+            Stream.Dispose();
+            base.Dispose();
+            return default;
+        }
+#endif
 
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
             Stream.Dispose();
             base.Dispose(disposing);
-        }
-
-        public override async ValueTask DisposeAsync()
-        {
-            await Stream.DisposeAsync().ConfigureAwait(false);
-            await base.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

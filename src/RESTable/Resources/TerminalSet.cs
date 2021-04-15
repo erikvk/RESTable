@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using RESTable.WebSockets;
 
 namespace RESTable.Resources
 {
@@ -10,7 +11,7 @@ namespace RESTable.Resources
     /// <summary>
     /// A thread-safe set of terminals.
     /// </summary>
-    public class TerminalSet<T> : ICollection<T> where T : Terminal
+    public class TerminalSet<T> : ICombinedTerminal<T>, ICollection<T> where T : Terminal
     {
         private readonly IDictionary<T, byte> terminals;
 
@@ -40,8 +41,15 @@ namespace RESTable.Resources
             return terminals.Remove(item);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ICollection{T}.Count" />
         public int Count => terminals.Count;
+
+        private IEnumerable<IWebSocket> WebSockets => terminals
+            .Keys
+            .Select(t => t.GetWebSocket());
+
+        /// <inheritdoc />
+        public IWebSocket CombinedWebSocket => new WebSocketCombination(WebSockets);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 

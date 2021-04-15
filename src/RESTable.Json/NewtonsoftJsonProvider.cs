@@ -11,6 +11,9 @@ using RESTable.Meta;
 using RESTable.Requests;
 using static Newtonsoft.Json.Formatting;
 
+// Async disposal differs between target frameworks
+#pragma warning disable 1998
+
 namespace RESTable.Json
 {
     /// <inheritdoc cref="RESTable.ContentTypeProviders.IJsonProvider" />
@@ -148,7 +151,7 @@ namespace RESTable.Json
         {
             var formatting = prettyPrint ?? JsonSettings.PrettyPrint ? Indented : None;
             var serializer = ignoreNulls ? SerializerIgnoreNulls : Serializer;
-            using var swr = new StreamWriter(stream, JsonSettings.Encoding, 1024, true);
+            using var swr = new StreamWriter(stream, JsonSettings.Encoding, 4096, true);
             using var jwr = new NewtonsoftJsonWriter(swr, JsonSettings.LineEndings, 0) {Formatting = formatting};
             serializer.Serialize(jwr, entity);
         }
@@ -187,19 +190,27 @@ namespace RESTable.Json
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (collection == null) return 0;
-            await using var swr = new StreamWriter
+            var swr = new StreamWriter
             (
                 stream: stream,
                 encoding: JsonSettings.Encoding,
-                bufferSize: 2048,
+                bufferSize: 4096,
                 leaveOpen: true
             );
-            using var jwr = new NewtonsoftJsonWriter(swr, JsonSettings.LineEndings, 0)
+#if NETSTANDARD2_1
+            await using (swr)
+#else
+            using (swr)
+#endif
             {
-                Formatting = JsonSettings.PrettyPrint ? Indented : None
-            };
-            Serializer.Serialize(jwr, collection.ToEnumerable());
-            return jwr.ObjectsWritten;
+                using var jwr = new NewtonsoftJsonWriter(swr, JsonSettings.LineEndings, 0)
+                {
+                    Formatting = JsonSettings.PrettyPrint ? Indented : None
+                };
+                jwr.StartCountObjectsWritten();
+                Serializer.Serialize(jwr, collection.ToEnumerable());
+                return jwr.StopCountObjectsWritten();
+            }
         }
 
         /// <inheritdoc />
@@ -208,9 +219,10 @@ namespace RESTable.Json
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (collectionObject == null) return Task.FromResult<long>(0);
-            var preWritten = textWriter.ObjectsWritten;
+            textWriter.StartCountObjectsWritten();
             Serializer.Serialize((NewtonsoftJsonWriter) textWriter, collectionObject.ToEnumerable());
-            return Task.FromResult(textWriter.ObjectsWritten - preWritten);
+            var objectsWritten = textWriter.StopCountObjectsWritten();
+            return Task.FromResult(objectsWritten);
         }
 
         public IJsonWriter GetJsonWriter(TextWriter writer)

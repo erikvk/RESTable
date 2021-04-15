@@ -57,7 +57,8 @@ namespace RESTable.Tests
         public AuthResults Authenticate(IRequest<ResourceSync> request)
         {
             request.GetService<OperationsTestsFlags>().AuthenticatorWasCalled = true;
-            return true;
+            return request.Headers["FailMe"] != "yes";
+            
         }
     }
 }

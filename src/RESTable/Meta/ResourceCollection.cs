@@ -15,9 +15,19 @@ namespace RESTable.Meta
         internal IDictionary<string, IResource> ResourceByName { get; }
         internal IDictionary<Type, IResource> ResourceByType { get; }
         internal ICollection<IResource> AllResources => ResourceByName.Values;
-        private RESTableConfigurator Configurator { get; set; }
 
-        internal void SetConfig(RESTableConfigurator configurator) => Configurator = configurator;
+        private RESTableConfigurator Configurator { get; set; }
+        private TypeCache TypeCache { get; set; }
+
+        internal void SetDependencies
+        (
+            RESTableConfigurator configurator,
+            TypeCache typeCache
+        )
+        {
+            Configurator = configurator;
+            TypeCache = typeCache;
+        }
 
         public ResourceCollection()
         {
@@ -53,7 +63,9 @@ namespace RESTable.Meta
             ResourceByName[toAdd.Name] = toAdd;
             ResourceByType[toAdd.Type] = toAdd;
             AddToResourceFinder(toAdd);
-            Configurator.ResourceAdded(toAdd);
+            TypeCache.GetDeclaredProperties(toAdd.Type);
+            if (Configurator.IsConfigured)
+                Configurator.UpdateConfiguration();
         }
 
         internal bool RemoveResource(IResource toRemove)
@@ -219,7 +231,7 @@ namespace RESTable.Meta
         /// if there is no such resource
         /// </summary>
         public IResource<T> GetResource<T>() where T : class => ResourceByType.SafeGet(typeof(T)) as IResource<T>
-                                                        ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
+                                                                ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
 
         /// <summary>
         /// Gets the terminal resource for a given type or null if there is no such resource

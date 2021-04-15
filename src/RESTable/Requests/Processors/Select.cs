@@ -23,7 +23,7 @@ namespace RESTable.Requests.Processors
             ForEach(term =>
             {
                 if (jobj[term.Key] != null) return;
-                object val = term.Evaluate(entity, out var actualKey);
+                object val = term.GetValue(entity, out var actualKey);
                 jobj[actualKey] = val == null ? null : JToken.FromObject(val, jsonProvider.GetSerializer());
             });
             return jobj;

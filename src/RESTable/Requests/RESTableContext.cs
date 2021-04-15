@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.Internal.Auth;
 using RESTable.Meta;
 using RESTable.Results;
 using RESTable.WebSockets;
@@ -15,7 +14,7 @@ namespace RESTable.Requests
     /// and define the root for each ITraceable tree. They also hold WebSocket connections
     /// and Client access rights.
     /// </summary>
-    public abstract class RESTableContext : IDisposable, IAsyncDisposable, ITraceable
+    public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable
     {
         public string TraceId { get; }
         private const int MaximumStackDepth = 500;
@@ -57,12 +56,12 @@ namespace RESTable.Requests
         /// <summary>
         /// Should return true if and only if the request is a WebSocket upgrade request
         /// </summary>
-        protected abstract bool IsWebSocketUpgrade { get; }
+        protected virtual bool IsWebSocketUpgrade => false;
 
         /// <summary>
         /// Gets a WebSocket instance for a given Context
         /// </summary>
-        protected abstract WebSocket CreateWebSocket();
+        protected virtual WebSocket CreateWebSocket() => throw new NotImplementedException();
 
         #endregion
 
@@ -75,35 +74,6 @@ namespace RESTable.Requests
         /// The client of the context
         /// </summary>
         public Client Client { get; }
-
-        /// <summary>
-        /// Returns true if and only if this client is considered authenticated. This is a necessary precondition for 
-        /// being included in a context. If false, a NotAuthorized result object is returned in the out parameter, that 
-        /// can be returned to the client.
-        /// </summary>
-        /// <param name="uri">The URI of the request</param>
-        /// <param name="headers">The headers of the request</param>
-        /// <param name="error">The error result, if not authenticated</param>
-        /// <returns></returns>
-        public bool TryAuthenticate(ref string uri, out Unauthorized error, Headers headers = null)
-        {
-            var configuration = Services.GetService<RESTableConfiguration>();
-            Client.AccessRights = configuration.RequireApiKey switch
-            {
-                true => Services.GetService<Authenticator>().GetAccessRights(ref uri, headers),
-                false => Services.GetService<RootAccess>()
-            };
-            if (Client.AccessRights == null)
-            {
-                error = new Unauthorized();
-                error.SetContext(this);
-                if (headers?.Metadata == "full")
-                    error.Headers.Metadata = error.Metadata;
-                return false;
-            }
-            error = null;
-            return true;
-        }
 
         /// <summary>
         /// Creates a request in this context for a resource type, using the given method and optional protocol id and 
@@ -143,7 +113,7 @@ namespace RESTable.Requests
                 WebSocket = CreateWebSocket();
             }
             var parameters = new RequestParameters(this, method, uri, headers);
-            parameters.SetBody(body);
+            parameters.SetBodyObject(body);
             if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
             return DynamicCreateRequest((dynamic) parameters.IResource, parameters);
         }
@@ -172,7 +142,7 @@ namespace RESTable.Requests
             IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
             if (!request.IsValid)
             {
-                error = request.Evaluate().Result as Error;
+                error = request.GetResult().Result as Error;
                 return false;
             }
             uriComponents = request.UriComponents;
@@ -228,7 +198,7 @@ namespace RESTable.Requests
         /// </summary>
         /// <param name="client">The client of the context</param>
         /// <param name="services">The services to use in this context</param>
-        protected RESTableContext(Client client, IServiceProvider services)
+        public RESTableContext(Client client, IServiceProvider services)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
             Services = services ?? throw new ArgumentNullException(nameof(services));

@@ -33,7 +33,7 @@ namespace RESTable.Requests.Processors
                 var value = entity.GetValue(key.Key, StringComparison.OrdinalIgnoreCase);
                 if (value == null)
                 {
-                    value = key.Evaluate(entity, out _);
+                    value = key.GetValue(entity, out _);
                     entity[newName] = value == null ? null : JToken.FromObject(value, jsonProvider.GetSerializer());
                     return;
                 }

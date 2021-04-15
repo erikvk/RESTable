@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using RESTable.Requests;
 
@@ -35,7 +34,7 @@ namespace RESTable.Internal
             StatusDescription = webResponse.StatusDescription;
             ContentLength = webResponse.ContentLength;
             ContentType = webResponse.ContentType;
-            Body = webResponse.GetResponseStream() ?? throw new NullReferenceException("ResponseStream was null");
+            Body = webResponse.GetResponseStream();
             foreach (var header in webResponse.Headers.AllKeys)
                 Headers[header] = webResponse.Headers[header];
         }

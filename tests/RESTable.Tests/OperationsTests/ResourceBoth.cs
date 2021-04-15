@@ -58,7 +58,7 @@ namespace RESTable.Tests
         public async ValueTask<AuthResults> AuthenticateAsync(IRequest<ResourceBoth> request)
         {
             request.GetService<OperationsTestsFlags>().AsyncAuthenticatorWasCalled = true;
-            return request.Headers["FailMe"] == "yes";
+            return request.Headers["FailMe"] != "yes";
         }
 
         public IEnumerable<ResourceBoth> Select(IRequest<ResourceBoth> request)
@@ -94,7 +94,7 @@ namespace RESTable.Tests
         public AuthResults Authenticate(IRequest<ResourceBoth> request)
         {
             request.GetService<OperationsTestsFlags>().AuthenticatorWasCalled = true;
-            return true;
+            return request.Headers["FailMe"] != "yes";
         }
     }
 }

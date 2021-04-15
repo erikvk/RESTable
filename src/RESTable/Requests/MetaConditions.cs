@@ -125,7 +125,7 @@ namespace RESTable.Requests
                 dynamic value;
                 try
                 {
-                    value = Convert.ChangeType(valueLiteral, expectedType) ?? throw new Exception();
+                    value = Convert.ChangeType(valueLiteral, expectedType);
                 }
                 catch
                 {

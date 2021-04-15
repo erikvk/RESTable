@@ -4,7 +4,7 @@ using Xunit;
 
 namespace RESTable.Tests
 {
-    public class AsynchronousOperationsTests : OperationsTests<ResourceAsync>
+    public class AsynchronousOperationsTests : TestBase<ResourceAsync>
     {
         [Fact]
         public async Task SelectCallsAsyncSelector()
@@ -50,8 +50,13 @@ namespace RESTable.Tests
         public async Task AuthenticateCallsAsyncAuthenticator()
         {
             Assert.False(OperationsTestsFlags.AsyncAuthenticatorWasCalled);
-            _ = await Resource.AuthenticateAsync(Request);
+            var success = await Resource.AuthenticateAsync(Request);
             Assert.True(OperationsTestsFlags.AsyncAuthenticatorWasCalled);
+            Assert.True(success.Success);
+
+            Request.Headers["FailMe"] = "yes";
+            var fail = await Resource.AuthenticateAsync(Request);
+            Assert.False(fail.Success);
         }
 
         public AsynchronousOperationsTests(RESTableFixture fixture) : base(fixture) { }

@@ -135,7 +135,7 @@ namespace RESTable.Requests
             HeadersStringCache = headersStringCache;
         }
 
-        internal void SetBody(object bodyObject)
+        internal void SetBodyObject(object bodyObject)
         {
             Body = new Body(this, bodyObject);
         }

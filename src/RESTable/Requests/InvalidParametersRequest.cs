@@ -11,7 +11,7 @@ namespace RESTable.Requests
     {
         public bool IsValid { get; }
         private Exception Error { get; }
-        public Task<IResult> Evaluate(CancellationToken cancellationToken = new()) => Task.FromResult<IResult>(Error.AsResultOf(this));
+        public Task<IResult> GetResult(CancellationToken cancellationToken = new()) => Task.FromResult<IResult>(Error.AsResultOf(this));
         public ITarget Target => null;
         public bool HasConditions => false;
 
@@ -45,9 +45,8 @@ namespace RESTable.Requests
         public IUriComponents UriComponents => Parameters.UriComponents;
         public Headers Headers => Parameters.Headers;
         public IResource Resource { get; }
-        public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
         public TimeSpan TimeElapsed => default;
-        public object GetService(Type serviceType) => null;
+        public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
 
         #endregion
 

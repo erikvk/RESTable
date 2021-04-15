@@ -57,12 +57,15 @@ namespace RESTable.Meta.Internal
             InterfaceType = typeof(T).GetRESTableInterfaceType();
             ResourceKind = ResourceKind.BinaryResource;
             (_, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
-            Description = attribute.Description;
-            BinarySelector = binarySelector;
-            Members = typeCache.GetDeclaredProperties(typeof(T));
-            GETAvailableToAll = attribute.GETAvailableToAll;
+            if (attribute != null)
+            {
+                Description = attribute.Description;
+                BinarySelector = binarySelector;
+                Members = typeCache.GetDeclaredProperties(typeof(T));
+                GETAvailableToAll = attribute.GETAvailableToAll;
+            }
             var typeName = typeof(T).FullName;
-            if (typeName?.Contains('+') == true)
+            if (typeName?.Contains("+") == true)
             {
                 IsInnerResource = true;
                 var location = typeName.LastIndexOf('+');

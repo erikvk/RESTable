@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using RESTable.Resources;
 
 namespace RESTable.WebSockets
@@ -17,15 +15,13 @@ namespace RESTable.WebSockets
 
         public CombinedTerminal(IEnumerable<T> terminals)
         {
-            var list = new List<T>();
+            Terminals = new List<T>();
+            var webSockets = new List<IWebSocket>();
             foreach (var terminal in terminals)
             {
-                if (terminal.GetWebSocket().Status != WebSocketStatus.Open)
-                    throw new ArgumentException($"Cannot combine a set of terminals where at least one has a status other than Open. Found {terminal.GetWebSocket().Status}");
-                list.Add(terminal);
+                Terminals.Add(terminal);
+                webSockets.Add(terminal.GetWebSocket());
             }
-            Terminals = list;
-            var webSockets = Terminals.Select(terminal => terminal.GetWebSocket());
             CombinedWebSocket = new WebSocketCombination(webSockets);
         }
     }

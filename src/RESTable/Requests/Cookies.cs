@@ -12,6 +12,7 @@ namespace RESTable.Requests
     /// </summary>
     public class Cookies : HashSet<Cookie>
     {
+#if NETSTANDARD2_1
         /// <summary>
         /// Finds a cookie by name (case sensitive)
         /// </summary>
@@ -38,6 +39,40 @@ namespace RESTable.Requests
         {
             return base.TryGetValue(new Cookie(cookieName), out value);
         }
+#else
+        /// <summary>
+        /// Finds a cookie by name (case sensitive)
+        /// </summary>
+        /// <param name="cookieName">The name of the cookie to find</param>
+        /// <returns>The cookie with the given name, or throws an exception if
+        /// there is no cookie with the given name</returns>
+        public Cookie this[string cookieName]
+        {
+            get
+            {
+                if (TryGetValue(cookieName, out var found))
+                    return found;
+                throw new KeyNotFoundException($"Found no cookie with name '{cookieName}'");
+            }
+        }
+
+        /// <summary>
+        /// Tries to find a cookie with the given name, and returns whether the operation was successful.
+        /// </summary>
+        /// <param name="cookieName">The name of the cookie to find</param>
+        /// <param name="value">The found cookie</param>
+        /// <returns></returns>
+        public bool TryGetValue(string cookieName, out Cookie value)
+        {
+            if (!Contains(new Cookie(cookieName)))
+            {
+                value = default;
+                return false;
+            }
+            value = System.Linq.Enumerable.First(this, c => c.Name == cookieName);
+            return true;
+        }
+#endif
 
         /// <summary>
         /// Adds a new cookie with the given cookie name and value
@@ -52,13 +87,14 @@ namespace RESTable.Requests
         /// Converts this Cookie collection to a readonly cookie collection
         /// </summary>
         /// <returns></returns>
-        public ReadonlyCookies AsReadonly() => new ReadonlyCookies(this);
+        public ReadonlyCookies AsReadonly() => new(this);
 
         /// <inheritdoc />
         public Cookies() { }
 
         private Cookies(Cookies other) : base(other) { }
-        internal Cookies GetCopy() => new Cookies(this);
+
+        internal Cookies GetCopy() => new(this);
 
         /// <inheritdoc />
         /// <summary>
@@ -70,7 +106,9 @@ namespace RESTable.Requests
             foreach (var cookieString in cookieStrings)
             {
                 if (Cookie.TryParse(cookieString, out var cookie))
+                {
                     Add(cookie);
+                }
             }
         }
 
@@ -84,7 +122,9 @@ namespace RESTable.Requests
             foreach (var (key, value) in cookieStrings)
             {
                 if (Cookie.TryParse(key + "=" + value, out var cookie))
+                {
                     Add(cookie);
+                }
             }
         }
     }

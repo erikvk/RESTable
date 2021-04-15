@@ -1,12 +1,12 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using RESTable.Results;
 using Xunit;
 
 namespace RESTable.Tests
 {
-    public class SynchronousOperationsTests : OperationsTests<ResourceSync>
+    public class SynchronousOperationsTests : TestBase<ResourceSync>
     {
-
         [Fact]
         public async Task SelectCallsSelector()
         {
@@ -54,14 +54,28 @@ namespace RESTable.Tests
             var items = Resource.SelectAsync(Request);
             _ = await Resource.Validate(items, Request.Context).ToListAsync();
             Assert.True(OperationsTestsFlags.ValidatorWasCalled);
+
+            var items2List = await Resource.SelectAsync(Request).ToListAsync();
+            items2List[5].Id = 99;
+            var items2 = items2List.ToAsyncEnumerable();
+
+            await Assert.ThrowsAsync<FailedValidation>(async () =>
+            {
+                _ = await Resource.Validate(items2, Request.Context).ToListAsync();
+            });
         }
 
         [Fact]
         public async Task AuthenticateCallsAuthenticator()
         {
             Assert.False(OperationsTestsFlags.AuthenticatorWasCalled);
-            _ = await Resource.AuthenticateAsync(Request);
+            var success = await Resource.AuthenticateAsync(Request);
             Assert.True(OperationsTestsFlags.AuthenticatorWasCalled);
+            Assert.True(success.Success);
+
+            Request.Headers["FailMe"] = "yes";
+            var fail = await Resource.AuthenticateAsync(Request);
+            Assert.False(fail.Success);
         }
 
         public SynchronousOperationsTests(RESTableFixture fixture) : base(fixture) { }

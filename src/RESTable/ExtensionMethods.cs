@@ -339,7 +339,7 @@ namespace RESTable
         internal static JObject ToJObject(this object entity)
         {
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-            
+
             switch (entity)
             {
                 case JObject j: return j;
@@ -395,6 +395,28 @@ namespace RESTable
         {
             return processors.Aggregate(default(IAsyncEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
         }
+
+        #endregion
+
+        #region NETSTANDARD2.0
+
+#if NETSTANDARD2_0
+        public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> kvp, out TKey key, out TValue value)
+        {
+            key = kvp.Key;
+            value = kvp.Value;
+        }
+
+        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable)
+        {
+            return new(enumerable);
+        }
+
+        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable, IEqualityComparer<T> equalityComparer)
+        {
+            return new(enumerable, equalityComparer);
+        }
+#endif
 
         #endregion
 
@@ -873,11 +895,18 @@ namespace RESTable
                 case MemoryStream ms: return ms.ToArray();
                 default:
                 {
-                    await using var ms = new MemoryStream();
-                    await stream.CopyToAsync(ms).ConfigureAwait(false);
-                    if (stream.CanSeek)
-                        stream.Seek(0, SeekOrigin.Begin);
-                    return ms.ToArray();
+                    var ms = new MemoryStream();
+#if NETSTANDARD2_1
+                    await using (ms)
+#else
+                    using (ms)
+#endif
+                    {
+                        await stream.CopyToAsync(ms).ConfigureAwait(false);
+                        if (stream.CanSeek)
+                            stream.Seek(0, SeekOrigin.Begin);
+                        return ms.ToArray();
+                    }
                 }
             }
         }

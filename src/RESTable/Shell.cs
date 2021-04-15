@@ -307,7 +307,7 @@ namespace RESTable
                                 await SafeOperation(HEAD, tail?.ToBytes()).ConfigureAwait(false);
                                 break;
                             case "STREAM":
-                                var result = await WsEvaluate(GET, null).ConfigureAwait(false);
+                                var result = await GetResult(GET, null).ConfigureAwait(false);
                                 var serialized = await result.Serialize().ConfigureAwait(false);
                                 if (result is Content)
                                     await StreamSerializedResult(serialized, result.TimeElapsed).ConfigureAwait(false);
@@ -333,7 +333,7 @@ namespace RESTable
                                     value: resource.Name
                                 );
                                 await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
-                                var schemaResult = await schemaRequest.EvaluateToEntities().ConfigureAwait(false);
+                                var schemaResult = await schemaRequest.GetResultEntities().ConfigureAwait(false);
                                 await SerializeAndSendResult(schemaResult);
                                 break;
                             }
@@ -566,7 +566,7 @@ namespace RESTable
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
             await using var request = WebSocket.Context.CreateRequest(GET, local, null, WebSocket.Headers);
-            var result = await request.Evaluate().ConfigureAwait(false);
+            var result = await request.GetResult().ConfigureAwait(false);
             switch (result)
             {
                 case Results.Error _ when queryChangedPreEval:
@@ -588,12 +588,12 @@ namespace RESTable
             return result;
         }
 
-        private async Task<IResult> WsEvaluate(Method method, byte[] body)
+        private async Task<IResult> GetResult(Method method, byte[] body)
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
             await using var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers);
-            var result = await request.Evaluate().ConfigureAwait(false);
+            var result = await request.GetResult().ConfigureAwait(false);
             switch (result)
             {
                 case Results.Error _ when queryChangedPreEval:
@@ -644,7 +644,7 @@ namespace RESTable
         private async Task SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
-            var result = await WsEvaluate(method, body).ConfigureAwait(false);
+            var result = await GetResult(method, body).ConfigureAwait(false);
             await SerializeAndSendResult(result, sw.Elapsed).ConfigureAwait(true);
             sw.Stop();
         }
@@ -659,7 +659,7 @@ namespace RESTable
 
             if (PreviousEntities == null)
             {
-                var result = await WsEvaluate(GET, null).ConfigureAwait(false);
+                var result = await GetResult(GET, null).ConfigureAwait(false);
                 if (result is not IEntities)
                 {
                     await SendResult(result).ConfigureAwait(false);
@@ -706,7 +706,12 @@ namespace RESTable
         {
             if (result is SwitchedTerminal) return;
             await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
-            await using (var message = await WebSocket.GetMessageStream(false).ConfigureAwait(false))
+            var message = await WebSocket.GetMessageStream(false).ConfigureAwait(false);
+#if NETSTANDARD2_1
+            await using (message)
+#else
+            using (message)
+#endif
             {
                 await result.Serialize(message);
             }

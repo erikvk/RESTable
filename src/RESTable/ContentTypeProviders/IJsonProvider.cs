@@ -22,7 +22,8 @@ namespace RESTable.ContentTypeProviders
 
     public interface IJsonWriter : IDisposable
     {
-        long ObjectsWritten { get; }
+        void StartCountObjectsWritten();
+        long StopCountObjectsWritten();
         Task WriteStartObjectAsync(CancellationToken cancellationToken);
         Task WritePropertyNameAsync(string status, CancellationToken cancellationToken);
         Task WriteEndObjectAsync(CancellationToken cancellationToken);

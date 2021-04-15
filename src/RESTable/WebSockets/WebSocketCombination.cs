@@ -36,14 +36,28 @@ namespace RESTable.WebSockets
         #endregion
 
         private CancellationTokenSource CancellationTokenSource { get; }
-        private IWebSocket[] WebSockets { get; }
+        private IList<IWebSocket> WebSockets { get; }
 
         public WebSocketCombination(IEnumerable<IWebSocket> webSockets)
         {
-            WebSockets = webSockets.ToArray();
-            ProtocolHolder = WebSockets.FirstOrDefault();
-            if (WebSockets.Length == 0) return;
-            var cancellationTokens = WebSockets.Select(ws => ws.CancellationToken).ToArray();
+            var empty = true;
+            WebSockets = new List<IWebSocket>();
+            IProtocolHolder protocolHolder = null;
+
+            IEnumerable<CancellationToken> iterate()
+            {
+                foreach (var webSocket in webSockets)
+                {
+                    empty = false;
+                    protocolHolder ??= webSocket;
+                    WebSockets.Add(webSocket);
+                    yield return webSocket.CancellationToken;
+                }
+            }
+
+            var cancellationTokens = iterate().ToArray();
+            ProtocolHolder = protocolHolder;
+            if (empty) return;
             CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokens);
         }
 
@@ -64,19 +78,33 @@ namespace RESTable.WebSockets
         {
             CancellationToken.ThrowIfCancellationRequested();
             var streams = await Task.WhenAll(WebSockets.Select(ws => ws.GetMessageStream(asText))).ConfigureAwait(false);
-            return new MultipleWebSocketsMessageStream(streams, asText, CancellationToken);
+            return new CombinedWebSocketsMessageStream(streams, asText, CancellationToken);
         }
 
         public async Task SendText(Stream stream)
         {
-            await using var messageStream = await GetMessageStream(true).ConfigureAwait(false);
-            await stream.CopyToAsync(messageStream, CancellationToken).ConfigureAwait(false);
+            var messageStream = await GetMessageStream(true).ConfigureAwait(false);
+#if NETSTANDARD2_1
+            await using (messageStream)
+#else
+            using (messageStream)
+#endif
+            {
+                await stream.CopyToAsync(messageStream, 81920, CancellationToken).ConfigureAwait(false);
+            }
         }
 
         public async Task SendBinary(Stream stream)
         {
-            await using var messageStream = await GetMessageStream(false).ConfigureAwait(false);
-            await stream.CopyToAsync(messageStream, CancellationToken).ConfigureAwait(false);
+            var messageStream = await GetMessageStream(false).ConfigureAwait(false);
+#if NETSTANDARD2_1
+            await using (messageStream)
+#else
+            using (messageStream)
+#endif
+            {
+                await stream.CopyToAsync(messageStream, 81920, CancellationToken).ConfigureAwait(false);
+            }
         }
 
         public async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true)
@@ -101,7 +129,7 @@ namespace RESTable.WebSockets
         public Task StreamSerializedResult(ISerializedResult serializedResult, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,
             bool disposeResult = true)
         {
-            throw new NotSupportedException("WebSocket streaming is not supported for WebSocketGroup. Use SendSerializedResult instead");
+            throw new NotSupportedException("WebSocket streaming is not supported for combined websockets. Use SendSerializedResult instead");
         }
 
         public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : Terminal

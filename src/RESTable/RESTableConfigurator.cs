@@ -21,7 +21,7 @@ namespace RESTable
     /// The main configuration class for the RESTable instance. Use Init() to 
     /// initialize the instance.
     /// </summary>
-    public class RESTableConfigurator : IDisposable
+    public class RESTableConfigurator
     {
         public TypeCache TypeCache { get; }
         public ResourceCollection ResourceCollection { get; }
@@ -64,7 +64,7 @@ namespace RESTable
             ApplicationServicesAccessor.TypeCache = typeCache;
         }
 
-        public static bool IsConfigured { get; private set; }
+        public bool IsConfigured { get; private set; }
 
         public void ConfigureRESTable
         (
@@ -75,37 +75,26 @@ namespace RESTable
             ushort nrOfErrorsToKeep = 2000
         )
         {
-            if (IsConfigured)
-                throw new InvalidOperationException("RESTable can only be configured once during the application's lifetime");
-            try
-            {
-                ProcessUri(ref uri);
-                Configuration.Update
-                (
-                    rootUri: uri,
-                    requireApiKey: requireApiKey,
-                    allowAllOrigins: allowAllOrigins,
-                    configurationFilePath: configFilePath,
-                    nrOfErrorsToKeep: nrOfErrorsToKeep
-                );
-                ResourceCollection.SetConfig(this);
-                ResourceFactory.SetConfiguration(this);
-                ResourceFactory.MakeResources();
-                IsConfigured = true;
-                UpdateConfiguration();
-                ResourceFactory.BindControllers();
-                ResourceFactory.FinalCheck();
-                ProtocolController.OnInit();
-            }
-            catch
-            {
-                ResourceCollection.Clear();
-                Authenticator.NewState();
-                throw;
-            }
+            ValidateUri(ref uri);
+            Configuration.Update
+            (
+                rootUri: uri,
+                requireApiKey: requireApiKey,
+                allowAllOrigins: allowAllOrigins,
+                configurationFilePath: configFilePath,
+                nrOfErrorsToKeep: nrOfErrorsToKeep
+            );
+            ResourceCollection.SetDependencies(this, TypeCache);
+            ResourceFactory.SetConfiguration(this);
+            ResourceFactory.MakeResources();
+            IsConfigured = true;
+            UpdateConfiguration();
+            ResourceFactory.BindControllers();
+            ResourceFactory.FinalCheck();
+            ProtocolController.OnInit();
         }
 
-        private static void ProcessUri(ref string uri)
+        private static void ValidateUri(ref string uri)
         {
             uri = uri?.Trim() ?? "/rest";
             if (!Regex.IsMatch(uri, RegEx.BaseUri))
@@ -113,19 +102,6 @@ namespace RESTable
                                           "letters, numbers, forward slashes and underscores");
             if (uri[0] != '/') uri = $"/{uri}";
             uri = uri.TrimEnd('/');
-        }
-
-        public void Dispose()
-        {
-            ResourceCollection.Clear();
-            Authenticator.NewState();
-        }
-
-        internal void ResourceAdded(IResource added)
-        {
-            TypeCache.GetDeclaredProperties(added.Type);
-            if (IsConfigured)
-                UpdateConfiguration();
         }
 
         internal void UpdateConfiguration()

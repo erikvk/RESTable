@@ -5,8 +5,8 @@ using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Admin;
-using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -209,7 +209,8 @@ namespace RESTable.SQLite
                         $"  SELECT {columnsSQL} FROM {tempName};" +
                         $"DROP TABLE {tempName};" +
                         "COMMIT;PRAGMA foreign_keys=on;";
-            var rootContext = new RootContext(services: request);
+            var rootClient = request.GetService<RootClient>();
+            var rootContext = new RESTableContext(rootClient, request);
             await using var indexRequest = rootContext
                 .CreateRequest<DatabaseIndex>()
                 .WithCondition(
@@ -217,7 +218,7 @@ namespace RESTable.SQLite
                     op: Operators.EQUALS,
                     value: Resource.Name
                 );
-            var entities = await indexRequest.EvaluateToEntities().ConfigureAwait(false);
+            var entities = await indexRequest.GetResultEntities().ConfigureAwait(false);
             var tableIndexesToKeep = await entities
                 .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
                 .ToListAsync()
@@ -225,7 +226,7 @@ namespace RESTable.SQLite
             await Database.QueryAsync(query).ConfigureAwait(false);
             indexRequest.Method = Method.POST;
             indexRequest.Selector = () => tableIndexesToKeep.ToAsyncEnumerable();
-            var result = await indexRequest.Evaluate().ConfigureAwait(false);
+            var result = await indexRequest.GetResult().ConfigureAwait(false);
             result.ThrowIfError();
             await Update().ConfigureAwait(false);
         }

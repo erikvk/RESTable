@@ -18,7 +18,7 @@ namespace RESTable.Tests
         {
             var context = new MockContext(Fixture.ServiceProvider);
             await using var request = context.CreateRequest(method, uri, body, headers);
-            var result = await request.Evaluate().ConfigureAwait(false);
+            var result = await request.GetResult().ConfigureAwait(false);
             await using var serialized = await result.Serialize().ConfigureAwait(false);
             return serialized.Result.StatusCode;
         }

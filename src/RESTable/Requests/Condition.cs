@@ -88,20 +88,6 @@ namespace RESTable.Requests
         internal Type Type => Term.IsDeclared ? Term.LastAs<DeclaredProperty>()?.Type : null;
         public bool IsOfType<T1>() => Type == typeof(T1);
 
-        //   /// <summary>
-        //   /// Creates a new condition for the resource type T using a key, operator and value
-        //   /// </summary>
-        //   /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
-        //   /// <param name="op">The operator denoting the operation to evaluate for the property</param>
-        //   /// <param name="value">The value to compare the property referenced by the key with</param>
-        //   public Condition(string key, Operators op, object value) : this
-        //   (
-        //       term: EntityResource<T>.SafeGet?.MakeConditionTerm(key)
-        //             ?? typeof(T).MakeOrGetCachedTerm(key, ".", TermBindingRule.DeclaredWithDynamicFallback),
-        //       op: op,
-        //       value: value
-        //   ) { }
-
         public Condition(Term term, Operators op, object value)
         {
             Term = term;
@@ -116,7 +102,7 @@ namespace RESTable.Requests
         public bool HoldsFor(T subject)
         {
             if (Skip) return true;
-            var subjectValue = Term.Evaluate(subject);
+            var subjectValue = Term.GetValue(subject);
 
             switch (Operator)
             {

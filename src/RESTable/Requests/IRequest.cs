@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
@@ -70,11 +69,11 @@ namespace RESTable.Requests
         Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { set; }
 
         /// <summary>
-        /// Evaluates the request synchronously and returns the result as an entity collection. Only valid for GET requests.
-        /// If an error is encountered while evaluating the request, an exception is thrown. Equivalent to Evaluate().ToEntities&lt;T&gt;()
+        /// Evaluates the request asynchronously and returns the result as an entity collection. Only valid for GET requests.
+        /// If an error is encountered while evaluating the request, an exception is thrown. Equivalent to GetResult().ToEntities&lt;T&gt;()
         /// but shorter and with one less generic type parameter.
         /// </summary>
-        Task<IEntities<T>> EvaluateToEntities();
+        Task<IEntities<T>> GetResultEntities();
 
         /// <summary>
         /// Gets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTable
@@ -127,7 +126,6 @@ namespace RESTable.Requests
         /// <summary>
         /// The body of the request
         /// </summary>
-        [NotNull]
         Body Body { get; set; }
 
         /// <summary>
@@ -151,9 +149,9 @@ namespace RESTable.Requests
         IUriComponents UriComponents { get; }
 
         /// <summary>
-        /// Evaluates the request synchronously and returns the result
+        /// Evaluates the request asynchronously and returns the result
         /// </summary>
-        Task<IResult> Evaluate(CancellationToken cancellationToken = new());
+        Task<IResult> GetResult(CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Is this request valid?

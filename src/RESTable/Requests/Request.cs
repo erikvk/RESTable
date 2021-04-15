@@ -150,14 +150,14 @@ namespace RESTable.Requests
             data[key] = value;
         }
 
-        public async Task<IEntities<T>> EvaluateToEntities()
+        public async Task<IEntities<T>> GetResultEntities()
         {
-            var result = await Evaluate().ConfigureAwait(false);
+            var result = await GetResult().ConfigureAwait(false);
             if (result is Error e) throw e;
             return (IEntities<T>) result;
         }
 
-        public async Task<IResult> Evaluate(CancellationToken cancellationToken = new())
+        public async Task<IResult> GetResult(CancellationToken cancellationToken = new())
         {
             cancellationToken.ThrowIfCancellationRequested();
             Stopwatch.Restart();
@@ -180,9 +180,14 @@ namespace RESTable.Requests
                         return new WebSocketUpgradeFailed(forbidden);
                     await Context.WebSocket.Open(this, false).ConfigureAwait(false);
                     await webSocket.SendResult(result);
-                    await using (var message = await webSocket.GetMessageStream(false).ConfigureAwait(false))
+                    var message = await webSocket.GetMessageStream(false).ConfigureAwait(false);
+#if NETSTANDARD2_1
+                    await using (message)
+#else
+                    using (message)
+#endif
                     {
-                        await result.Serialize(message).ConfigureAwait(false);
+                        await result.Serialize(message, cancellationToken: cancellationToken).ConfigureAwait(false);
                     }
                     return new WebSocketTransferSuccess(this);
                 }
@@ -299,8 +304,8 @@ namespace RESTable.Requests
             Target = resource;
             Body = parameters.Body;
             Stopwatch = new Stopwatch();
-            var termFactory = parameters.Context.Services.GetService<TermFactory>();
-            Configuration = parameters.Context.Services.GetService<RESTableConfiguration>();
+            var termFactory = this.GetService<TermFactory>();
+            Configuration = this.GetService<RESTableConfiguration>();
 
             try
             {
@@ -378,7 +383,7 @@ namespace RESTable.Requests
                         body: serializedResult.Body,
                         headers: parameters.Headers
                     );
-                    return await internalRequest.Evaluate();
+                    return await internalRequest.GetResult();
                 };
             }
             return async result =>
@@ -422,7 +427,7 @@ namespace RESTable.Requests
                         body: null,
                         headers: parameters.Headers
                     );
-                    var result = await internalRequest.Evaluate().ConfigureAwait(false);
+                    var result = await internalRequest.GetResult().ConfigureAwait(false);
                     if (result is not IEntities)
                         throw new InvalidExternalSource(parameters.URI, await result.GetLogMessage().ConfigureAwait(false));
                     var serialized = await result.Serialize();

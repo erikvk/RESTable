@@ -19,7 +19,8 @@ namespace RESTable
         {
             Methods = EnumMember<Method>.Values;
             var version = typeof(RESTableConfigurator).Assembly.GetName().Version;
-            Version = $"{version.Major}.{version.Minor}.{version.Build}";
+            if (version is not null) 
+                Version = $"{version.Major}.{version.Minor}.{version.Build}";
             ReservedNamespaces = typeof(RESTableConfigurator).Assembly
                 .GetTypes()
                 .Select(type => type.Namespace?.ToLower())

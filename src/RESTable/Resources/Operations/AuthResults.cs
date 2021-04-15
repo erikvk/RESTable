@@ -5,8 +5,8 @@
     /// </summary>
     public struct AuthResults
     {
-        internal readonly bool Success;
-        internal readonly string FailedReason;
+        public bool Success { get; }
+        public string FailedReason { get; }
 
         /// <summary>
         /// Creates a new AuthenticationResults with the given success status and failedReason.

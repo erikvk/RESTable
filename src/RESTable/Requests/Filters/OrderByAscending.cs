@@ -21,7 +21,7 @@ namespace RESTable.Requests.Filters
             {
                 try
                 {
-                    return Term.Evaluate(i);
+                    return Term.GetValue(i);
                 }
                 catch
                 {

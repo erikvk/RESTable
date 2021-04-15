@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreOutgoingMessageStream : Stream
+    internal class AspNetCoreOutgoingMessageStream : Stream, IAsyncDisposable
     {
         private WebSocket WebSocket { get; }
         private WebSocketMessageType MessageType { get; }
@@ -26,13 +26,6 @@ namespace RESTable.AspNetCore
                 DisposeAsync().AsTask().Wait(CancellationToken);
         }
 
-        public override async ValueTask DisposeAsync() => await WebSocket.SendAsync
-        (
-            buffer: Array.Empty<byte>(),
-            messageType: MessageType,
-            endOfMessage: true,
-            cancellationToken: CancellationToken
-        ).ConfigureAwait(false);
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -45,6 +38,15 @@ namespace RESTable.AspNetCore
                 cancellationToken: cancellationToken
             ).ConfigureAwait(false);
         }
+
+#if NETSTANDARD2_1
+        public override async ValueTask DisposeAsync() => await WebSocket.SendAsync
+        (
+            buffer: Array.Empty<byte>(),
+            messageType: MessageType,
+            endOfMessage: true,
+            cancellationToken: CancellationToken
+        ).ConfigureAwait(false);
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
         {
@@ -69,13 +71,22 @@ namespace RESTable.AspNetCore
                 cancellationToken: CancellationToken
             ).Wait(CancellationToken);
         }
+#else
+        public async ValueTask DisposeAsync() => await WebSocket.SendAsync
+        (
+            buffer: new ArraySegment<byte>(Array.Empty<byte>()),
+            messageType: MessageType,
+            endOfMessage: true,
+            cancellationToken: CancellationToken
+        ).ConfigureAwait(false);
+#endif
 
         public override void WriteByte(byte value)
         {
             CancellationToken.ThrowIfCancellationRequested();
             WebSocket.SendAsync
             (
-                buffer: new[] {value},
+                buffer: new ArraySegment<byte>(new[] {value}),
                 messageType: MessageType,
                 endOfMessage: false,
                 cancellationToken: CancellationToken

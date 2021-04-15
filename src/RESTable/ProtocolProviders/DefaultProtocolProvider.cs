@@ -186,11 +186,6 @@ namespace RESTable.ProtocolProviders
             }
         }
 
-        public void SetResultHeaders(IResult result)
-        {
-            throw new NotImplementedException();
-        }
-
         /// <inheritdoc />
         public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
@@ -215,49 +210,54 @@ namespace RESTable.ProtocolProviders
             }
         }
 
-
         private async Task SerializeError(Error error, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
             if (contentTypeProvider is not IJsonProvider)
                 return;
 
-            await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 1024, true);
-            using var jwr = JsonProvider.GetJsonWriter(swr);
-
-            await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync("fail", cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("ErrorType", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(error.GetType().FullName, cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
-            if (error is FailedValidation failedValidation)
+            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
+#if NETSTANDARD2_1
+            await using (swr)
+#else
+            using (swr)
+#endif
             {
-                foreach (var invalidMember in failedValidation.InvalidEntity.InvalidMembers)
-                {
-                    await jwr.WritePropertyNameAsync(invalidMember.MemberName, cancellationToken).ConfigureAwait(false);
-                    await jwr.WriteValueAsync(invalidMember.Message, cancellationToken).ConfigureAwait(false);
-                }
-                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
-                if (failedValidation.InvalidEntity.Index is long index)
-                {
-                    await jwr.WritePropertyNameAsync("InvalidEntityIndex", cancellationToken).ConfigureAwait(false);
-                    await jwr.WriteValueAsync(index, cancellationToken).ConfigureAwait(false);
-                }
-            }
-            else await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("ErrorCode", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(error.ErrorCode.ToString(), cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("Message", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(error.Message, cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("MoreInfo", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(error.Headers.Error, cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(error.TimeElapsed.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
-            await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
-            toSerialize.EntityCount = 0;
-        }
+                using var jwr = JsonProvider.GetJsonWriter(swr);
 
+                await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync("fail", cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("ErrorType", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(error.GetType().FullName, cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+                if (error is FailedValidation failedValidation)
+                {
+                    foreach (var invalidMember in failedValidation.InvalidEntity.InvalidMembers)
+                    {
+                        await jwr.WritePropertyNameAsync(invalidMember.MemberName, cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(invalidMember.Message, cancellationToken).ConfigureAwait(false);
+                    }
+                    await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+                    if (failedValidation.InvalidEntity.Index is long index)
+                    {
+                        await jwr.WritePropertyNameAsync("InvalidEntityIndex", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(index, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+                else await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("ErrorCode", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(error.ErrorCode.ToString(), cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Message", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(error.Message, cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("MoreInfoAt", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(error.Headers.Error, cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(error.TimeElapsed.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
+                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+                toSerialize.EntityCount = 0;
+            }
+        }
 
         private async Task SerializeContentDataCollection<T>(IAsyncEnumerable<T> dataCollection, Content content, ISerializedResult toSerialize,
             IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken) where T : class
@@ -270,38 +270,46 @@ namespace RESTable.ProtocolProviders
                 return;
             }
 
-            await using var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
-            using var jwr = JsonProvider.GetJsonWriter(swr);
-            await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("ResourceType", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(content.ResourceType.FullName, cancellationToken).ConfigureAwait(false);
-            await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
-            var entityCount = await jsonProvider.SerializeCollection(dataCollection, jwr, cancellationToken).ConfigureAwait(false);
-            toSerialize.EntityCount = entityCount;
-            await jwr.WritePropertyNameAsync("DataCount", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(entityCount, cancellationToken).ConfigureAwait(false);
-            if (content is IEntities entities)
+            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
+#if NETSTANDARD2_1
+            await using (swr)
+#else
+            using (swr)
+#endif
             {
-                if (toSerialize.HasPreviousPage)
+                using var jwr = JsonProvider.GetJsonWriter(swr);
+                await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("ResourceType", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(content.ResourceType.FullName, cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
+                var entityCount = await jsonProvider.SerializeCollection(dataCollection, jwr, cancellationToken).ConfigureAwait(false);
+                toSerialize.EntityCount = entityCount;
+                await jwr.WritePropertyNameAsync("DataCount", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(entityCount, cancellationToken).ConfigureAwait(false);
+                if (content is IEntities entities)
                 {
-                    var previousPageLink = entities.GetPreviousPageLink(toSerialize.EntityCount);
-                    await jwr.WritePropertyNameAsync("PreviousPage", cancellationToken).ConfigureAwait(false);
-                    await jwr.WriteValueAsync(previousPageLink.ToUriString(), cancellationToken).ConfigureAwait(false);
+                    if (toSerialize.HasPreviousPage)
+                    {
+                        var previousPageLink = entities.GetPreviousPageLink(toSerialize.EntityCount);
+                        await jwr.WritePropertyNameAsync("PreviousPage", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(previousPageLink.ToUriString(), cancellationToken).ConfigureAwait(false);
+                    }
+                    if (toSerialize.HasNextPage)
+                    {
+                        var nextPageLink = entities.GetNextPageLink(toSerialize.EntityCount, -1);
+                        await jwr.WritePropertyNameAsync("NextPage", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(nextPageLink.ToUriString(), cancellationToken).ConfigureAwait(false);
+                    }
                 }
-                if (toSerialize.HasNextPage)
-                {
-                    var nextPageLink = entities.GetNextPageLink(toSerialize.EntityCount, -1);
-                    await jwr.WritePropertyNameAsync("NextPage", cancellationToken).ConfigureAwait(false);
-                    await jwr.WriteValueAsync(nextPageLink.ToUriString(), cancellationToken).ConfigureAwait(false);
-                }
+                await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
+                var milliseconds = Math.Round(toSerialize.TimeElapsed.TotalMilliseconds, 4);
+                await jwr.WriteValueAsync(milliseconds, cancellationToken).ConfigureAwait(false);
+                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+                if (entityCount == 0)
+                    content.MakeNoContent();
             }
-            await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
-            await jwr.WriteValueAsync(toSerialize.TimeElapsed.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
-            await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
-            if (entityCount == 0)
-                content.MakeNoContent();
         }
 
         public bool IsCompliant(IRequest request, out string invalidReason)

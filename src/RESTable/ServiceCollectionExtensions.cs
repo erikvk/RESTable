@@ -34,6 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton(typeof(ConditionCache<>), typeof(ConditionCache<>));
             serviceCollection.TryAddSingleton<Authenticator>();
             serviceCollection.TryAddSingleton<RootAccess>();
+            serviceCollection.TryAddSingleton<RootClient>();
 
             serviceCollection.AddSingleton<IEntityResourceProvider, InMemoryEntityResourceProvider>();
             serviceCollection.AddSingleton<IProtocolProvider, DefaultProtocolProvider>();

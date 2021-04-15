@@ -38,7 +38,7 @@ namespace RESTable.Meta
             );
             foreach (var definesTerm in declaredProperty.DefinesPropertyTerms)
             {
-                var definesNewValue = definesTerm.Evaluate
+                var definesNewValue = definesTerm.GetValue
                 (
                     target: target,
                     actualKey: out _,

@@ -142,13 +142,13 @@ namespace RESTable.Meta
         /// <summary>
         /// Returns the value that this term denotes for a given target object
         /// </summary>
-        public dynamic Evaluate(object target) => Evaluate(target, out _);
+        public dynamic GetValue(object target) => GetValue(target, out _);
 
         /// <summary>
         /// Returns the value that this term denotes for a given target object as well as
         /// the actual key for this property (matching is case insensitive).
         /// </summary>
-        public dynamic Evaluate(object target, out string actualKey) => Evaluate(target, out actualKey, out _, out _);
+        public dynamic GetValue(object target, out string actualKey) => GetValue(target, out actualKey, out _, out _);
 
         private static dynamic RunEvaluation(Term term, object target, out string actualKey, out object parent, out Property property)
         {
@@ -196,7 +196,7 @@ namespace RESTable.Meta
         /// the actual key for this property (matching is case insensitive), the parent
         /// of the denoted value, and the property representing the denoted value.
         /// </summary>
-        public dynamic Evaluate(object target, out string actualKey, out object parent, out Property property)
+        public dynamic GetValue(object target, out string actualKey, out object parent, out Property property)
         {
             return RunEvaluation(this, target, out actualKey, out parent, out property);
         }

@@ -79,87 +79,96 @@ namespace RESTable.OData
         public BinaryResult Select(IRequest<MetadataDocument> request)
         {
             var configurator = request.GetService<RESTableConfigurator>();
+
             async Task WriteStream(Stream stream, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var metadata = Metadata.Get(MetadataLevel.Full, configurator);
-                await using var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true);
-                await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>").ConfigureAwait(false);
-                await swr.WriteAsync("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>").ConfigureAwait(false);
-                await swr.WriteAsync("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">").ConfigureAwait(false);
 
-                var (enumTypes, complexTypes) = metadata.PeripheralTypes.Split(t => t.Key.IsEnum);
-
-                #region Print enum types
-
-                foreach (var (key, _) in enumTypes)
+                var swr = new StreamWriter(stream, Encoding.UTF8, 4096, true);
+#if NETSTANDARD2_1
+                await using (swr)
+#else
+                using (swr)
+#endif
                 {
-                    await swr.WriteAsync($"<EnumType Name=\"{key.FullName}\">").ConfigureAwait(false);
-                    foreach (var member in EnumMember.GetMembers(key))
-                        await swr.WriteAsync($"<Member Name=\"{member.Name}\" Value=\"{member.NumericValue}\"/>").ConfigureAwait(false);
-                    await swr.WriteAsync("</EnumType>").ConfigureAwait(false);
+                    await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>").ConfigureAwait(false);
+                    await swr.WriteAsync("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>").ConfigureAwait(false);
+                    await swr.WriteAsync("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">").ConfigureAwait(false);
+
+                    var (enumTypes, complexTypes) = metadata.PeripheralTypes.Split(t => t.Key.IsEnum);
+
+                    #region Print enum types
+
+                    foreach (var (key, _) in enumTypes)
+                    {
+                        await swr.WriteAsync($"<EnumType Name=\"{key.FullName}\">").ConfigureAwait(false);
+                        foreach (var member in EnumMember.GetMembers(key))
+                            await swr.WriteAsync($"<Member Name=\"{member.Name}\" Value=\"{member.NumericValue}\"/>").ConfigureAwait(false);
+                        await swr.WriteAsync("</EnumType>").ConfigureAwait(false);
+                    }
+
+                    #endregion
+
+                    #region Print complex types
+
+                    foreach (var (type, members) in complexTypes)
+                    {
+                        var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
+                        var isOpenType = type.IsDynamic() || dynamicMembers.Any();
+                        await swr.WriteAsync($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
+                        await WriteMembers(swr, declaredMembers).ConfigureAwait(false);
+                        await swr.WriteAsync("</ComplexType>").ConfigureAwait(false);
+                    }
+
+                    #endregion
+
+                    #region Print entity types
+
+                    foreach (var (type, members) in metadata.EntityResourceTypes.Where(t => t.Key != typeof(Metadata)))
+                    {
+                        var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
+                        var isOpenType = type.IsDynamic() || dynamicMembers.Any();
+                        await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
+                        var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
+                        if (key != null) await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
+                        await WriteMembers(swr, declaredMembers.Where(p => !(p is DeclaredProperty {Hidden: true} d) || d.Equals(key))).ConfigureAwait(false);
+                        await swr.WriteAsync("</EntityType>").ConfigureAwait(false);
+                    }
+                    await swr.WriteAsync("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>").ConfigureAwait(false);
+
+                    #endregion
+
+                    #region Write entity container and entity sets
+
+                    await swr.WriteAsync($"<EntityContainer Name=\"{EntityContainerName}\">").ConfigureAwait(false);
+                    foreach (var entitySet in metadata.EntityResources.Where(t => t.Type != typeof(Metadata)))
+                    {
+                        await swr.WriteAsync($"<EntitySet EntityType=\"{GetEdmTypeName(entitySet.Type)}\" Name=\"{entitySet.Name}\">").ConfigureAwait(false);
+                        var methods = metadata.CurrentAccessScope[entitySet].Intersect(entitySet.AvailableMethods).ToList();
+                        await swr.WriteAsync(InsertableAnnotation(methods.Contains(Method.POST))).ConfigureAwait(false);
+                        await swr.WriteAsync(UpdatableAnnotation(methods.Contains(Method.PATCH))).ConfigureAwait(false);
+                        await swr.WriteAsync(DeletableAnnotation(methods.Contains(Method.DELETE))).ConfigureAwait(false);
+                        await swr.WriteAsync("</EntitySet>");
+                    }
+                    await swr.WriteAsync("</EntityContainer>").ConfigureAwait(false);
+                    await swr.WriteAsync($"<Annotations Target=\"global.{EntityContainerName}\">").ConfigureAwait(false);
+                    await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.ConformanceLevel\"><EnumMember>Org.OData.Capabilities.V1." +
+                                         "ConformanceLevelType/Minimal</EnumMember></Annotation>").ConfigureAwait(false);
+                    await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.SupportedFormats\">").ConfigureAwait(false);
+                    await swr.WriteAsync("<Collection>").ConfigureAwait(false);
+                    await swr.WriteAsync("<String>application/json;odata.metadata=minimal;IEEE754Compatible=false;odata.streaming=true</String>").ConfigureAwait(false);
+                    await swr.WriteAsync("</Collection>").ConfigureAwait(false);
+                    await swr.WriteAsync("</Annotation>").ConfigureAwait(false);
+                    await swr.WriteAsync("<Annotation Bool=\"true\" Term=\"Org.OData.Capabilities.V1.AsynchronousRequestsSupported\"/>").ConfigureAwait(false);
+                    await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.FilterFunctions\"><Collection></Collection></Annotation>").ConfigureAwait(false);
+                    await swr.WriteAsync("</Annotations>").ConfigureAwait(false);
+                    await swr.WriteAsync("</Schema>").ConfigureAwait(false);
+                    await swr.WriteAsync("</edmx:DataServices></edmx:Edmx>").ConfigureAwait(false);
+
+                    #endregion
                 }
-
-                #endregion
-
-                #region Print complex types
-
-                foreach (var (type, members) in complexTypes)
-                {
-                    var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
-                    var isOpenType = type.IsDynamic() || dynamicMembers.Any();
-                    await swr.WriteAsync($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
-                    await WriteMembers(swr, declaredMembers).ConfigureAwait(false);
-                    await swr.WriteAsync("</ComplexType>").ConfigureAwait(false);
-                }
-
-                #endregion
-
-                #region Print entity types
-
-                foreach (var (type, members) in metadata.EntityResourceTypes.Where(t => t.Key != typeof(Metadata)))
-                {
-                    var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
-                    var isOpenType = type.IsDynamic() || dynamicMembers.Any();
-                    await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
-                    var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
-                    if (key != null) await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
-                    await WriteMembers(swr, declaredMembers.Where(p => !(p is DeclaredProperty {Hidden: true} d) || d.Equals(key))).ConfigureAwait(false);
-                    await swr.WriteAsync("</EntityType>").ConfigureAwait(false);
-                }
-                await swr.WriteAsync("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>").ConfigureAwait(false);
-
-                #endregion
-
-                #region Write entity container and entity sets
-
-                await swr.WriteAsync($"<EntityContainer Name=\"{EntityContainerName}\">").ConfigureAwait(false);
-                foreach (var entitySet in metadata.EntityResources.Where(t => t.Type != typeof(Metadata)))
-                {
-                    await swr.WriteAsync($"<EntitySet EntityType=\"{GetEdmTypeName(entitySet.Type)}\" Name=\"{entitySet.Name}\">").ConfigureAwait(false);
-                    var methods = metadata.CurrentAccessScope[entitySet].Intersect(entitySet.AvailableMethods).ToList();
-                    await swr.WriteAsync(InsertableAnnotation(methods.Contains(Method.POST))).ConfigureAwait(false);
-                    await swr.WriteAsync(UpdatableAnnotation(methods.Contains(Method.PATCH))).ConfigureAwait(false);
-                    await swr.WriteAsync(DeletableAnnotation(methods.Contains(Method.DELETE))).ConfigureAwait(false);
-                    await swr.WriteAsync("</EntitySet>");
-                }
-                await swr.WriteAsync("</EntityContainer>").ConfigureAwait(false);
-                await swr.WriteAsync($"<Annotations Target=\"global.{EntityContainerName}\">").ConfigureAwait(false);
-                await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.ConformanceLevel\"><EnumMember>Org.OData.Capabilities.V1." +
-                                     "ConformanceLevelType/Minimal</EnumMember></Annotation>").ConfigureAwait(false);
-                await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.SupportedFormats\">").ConfigureAwait(false);
-                await swr.WriteAsync("<Collection>").ConfigureAwait(false);
-                await swr.WriteAsync("<String>application/json;odata.metadata=minimal;IEEE754Compatible=false;odata.streaming=true</String>").ConfigureAwait(false);
-                await swr.WriteAsync("</Collection>").ConfigureAwait(false);
-                await swr.WriteAsync("</Annotation>").ConfigureAwait(false);
-                await swr.WriteAsync("<Annotation Bool=\"true\" Term=\"Org.OData.Capabilities.V1.AsynchronousRequestsSupported\"/>").ConfigureAwait(false);
-                await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.FilterFunctions\"><Collection></Collection></Annotation>").ConfigureAwait(false);
-                await swr.WriteAsync("</Annotations>").ConfigureAwait(false);
-                await swr.WriteAsync("</Schema>").ConfigureAwait(false);
-                await swr.WriteAsync("</edmx:DataServices></edmx:Edmx>").ConfigureAwait(false);
-
-                #endregion
             }
 
             return new BinaryResult(WriteStream, ContentType);
