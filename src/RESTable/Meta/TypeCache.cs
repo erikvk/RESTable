@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using RESTable.Internal;
 using RESTable.Resources;
 using RESTable.Meta.IL;
 using RESTable.Meta.Internal;
@@ -23,18 +22,18 @@ namespace RESTable.Meta
         internal ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache { get; }
         private ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCacheByActualName { get; }
         private ConcurrentDictionary<Type, EntityTypeContract> EntityTypeContracts { get; }
-        private EntityTypeResolverController EntityTypeResolverController { get; }
+        private IEnumerable<IEntityTypeContractResolver> EntityTypeContractResolvers { get; }
         internal TermFactory TermFactory { get; }
         private ResourceCollection ResourceCollection { get; }
 
         public TypeCache
         (
-            EntityTypeResolverController entityTypeResolverController,
+            IEnumerable<IEntityTypeContractResolver> entityTypeContractResolvers,
             ResourceCollection resourceCollection,
             TermCache termCache
         )
         {
-            EntityTypeResolverController = entityTypeResolverController;
+            EntityTypeContractResolvers = entityTypeContractResolvers;
             ResourceCollection = resourceCollection;
             DeclaredPropertyCache = new ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>>();
             DeclaredPropertyCacheByActualName = new ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>>();
@@ -166,7 +165,8 @@ namespace RESTable.Meta
                         propertyList.Add(property);
                     }
                     var contract = EntityTypeContracts[type] = new EntityTypeContract(type, propertyList);
-                    EntityTypeResolverController.InvokeContractResolvers(contract);
+                    foreach (var resolver in EntityTypeContractResolvers)
+                        resolver.ResolveContract(contract);
                     propsByName = DeclaredPropertyCache[type] = propertyList.SafeToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
                 }
                 return propsByName;
@@ -239,7 +239,7 @@ namespace RESTable.Meta
         {
             return GetDeclaredProperties(type).TryGetValue(key, out declaredProperty);
         }
-        
+
         internal void EstablishPropertyDependancies(DeclaredProperty property)
         {
             if (property.HasAttribute<DefinesAttribute>(out var dAttribute) && dAttribute.Terms is string[] dArgs && dArgs.Any())

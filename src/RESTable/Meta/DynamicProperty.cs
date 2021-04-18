@@ -71,7 +71,7 @@ namespace RESTable.Meta
                         }
                         return DeclaredFallback ? getFromStatic() : null;
                     case JObject jobj:
-                        if (!(jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is JProperty property))
+                        if (jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is not JProperty property)
                             return DeclaredFallback ? getFromStatic() : null;
                         Name = property.Name;
                         return property.Value.ToObject<dynamic>();

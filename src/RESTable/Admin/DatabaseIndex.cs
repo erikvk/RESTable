@@ -126,7 +126,7 @@ namespace RESTable.Admin
                 .EntityResourceProviders;
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
-                if (!entityResourceProviders.TryGetValue(@group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
+                if (!entityResourceProviders.TryGetValue(@group.Key, out var provider) || provider.DatabaseIndexer is not IDatabaseIndexer indexer)
                     throw new Exception($"Unable to register index. Resource '{(await group.FirstAsync().ConfigureAwait(false)).Resource.Name}' is not a database resource.");
                 request.Selector = () => group;
                 count += await indexer.InsertAsync(request).ConfigureAwait(false);

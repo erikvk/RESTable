@@ -32,11 +32,12 @@ namespace RESTable.Admin
         private IWebSocketInternal ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
 
         /// <inheritdoc />
-        protected override string WelcomeHeader { get; } = "RESTable network console";
+        protected override string WelcomeHeader => "RESTable network console";
 
         /// <inheritdoc />
-        protected override string WelcomeBody { get; } = "Use the console to receive pushed updates when the \n" +
-                                                         "REST API receives requests and WebSocket events.";
+        protected override string WelcomeBody =>
+            "Use the console to receive pushed updates when the \n" +
+            "REST API receives requests and WebSocket events.";
 
         protected override async Task Open()
         {

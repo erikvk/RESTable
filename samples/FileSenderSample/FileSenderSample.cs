@@ -9,9 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
-using RESTable.Requests;
 using RESTable.Resources;
-using RESTable.Resources.Operations;
 using RESTable.WebSockets;
 
 namespace FileSenderSample
@@ -32,7 +30,7 @@ namespace FileSenderSample
             .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true) // needed since RESTable still uses synchronous JSON serialization (Newtonsoft)
             .AddHttpContextAccessor();
 
-        public void Configure(IApplicationBuilder app ) => app
+        public void Configure(IApplicationBuilder app) => app
             .UseWebSockets()
             .UseRESTableAspNetCore();
     }
@@ -43,7 +41,7 @@ namespace FileSenderSample
     /// This resource lets clients connect and receive files. Available at wss://localhost:5001/restable/filesenderconnection
     /// </summary>
     [RESTable]
-    public class FileSenderConnection : Terminal, IAsyncDisposable, IValidator<FileSenderConnection>
+    public class FileSenderConnection : Terminal, IDisposable //, IValidator<FileSenderConnection>
     {
         // We store all active connections here, so we can use them from a separate resource
         internal static TerminalSet<FileSenderConnection> ActiveConnections { get; } = new();
@@ -55,11 +53,9 @@ namespace FileSenderSample
         internal bool Deactivated { get; set; }
 
         /// <summary>
-        /// We expect clients to set this. We could have a mechanism where this is
-        /// required when the connection is established, and immutable when the connection is active.
+        /// We expect clients to set this in the initial request.
         /// </summary>
-        [RESTableMember(readOnly: true)]
-        public string Id { get; set; }
+        public string Id { get; }
 
         /// <summary>
         /// This is a read-only file count, set here on the server
@@ -78,16 +74,9 @@ namespace FileSenderSample
 
         private DateTime OpenedAt { get; set; }
 
-        public IEnumerable<InvalidMember> Validate(FileSenderConnection entity, RESTableContext context)
+        public FileSenderConnection(string id)
         {
-            foreach (var existing in ActiveConnections)
-            {
-                if (existing.Id == entity.Id)
-                    throw new Exception($"A connection with id {existing.Id} is already connected");
-            }
-            
-            if (string.IsNullOrWhiteSpace(entity.Id))
-                yield return this.Invalidate(i => i.Id, "Expected a non-null, non-whitespace ID for this connection");
+            Id = id;
         }
 
         protected override async Task Open()
@@ -147,11 +136,7 @@ namespace FileSenderSample
 
         protected override bool SupportsTextInput => true;
 
-        public ValueTask DisposeAsync()
-        {
-            ActiveConnections.Remove(this);
-            return default;
-        }
+        public void Dispose() => ActiveConnections.Remove(this);
     }
 
     /// <summary>
@@ -254,9 +239,9 @@ namespace FileSenderSample
             }
             var combinedTerminals = FileSenderConnection
                 .ActiveConnections
-                .Where(c => !c.Deactivated && c.Status == "Started")    
+                .Where(c => !c.Deactivated && c.Status == "Started")
                 .CombineTerminals();
-            
+
             if (combinedTerminals.Count == 0)
             {
                 await WebSocket.SendText("No started connections");

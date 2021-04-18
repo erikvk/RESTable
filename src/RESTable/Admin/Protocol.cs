@@ -40,7 +40,7 @@ namespace RESTable.Admin
 
         /// <inheritdoc />
         public IEnumerable<Protocol> Select(IRequest<Protocol> request) => request
-            .GetService<ProtocolController>()
+            .GetService<ProtocolProviderManager>()
             .CachedProtocolProviders
             .Values
             .Distinct()

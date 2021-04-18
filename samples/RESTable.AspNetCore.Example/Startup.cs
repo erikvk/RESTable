@@ -36,29 +36,29 @@ namespace RESTable.Example
             app.UseWebSockets();
 
             var rootContext = new RESTableContext(rootClient, app.ApplicationServices);
-            using var personPostRequest = rootContext
+            var personPostRequest = rootContext
                 .CreateRequest<Person>(Method.POST)
                 .WithBody(new object[]
                 {
                     new
                     {
-                        FirstName = "John",
-                        LastName = "Stevens",
+                        FirstName = "Sarah",
+                        LastName = "Connor",
                         DateOfBirth = 19870304,
-                        Interests = new[] {"Things", "Food"}
+                        Interests = new[] {"Survival"}
                     },
                     new
                     {
-                        FirstName = "Jane",
-                        LastName = "Stevens",
+                        FirstName = "Jordan",
+                        LastName = "Belfort",
                         DateOfBirth = 19880119,
-                        Interests = new[] {"Money", "Stuff"}
+                        Interests = new[] {"Money", "Drugs"}
                     },
                     new
                     {
                         FirstName = "Darth",
                         LastName = "Vader",
-                        Interests = new[] {"Droids", "Darkness"}
+                        Interests = new[] {"Finding droids", "Darkness"}
                     },
                     new
                     {
@@ -67,7 +67,7 @@ namespace RESTable.Example
                         Interests = new[] {"Destiny", "Forces"}
                     }
                 });
-            personPostRequest.GetResult().Wait();
+            using var result = personPostRequest.GetResult().Result;
         }
     }
 }

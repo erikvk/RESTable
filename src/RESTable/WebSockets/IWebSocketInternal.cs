@@ -6,6 +6,6 @@ namespace RESTable.WebSockets
     internal interface IWebSocketInternal : IWebSocket, IAsyncDisposable
     {
         Task SendTextRaw(string text);
-        Task SetStatus(WebSocketStatus status);
+        void SetStatus(WebSocketStatus status);
     }
 }

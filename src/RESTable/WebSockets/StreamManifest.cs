@@ -29,7 +29,7 @@ namespace RESTable.WebSockets
         public long EntityCount { get; }
 
         public StreamManifestMessage[] Messages { get; }
-        public StreamCommand[] Commands { get; } = _Commands;
+        public StreamCommand[] Commands => _Commands;
 
         private static readonly StreamCommand[] _Commands =
         {

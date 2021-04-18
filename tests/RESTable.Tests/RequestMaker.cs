@@ -17,8 +17,8 @@ namespace RESTable.Tests
         public async Task<HttpStatusCode> MakeRequest(Method method, string uri, object body, Headers headers)
         {
             var context = new MockContext(Fixture.ServiceProvider);
-            await using var request = context.CreateRequest(method, uri, body, headers);
-            var result = await request.GetResult().ConfigureAwait(false);
+            var request = context.CreateRequest(method, uri, body, headers);
+            await using var result = await request.GetResult().ConfigureAwait(false);
             await using var serialized = await result.Serialize().ConfigureAwait(false);
             return serialized.Result.StatusCode;
         }

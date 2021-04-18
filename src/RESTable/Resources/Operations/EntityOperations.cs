@@ -124,7 +124,7 @@ namespace RESTable.Resources.Operations
                 request.EntitiesProducer = RequestEntitiesProducer;
                 return await request.EntityResource.InsertAsync(request).ConfigureAwait(false);
             }
-            catch (FailedValidation)
+            catch (InvalidInputEntity)
             {
                 throw;
             }
@@ -152,7 +152,7 @@ namespace RESTable.Resources.Operations
                 request.EntitiesProducer = RequestEntitiesProducer;
                 return await request.EntityResource.UpdateAsync(request).ConfigureAwait(false);
             }
-            catch (FailedValidation)
+            catch (InvalidInputEntity)
             {
                 throw;
             }
@@ -181,7 +181,7 @@ namespace RESTable.Resources.Operations
                 request.EntitiesProducer = RequestEntitiesProducer;
                 return await request.EntityResource.UpdateAsync(request).ConfigureAwait(false);
             }
-            catch (FailedValidation)
+            catch (InvalidInputEntity)
             {
                 throw;
             }
@@ -288,7 +288,7 @@ namespace RESTable.Resources.Operations
             try
             {
                 var jsonProvider = request.GetService<IJsonProvider>();
-                await using var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
+                var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
                 var (toInsert, toUpdate) = await GetSafePostTasks(request, innerRequest).ConfigureAwait(false);
                 var (updatedCount, insertedCount) = (0, 0);
                 if (toUpdate.Any())

@@ -28,12 +28,12 @@ namespace RESTable.Resources.Templates
         /// <summary>
         /// The header to use in welcome texts
         /// </summary>
-        protected virtual string WelcomeHeader { get; } = null;
+        protected virtual string WelcomeHeader => null;
 
         /// <summary>
         /// The body to use in welcome texts. If long, include wrapping line breaks.
         /// </summary>
-        protected virtual string WelcomeBody { get; } = null;
+        protected virtual string WelcomeBody => null;
 
         private string GetWelcomeText()
         {
@@ -52,7 +52,7 @@ namespace RESTable.Resources.Templates
         }
 
         /// <inheritdoc />
-        protected override bool SupportsTextInput { get; } = true;
+        protected override bool SupportsTextInput => true;
 
         /// <inheritdoc />
         public override async Task HandleTextInput(string input)

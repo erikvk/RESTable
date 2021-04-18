@@ -4,25 +4,12 @@ using RESTable.Requests;
 
 namespace RESTable.Results
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// A generic RESTable result
-    /// </summary>
-    /// <typeparam name="T">The resource type</typeparam>
-    public interface IResult<out T> : IResult where T : class
-    {
-        /// <summary>
-        /// The entities contained in the result
-        /// </summary>
-        IEntities<T> Entities { get; }
-    }
-
     /// <inheritdoc cref="ILogable" />
     /// <inheritdoc cref="IDisposable" />
     /// <summary>
     /// A RESTable result
     /// </summary>
-    public interface IResult : ILogable, IHeaderHolder, ITraceable
+    public interface IResult : ILogable, IHeaderHolder, ITraceable, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// The protocol holder of this result
@@ -66,7 +53,7 @@ namespace RESTable.Results
         void ThrowIfError();
 
         /// <summary>
-        /// Tries to convert the result to an IEnumerable instance, or throws an 
+        /// Tries to convert the result to an IEntities instance, or throws an 
         /// Exception if the result is non-successful or cannot be cast to the given type.
         /// </summary>
         IEntities<T> ToEntities<T>() where T : class;

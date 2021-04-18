@@ -76,6 +76,16 @@ namespace RESTable.Results
         /// <inheritdoc />
         public void ThrowIfError() { }
 
+        /// <inheritdoc />
+        public void Dispose() => Request?.Body?.Dispose();
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (Request?.Body is Body body)
+                await body.DisposeAsync();
+        }
+
         protected Success(IProtocolHolder protocolHolder, Headers headers = null)
         {
             ProtocolHolder = protocolHolder;

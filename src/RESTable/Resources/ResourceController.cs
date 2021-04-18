@@ -63,7 +63,7 @@ namespace RESTable.Resources
         /// Additional data associated with this resource (as defined by the resource provider)
         /// </summary>
         [RESTableMember(ignore: true)]
-        protected virtual dynamic Data { get; } = null;
+        protected virtual dynamic Data => null;
 
         /// <summary>
         /// Selects the instances that have been inserted by this controller

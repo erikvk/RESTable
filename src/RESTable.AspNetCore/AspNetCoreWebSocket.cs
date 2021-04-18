@@ -55,7 +55,7 @@ namespace RESTable.AspNetCore
 
         protected override Task<Stream> GetOutgoingMessageStream(bool asText, CancellationToken token)
         {
-            var messageStream = new AspNetCoreOutgoingMessageStream(WebSocket, asText, token);
+            var messageStream = new AspNetCoreMessageStream(WebSocket, asText, token);
             return Task.FromResult<Stream>(messageStream);
         }
 

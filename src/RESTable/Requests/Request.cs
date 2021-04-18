@@ -172,7 +172,7 @@ namespace RESTable.Requests
                 result = await RunEvaluation(cancellationToken).ConfigureAwait(false);
             }
 
-            if (IsWebSocketUpgrade && !(result is WebSocketUpgradeSuccessful))
+            if (IsWebSocketUpgrade && result is not WebSocketUpgradeSuccessful)
             {
                 await using (var webSocket = Context.WebSocket)
                 {
@@ -376,7 +376,7 @@ namespace RESTable.Requests
                 return async result =>
                 {
                     var serializedResult = await result.Serialize().ConfigureAwait(false);
-                    await using var internalRequest = serializedResult.Context.CreateRequest
+                    var internalRequest = serializedResult.Context.CreateRequest
                     (
                         method: parameters.Method,
                         uri: parameters.URI,
@@ -418,9 +418,11 @@ namespace RESTable.Requests
 
             return async body =>
             {
+                if (body != null)
+                    await body.DisposeAsync().ConfigureAwait(false);
                 if (parameters.IsInternal)
                 {
-                    await using var internalRequest = Context.CreateRequest
+                    var internalRequest = Context.CreateRequest
                     (
                         method: parameters.Method,
                         uri: parameters.URI,
@@ -437,12 +439,14 @@ namespace RESTable.Requests
                 }
                 parameters.Headers.Accept ??= ContentType.JSON;
                 var request = new HttpRequest(this, parameters, null);
-                var response = await request.GetResponseAsync().ConfigureAwait(false) ?? throw new InvalidExternalSource(parameters.URI, "No response");
+                var response = await request.GetResponseAsync().ConfigureAwait(false);
+                if (response == null)
+                    throw new InvalidExternalSource(parameters.URI, "No response");
                 if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(parameters.URI, response.LogMessage);
+
                 if (response.Body.CanSeek && response.Body.Length == 0)
                     throw new InvalidExternalSource(parameters.URI, "Response was empty");
-                body = new Body(this, response.Body);
-                return body;
+                return new Body(this, response.Body);
             };
         }
 
@@ -462,7 +466,7 @@ namespace RESTable.Requests
 
         public async Task<IRequest> GetCopy(string newProtocol = null)
         {
-            var protocolController = this.GetService<ProtocolController>();
+            var protocolController = this.GetService<ProtocolProviderManager>();
             return new Request<T>
             (
                 resource: Resource,

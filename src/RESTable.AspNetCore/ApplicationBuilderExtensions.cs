@@ -78,8 +78,8 @@ namespace RESTable.AspNetCore
                 return;
             }
             var body = aspNetCoreContext.Request.Body;
-            await using var request = context.CreateRequest(method, uri, body, headers);
-            var result = await request.GetResult().ConfigureAwait(false);
+            var request = context.CreateRequest(method, uri, body, headers);
+            await using var result = await request.GetResult().ConfigureAwait(false);
             switch (result)
             {
                 case WebSocketTransferSuccess:

@@ -59,7 +59,7 @@ namespace RESTable.Tests
             items2List[5].Id = 99;
             var items2 = items2List.ToAsyncEnumerable();
 
-            await Assert.ThrowsAsync<FailedValidation>(async () =>
+            await Assert.ThrowsAsync<InvalidInputEntity>(async () =>
             {
                 _ = await Resource.Validate(items2, Request.Context).ToListAsync();
             });

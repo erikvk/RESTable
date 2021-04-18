@@ -271,15 +271,29 @@ namespace RESTable.Meta.Internal
                 foreach (var terminal in terminals)
                 {
                     ValidateCommon(terminal);
-
+                    var constructors = terminal.GetConstructors();
+                    if (constructors.Length != 1)
+                        throw new InvalidTerminalDeclarationException(terminal, "must have exactly one public constructor. Found " + constructors.Length);
+                    var constructorParameterNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var properties = TypeCache.GetDeclaredProperties(terminal);
+                    foreach (var parameter in constructors[0].GetParameters())
+                    {
+                        if (!constructorParameterNames.Add(parameter.Name))
+                            throw new InvalidTerminalDeclarationException(terminal, "must not define multiple constructor parameters with the same case " +
+                                                                                    $"insensitive parameter name. Found duplicate of '{parameter.Name.ToLowerInvariant()}'");
+                        if (!properties.ContainsKey(parameter.Name))
+                        {
+                            throw new InvalidTerminalDeclarationException(terminal, "must not define a constructor parameter with a name that does not equal the name of a " +
+                                                                                    "public instance property on the same type (case insensitive). Found parameter " +
+                                                                                    $"'{parameter.Name.ToLowerInvariant()}' with no matching public instance property.");
+                        }
+                    }
                     if (terminal.ImplementsGenericInterface(typeof(IEnumerable<>)))
                         throw new InvalidTerminalDeclarationException(terminal, "must not be collections");
                     if (terminal.HasResourceProviderAttribute())
                         throw new InvalidTerminalDeclarationException(terminal, "must not be decorated with a resource provider attribute");
                     if (typeof(IOperationsInterface).IsAssignableFrom(terminal))
                         throw new InvalidTerminalDeclarationException(terminal, "must not implement any other RESTable operations interfaces");
-                    if (terminal != null && terminal.GetConstructor(Type.EmptyTypes) == null)
-                        throw new InvalidTerminalDeclarationException(terminal, "must define a public parameterless constructor");
                 }
             }
 

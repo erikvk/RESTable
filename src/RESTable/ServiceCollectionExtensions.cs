@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddRESTable(this IServiceCollection serviceCollection)
         {
-            serviceCollection.TryAddSingleton<WebSocketController>();
+            serviceCollection.TryAddSingleton<WebSocketManager>();
             serviceCollection.TryAddSingleton<RESTableConfiguration>();
             serviceCollection.TryAddSingleton<RESTableConfigurator>();
             serviceCollection.TryAddSingleton<TermFactory>(pr => pr.GetService<TypeCache>().TermFactory);
@@ -25,10 +25,9 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton<TermCache>();
             serviceCollection.TryAddSingleton<BinaryResourceProvider>();
             serviceCollection.TryAddSingleton<VirtualResourceProvider>();
-            serviceCollection.TryAddSingleton<EntityTypeResolverController>();
             serviceCollection.TryAddSingleton<ResourceFactory>();
-            serviceCollection.TryAddSingleton<ContentTypeController>();
-            serviceCollection.TryAddSingleton<ProtocolController>();
+            serviceCollection.TryAddSingleton<ContentTypeProviderManager>();
+            serviceCollection.TryAddSingleton<ProtocolProviderManager>();
             serviceCollection.TryAddSingleton<TypeCache>();
             serviceCollection.TryAddSingleton<ResourceValidator>();
             serviceCollection.TryAddSingleton(typeof(ConditionCache<>), typeof(ConditionCache<>));

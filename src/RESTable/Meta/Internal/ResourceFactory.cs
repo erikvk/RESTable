@@ -154,7 +154,7 @@ namespace RESTable.Meta.Internal
             out List<Type> binaryTypes, out List<Type> eventTypes)
         {
             var allTypes = typeof(object).GetSubclasses().ToList();
-            var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTableAttribute>(out var a) && !(a is RESTableProceduralAttribute)).ToArray();
+            var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTableAttribute>(out var a) && a is not RESTableProceduralAttribute).ToArray();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTableViewAttribute>()).ToArray();
             if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.GetRESTableTypeName()?.ToLower() ?? "unknown", out var dupe))
                 throw new InvalidResourceDeclarationException("Types used by RESTable must have unique case insensitive names. Found " +

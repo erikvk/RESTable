@@ -25,10 +25,10 @@ namespace RESTable.ProtocolProviders
     internal sealed class DefaultProtocolProvider : IProtocolProvider
     {
         /// <inheritdoc />
-        public string ProtocolName { get; } = "RESTable";
+        public string ProtocolName => "RESTable";
 
         /// <inheritdoc />
-        public string ProtocolIdentifier { get; } = "restable";
+        public string ProtocolIdentifier => "restable";
 
         /// <inheritdoc />
         public IUriComponents GetUriComponents(string uriString, RESTableContext context)
@@ -117,7 +117,7 @@ namespace RESTable.ProtocolProviders
             JsonProvider = jsonProvider;
         }
 
-        public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings { get; } = ExternalContentTypeProviderSettings.AllowAll;
+        public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings => ExternalContentTypeProviderSettings.AllowAll;
 
         public IEnumerable<IContentTypeProvider> GetCustomContentTypeProviders() => null;
 
@@ -231,7 +231,7 @@ namespace RESTable.ProtocolProviders
                 await jwr.WriteValueAsync(error.GetType().FullName, cancellationToken).ConfigureAwait(false);
                 await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
-                if (error is FailedValidation failedValidation)
+                if (error is InvalidInputEntity failedValidation)
                 {
                     foreach (var invalidMember in failedValidation.InvalidEntity.InvalidMembers)
                     {

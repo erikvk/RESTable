@@ -40,7 +40,7 @@ namespace RESTable.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var resourceCondition = request.Conditions.Pop(nameof(Resource), EQUALS);
-            if (!(resourceCondition?.Value is string resourceName))
+            if (resourceCondition?.Value is not string resourceName)
                 throw new Exception("Invalid syntax in request to RESTable.Schema. Format: " +
                                     "/RESTable.Admin.Schema/resource=<insert_resource_name_here>");
             var resource = request.GetService<ResourceCollection>().FindResource(resourceName) as IEntityResource;

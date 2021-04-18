@@ -53,9 +53,9 @@ namespace RESTable.Admin
         public IEnumerable<WebSocket> Select(IRequest<WebSocket> request)
         {
             var jsonSerializer = request.GetService<JsonSerializer>();
-            var webSocketController = request.GetService<WebSocketController>();
+            var webSocketController = request.GetService<WebSocketManager>();
             return webSocketController
-                .AllSockets
+                .ConnectedWebSockets
                 .Values
                 .Select(socket => new WebSocket
                 {

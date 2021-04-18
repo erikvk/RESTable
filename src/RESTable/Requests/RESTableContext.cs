@@ -46,7 +46,7 @@ namespace RESTable.Requests
             get => webSocket;
             set
             {
-                Services.GetService<WebSocketController>().Add(value);
+                Services.GetService<WebSocketManager>().Add(value);
                 webSocket = value;
             }
         }
@@ -142,7 +142,9 @@ namespace RESTable.Requests
             IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
             if (!request.IsValid)
             {
-                error = request.GetResult().Result as Error;
+                // Will run synchronously since the request is not valid
+                using var result = request.GetResult().Result;
+                error = result as Error;
                 return false;
             }
             uriComponents = request.UriComponents;

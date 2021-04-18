@@ -49,7 +49,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Does this attribute describe a declared resource type?
         /// </summary>
-        internal bool IsDeclared => !(this is RESTableProceduralAttribute);
+        internal bool IsDeclared => this is not RESTableProceduralAttribute;
 
         /// <inheritdoc />
         /// <summary>

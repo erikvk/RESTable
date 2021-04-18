@@ -6,13 +6,14 @@ using System.Threading.Tasks;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreOutgoingMessageStream : Stream, IAsyncDisposable
+    internal class AspNetCoreMessageStream : Stream, IAsyncDisposable
     {
         private WebSocket WebSocket { get; }
         private WebSocketMessageType MessageType { get; }
         private CancellationToken CancellationToken { get; }
+        private bool IsDisposed { get; set; }
 
-        public AspNetCoreOutgoingMessageStream(WebSocket webSocket, bool asText, CancellationToken cancellationToken)
+        public AspNetCoreMessageStream(WebSocket webSocket, bool asText, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             CancellationToken = cancellationToken;
@@ -25,7 +26,6 @@ namespace RESTable.AspNetCore
             if (disposing)
                 DisposeAsync().AsTask().Wait(CancellationToken);
         }
-
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -40,13 +40,7 @@ namespace RESTable.AspNetCore
         }
 
 #if NETSTANDARD2_1
-        public override async ValueTask DisposeAsync() => await WebSocket.SendAsync
-        (
-            buffer: Array.Empty<byte>(),
-            messageType: MessageType,
-            endOfMessage: true,
-            cancellationToken: CancellationToken
-        ).ConfigureAwait(false);
+        public override ValueTask DisposeAsync() => DisposeImpl();
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
         {
@@ -72,14 +66,21 @@ namespace RESTable.AspNetCore
             ).Wait(CancellationToken);
         }
 #else
-        public async ValueTask DisposeAsync() => await WebSocket.SendAsync
-        (
-            buffer: new ArraySegment<byte>(Array.Empty<byte>()),
-            messageType: MessageType,
-            endOfMessage: true,
-            cancellationToken: CancellationToken
-        ).ConfigureAwait(false);
+        public ValueTask DisposeAsync() => DisposeImpl();
 #endif
+
+        private async ValueTask DisposeImpl()
+        {
+            if (IsDisposed) return;
+            await WebSocket.SendAsync
+            (
+                buffer: new ArraySegment<byte>(Array.Empty<byte>()),
+                messageType: MessageType,
+                endOfMessage: true,
+                cancellationToken: CancellationToken
+            ).ConfigureAwait(false);
+            IsDisposed = true;
+        }
 
         public override void WriteByte(byte value)
         {

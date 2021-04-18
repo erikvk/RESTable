@@ -9,16 +9,16 @@ using RESTable.Linq;
 
 namespace RESTable.Internal
 {
-    public class ProtocolController
+    public class ProtocolProviderManager
     {
         internal IDictionary<string, CachedProtocolProvider> CachedProtocolProviders { get; private set; }
         internal CachedProtocolProvider DefaultProtocolProvider { get; private set; }
-        private ContentTypeController ContentTypeController { get; }
+        private ContentTypeProviderManager ContentTypeProviderManager { get; }
 
-        public ProtocolController(ContentTypeController contentTypeController, IEnumerable<IProtocolProvider> protocolProviders)
+        public ProtocolProviderManager(ContentTypeProviderManager contentTypeProviderManager, IEnumerable<IProtocolProvider> protocolProviders)
         {
             CachedProtocolProviders = new Dictionary<string, CachedProtocolProvider>(StringComparer.OrdinalIgnoreCase);
-            ContentTypeController = contentTypeController;
+            ContentTypeProviderManager = contentTypeProviderManager;
             protocolProviders.ForEach(provider =>
             {
                 ValidateProtocolProvider(provider);
@@ -61,17 +61,17 @@ namespace RESTable.Internal
             switch (provider.ExternalContentTypeProviderSettings)
             {
                 case ExternalContentTypeProviderSettings.AllowAll:
-                    ContentTypeController.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key))
+                    ContentTypeProviderManager.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key))
                         .ForEach(cProvider.InputMimeBindings.Add);
-                    ContentTypeController.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key))
+                    ContentTypeProviderManager.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key))
                         .ForEach(cProvider.OutputMimeBindings.Add);
                     break;
                 case ExternalContentTypeProviderSettings.AllowInput:
-                    ContentTypeController.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key))
+                    ContentTypeProviderManager.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key))
                         .ForEach(cProvider.InputMimeBindings.Add);
                     break;
                 case ExternalContentTypeProviderSettings.AllowOutput:
-                    ContentTypeController.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key))
+                    ContentTypeProviderManager.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key))
                         .ForEach(cProvider.OutputMimeBindings.Add);
                     break;
             }

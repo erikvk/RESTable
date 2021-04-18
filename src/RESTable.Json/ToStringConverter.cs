@@ -10,9 +10,10 @@ namespace RESTable.Json
     public class ToStringConverter : JsonConverter
     {
         /// <inheritdoc />
-        public override bool CanRead { get; } = false;
+        public override bool CanRead => false;
+
         /// <inheritdoc />
-        public override bool CanWrite { get; } = true;
+        public override bool CanWrite => true;
 
         /// <inheritdoc />
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

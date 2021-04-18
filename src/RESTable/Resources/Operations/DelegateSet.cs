@@ -58,7 +58,7 @@ namespace RESTable.Resources.Operations
                 index += 1;
                 var invalidMembers = Validator(entity, context).ToList();
                 if (invalidMembers.Count > 0)
-                    throw new FailedValidation(new InvalidEntity(index, invalidMembers));
+                    throw new InvalidInputEntity(new InvalidEntity(index, invalidMembers));
                 yield return entity;
             }
         }
@@ -67,6 +67,7 @@ namespace RESTable.Resources.Operations
 
         private static async IAsyncEnumerable<TResource> CallAsync(IEnumerable<TResource> entities)
         {
+            if (entities == null) yield break;
             foreach (var item in entities)
             {
                 yield return item;

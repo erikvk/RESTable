@@ -8,22 +8,22 @@ using RESTable.ContentTypeProviders;
 
 namespace RESTable.WebSockets
 {
-    public class WebSocketController
+    public class WebSocketManager
     {
-        internal readonly IDictionary<string, WebSocket> AllSockets;
+        internal readonly IDictionary<string, WebSocket> ConnectedWebSockets;
         private IJsonProvider JsonProvider { get; }
 
-        public WebSocketController(IJsonProvider jsonProvider)
+        public WebSocketManager(IJsonProvider jsonProvider)
         {
-            AllSockets = new ConcurrentDictionary<string, WebSocket>();
+            ConnectedWebSockets = new ConcurrentDictionary<string, WebSocket>();
             JsonProvider = jsonProvider;
         }
 
-        internal void Add(WebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
+        internal void Add(WebSocket webSocket) => ConnectedWebSockets[webSocket.Id] = webSocket;
 
         internal async Task RevokeAllWithKey(string key)
         {
-            var tasks = AllSockets.Values
+            var tasks = ConnectedWebSockets.Values
                 .Where(webSocket => webSocket.Client.AccessRights.ApiKey == key)
                 .Select(webSocket => webSocket.DisposeAsync().AsTask());
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -31,7 +31,7 @@ namespace RESTable.WebSockets
 
         public async Task HandleTextInput(string wsId, string textInput, CancellationToken cancellationToken)
         {
-            if (!AllSockets.TryGetValue(wsId, out var webSocket))
+            if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
                                                       "application. Disconnecting...");
 
@@ -94,11 +94,11 @@ namespace RESTable.WebSockets
 
         public async Task HandleBinaryInput(string wsId, byte[] binaryInput, CancellationToken cancellationToken)
         {
-            if (!AllSockets.TryGetValue(wsId, out var webSocket))
+            if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
             await webSocket.HandleBinaryInputInternal(binaryInput, cancellationToken).ConfigureAwait(false);
         }
 
-        public void RemoveWebSocket(string wsId) => AllSockets.Remove(wsId);
+        public void RemoveWebSocket(string wsId) => ConnectedWebSockets.Remove(wsId);
     }
 }

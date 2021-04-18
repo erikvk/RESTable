@@ -51,7 +51,7 @@ namespace RESTable.SQLite
                 foreach (var column in TableMapping<T>.TransactMappings)
                 {
                     var value = Reader[column.SQLColumn.Name];
-                    if (!(value is DBNull))
+                    if (value is not DBNull)
                         column.CLRProperty.Set?.Invoke(entity, value);
                     else if (!column.CLRProperty.IsDeclared)
                         column.CLRProperty.Set?.Invoke(entity, null);

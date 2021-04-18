@@ -71,7 +71,7 @@ namespace RESTable.Resources.Templates
             await WebSocket.SendText(stringBuilder.ToString()).ConfigureAwait(false);
         }
 
-        protected override bool SupportsTextInput { get; } = true;
+        protected override bool SupportsTextInput => true;
 
         /// <summary>
         /// Provides the options to make available in this resource

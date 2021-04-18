@@ -29,12 +29,6 @@ namespace RESTable.Internal.Auth
             RootAccess = rootAccess;
         }
 
-        internal void NewState()
-        {
-            ApiKeys = new Dictionary<string, AccessRights>();
-            AllowedOrigins = new HashSet<Uri>();
-        }
-
         /// <summary>
         /// Returns true if and only if this client is considered authenticated. This is a necessary precondition for 
         /// being included in a context. If false, a NotAuthorized result object is returned in the out parameter, that 

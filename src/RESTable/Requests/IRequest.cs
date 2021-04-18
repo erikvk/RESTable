@@ -96,7 +96,7 @@ namespace RESTable.Requests
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTable
     /// </summary>
-    public interface IRequest : IServiceProvider, IProtocolHolder, IHeaderHolder, ITraceable, ILogable, IDisposable, IAsyncDisposable
+    public interface IRequest : IServiceProvider, IProtocolHolder, IHeaderHolder, ITraceable, ILogable
     {
         /// <summary>
         /// The method of the request

@@ -63,17 +63,25 @@ namespace RESTable.Results
         /// <inheritdoc />
         public TimeSpan TimeElapsed => Result.TimeElapsed;
 
+        /// <inheritdoc />
         public IRequest Request => Result.Request;
 
+        /// <inheritdoc />
         public IProtocolHolder ProtocolHolder => Result.ProtocolHolder;
 
         /// <inheritdoc />
         public string Metadata => Result.Metadata;
 
+        /// <inheritdoc />
+        public void Dispose() => Result.Dispose();
+
+        /// <inheritdoc />
+        public ValueTask DisposeAsync() => Result.DisposeAsync();
+
         /// <summary>
         /// The wrapped result
         /// </summary>
-        protected readonly IResult Result;
+        private IResult Result { get; }
 
         protected ResultWrapper(IResult result) => Result = result;
     }

@@ -161,7 +161,7 @@ namespace RESTable
             set
             {
                 var provider = Services
-                    .GetService<ProtocolController>()
+                    .GetService<ProtocolProviderManager>()
                     .ResolveCachedProtocolProvider(value)
                     .ProtocolProvider;
                 _protocol = provider.ProtocolIdentifier;
@@ -172,8 +172,6 @@ namespace RESTable
 
         public Shell()
         {
-            SupportsTextInput = true;
-            SupportsBinaryInput = true;
             Reset();
         }
 
@@ -194,10 +192,10 @@ namespace RESTable
         }
 
         /// <inheritdoc />
-        protected override bool SupportsTextInput { get; }
+        protected override bool SupportsTextInput => true;
 
         /// <inheritdoc />
-        protected override bool SupportsBinaryInput { get; }
+        protected override bool SupportsBinaryInput => true;
 
         private IJsonProvider JsonProvider { get; set; }
 
@@ -216,7 +214,7 @@ namespace RESTable
             else await SendShellInit().ConfigureAwait(false);
         }
 
-        private async Task Navigate(string input = null)
+        private async Task Navigate(string input = null, bool sendQuery = true)
         {
             if (input != null)
                 Query = input;
@@ -225,7 +223,7 @@ namespace RESTable
             PreviousEntities = null;
             if (AutoOptions) await SendOptions(resource).ConfigureAwait(false);
             else if (AutoGet) await SafeOperation(GET).ConfigureAwait(false);
-            else await SendQuery().ConfigureAwait(false);
+            else if (sendQuery) await SendQuery().ConfigureAwait(false);
         }
 
         private TaskCompletionSource<byte> ConfirmSource { get; set; }
@@ -283,6 +281,15 @@ namespace RESTable
                         break;
                     default:
                         var (command, tail) = input.TSplit(' ');
+                        if (tail != null)
+                        {
+                            var (path, tail2) = tail.TSplit(' ');
+                            if (path.StartsWith("/"))
+                            {
+                                await Navigate(path).ConfigureAwait(false);
+                                tail = tail2;
+                            }
+                        }
                         switch (command.ToUpperInvariant())
                         {
                             case "GET":
@@ -307,12 +314,14 @@ namespace RESTable
                                 await SafeOperation(HEAD, tail?.ToBytes()).ConfigureAwait(false);
                                 break;
                             case "STREAM":
-                                var result = await GetResult(GET, null).ConfigureAwait(false);
+                            {
+                                await using var result = await GetResult(GET, null).ConfigureAwait(false);
                                 var serialized = await result.Serialize().ConfigureAwait(false);
                                 if (result is Content)
                                     await StreamSerializedResult(serialized, result.TimeElapsed).ConfigureAwait(false);
                                 else await SendSerializedResult(serialized).ConfigureAwait(false);
                                 break;
+                            }
                             case "OPTIONS":
                             {
                                 var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
@@ -332,8 +341,8 @@ namespace RESTable
                                     op: Operators.EQUALS,
                                     value: resource.Name
                                 );
-                                await using var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
-                                var schemaResult = await schemaRequest.GetResultEntities().ConfigureAwait(false);
+                                var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
+                                await using var schemaResult = await schemaRequest.GetResultEntities().ConfigureAwait(false);
                                 await SerializeAndSendResult(schemaResult);
                                 break;
                             }
@@ -565,8 +574,8 @@ namespace RESTable
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            await using var request = WebSocket.Context.CreateRequest(GET, local, null, WebSocket.Headers);
-            var result = await request.GetResult().ConfigureAwait(false);
+            var request = WebSocket.Context.CreateRequest(GET, local, null, WebSocket.Headers);
+            await using var result = await request.GetResult().ConfigureAwait(false);
             switch (result)
             {
                 case Results.Error _ when queryChangedPreEval:
@@ -592,7 +601,7 @@ namespace RESTable
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            await using var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers);
+            var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers);
             var result = await request.GetResult().ConfigureAwait(false);
             switch (result)
             {
@@ -644,9 +653,8 @@ namespace RESTable
         private async Task SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
-            var result = await GetResult(method, body).ConfigureAwait(false);
+            await using var result = await GetResult(method, body).ConfigureAwait(false);
             await SerializeAndSendResult(result, sw.Elapsed).ConfigureAwait(true);
-            sw.Stop();
         }
 
         private async Task UnsafeOperation(Method method, byte[] body = null)
@@ -659,7 +667,7 @@ namespace RESTable
 
             if (PreviousEntities == null)
             {
-                var result = await GetResult(GET, null).ConfigureAwait(false);
+                await using var result = await GetResult(GET, null).ConfigureAwait(false);
                 if (result is not IEntities)
                 {
                     await SendResult(result).ConfigureAwait(false);
@@ -713,7 +721,7 @@ namespace RESTable
             using (message)
 #endif
             {
-                await result.Serialize(message);
+                await using var serialized = await result.Serialize(message).ConfigureAwait(false);
             }
             switch (result)
             {

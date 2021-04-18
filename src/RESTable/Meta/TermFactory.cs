@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTable.Internal;
 using RESTable.Linq;
 using RESTable.Requests;
 using RESTable.Results;
@@ -37,8 +36,6 @@ namespace RESTable.Meta
             componentSeparator: componentSeparator,
             bindingRule: TermBindingRule.DeclaredWithDynamicFallback
         );
-
-        private readonly NoCaseComparer Comparer = new();
 
         /// <summary>
         /// Create a new term from a given PropertyInfo
@@ -113,7 +110,7 @@ namespace RESTable.Meta
             {
                 if (string.IsNullOrWhiteSpace(str))
                     throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"Invalid condition '{str}'");
-                if (dynDomain?.Contains(str, Comparer) == true)
+                if (dynDomain?.Contains(str, StringComparer.OrdinalIgnoreCase) == true)
                     return DynamicProperty.Parse(str);
 
                 Property make(Type type)

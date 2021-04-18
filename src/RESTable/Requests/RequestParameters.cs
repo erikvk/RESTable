@@ -38,7 +38,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Did the request contain a body?
         /// </summary>
-        public bool HasBody => Body != null && Body.HasContent;
+        public bool HasBody => Body is {HasContent: true};
 
         private Body _body;
 
@@ -151,7 +151,7 @@ namespace RESTable.Requests
             iresource = resource;
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = new URI(resourceSpecifier: resource.Name, viewName: viewName);
-            var protocolController = context.Services.GetService<ProtocolController>();
+            var protocolController = context.Services.GetService<ProtocolProviderManager>();
             ProtocolIdentifier = protocolIdentifier?.ToLower() ?? protocolController.DefaultProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             CachedProtocolProvider = protocolController.ResolveCachedProtocolProvider(protocolIdentifier);
         }

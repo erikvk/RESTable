@@ -8,7 +8,7 @@ namespace RESTable.Internal
     /// <summary>
     /// Encodes an operator, used in conditions
     /// </summary>
-    public struct Operator
+    public readonly struct Operator
     {
         /// <summary>
         /// The code for this operator

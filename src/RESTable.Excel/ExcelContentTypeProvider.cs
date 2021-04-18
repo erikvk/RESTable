@@ -26,7 +26,7 @@ namespace RESTable.Excel
         public override string Name => "Microsoft Excel";
 
         /// <inheritdoc />
-        public override ContentType ContentType { get; } = ExcelMimeType;
+        public override ContentType ContentType => ExcelMimeType;
 
         /// <inheritdoc />
         public override string[] MatchStrings { get; set; } = {ExcelMimeType, RESTableSpecific, Brief};

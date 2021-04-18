@@ -57,7 +57,7 @@ namespace RESTable.Internal
             }
             catch (WebException we)
             {
-                if (!(we.Response is HttpWebResponse response)) return null;
+                if (we.Response is not HttpWebResponse response) return null;
                 var _response = new HttpResponse(trace, response.StatusCode, response.StatusDescription);
                 foreach (var header in response.Headers.AllKeys)
                     _response.Headers[header] = response.Headers[header];

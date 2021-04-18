@@ -9,8 +9,8 @@ namespace RESTable.Starcounter3x
 {
     internal class StarcounterDeclaredResourceProvider : EntityResourceProvider<object>
     {
-        protected override Type AttributeType { get; } = null;
-        protected override IDatabaseIndexer DatabaseIndexer { get; } = null;
+        protected override Type AttributeType => null;
+        protected override IDatabaseIndexer DatabaseIndexer => null;
 
         protected override void Validate() { }
 

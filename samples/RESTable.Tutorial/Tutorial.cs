@@ -113,8 +113,9 @@ namespace RESTable.Tutorial
             var newest = default(Superhero);
             var genderCount = new int[3];
 
-            await using var innerRequest = request.Context.CreateRequest<Superhero>();
-            await foreach (var superhero in await innerRequest.GetResultEntities())
+            var innerRequest = request.Context.CreateRequest<Superhero>();
+            await using var superheroes = await innerRequest.GetResultEntities();
+            await foreach (var superhero in superheroes)
             {
                 if (count == 0)
                     newest = superhero;

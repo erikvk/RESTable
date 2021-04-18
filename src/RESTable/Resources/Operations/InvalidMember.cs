@@ -8,9 +8,15 @@ namespace RESTable.Resources.Operations
         public long? Index { get; }
         public List<InvalidMember> InvalidMembers { get; }
 
-        public InvalidEntity(long? index, List<InvalidMember> invalidMembers)
+        public InvalidEntity(long index, List<InvalidMember> invalidMembers)
         {
             Index = index;
+            InvalidMembers = invalidMembers;
+        }
+
+        public InvalidEntity(List<InvalidMember> invalidMembers)
+        {
+            Index = null;
             InvalidMembers = invalidMembers;
         }
     }

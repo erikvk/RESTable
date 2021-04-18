@@ -69,8 +69,8 @@ namespace FrameworkApp
                 var body = args.ElementAtOrDefault(2);
 
                 // Make request
-                using var request = context.CreateRequest(method, uri, body);
-                var result = request.GetResult().Result;
+                var request = context.CreateRequest(method, uri, body);
+                using var result = request.GetResult().Result;
                 using var serializedResult = result.Serialize().Result;
 
                 // Write output

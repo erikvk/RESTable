@@ -255,14 +255,16 @@ namespace RESTable
         /// </summary>
         public static (string, string) TSplit(this string str, char separator, bool trim = false)
         {
-            var split = str.Split(new[] {separator}, 2);
+            var split = str.Split(new[] {separator}, 2, StringSplitOptions.RemoveEmptyEntries);
             if (!trim)
+            {
                 switch (split.Length)
                 {
                     case 1: return (split[0], null);
                     case 2: return (split[0], split[1]);
                     default: return (null, null);
                 }
+            }
             switch (split.Length)
             {
                 case 1: return (split[0].Trim(), null);
@@ -822,9 +824,9 @@ namespace RESTable
             }
             if (char.IsDigit(first))
             {
-                if (int.TryParse(valueLiteral, out var i))
+                if (int.TryParse(valueLiteral, NumberStyles.Any, CultureInfo.InvariantCulture, out var i))
                     return i;
-                if (decimal.TryParse(valueLiteral, out var d))
+                if (decimal.TryParse(valueLiteral, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
                     return d;
                 if (DateTime.TryParse(valueLiteral, null, AssumeUniversal, out var dateTime))
                     return dateTime.ToUniversalTime();

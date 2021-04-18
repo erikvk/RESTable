@@ -93,9 +93,21 @@ namespace RESTable.Results
         /// <inheritdoc />
         public void ThrowIfError() => throw this;
 
+        /// <inheritdoc />
         public IProtocolHolder ProtocolHolder => Request;
 
+        /// <inheritdoc />
         public IRequest Request { get; set; }
+
+        /// <inheritdoc />
+        public void Dispose() => Request?.Body?.Dispose();
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (Request?.Body is Body body)
+                await body.DisposeAsync();
+        }
 
         private readonly string _logContent = null;
 

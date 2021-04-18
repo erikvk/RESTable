@@ -25,12 +25,11 @@ namespace RESTable
     {
         public TypeCache TypeCache { get; }
         public ResourceCollection ResourceCollection { get; }
-        public EntityTypeResolverController EntityTypeResolverController { get; }
         public ResourceFactory ResourceFactory { get; }
-        public ContentTypeController ContentTypeController { get; }
-        public ProtocolController ProtocolController { get; }
+        public ContentTypeProviderManager ContentTypeProviderManager { get; }
+        public ProtocolProviderManager ProtocolProviderManager { get; }
         public RESTableConfiguration Configuration { get; }
-        public WebSocketController WebSocketController { get; }
+        public WebSocketManager WebSocketManager { get; }
         public Authenticator Authenticator { get; }
         internal RootAccess RootAccess { get; }
 
@@ -38,12 +37,11 @@ namespace RESTable
         (
             TypeCache typeCache,
             ResourceCollection resourceCollection,
-            EntityTypeResolverController entityTypeResolverController,
             ResourceFactory resourceFactory,
-            ContentTypeController contentTypeController,
-            ProtocolController protocolController,
+            ContentTypeProviderManager contentTypeProviderManager,
+            ProtocolProviderManager protocolProviderManager,
             RESTableConfiguration configuration,
-            WebSocketController webSocketController,
+            WebSocketManager webSocketManager,
             IJsonProvider jsonProvider,
             Authenticator authenticator,
             RootAccess rootAccess
@@ -51,12 +49,11 @@ namespace RESTable
         {
             TypeCache = typeCache;
             ResourceCollection = resourceCollection;
-            EntityTypeResolverController = entityTypeResolverController;
             ResourceFactory = resourceFactory;
-            ContentTypeController = contentTypeController;
-            ProtocolController = protocolController;
+            ContentTypeProviderManager = contentTypeProviderManager;
+            ProtocolProviderManager = protocolProviderManager;
             Configuration = configuration;
-            WebSocketController = webSocketController;
+            WebSocketManager = webSocketManager;
             Authenticator = authenticator;
             RootAccess = rootAccess;
             ApplicationServicesAccessor.JsonProvider = jsonProvider;
@@ -91,7 +88,7 @@ namespace RESTable
             UpdateConfiguration();
             ResourceFactory.BindControllers();
             ResourceFactory.FinalCheck();
-            ProtocolController.OnInit();
+            ProtocolProviderManager.OnInit();
         }
 
         private static void ValidateUri(ref string uri)
@@ -259,7 +256,7 @@ namespace RESTable
             {
                 if (Authenticator.ApiKeys.TryGetValue(key, out var accessRights))
                 {
-                    WebSocketController.RevokeAllWithKey(key).Wait();
+                    WebSocketManager.RevokeAllWithKey(key).Wait();
                     accessRights.Clear();
                 }
                 Authenticator.ApiKeys.Remove(key);

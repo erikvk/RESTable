@@ -56,12 +56,12 @@ namespace RESTable.Resources
         /// Does this terminal support text input?
         /// </summary>
         /// <returns></returns>
-        protected virtual bool SupportsTextInput { get; } = false;
+        protected virtual bool SupportsTextInput => false;
 
         /// <summary>
         /// Does this terminal support binary input?
         /// </summary>
         /// <returns></returns>
-        protected virtual bool SupportsBinaryInput { get; } = false;
+        protected virtual bool SupportsBinaryInput => false;
     }
 }

@@ -48,12 +48,12 @@ namespace RESTable.WebSockets
                 await _duringSuspend.DisposeAsync().ConfigureAwait(false);
             _duringSuspend = WebSocket;
             SuspendTaskSource = new TaskCompletionSource<byte>();
-            WebSocket = new WebSocketQueue(_duringSuspend, SuspendTaskSource.Task);
+            WebSocket = new AwaitingWebSocket(_duringSuspend, SuspendTaskSource.Task);
         }
 
         internal void Unsuspend()
         {
-            if (!IsSuspended || !(WebSocket is WebSocketQueue))
+            if (!IsSuspended || WebSocket is not AwaitingWebSocket)
                 return;
             WebSocket = _duringSuspend;
             _duringSuspend = null;

@@ -64,8 +64,8 @@ namespace RESTable
                             }
                             case '/':
                             {
-                                await using var innerRequest = request.Context.CreateRequest(uri: argument);
-                                var result = await innerRequest.GetResult().ConfigureAwait(false);
+                                var innerRequest = request.Context.CreateRequest(uri: argument);
+                                await using var result = await innerRequest.GetResult().ConfigureAwait(false);
                                 switch (result)
                                 {
                                     case IEntities entities:
@@ -214,11 +214,11 @@ namespace RESTable
                 }
                 if (skip) continue;
                 localMapper = string.Format(localMapper, valueBuffer);
-                await using var innerRequest = request.Context.CreateRequest(uri: localMapper);
-                var result = await innerRequest.GetResult().ConfigureAwait(false);
+                var innerRequest = request.Context.CreateRequest(uri: localMapper);
+                await using var result = await innerRequest.GetResult().ConfigureAwait(false);
                 if (result is IEntities<object> entities)
                 {
-                    await foreach (var entity in entities.ConfigureAwait(false)) 
+                    await foreach (var entity in entities)
                         mapped.Add(entity.ToJObject());
                 }
                 else throw new Exception($"Could not get source data from '{localMapper}'. {await result.GetLogMessage().ConfigureAwait(false)}");

@@ -80,7 +80,7 @@ namespace RESTable.Meta.IL
             if (bytes == null)
                 throw new ArgumentException("Can not get the body of the method");
 
-            if (!(method is ConstructorInfo))
+            if (method is not ConstructorInfo)
                 method_arguments = method.GetGenericArguments();
 
             if (method.DeclaringType != null)

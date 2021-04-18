@@ -15,12 +15,11 @@ namespace RESTable.WebSockets
     /// <inheritdoc cref="IWebSocketInternal" />
     /// /// <inheritdoc cref="IDisposable" />
     /// <summary>
-    /// A WebSocket wrapper that puts all void returning operations in a queue for later execution
+    /// A WebSocket wrapper that awaits a wait task before forwarding calls 
     /// </summary>
-    internal class WebSocketQueue : IWebSocket, IWebSocketInternal
+    internal class AwaitingWebSocket : IWebSocket, IWebSocketInternal
     {
-        internal IWebSocketInternal WebSocket { get; }
-
+        private IWebSocketInternal WebSocket { get; }
         private Task WaitTask { get; }
 
         public RESTableContext Context { get; }
@@ -30,20 +29,20 @@ namespace RESTable.WebSockets
         public CancellationToken CancellationToken => WebSocket.CancellationToken;
 
         /// <inheritdoc />
-        public async Task SetStatus(WebSocketStatus status)
+        public async void SetStatus(WebSocketStatus status)
         {
             await WaitTask.ConfigureAwait(false);
-            await WebSocket.SetStatus(status);
+            WebSocket.SetStatus(status);
         }
 
-        public WebSocketQueue(IWebSocketInternal webSocket, Task waitTask)
+        public AwaitingWebSocket(IWebSocketInternal webSocket, Task waitTask)
         {
             WaitTask = waitTask;
             WebSocket = webSocket;
             Context = webSocket.Context;
         }
 
-        public async Task SendTextRaw(string text)
+        async Task IWebSocketInternal.SendTextRaw(string text)
         {
             await WaitTask.ConfigureAwait(false);
             await WebSocket.SendTextRaw(text).ConfigureAwait(false);
@@ -97,8 +96,7 @@ namespace RESTable.WebSockets
             await WebSocket.SendException(exception).ConfigureAwait(false);
         }
 
-        public async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false,
-            bool d = true)
+        public async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false, bool d = true)
         {
             await WaitTask.ConfigureAwait(false);
             await WebSocket.SendSerializedResult(serializedResult, t, w, d).ConfigureAwait(false);
@@ -110,8 +108,7 @@ namespace RESTable.WebSockets
             await WebSocket.SendResult(r, t, w).ConfigureAwait(false);
         }
 
-        public async Task StreamSerializedResult(ISerializedResult r, int m, TimeSpan? t = null, bool w = false,
-            bool d = true)
+        public async Task StreamSerializedResult(ISerializedResult r, int m, TimeSpan? t = null, bool w = false, bool d = true)
         {
             await WaitTask.ConfigureAwait(false);
             await WebSocket.StreamSerializedResult(r, m, t, w, d).ConfigureAwait(false);

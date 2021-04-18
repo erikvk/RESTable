@@ -12,7 +12,7 @@ namespace RESTable.Internal
         public ContentType? ContentType { get; }
         public Stream Body { get; }
         public Headers Headers { get; }
-        internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
+        internal bool IsSuccessStatusCode => StatusCode is >= (HttpStatusCode) 200 and < (HttpStatusCode) 300;
         public RESTableContext Context { get; }
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes) {Headers.Info}";
 

@@ -29,10 +29,15 @@ namespace RESTable.Results
             Body = result.ProtocolHolder != null ? Body.CreateOutputBody(result.ProtocolHolder, customOutputStream) : null;
         }
 
-        public void Dispose() => Body?.Dispose();
+        public void Dispose()
+        {
+            Result.Dispose();
+            Body?.Dispose();
+        }
 
         public async ValueTask DisposeAsync()
         {
+            await Result.DisposeAsync();
             if (Body == null) return;
             await Body.DisposeAsync().ConfigureAwait(false);
         }

@@ -7,18 +7,18 @@ using RESTable.Linq;
 
 namespace RESTable.Internal
 {
-    public class ContentTypeController
+    public class ContentTypeProviderManager
     {
         internal IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; }
         internal IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; }
 
-        public ContentTypeController(IEnumerable<IContentTypeProvider> contentTypeProviders)
+        public ContentTypeProviderManager(IEnumerable<IContentTypeProvider> contentTypeProviders)
         {
             InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
 
             var contentTypeProvidersList = contentTypeProviders.ToList();
-            
+
             foreach (var provider in contentTypeProvidersList)
             {
                 ValidateContentTypeProvider(provider);
@@ -26,7 +26,7 @@ namespace RESTable.Internal
                     provider.MatchStrings?.ForEach(mimeType => InputContentTypeProviders[mimeType] = provider);
                 if (provider.CanWrite)
                     provider.MatchStrings?.ForEach(mimeType => OutputContentTypeProviders[mimeType] = provider);
-            }            
+            }
         }
 
         private void ValidateContentTypeProvider(IContentTypeProvider provider)
@@ -34,7 +34,8 @@ namespace RESTable.Internal
             if (provider == null)
                 throw new InvalidContentTypeProviderException("External content type provider cannot be null");
             if (!provider.CanRead && !provider.CanWrite)
-                throw new InvalidContentTypeProviderException($"Provider '{provider.GetType().GetRESTableTypeName()}' cannot read or write");
+                throw new InvalidContentTypeProviderException($"Content type provider '{provider.GetType().GetRESTableTypeName()}' can't read nor write. A content type provider " +
+                                                              "must be able to either read or write.");
         }
     }
 }

@@ -89,13 +89,13 @@ namespace RESTable
                         else return stringValue;
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
-                        await using var internalRequest = request.Context.CreateRequest
+                        var internalRequest = request.Context.CreateRequest
                         (
                             method: method,
                             uri: uri,
                             headers: request.Headers
                         );
-                        var result = await internalRequest.GetResult().ConfigureAwait(false);
+                        await using var result = await internalRequest.GetResult().ConfigureAwait(false);
                         switch (result)
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");

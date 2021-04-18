@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Resources.Operations;
@@ -178,21 +177,25 @@ namespace RESTable.Requests
         public static List<Condition<T>> Parse(IReadOnlyCollection<IUriCondition> uriConditions, ITarget<T> target, TermFactory termFactory, ConditionCache<T> cache)
         {
             var list = new List<Condition<T>>(uriConditions.Count);
-            list.AddRange(uriConditions.Select(c =>
+            foreach (var uriCondition in uriConditions)
             {
-                if (cache.TryGetValue(c, out var cond))
-                    return cond;
-                var term = termFactory.MakeConditionTerm(target, c.Key);
+                if (cache.TryGetValue(uriCondition, out var condition))
+                {
+                    list.Add(condition);
+                    continue;
+                }
+                var term = termFactory.MakeConditionTerm(target, uriCondition.Key);
                 var last = term.Last;
-                if (!last.AllowedConditionOperators.HasFlag(c.Operator))
-                    throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
-                return cache[c] = new Condition<T>
+                if (!last.AllowedConditionOperators.HasFlag(uriCondition.Operator))
+                    throw new BadConditionOperator(uriCondition.Key, target, uriCondition.Operator, term, last.AllowedConditionOperators.ToOperators());
+                condition = cache[uriCondition] = new Condition<T>
                 (
                     term: term,
-                    op: c.Operator,
-                    value: c.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
+                    op: uriCondition.Operator,
+                    value: uriCondition.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
                 );
-            }));
+                list.Add(condition);
+            }
             return list;
         }
     }

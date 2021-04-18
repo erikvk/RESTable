@@ -37,10 +37,10 @@ namespace RESTable.OData
         public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings => ExternalContentTypeProviderSettings.DontAllow;
 
         /// <inheritdoc />
-        public string ProtocolName { get; } = "OData v4.0";
+        public string ProtocolName => "OData v4.0";
 
         /// <inheritdoc />
-        public string ProtocolIdentifier { get; } = "OData";
+        public string ProtocolIdentifier => "OData";
 
         /// <inheritdoc />
         public string MakeRelativeUri(IUriComponents components)

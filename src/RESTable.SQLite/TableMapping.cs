@@ -211,14 +211,14 @@ namespace RESTable.SQLite
                         "COMMIT;PRAGMA foreign_keys=on;";
             var rootClient = request.GetService<RootClient>();
             var rootContext = new RESTableContext(rootClient, request);
-            await using var indexRequest = rootContext
+            var indexRequest = rootContext
                 .CreateRequest<DatabaseIndex>()
                 .WithCondition(
                     key: nameof(DatabaseIndex.ResourceName),
                     op: Operators.EQUALS,
                     value: Resource.Name
                 );
-            var entities = await indexRequest.GetResultEntities().ConfigureAwait(false);
+            await using var entities = await indexRequest.GetResultEntities().ConfigureAwait(false);
             var tableIndexesToKeep = await entities
                 .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
                 .ToListAsync()
@@ -226,7 +226,7 @@ namespace RESTable.SQLite
             await Database.QueryAsync(query).ConfigureAwait(false);
             indexRequest.Method = Method.POST;
             indexRequest.Selector = () => tableIndexesToKeep.ToAsyncEnumerable();
-            var result = await indexRequest.GetResult().ConfigureAwait(false);
+            await using var result = await indexRequest.GetResult().ConfigureAwait(false);
             result.ThrowIfError();
             await Update().ConfigureAwait(false);
         }

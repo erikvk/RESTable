@@ -42,6 +42,7 @@ namespace RESTable
         InvalidDestination = 022,
 
         UnknownProtocol = 030,
+        MissingConstructorParameter = 031,
 
         // - - - - - - - - - 
         // 100-199: Resource errors
