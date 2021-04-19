@@ -6,7 +6,6 @@ using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using RESTable.Linq;
 using static RESTable.Method;
 
 #pragma warning disable 1591
@@ -14,7 +13,7 @@ using static RESTable.Method;
 namespace RESTable.Admin
 {
     /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
-    /// <inheritdoc cref="IAsyncDeleter{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
     /// <summary>
     /// The TermCache resource contains all the terms that RESTable has encountered 
     /// for a given resource type, for example in conditions.
@@ -25,22 +24,31 @@ namespace RESTable.Admin
         private const string description = "The TermCache resource contains all the terms that RESTable " +
                                            "has encountered for a given resource, for example in conditions.";
 
-        public string Type { get; set; }
-        public string[] Terms { get; set; }
+        public string Type { get; }
+        public string[] Terms { get; }
+
+        public TermCache(string type, string[] terms)
+        {
+            Type = type;
+            Terms = terms;
+        }
 
         public IEnumerable<TermCache> Select(IRequest<TermCache> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var termCache = request.GetService<Requests.TermCache>();
-            var resourceCollection = request.GetService<ResourceCollection>();
-            return resourceCollection.Select(r => new TermCache
+            var resources = request.GetService<ResourceCollection>();
+            foreach (var resource in resources)
             {
-                Type = r.Type.GetRESTableTypeName(),
-                Terms = termCache
-                    .Where(pair => pair.Key.Type == r.Type.GetRESTableTypeName())
-                    .Select(pair => pair.Value.Key)
-                    .ToArray()
-            });
+                yield return new TermCache
+                (
+                    type: resource.Type.GetRESTableTypeName(),
+                    terms: termCache
+                        .Where(pair => pair.Key.Type == resource.Type.GetRESTableTypeName())
+                        .Select(pair => pair.Value.Key)
+                        .ToArray()
+                );
+            }
         }
 
         public int Delete(IRequest<TermCache> request)
@@ -48,14 +56,16 @@ namespace RESTable.Admin
             if (request == null) throw new ArgumentNullException(nameof(request));
             var termCache = request.GetService<Requests.TermCache>();
             var count = 0;
-            request.GetInputEntities().ForEach(e =>
+            foreach (var entity in request.GetInputEntities())
             {
-                termCache
-                    .Where(pair => pair.Key.Type == e.Type)
-                    .Select(pair => pair.Key).ToList()
-                    .ForEach(key => termCache.Remove(key));
+                var keys = termCache
+                    .Where(pair => pair.Key.Type == entity.Type)
+                    .Select(pair => pair.Key)
+                    .ToList();
+                foreach (var key in keys)
+                    termCache.Remove(key);
                 count += 1;
-            });
+            }
             return count;
         }
     }

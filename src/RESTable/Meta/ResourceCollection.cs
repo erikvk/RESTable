@@ -80,7 +80,8 @@ namespace RESTable.Meta
         private void ReloadResourceFinder()
         {
             ResourceFinder.Clear();
-            AllResources.ForEach(AddToResourceFinder);
+            foreach (var resource in AllResources)
+                AddToResourceFinder(resource);
         }
 
         private void AddToResourceFinder(IResource toAdd)
@@ -98,13 +99,14 @@ namespace RESTable.Meta
             }
 
             var parts = makeResourceParts(toAdd);
-            parts.ForEach((_, index) =>
+
+            for (var i = 0; i < parts.Length; i += 1)
             {
-                var key = string.Join(".", parts.Skip(index));
+                var key = string.Join(".", parts.Skip(i));
                 if (ResourceFinder.ContainsKey(key))
                     ResourceFinder[key] = null;
                 else ResourceFinder[key] = toAdd;
-            });
+            }
         }
 
         #region Get API

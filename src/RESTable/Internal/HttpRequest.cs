@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using RESTable.Requests;
-using RESTable.Linq;
 
 namespace RESTable.Internal
 {
@@ -33,8 +32,8 @@ namespace RESTable.Internal
                 var request = (HttpWebRequest) WebRequest.Create(uri);
                 request.AllowAutoRedirect = false;
                 request.Method = method;
-                headers.Where(pair => pair.Key != "Content-Type" && pair.Key != "Accept")
-                    .ForEach(pair => request.Headers[pair.Key] = pair.Value);
+                foreach (var (key, value) in headers.Where(pair => pair.Key != "Content-Type" && pair.Key != "Accept"))
+                    request.Headers[key] = value;
                 if (headers.ContentType != null) request.ContentType = headers.ContentType.ToString();
                 if (headers.Accept != null) request.Accept = headers.Accept.ToString();
                 if (writeBody != null)

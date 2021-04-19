@@ -11,7 +11,6 @@ using RESTable.Internal;
 using RESTable.Internal.Auth;
 using RESTable.Meta.Internal;
 using RESTable.WebSockets;
-using RESTable.Linq;
 using RESTable.Meta;
 using static RESTable.Method;
 
@@ -156,7 +155,8 @@ namespace RESTable
                     Authenticator.AllowedOrigins.Add(new Uri(value));
                     break;
                 case JTokenType.Array:
-                    originToken.ForEach(ReadOrigins);
+                    foreach (var name in originToken)
+                        ReadOrigins(name);
                     break;
                 default: throw new ArgumentOutOfRangeException();
             }
@@ -236,7 +236,8 @@ namespace RESTable
                         if (Authenticator.ApiKeys.TryGetValue(key, out var existing))
                         {
                             existing.Clear();
-                            accessRights.ForEach(pair => existing[pair.Key] = pair.Value);
+                            foreach (var (resource, value) in accessRights)
+                                existing[resource] = value;
                         }
                         else Authenticator.ApiKeys[key] = accessRights;
                         yield return key;
@@ -252,7 +253,7 @@ namespace RESTable
             }
 
             var currentKeys = recurseApiKeys(apiKeyToken).ToList();
-            Authenticator.ApiKeys.Keys.Except(currentKeys).ToList().ForEach(key =>
+            foreach (var key in Authenticator.ApiKeys.Keys.Except(currentKeys).ToList())
             {
                 if (Authenticator.ApiKeys.TryGetValue(key, out var accessRights))
                 {
@@ -260,7 +261,7 @@ namespace RESTable
                     accessRights.Clear();
                 }
                 Authenticator.ApiKeys.Remove(key);
-            });
+            }
         }
     }
 }

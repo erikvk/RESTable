@@ -14,7 +14,6 @@ using RESTable.Meta.Internal;
 using RESTable.Resources.Operations;
 using RESTable.Results;
 using RESTable.Internal.Auth;
-using RESTable.Linq;
 using static RESTable.ErrorCodes;
 using static RESTable.Method;
 using Error = RESTable.Results.Error;
@@ -169,7 +168,7 @@ namespace RESTable.Requests
             {
                 Body = await sourceDelegate(Body).ConfigureAwait(false);
                 await Body.Initialize(cancellationToken).ConfigureAwait(false);
-                result = await RunEvaluation(cancellationToken).ConfigureAwait(false);
+                result = await EvaluateAndGetResult(cancellationToken).ConfigureAwait(false);
             }
 
             if (IsWebSocketUpgrade && result is not WebSocketUpgradeSuccessful)
@@ -204,7 +203,7 @@ namespace RESTable.Requests
             return result;
         }
 
-        private async Task<IResult> RunEvaluation(CancellationToken cancellationToken)
+        private async Task<IResult> EvaluateAndGetResult(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
@@ -215,6 +214,7 @@ namespace RESTable.Requests
                 switch (Resource)
                 {
                     case ITerminalResource<T> terminalResource:
+                    {
                         if (!Context.HasWebSocket)
                             throw new UpgradeRequired(terminalResource.Name);
                         if (IsWebSocketUpgrade)
@@ -227,15 +227,19 @@ namespace RESTable.Requests
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
                         return await SwitchTerminal(terminalResource).ConfigureAwait(false);
+                    }
 
                     case IBinaryResource<T> binary:
+                    {
                         var binaryResult = binary.SelectBinary(this);
                         if (!this.Accepts(binaryResult.ContentType, out var acceptHeader))
                             throw new NotAcceptable(acceptHeader, binaryResult.ContentType.ToString());
                         var binaryContent = new Binary(this, binaryResult);
                         return binaryContent;
+                    }
 
                     case IEntityResource<T> entity:
+                    {
                         if (entity.RequiresAuthentication)
                         {
                             var authenticator = this.GetService<Authenticator>();
@@ -248,20 +252,23 @@ namespace RESTable.Requests
                         }
                         var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
                         var result = await evaluator(this).ConfigureAwait(false);
-                        ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
+                        foreach (var (key, value) in ResponseHeaders)
+                            result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
                         if (Configuration.AllowAllOrigins)
                             result.Headers.AccessControlAllowOrigin = "*";
                         else if (Headers.Origin is string origin)
                             result.Headers.AccessControlAllowOrigin = origin;
                         return result;
-
+                    }
+                    
                     case var other: throw new UnknownResource(other.Name);
                 }
             }
             catch (Exception exception)
             {
                 var result = exception.AsResultOf(this);
-                ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
+                foreach (var (key, value) in ResponseHeaders)
+                    result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
                 return result;
             }
             finally

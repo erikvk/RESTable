@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RESTable.Resources.Operations;
-using RESTable.Linq;
 
 namespace RESTable.Meta.Internal
 {
@@ -20,13 +19,14 @@ namespace RESTable.Meta.Internal
             ResourceCollection = resourceCollection;
         }
 
-        internal void RegisterBinaryTypes(IEnumerable<Type> binaryTypes) => binaryTypes
-            .OrderBy(t => t.GetRESTableTypeName())
-            .ForEach(type =>
+        internal void RegisterBinaryTypes(IEnumerable<Type> binaryTypes)
+        {
+            foreach (var type in binaryTypes.OrderBy(t => t.GetRESTableTypeName()))
             {
                 var resource = (IResource) BuildBinaryMethod.MakeGenericMethod(type).Invoke(this, null);
                 ResourceCollection.AddResource(resource);
-            });
+            }
+        }
 
 
         private IResource MakeBinaryResource<T>() where T : class, Resources.IBinary<T>

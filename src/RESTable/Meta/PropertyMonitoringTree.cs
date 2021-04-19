@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using RESTable.Meta.Internal;
-using RESTable.Linq;
 
 namespace RESTable.Meta
 {
@@ -78,9 +77,17 @@ namespace RESTable.Meta
         /// <summary>
         /// Makes all links active and registers all event listeners
         /// </summary>
-        public void Activate() => AllLinks.ForEach(link => link.Activate());
+        public void Activate()
+        {
+            foreach (var link in AllLinks)
+                link.Activate();
+        }
 
         /// <inheritdoc />
-        public void Dispose() => AllLinks.ForEach(link => link.Dispose());
+        public void Dispose()
+        {
+            foreach (var link in AllLinks)
+                link.Dispose();
+        }
     }
 }

@@ -1,5 +1,4 @@
-﻿using RESTable.Linq;
-using RESTable.Meta;
+﻿using RESTable.Meta;
 
 namespace RESTable.Internal.Auth
 {
@@ -19,7 +18,8 @@ namespace RESTable.Internal.Auth
         internal void Load()
         {
             Clear();
-            ResourceCollection.ForEach(r => this[r] = EnumMember<Method>.Values);
+            foreach (var resource in ResourceCollection)
+                this[resource] = EnumMember<Method>.Values;
         }
     }
 }

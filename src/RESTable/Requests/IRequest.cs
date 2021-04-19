@@ -70,8 +70,7 @@ namespace RESTable.Requests
 
         /// <summary>
         /// Evaluates the request asynchronously and returns the result as an entity collection. Only valid for GET requests.
-        /// If an error is encountered while evaluating the request, an exception is thrown. Equivalent to GetResult().ToEntities&lt;T&gt;()
-        /// but shorter and with one less generic type parameter.
+        /// If an error is encountered while evaluating the request, an exception is thrown.
         /// </summary>
         Task<IEntities<T>> GetResultEntities();
 
@@ -96,7 +95,7 @@ namespace RESTable.Requests
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTable
     /// </summary>
-    public interface IRequest : IServiceProvider, IProtocolHolder, IHeaderHolder, ITraceable, ILogable
+    public interface IRequest : IServiceProvider, IProtocolHolder, IHeaderHolder, ITraceable, ILogable, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// The method of the request

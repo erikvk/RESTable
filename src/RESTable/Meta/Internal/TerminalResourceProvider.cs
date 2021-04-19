@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RESTable.Resources;
-using RESTable.Linq;
 
 namespace RESTable.Meta.Internal
 {
@@ -26,11 +25,11 @@ namespace RESTable.Meta.Internal
 
         public void RegisterTerminalTypes(List<Type> terminalTypes)
         {
-            terminalTypes.OrderBy(t => t.GetRESTableTypeName()).ForEach(type =>
+            foreach (var type in terminalTypes.OrderBy(t => t.GetRESTableTypeName()))
             {
                 var resource = (IResource) BuildTerminalMethod.MakeGenericMethod(type).Invoke(this, null);
                 ResourceCollection.AddResource(resource);
-            });
+            }
             Shell.TerminalResource = ResourceCollection.GetTerminalResource<Shell>();
         }
 

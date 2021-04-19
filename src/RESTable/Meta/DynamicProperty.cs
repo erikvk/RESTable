@@ -35,7 +35,7 @@ namespace RESTable.Meta
 
         internal void SetName(string name) => Name = name;
 
-        private DynamicProperty(string name, bool declaredFallback)
+        private DynamicProperty(string name, bool declaredFallback) : base(null)
         {
             Name = ActualName = name;
             DeclaredFallback = declaredFallback;
@@ -48,7 +48,7 @@ namespace RESTable.Meta
                 string actualKey = null;
                 string capitalized;
 
-                dynamic getFromStatic()
+                object getFromStatic()
                 {
                     var type = obj.GetType();
                     value = Do.Try(() =>
@@ -74,7 +74,7 @@ namespace RESTable.Meta
                         if (jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is not JProperty property)
                             return DeclaredFallback ? getFromStatic() : null;
                         Name = property.Name;
-                        return property.Value.ToObject<dynamic>();
+                        return property.Value.ToObject<object>();
                     case IDictionary<string, object> dict:
                         capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
@@ -99,7 +99,7 @@ namespace RESTable.Meta
                     case IDynamicMemberValueProvider dm:
                         dm.TrySetValue(Name, value);
                         break;
-                    case IDictionary<string, dynamic> ddict:
+                    case IDictionary<string, object> ddict:
                         ddict[Name] = value;
                         break;
                     case IDictionary idict:

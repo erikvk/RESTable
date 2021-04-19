@@ -463,21 +463,18 @@ namespace RESTable
 
                             #region Nonsense
 
-                            case "HELLO" when tail.EqualsNoCase("world"):
+                            case "HELLO" when tail.EqualsNoCase(", world!"):
 
-                                string getHelloWorld()
+                                string getHelloWorld() => new Random().Next(0, 7) switch
                                 {
-                                    switch (new Random().Next(0, 7))
-                                    {
-                                        case 0: return "The world says: 'hi!'";
-                                        case 1: return "The world says: 'what's up?'";
-                                        case 2: return "The world says: 'greetings!'";
-                                        case 3: return "The world is currently busy";
-                                        case 4: return "The world cannot answer right now";
-                                        case 5: return "The world is currently out on lunch";
-                                        default: return "The world says: 'why do people keep saying that?'";
-                                    }
-                                }
+                                    0 => "The world says: 'hi!'",
+                                    1 => "The world says: 'what's up?'",
+                                    2 => "The world says: 'greetings!'",
+                                    3 => "The world is currently busy",
+                                    4 => "The world cannot answer right now",
+                                    5 => "The world is currently out on lunch",
+                                    _ => "The world says: 'why do people keep saying that?'"
+                                };
 
                                 await WebSocket.SendText(getHelloWorld()).ConfigureAwait(false);
                                 break;
@@ -485,22 +482,19 @@ namespace RESTable
                             case "HI":
                             case "HELLO":
 
-                                string getGreeting()
+                                string getGreeting() => new Random().Next(0, 10) switch
                                 {
-                                    switch (new Random().Next(0, 10))
-                                    {
-                                        case 0: return "Well, hello there :D";
-                                        case 1: return "Greetings, friend";
-                                        case 2: return "Hello, dear client";
-                                        case 3: return "Hello to you";
-                                        case 4: return "Hi!";
-                                        case 5: return "Nice to see you!";
-                                        case 6: return "What's up?";
-                                        case 7: return "✌️";
-                                        case 8: return "'sup";
-                                        default: return "Oh no, it's you again...";
-                                    }
-                                }
+                                    0 => "Well, hello there :D",
+                                    1 => "Greetings, friend",
+                                    2 => "Hello, dear client",
+                                    3 => "Hello to you",
+                                    4 => "Hi!",
+                                    5 => "Nice to see you!",
+                                    6 => "What's up?",
+                                    7 => "✌️",
+                                    8 => "'sup",
+                                    _ => "Oh no, it's you again..."
+                                };
 
                                 await WebSocket.SendText(getGreeting()).ConfigureAwait(false);
                                 break;
@@ -508,19 +502,16 @@ namespace RESTable
                             case "THANKS":
                             case "THANK":
 
-                                string getYoureWelcome()
+                                string getYoureWelcome() => new Random().Next(0, 7) switch
                                 {
-                                    switch (new Random().Next(0, 7))
-                                    {
-                                        case 0: return "😎";
-                                        case 1: return "👍";
-                                        case 2: return "🙌";
-                                        case 3: return "🎉";
-                                        case 4: return "🤘";
-                                        case 5: return "You're welcome!";
-                                        default: return "✌️";
-                                    }
-                                }
+                                    0 => "😎",
+                                    1 => "👍",
+                                    2 => "🙌",
+                                    3 => "🎉",
+                                    4 => "🤘",
+                                    5 => "You're welcome!",
+                                    _ => "✌️"
+                                };
 
                                 await WebSocket.SendText(getYoureWelcome()).ConfigureAwait(false);
                                 break;

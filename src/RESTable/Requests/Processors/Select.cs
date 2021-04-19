@@ -20,12 +20,13 @@ namespace RESTable.Requests.Processors
         {
             var jobj = new JObject();
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-            ForEach(term =>
+            var serializer = jsonProvider.GetSerializer();
+            foreach (var term in this)
             {
-                if (jobj[term.Key] != null) return;
-                object val = term.GetValue(entity, out var actualKey);
-                jobj[actualKey] = val == null ? null : JToken.FromObject(val, jsonProvider.GetSerializer());
-            });
+                if (jobj[term.Key] != null) continue;
+                var termValue = term.GetValue(entity, out var actualKey);
+                jobj[actualKey] = termValue == null ? null : JToken.FromObject(termValue, serializer);
+            }
             return jobj;
         }
 

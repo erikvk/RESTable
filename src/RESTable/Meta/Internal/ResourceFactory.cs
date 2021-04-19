@@ -194,10 +194,12 @@ namespace RESTable.Meta.Internal
             ValidateViewTypes(viewTypes);
         }
 
-        private void ValidateInnerResources() => ResourceCollection
-            .GroupBy(r => r.ParentResourceName)
-            .Where(group => group.Key != null)
-            .ForEach(group =>
+        private void ValidateInnerResources()
+        {
+            var resourceGroups = ResourceCollection
+                .GroupBy(r => r.ParentResourceName)
+                .Where(group => group.Key != null);
+            foreach (var group in resourceGroups)
             {
                 var parentResource = (IResourceInternal) ResourceCollection.SafeGetResource(group.Key);
                 if (parentResource == null)
@@ -206,7 +208,8 @@ namespace RESTable.Meta.Internal
                         $"within the scope of another class '{group.Key}', that is not a RESTable resource. Inner " +
                         "resources must be declared within a resource class.");
                 parentResource.InnerResources = group.ToList();
-            });
+            }
+        }
 
         internal void BindControllers()
         {

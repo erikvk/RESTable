@@ -14,14 +14,11 @@ namespace RESTable.Json
         public RESTableMacroWrapperProvider(PropertyInfo property) => Property = property;
         public void SetValue(object target, object value) { }
 
-        public object GetValue(object target)
+        public object GetValue(object target) => Property.GetValue(target) switch
         {
-            switch (Property.GetValue(target))
-            {
-                case DateTime dateTime: return $"@RESTable(\"{dateTime:O}\")";
-                case string @string: return $"@RESTable(\"{@string}\")";
-                case var other: return $"@RESTable({other})";
-            }
-        }
+            DateTime dateTime => $"@RESTable(\"{dateTime:O}\")",
+            string @string => $"@RESTable(\"{@string}\")",
+            var other => $"@RESTable({other})"
+        };
     }
 }

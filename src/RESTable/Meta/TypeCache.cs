@@ -224,7 +224,7 @@ namespace RESTable.Meta
                     type = underlying;
                 var resource = ResourceCollection.SafeGetResource(type);
                 throw new UnknownProperty(type, resource, key);
-            }
+            }   
             return prop;
         }
 

@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal.Auth;
 using RESTable.Requests;
 using RESTable.Results;
-using RESTable.Linq;
 
 namespace RESTable.AspNetCore
 {
@@ -111,8 +110,10 @@ namespace RESTable.AspNetCore
         private static void WriteResponse(HttpContext context, IResult result)
         {
             context.Response.StatusCode = (ushort) result.StatusCode;
-            result.Headers.ForEach(header => context.Response.Headers[header.Key] = header.Value);
-            result.Cookies.ForEach(cookie => context.Response.Headers["Set-Cookie"] = cookie.ToString());
+            foreach (var (key, value) in result.Headers)
+                context.Response.Headers[key] = value;
+            foreach (var cookie in result.Cookies)
+                context.Response.Headers["Set-Cookie"] = cookie.ToString();
             if (result.Headers.ContentType.HasValue)
                 context.Response.ContentType = result.Headers.ContentType.ToString();
         }

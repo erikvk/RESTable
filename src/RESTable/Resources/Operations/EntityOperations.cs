@@ -241,7 +241,7 @@ namespace RESTable.Resources.Operations
                     case null:
                     case 0:
                         return new InsertedEntities(request, await Insert(request).ConfigureAwait(false));
-                    case 1 when request.GetUpdater() == null && !request.Body.HasContent:
+                    case 1 when request.GetUpdater() == null && !request.Body.CanRead:
                         return new UpdatedEntities(request, 0);
                     default:
                         request.Selector = () => source.ToAsyncEnumerable();
@@ -320,7 +320,6 @@ namespace RESTable.Resources.Operations
             try
             {
                 var body = request.Body;
-                if (!body.HasContent) return (toInsert, toUpdate);
                 var conditions = request.MetaConditions.SafePost
                     .Split(',')
                     .Select(key =>
@@ -331,7 +330,8 @@ namespace RESTable.Resources.Operations
                     .ToList();
                 await foreach (var entity in body.Deserialize<JObject>().ConfigureAwait(false))
                 {
-                    conditions.ForEach(cond => cond.Value = entity.SafeSelect(cond.Term.GetValue));
+                    foreach (var cond in conditions)
+                        cond.Value = entity.SafeSelect(cond.Term.GetValue);
                     innerRequest.Conditions = conditions;
                     var result = await innerRequest.GetResultEntities().ConfigureAwait(false);
                     var resultList = await result.ToListAsync().ConfigureAwait(false);

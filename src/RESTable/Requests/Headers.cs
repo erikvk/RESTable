@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Primitives;
-using RESTable.Linq;
 
 namespace RESTable.Requests
 {
@@ -149,8 +148,19 @@ namespace RESTable.Requests
         public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         /// <inheritdoc />
-        public Headers(Dictionary<string, string> dictToUse) : this() => dictToUse?.ForEach(pair => this[pair.Key] = pair.Value);
-        public Headers(IDictionary<string, StringValues> dictToUse) : this() => dictToUse?.ForEach(pair => this[pair.Key] = pair.Value);
+        public Headers(Dictionary<string, string> dictToUse) : this()
+        {
+            if (dictToUse == null) return;
+            foreach (var (key, value) in dictToUse)
+                this[key] = value;
+        }
+
+        public Headers(IDictionary<string, StringValues> dictToUse) : this()
+        {
+            if (dictToUse == null) return;
+            foreach (var (key, value) in dictToUse)
+                this[key] = value;
+        }
 
         /// <inheritdoc />
         internal Headers(IHeadersInternal other) : this()
@@ -161,7 +171,8 @@ namespace RESTable.Requests
             Destination = other.Destination;
             Authorization = other.Authorization;
             Origin = other.Origin;
-            other.GetCustomHeaders().ForEach(pair => SetCustomHeader(pair.Key, pair.Value));
+            foreach (var (key, value) in other.GetCustomHeaders())
+                SetCustomHeader(key, value);
         }
 
         #region IHeadersInternal

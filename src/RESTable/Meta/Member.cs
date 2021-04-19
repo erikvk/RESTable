@@ -16,6 +16,11 @@ namespace RESTable.Meta
         public string Name { get; internal set; }
 
         /// <summary>
+        /// The type that owns this member
+        /// </summary>
+        public Type Owner { get; }
+        
+        /// <summary>
         /// The name of the property, as defined in the type declaration
         /// </summary>
         public string ActualName { get; internal set; }
@@ -63,8 +68,9 @@ namespace RESTable.Meta
         /// <inheritdoc />
         public override string ToString() => Name;
 
-        protected Member()
+        protected Member(Type owner)
         {
+            Owner = owner;
             Flags = new HashSet<string>();
         }
     }

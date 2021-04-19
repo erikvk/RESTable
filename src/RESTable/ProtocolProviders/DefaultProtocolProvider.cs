@@ -43,20 +43,26 @@ namespace RESTable.ProtocolProviders
 
             switch (conditions)
             {
-                case var _ when conditions.Length == 0:
-                case var _ when conditions == "_": break;
+                case string {Length: 0}:
+                case "_": break;
                 default:
-                    ParseUriConditions(conditions, true).ForEach(uri.Conditions.Add);
+                {
+                    foreach (var uriCondition in ParseUriConditions(conditions, true))
+                        uri.Conditions.Add(uriCondition);
                     break;
+                }
             }
 
             switch (metaConditions)
             {
-                case var _ when metaConditions.Length == 0:
-                case var _ when metaConditions == "_": break;
+                case string {Length: 0}:
+                case "_": break;
                 default:
-                    ParseUriConditions(metaConditions, true).ForEach(uri.MetaConditions.Add);
+                {
+                    foreach (var uriCondition in ParseUriConditions(metaConditions, true))
+                        uri.MetaConditions.Add(uriCondition);
                     break;
+                }
             }
 
             if (view.Length != 0)
@@ -252,6 +258,13 @@ namespace RESTable.ProtocolProviders
                 await jwr.WriteValueAsync(error.Message, cancellationToken).ConfigureAwait(false);
                 await jwr.WritePropertyNameAsync("MoreInfoAt", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteValueAsync(error.Headers.Error, cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("TimeStamp", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(DateTime.UtcNow.ToString("O"), cancellationToken).ConfigureAwait(false);
+                if (error.Request?.UriComponents is IUriComponents uriComponents)
+                {
+                    await jwr.WritePropertyNameAsync("Uri", cancellationToken).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(ToUriString(uriComponents), cancellationToken).ConfigureAwait(false);
+                }
                 await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteValueAsync(error.TimeElapsed.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
                 await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);

@@ -9,7 +9,7 @@ namespace RESTable.Requests
     /// <summary>
     /// Describes the syntactic components of a RESTable uri condition
     /// </summary>
-    public struct UriCondition : IUriCondition
+    public readonly struct UriCondition : IUriCondition
     {
         /// <inheritdoc />
         public string Key { get; }

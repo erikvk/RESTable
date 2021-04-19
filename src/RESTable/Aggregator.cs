@@ -96,15 +96,13 @@ namespace RESTable
                             headers: request.Headers
                         );
                         await using var result = await internalRequest.GetResult().ConfigureAwait(false);
-                        switch (result)
+                        return result switch
                         {
-                            case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
-                            case Report report: return report.Count;
-                            case IEntities entities: return entities;
-                            case var other:
-                                throw new Exception($"Unexpected result from {method.ToString()} request inside " +
-                                                    $"Aggregator: {other.GetLogMessage().Result}");
-                        }
+                            Error error => throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}"),
+                            Report report => report.Count,
+                            IEntities entities => entities,
+                            var other => throw new Exception($"Unexpected result from {method.ToString()} request inside " + $"Aggregator: {other.GetLogMessage().Result}")
+                        };
                     }
                     case var other: return other;
                 }

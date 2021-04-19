@@ -21,20 +21,17 @@ namespace RESTable.Requests
 
         public static bool IsCustomHeaderName(this string key) => !NonCustomHeaders.Contains(key);
 
-        internal static string _Get(this IHeadersInternal headers, string key)
+        internal static string _Get(this IHeadersInternal headers, string key) => key switch
         {
-            switch (key)
-            {
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Accept)): return headers.Accept?.ToString();
-                case var _ when key.EqualsNoCase("Content-Type"): return headers.ContentType?.ToString();
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Source)): return headers.Source;
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Destination)): return headers.Destination;
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Authorization)): return headers.Authorization;
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Origin)): return headers.Origin;
-                case var _ when headers.TryGetCustomHeader(key, out var value): return value;
-                default: return default;
-            }
-        }
+            _ when key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept?.ToString(),
+            _ when key.EqualsNoCase("Content-Type") => headers.ContentType?.ToString(),
+            _ when key.EqualsNoCase(nameof(IHeaders.Source)) => headers.Source,
+            _ when key.EqualsNoCase(nameof(IHeaders.Destination)) => headers.Destination,
+            _ when key.EqualsNoCase(nameof(IHeaders.Authorization)) => headers.Authorization,
+            _ when key.EqualsNoCase(nameof(IHeaders.Origin)) => headers.Origin,
+            _ when headers.TryGetCustomHeader(key, out var value) => value,
+            _ => default
+        };
 
         internal static void _Set(this IHeadersInternal headers, string key, string value)
         {
@@ -66,33 +63,27 @@ namespace RESTable.Requests
             }
         }
 
-        internal static bool _Contains(this IHeadersInternal headers, KeyValuePair<string, string> item)
+        internal static bool _Contains(this IHeadersInternal headers, KeyValuePair<string, string> item) => item.Key switch
         {
-            switch (item.Key)
-            {
-                case var _ when item.Key.EqualsNoCase(nameof(IHeaders.Accept)): return headers.Accept?.ToString().EqualsNoCase(item.Value) == true;
-                case var _ when item.Key.EqualsNoCase("Content-Type"): return headers.ContentType?.ToString().EqualsNoCase(item.Value) == true;
-                case var _ when item.Key.EqualsNoCase(nameof(IHeaders.Source)): return headers.Source.EqualsNoCase(item.Value);
-                case var _ when item.Key.EqualsNoCase(nameof(IHeaders.Destination)): return headers.Destination.EqualsNoCase(item.Value);
-                case var _ when item.Key.EqualsNoCase(nameof(IHeaders.Authorization)): return headers.Authorization.EqualsNoCase(item.Value);
-                case var _ when item.Key.EqualsNoCase(nameof(IHeaders.Origin)): return headers.Origin.EqualsNoCase(item.Value);
-                default: return headers.ContainsCustomHeader(item);
-            }
-        }
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept?.ToString().EqualsNoCase(item.Value) == true,
+            _ when item.Key.EqualsNoCase("Content-Type") => headers.ContentType?.ToString().EqualsNoCase(item.Value) == true,
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Source)) => headers.Source.EqualsNoCase(item.Value),
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Destination)) => headers.Destination.EqualsNoCase(item.Value),
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Authorization)) => headers.Authorization.EqualsNoCase(item.Value),
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Origin)) => headers.Origin.EqualsNoCase(item.Value),
+            _ => headers.ContainsCustomHeader(item)
+        };
 
-        internal static bool _ContainsKey(this IHeadersInternal headers, string key)
+        internal static bool _ContainsKey(this IHeadersInternal headers, string key) => key switch
         {
-            switch (key)
-            {
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Accept)): return headers.Accept != null;
-                case var _ when key.EqualsNoCase("Content-Type"): return headers.ContentType != null;
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Source)): return headers.Source != null;
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Destination)): return headers.Destination != null;
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Authorization)): return headers.Authorization != null;
-                case var _ when key.EqualsNoCase(nameof(IHeaders.Origin)): return headers.Origin != null;
-                default: return headers.ContainsCustomHeaderName(key);
-            }
-        }
+            _ when key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept != null,
+            _ when key.EqualsNoCase("Content-Type") => headers.ContentType != null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Source)) => headers.Source != null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Destination)) => headers.Destination != null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Authorization)) => headers.Authorization != null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Origin)) => headers.Origin != null,
+            _ => headers.ContainsCustomHeaderName(key)
+        };
 
         internal static bool _Remove(this IHeadersInternal headers, string key)
         {

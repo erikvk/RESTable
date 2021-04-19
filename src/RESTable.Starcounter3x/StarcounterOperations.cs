@@ -84,11 +84,14 @@ namespace RESTable.Starcounter3x
         public static int Delete(IRequest<T> request)
         {
             var count = 0;
-            Transaction.Run(db => request.GetInputEntities().ForEach(entity =>
+            Transaction.Run(db =>
             {
-                db.Delete(entity);
-                count += 1;
-            }));
+                foreach (var entity in request.GetInputEntities())
+                {
+                    db.Delete(entity);
+                    count += 1;
+                }
+            });
             return count;
         }
 

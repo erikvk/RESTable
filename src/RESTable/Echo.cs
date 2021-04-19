@@ -33,12 +33,9 @@ namespace RESTable
                 .Select(c => new JProperty(c.Key, c.Value))
                 .ToHashSet(EqualityComparer);
             var body = request.Body.Deserialize<JObject>();
-            if (body != null)
-            {
-                await foreach (var item in body.ConfigureAwait(false))
-                foreach (var property in item.Properties())
-                    members.Add(property);
-            }
+            await foreach (var item in body.ConfigureAwait(false))
+            foreach (var property in item.Properties())
+                members.Add(property);
             var echo = new Echo(members);
             request.Conditions.Clear();
             var termCache = request.GetService<TermCache>();

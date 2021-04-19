@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Resources;
-using RESTable.Linq;
 
 namespace RESTable.Internal
 {
@@ -22,10 +21,22 @@ namespace RESTable.Internal
             foreach (var provider in contentTypeProvidersList)
             {
                 ValidateContentTypeProvider(provider);
+                if (provider.MatchStrings == null)
+                    continue;
                 if (provider.CanRead)
-                    provider.MatchStrings?.ForEach(mimeType => InputContentTypeProviders[mimeType] = provider);
+                {
+                    foreach (var mimeType in provider.MatchStrings)
+                    {
+                        InputContentTypeProviders[mimeType] = provider;
+                    }
+                }
                 if (provider.CanWrite)
-                    provider.MatchStrings?.ForEach(mimeType => OutputContentTypeProviders[mimeType] = provider);
+                {
+                    foreach (var mimeType in provider.MatchStrings)
+                    {
+                        OutputContentTypeProviders[mimeType] = provider;
+                    }
+                }
             }
         }
 

@@ -121,14 +121,11 @@ namespace RESTable.Meta
         {
             if (term.IsDynamic) return term;
             var newTerm = new Term(term.ComponentSeparator);
-            newTerm.Store.AddRange(term.Store.Select(prop =>
+            newTerm.Store.AddRange(term.Store.Select(prop => prop switch
             {
-                switch (prop)
-                {
-                    case DynamicProperty _: return prop;
-                    case DeclaredProperty _: return DynamicProperty.Parse(prop.Name);
-                    default: throw new ArgumentOutOfRangeException();
-                }
+                DynamicProperty _ => prop,
+                DeclaredProperty _ => DynamicProperty.Parse(prop.Name),
+                _ => throw new ArgumentOutOfRangeException()
             }));
             newTerm.IsDeclared = false;
             newTerm.Key = newTerm.GetKey();
@@ -142,15 +139,15 @@ namespace RESTable.Meta
         /// <summary>
         /// Returns the value that this term denotes for a given target object
         /// </summary>
-        public dynamic GetValue(object target) => GetValue(target, out _);
+        public object GetValue(object target) => GetValue(target, out _);
 
         /// <summary>
         /// Returns the value that this term denotes for a given target object as well as
         /// the actual key for this property (matching is case insensitive).
         /// </summary>
-        public dynamic GetValue(object target, out string actualKey) => GetValue(target, out actualKey, out _, out _);
+        public object GetValue(object target, out string actualKey) => GetValue(target, out actualKey, out _, out _);
 
-        private static dynamic RunEvaluation(Term term, object target, out string actualKey, out object parent, out Property property)
+        private static object GetValueInternal(Term term, object target, out string actualKey, out object parent, out Property property)
         {
             parent = null;
             property = null;
@@ -196,9 +193,9 @@ namespace RESTable.Meta
         /// the actual key for this property (matching is case insensitive), the parent
         /// of the denoted value, and the property representing the denoted value.
         /// </summary>
-        public dynamic GetValue(object target, out string actualKey, out object parent, out Property property)
+        public object GetValue(object target, out string actualKey, out object parent, out Property property)
         {
-            return RunEvaluation(this, target, out actualKey, out parent, out property);
+            return GetValueInternal(this, target, out actualKey, out parent, out property);
         }
 
         internal static Term Create(IEnumerable<DeclaredProperty> properties, string componentSeparator)

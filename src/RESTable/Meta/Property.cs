@@ -1,3 +1,4 @@
+using System;
 using RESTable.Requests;
 
 namespace RESTable.Meta
@@ -22,16 +23,16 @@ namespace RESTable.Meta
         /// The allowed condition operators for this property
         /// </summary>
         public Operators AllowedConditionOperators { get; protected set; } = Operators.All;
-        
+
         /// <summary>
         /// Gets the value of this property, for a given target object
         /// </summary>
-        public virtual dynamic GetValue(object target) => Getter?.Invoke(target);
+        public virtual object GetValue(object target) => Getter?.Invoke(target);
 
         /// <summary>
         /// Sets the value of this property, for a given target object and a given value
         /// </summary>
-        public virtual void SetValue(object target, dynamic value) => Setter?.Invoke(target, value);
+        public virtual void SetValue(object target, object value) => Setter?.Invoke(target, value);
 
         /// <summary>
         /// </summary>
@@ -42,12 +43,13 @@ namespace RESTable.Meta
         internal Getter Getter { get; set; }
 
         public bool ReadOnly { get; set; }
-        
+
         /// <inheritdoc />
         public override bool IsReadable => Getter != null;
 
         /// <inheritdoc />
         public override bool IsWritable => !ReadOnly && Setter != null;
 
+        protected Property(Type owner) : base(owner) { }
     }
 }

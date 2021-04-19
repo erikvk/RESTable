@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Linq;
-using RESTable.Resources.Operations;
 using RESTable.Results;
 
 namespace RESTable
@@ -52,7 +51,7 @@ namespace RESTable
         /// </summary>
         public IAsyncEnumerable<T> Deserialize<T>()
         {
-            if (!HasContent) return null;
+            if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
             try
             {
                 return ContentTypeProvider.DeserializeCollection<T>(Stream);
@@ -70,7 +69,9 @@ namespace RESTable
         /// </summary>
         public IAsyncEnumerable<T> PopulateTo<T>(IAsyncEnumerable<T> source) where T : class
         {
-            if (source == null || !HasContent) return null;
+            if (IsClosed)
+                throw new ObjectDisposedException(nameof(Stream));
+            if (source == null) return null;
             try
             {
                 return ContentTypeProvider.Populate(source, Stream.GetBytes());
@@ -83,14 +84,14 @@ namespace RESTable
         }
 
         /// <summary>
-        /// Does this Body have content?
+        /// Has this body been closed due to a disposal of request or result?
         /// </summary>
-        public bool HasContent => Stream is Stream {CanRead: true};
+        public bool IsClosed => !Stream.CanRead;
 
         /// <summary>
         /// The length of the body content in bytes
         /// /// </summary>
-        public long? ContentLength => Do.SafeGet<long?>(() => Stream.Length);
+        public long ContentLength => Stream.Length;
 
         public Body(IProtocolHolder protocolHolder, object bodyObject = null)
         {
@@ -164,9 +165,9 @@ namespace RESTable
             return new(protocolHolder, customOutputStream);
         }
 
-        private const int MaxStringLength = 50_000;
+        private const int MaxStringLength = 10_000;
 
-        public string GetLengthLogString() => !HasContent ? "" : $" ({ContentLength} bytes)";
+        public string GetLengthLogString() => IsClosed && !TryRewind() ? "" : $" ({ContentLength} bytes)";
 
         /// <summary>
         /// Writes the body to a string
@@ -174,35 +175,38 @@ namespace RESTable
         /// <returns></returns>
         public async Task<string> ToStringAsync()
         {
-            if (!HasContent) return "";
-            Stream.Rewind();
+            if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
+            TryRewind();
             try
             {
                 using var reader = new StreamReader(Stream, Encoding.Default, false, 1024, true);
-                if (Stream.Length > MaxStringLength)
+                var stringBuilder = new StringBuilder();
+                var buffer = new char[1024];
+                var charsLeft = MaxStringLength;
+                while (charsLeft > 0)
                 {
-                    var buffer = new char[MaxStringLength];
-                    await reader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                    return new string(buffer);
+                    var readChars = await reader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                    if (readChars == 0) break;
+                    charsLeft -= readChars;
+                    stringBuilder.Append(buffer, 0, readChars);
                 }
-                else
-                {
-                    return await reader.ReadToEndAsync().ConfigureAwait(false);
-                }
+                return stringBuilder.ToString();
             }
             finally
             {
-                Stream.Rewind();
+                TryRewind();
             }
         }
 
+        public override string ToString() => ToStringAsync().Result;
+
         public async Task<Body> GetCopy()
         {
-            if (!HasContent) return default;
+            if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
             var copy = new Body(ProtocolHolder);
             await Stream.CopyToAsync(copy.Stream).ConfigureAwait(false);
             copy.Stream.Rewind();
-            Stream.Rewind();
+            TryRewind();
             return copy;
         }
 
@@ -213,12 +217,6 @@ namespace RESTable
             Stream.Rewind();
             return true;
         }
-
-        // public override string ToString()
-        // {
-        //     // only do what can be done synchronously
-        //     return base.ToString();
-        // }
 
         protected override void Dispose(bool disposing)
         {

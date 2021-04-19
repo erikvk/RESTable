@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RESTable.ContentTypeProviders;
 using RESTable.ProtocolProviders;
 using RESTable.Resources;
 using RESTable.Results;
-using RESTable.Linq;
 
 namespace RESTable.Internal
 {
@@ -19,7 +19,7 @@ namespace RESTable.Internal
         {
             CachedProtocolProviders = new Dictionary<string, CachedProtocolProvider>(StringComparer.OrdinalIgnoreCase);
             ContentTypeProviderManager = contentTypeProviderManager;
-            protocolProviders.ForEach(provider =>
+            foreach (var provider in protocolProviders)
             {
                 ValidateProtocolProvider(provider);
                 var cachedProvider = GetCachedProtocolProvider(provider);
@@ -38,7 +38,7 @@ namespace RESTable.Internal
                         $"Protocol identifier '{protocolId}' already claimed by a protocol provider of type '{existing.GetType()}'");
                 }
                 CachedProtocolProviders[protocolId] = cachedProvider;
-            });
+            }
             if (!CachedProtocolProviders.Any())
                 throw new InvalidOperationException("Expected at least one protocol provider available from the service provider given to RESTableConfig");
         }
@@ -50,29 +50,39 @@ namespace RESTable.Internal
         private CachedProtocolProvider GetCachedProtocolProvider(IProtocolProvider provider)
         {
             var cProvider = new CachedProtocolProvider(provider);
-            var contentTypeProviders = provider.GetCustomContentTypeProviders()?.ToList();
-            contentTypeProviders?.ForEach(contentTypeProvider =>
+            var contentTypeProviders = provider.GetCustomContentTypeProviders()?.ToList() ?? new List<IContentTypeProvider>();
+            foreach (var contentTypeProvider in contentTypeProviders.Where(p => p.MatchStrings != null))
             {
                 if (contentTypeProvider.CanRead)
-                    contentTypeProvider.MatchStrings?.ForEach(mimeType => cProvider.InputMimeBindings[mimeType] = contentTypeProvider);
+                {
+                    foreach (var mimeType in contentTypeProvider.MatchStrings)
+                    {
+                        cProvider.InputMimeBindings[mimeType] = contentTypeProvider;
+                    }
+                }
                 if (contentTypeProvider.CanWrite)
-                    contentTypeProvider.MatchStrings?.ForEach(mimeType => cProvider.OutputMimeBindings[mimeType] = contentTypeProvider);
-            });
+                {
+                    foreach (var mimeType in contentTypeProvider.MatchStrings)
+                    {
+                        cProvider.OutputMimeBindings[mimeType] = contentTypeProvider;
+                    }
+                }
+            }
             switch (provider.ExternalContentTypeProviderSettings)
             {
                 case ExternalContentTypeProviderSettings.AllowAll:
-                    ContentTypeProviderManager.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key))
-                        .ForEach(cProvider.InputMimeBindings.Add);
-                    ContentTypeProviderManager.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key))
-                        .ForEach(cProvider.OutputMimeBindings.Add);
+                    foreach (var pair in ContentTypeProviderManager.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key)))
+                        cProvider.InputMimeBindings.Add(pair);
+                    foreach (var pair in ContentTypeProviderManager.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key)))
+                        cProvider.OutputMimeBindings.Add(pair);
                     break;
                 case ExternalContentTypeProviderSettings.AllowInput:
-                    ContentTypeProviderManager.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key))
-                        .ForEach(cProvider.InputMimeBindings.Add);
+                    foreach (var pair in ContentTypeProviderManager.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key)))
+                        cProvider.InputMimeBindings.Add(pair);
                     break;
                 case ExternalContentTypeProviderSettings.AllowOutput:
-                    ContentTypeProviderManager.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key))
-                        .ForEach(cProvider.OutputMimeBindings.Add);
+                    foreach (var pair in ContentTypeProviderManager.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key)))
+                        cProvider.OutputMimeBindings.Add(pair);
                     break;
             }
             return cProvider;
@@ -102,6 +112,12 @@ namespace RESTable.Internal
             }
         }
 
-        internal void OnInit() => CachedProtocolProviders.Values.ForEach(c => c.ProtocolProvider.OnInit());
+        internal void OnInit()
+        {
+            foreach (var cachedProviders in CachedProtocolProviders.Values)
+            {
+                cachedProviders.ProtocolProvider.OnInit();
+            }
+        }
     }
 }

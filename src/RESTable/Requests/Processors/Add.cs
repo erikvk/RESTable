@@ -22,13 +22,14 @@ namespace RESTable.Requests.Processors
         public IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities) => entities?.Select(entity =>
         {
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            var serializer = jsonProvider.GetSerializer();
             var jobj = entity.ToJObject();
-            ForEach(term =>
+            foreach (var term in this)
             {
-                if (jobj[term.Key] != null) return;
-                object val = term.GetValue(entity, out var actualKey);
-                jobj[actualKey] = val == null ? null : JToken.FromObject(val, jsonProvider.GetSerializer());
-            });
+                if (jobj[term.Key] != null) continue;
+                var termValue = term.GetValue(entity, out var actualKey);
+                jobj[actualKey] = termValue == null ? null : JToken.FromObject(termValue, serializer);
+            }
             return jobj;
         });
     }

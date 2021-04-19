@@ -29,9 +29,8 @@ namespace RESTable.SQLite
         private static void Init()
         {
             if (IsInitiated) return;
-            typeof(SQLiteTable)
-                .GetConcreteSubclasses()
-                .ForEach(cl => TableMapping.CreateMapping(cl).Wait());
+            foreach (var clrClass in typeof(SQLiteTable).GetConcreteSubclasses())
+                TableMapping.CreateMapping(clrClass).Wait();
             IsInitiated = true;
         }
 

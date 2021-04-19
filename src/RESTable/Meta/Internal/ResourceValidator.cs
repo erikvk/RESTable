@@ -30,11 +30,7 @@ namespace RESTable.Meta.Internal
         {
             string name;
             if (fullName != null)
-            {
-                // if (fullName.StartsWith("RESTable.", StringComparison.OrdinalIgnoreCase) && !type.Assembly.Equals(typeof(ResourceValidator).Assembly))
-                //     throw new InvalidResourceDeclarationException($"Cannot add resource '{fullName}'. A resource name cannot start with 'RESTable'");
                 name = fullName;
-            }
             else name = type.GetRESTableTypeName();
             if (name == null)
                 throw new InvalidResourceDeclarationException(
@@ -124,9 +120,9 @@ namespace RESTable.Meta.Internal
                             $"Interface contained properties with duplicate names matching '{interfacePropDupe}' (case insensitive).");
 
                     var interfaceName = interfaceType.GetRESTableTypeName();
-                    type.GetInterfaceMap(interfaceType).TargetMethods.ForEach(method =>
+                    foreach (var method in type.GetInterfaceMap(interfaceType).TargetMethods)
                     {
-                        if (!method.IsSpecialName) return;
+                        if (!method.IsSpecialName) continue;
                         var interfaceProperty = interfaceType
                             .GetProperties()
                             .First(p => p.GetGetMethod()?.Name is string getname && method.Name.EndsWith(getname) ||
@@ -162,7 +158,7 @@ namespace RESTable.Meta.Internal
                                     : null)
                                 .LastOrDefault(p => p != null);
                         }
-                        else return;
+                        else continue;
 
                         if (projectedProperty == null)
                             throw new InvalidResourceDeclarationException(
@@ -178,7 +174,7 @@ namespace RESTable.Meta.Internal
                                 $"RESTable matched interface property '{interfaceProperty.Name}' with resource property '{projectedProperty.Name}' " +
                                 "using the interface property matching rules, but these properties have a type mismatch. Expected " +
                                 $"'{projectedProperty.PropertyType.GetRESTableTypeName()}' but found '{propertyType.GetRESTableTypeName()}' in interface");
-                    });
+                    }
                 }
 
                 #endregion

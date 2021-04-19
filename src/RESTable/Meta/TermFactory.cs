@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTable.Linq;
 using RESTable.Requests;
 using RESTable.Results;
 
@@ -142,15 +141,16 @@ namespace RESTable.Meta
                     }
                 }
 
-                switch (term.LastOrDefault())
+                return term.LastOrDefault() switch
                 {
-                    case null: return make(resource);
-                    case DeclaredProperty declared: return make(declared.Type);
-                    default: return DynamicProperty.Parse(str);
-                }
+                    null => make(resource),
+                    DeclaredProperty declared => make(declared.Type),
+                    _ => DynamicProperty.Parse(str)
+                };
             }
 
-            key.Split(componentSeparator).ForEach(s => term.Store.Add(propertyMaker(s)));
+            foreach (var s in key.Split(componentSeparator)) 
+                term.Store.Add(propertyMaker(s));
             term.SetCommonProperties();
             return term;
         }

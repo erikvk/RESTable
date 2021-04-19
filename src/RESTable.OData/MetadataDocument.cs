@@ -22,7 +22,7 @@ namespace RESTable.OData
     [RESTable(GETAvailableToAll = true, Description = description)]
     public class MetadataDocument : IBinary<MetadataDocument>
     {
-        private const string description = "The OData metadata document defining the metadata for the " +
+        private const string description = "The OData metadata document, defining the metadata for the " +
                                            "resources of this application";
 
         #region Annotations
@@ -194,35 +194,33 @@ namespace RESTable.OData
         private static string GetEdmTypeName(Type type)
         {
             if (type.IsEnum) return "global." + type.FullName;
-            switch (Type.GetTypeCode(type))
+            return Type.GetTypeCode(type) switch
             {
-                case TypeCode.Object:
-                    switch (type)
-                    {
-                        case var _ when type == typeof(Guid): return "Edm.Guid";
-                        case var _ when type.IsNullable(out var t): return GetEdmTypeName(t);
-                        case var _ when type.ImplementsGenericInterface(typeof(IDictionary<,>), out var p) && p[0] == typeof(string):
-                            return "global.RESTable.DynamicResource";
-                        case var _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p): return $"Collection({GetEdmTypeName(p[0])})";
-                        default: return $"global.{type.FullName}";
-                    }
-                case TypeCode.Boolean: return "Edm.Boolean";
-                case TypeCode.Byte: return "Edm.Byte";
-                case TypeCode.DateTime: return "Edm.DateTimeOffset";
-                case TypeCode.Decimal: return "Edm.Decimal";
-                case TypeCode.Double: return "Edm.Double";
-                case TypeCode.Single: return "Edm.Single";
-                case TypeCode.Int16: return "Edm.Int16";
-                case TypeCode.UInt16:
-                case TypeCode.Int32: return "Edm.Int32";
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                case TypeCode.Int64: return "Edm.Int64";
-                case TypeCode.SByte: return "Edm.SByte";
-                case TypeCode.Char:
-                case TypeCode.String: return "Edm.String";
-                default: return $"global.{type.FullName}";
-            }
+                TypeCode.Object => type switch
+                {
+                    _ when type == typeof(Guid) => "Edm.Guid",
+                    _ when type.IsNullable(out var baseType) => GetEdmTypeName(baseType),
+                    _ when type.ImplementsGenericInterface(typeof(IDictionary<,>), out var p) && p[0] == typeof(string) => "global.RESTable.DynamicResource",
+                    _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p) => $"Collection({GetEdmTypeName(p[0])})",
+                    _ => $"global.{type.FullName}"
+                },
+                TypeCode.Boolean => "Edm.Boolean",
+                TypeCode.Byte => "Edm.Byte",
+                TypeCode.DateTime => "Edm.DateTimeOffset",
+                TypeCode.Decimal => "Edm.Decimal",
+                TypeCode.Double => "Edm.Double",
+                TypeCode.Single => "Edm.Single",
+                TypeCode.Int16 => "Edm.Int16",
+                TypeCode.UInt16 => "Edm.Int32",
+                TypeCode.Int32 => "Edm.Int32",
+                TypeCode.UInt32 => "Edm.Int64",
+                TypeCode.UInt64 => "Edm.Int64",
+                TypeCode.Int64 => "Edm.Int64",
+                TypeCode.SByte => "Edm.SByte",
+                TypeCode.Char => "Edm.String",
+                TypeCode.String => "Edm.String",
+                _ => $"global.{type.FullName}"
+            };
         }
 
         /// <summary>

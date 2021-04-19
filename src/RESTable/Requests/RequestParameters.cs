@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.WebSockets;
-using RESTable.Linq;
 
 namespace RESTable.Requests
 {
@@ -38,7 +37,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Did the request contain a body?
         /// </summary>
-        public bool HasBody => Body is {HasContent: true};
+        public bool HasBody => Body is {CanRead: true};
 
         private Body _body;
 
@@ -168,18 +167,21 @@ namespace RESTable.Requests
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             var hasMacro = Uri?.Macro != null;
-            if (hasMacro)
+            if (hasMacro && Uri.Macro.Headers != null)
             {
                 if (Uri.Macro.OverwriteHeaders)
-                    Uri.Macro.Headers?.ForEach(pair => Headers[pair.Key] = pair.Value);
+                {
+                    foreach (var (key, value) in Uri.Macro.Headers)
+                        Headers[key] = value;
+                }
                 else
                 {
-                    Uri.Macro.Headers?.ForEach(pair =>
+                    foreach (var (key, value) in Uri.Macro.Headers)
                     {
-                        var currentValue = Headers.SafeGet(pair.Key);
+                        var currentValue = Headers.SafeGet(key);
                         if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
-                            Headers[pair.Key] = pair.Value;
-                    });
+                            Headers[key] = value;
+                    }
                 }
             }
             CachedProtocolProvider = cachedProtocolProvider;
@@ -197,26 +199,6 @@ namespace RESTable.Requests
             {
                 Error = e.AsError();
             }
-
-            //  if (hasMacro)
-            //  {
-            //      if (Uri.Macro.OverwriteBody)
-            //      {
-            //          if (Uri.Macro.HasBody)
-            //          {
-            //              Body = Uri.Macro.Body;
-            //              Headers.ContentType = Providers.Json.ContentType;
-            //          }
-            //      }
-            //      else
-            //      {
-            //          if (!HasBody && Uri.Macro.HasBody)
-            //          {
-            //              Body = Uri.Macro.Body;
-            //              Headers.ContentType = Providers.Json.ContentType;
-            //          }
-            //      }
-            //  }
         }
 
         /// <summary>
@@ -229,18 +211,21 @@ namespace RESTable.Requests
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             var hasMacro = Uri?.Macro != null;
-            if (hasMacro)
+            if (hasMacro && Uri.Macro.Headers != null)
             {
                 if (Uri.Macro.OverwriteHeaders)
-                    Uri.Macro.Headers?.ForEach(pair => Headers[pair.Key] = pair.Value);
+                {
+                    foreach (var (key, value) in Uri.Macro.Headers)
+                        Headers[key] = value;
+                }
                 else
                 {
-                    Uri.Macro.Headers?.ForEach(pair =>
+                    foreach (var (key, value) in Uri.Macro.Headers)
                     {
-                        var currentValue = Headers.SafeGet(pair.Key);
+                        var currentValue = Headers.SafeGet(key);
                         if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
-                            Headers[pair.Key] = pair.Value;
-                    });
+                            Headers[key] = value;
+                    }
                 }
             }
             CachedProtocolProvider = cachedProtocolProvider;

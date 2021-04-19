@@ -69,11 +69,6 @@ namespace RESTable.Meta
         public bool MergeOntoOwner { get; }
 
         /// <summary>
-        /// The type that this property was declared in
-        /// </summary>
-        public Type Owner { get; }
-
-        /// <summary>
         /// Does the value of this property define the values of other properties?
         /// </summary>
         public bool DefinesOtherProperties { get; internal set; }
@@ -121,7 +116,7 @@ namespace RESTable.Meta
                 var oldValue = GetValue(target);
                 base.SetValue(target, value);
                 var changedValue = GetValue(target);
-                if (object.Equals(changedValue, oldValue))
+                if (Equals(changedValue, oldValue))
                     return;
                 NotifyChange(target, oldValue, value);
                 return;
@@ -157,6 +152,7 @@ namespace RESTable.Meta
             Getter getter,
             Setter setter
         )
+            : base(owner)
         {
             MetadataToken = metadataToken;
             Name = name;
@@ -174,7 +170,6 @@ namespace RESTable.Meta
             IsDateTime = type == typeof(DateTime) || type == typeof(DateTime?);
             Getter = getter;
             Setter = setter;
-            Owner = owner;
             MergeOntoOwner = mergeOntoOwner;
             ReadOnly = readOnly;
         }
@@ -182,7 +177,7 @@ namespace RESTable.Meta
         /// <summary>
         /// The regular constructor, called by the type cache when creating declared properties
         /// </summary>
-        internal DeclaredProperty(PropertyInfo p, bool flagName = false)
+        internal DeclaredProperty(PropertyInfo p, bool flagName = false) : base(p?.DeclaringType)
         {
             if (p == null) return;
 
@@ -209,7 +204,6 @@ namespace RESTable.Meta
             Getter = p.MakeDynamicGetter();
             Setter = p.MakeDynamicSetter();
             ReplaceOnUpdate = memberAttribute?.ReplaceOnUpdate == true;
-            Owner = p.DeclaringType;
         }
 
         private static dynamic MakeExcelReducer(string methodName, PropertyInfo p)
@@ -231,13 +225,13 @@ namespace RESTable.Meta
         internal long ByteCount(object target)
         {
             if (target == null) throw new NullReferenceException(nameof(target));
-            switch (GetValue(target))
+            return GetValue(target) switch
             {
-                case null: return 0;
-                case string str: return Encoding.UTF8.GetByteCount(str);
-                case byte[] binary: return binary.Length;
-                default: return Type.CountBytes();
-            }
+                null => 0,
+                string str => Encoding.UTF8.GetByteCount(str),
+                byte[] binary => binary.Length,
+                _ => Type.CountBytes()
+            };
         }
 
         /// <inheritdoc />

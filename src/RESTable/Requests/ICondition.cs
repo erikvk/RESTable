@@ -26,5 +26,7 @@ namespace RESTable.Requests
         /// The term describing the property to compare with
         /// </summary>
         Term Term { get; }
+        
+        string ValueLiteral { get; }
     }
 }

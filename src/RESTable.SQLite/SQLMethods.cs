@@ -15,95 +15,84 @@ namespace RESTable.SQLite
 
         internal static CLRDataType ResolveCLRTypeCode(this Type type)
         {
-            if (type.IsNullable(out var t)) type = t;
-            switch (Type.GetTypeCode(type))
+            if (type.IsNullable(out var baseType))
+                type = baseType;
+            return Type.GetTypeCode(type) switch
             {
-                case TypeCode.Int16: return CLRDataType.Int16;
-                case TypeCode.Int32: return CLRDataType.Int32;
-                case TypeCode.Int64: return CLRDataType.Int64;
-                case TypeCode.Single: return CLRDataType.Single;
-                case TypeCode.Double: return CLRDataType.Double;
-                case TypeCode.Decimal: return CLRDataType.Decimal;
-                case TypeCode.Byte: return CLRDataType.Byte;
-                case TypeCode.String: return CLRDataType.String;
-                case TypeCode.Boolean: return CLRDataType.Boolean;
-                case TypeCode.DateTime: return CLRDataType.DateTime;
-                default: return CLRDataType.Unsupported;
-            }
+                TypeCode.Int16 => CLRDataType.Int16,
+                TypeCode.Int32 => CLRDataType.Int32,
+                TypeCode.Int64 => CLRDataType.Int64,
+                TypeCode.Single => CLRDataType.Single,
+                TypeCode.Double => CLRDataType.Double,
+                TypeCode.Decimal => CLRDataType.Decimal,
+                TypeCode.Byte => CLRDataType.Byte,
+                TypeCode.String => CLRDataType.String,
+                TypeCode.Boolean => CLRDataType.Boolean,
+                TypeCode.DateTime => CLRDataType.DateTime,
+                _ => CLRDataType.Unsupported
+            };
         }
 
-        internal static SQLDataType ParseSQLDataType(this string typeString)
+        internal static SQLDataType ParseSQLDataType(this string typeString) => typeString.ToUpperInvariant() switch
         {
-            switch (typeString.ToUpperInvariant())
-            {
-                case "SMALLINT": return SQLDataType.SMALLINT;
-                case "INT": return SQLDataType.INT;
-                case "BIGINT": return SQLDataType.BIGINT;
-                case "SINGLE": return SQLDataType.SINGLE;
-                case "DOUBLE": return SQLDataType.DOUBLE;
-                case "DECIMAL": return SQLDataType.DECIMAL;
-                case "TINYINT": return SQLDataType.TINYINT;
-                case "TEXT": return SQLDataType.TEXT;
-                case "BOOLEAN": return SQLDataType.BOOLEAN;
-                case "DATETIME": return SQLDataType.DATETIME;
-                default: return SQLDataType.Unsupported;
-            }
-        }
+            "SMALLINT" => SQLDataType.SMALLINT,
+            "INT" => SQLDataType.INT,
+            "BIGINT" => SQLDataType.BIGINT,
+            "SINGLE" => SQLDataType.SINGLE,
+            "DOUBLE" => SQLDataType.DOUBLE,
+            "DECIMAL" => SQLDataType.DECIMAL,
+            "TINYINT" => SQLDataType.TINYINT,
+            "TEXT" => SQLDataType.TEXT,
+            "BOOLEAN" => SQLDataType.BOOLEAN,
+            "DATETIME" => SQLDataType.DATETIME,
+            _ => SQLDataType.Unsupported
+        };
 
-        internal static SQLDataType ToSQLDataType(this CLRDataType clrDataType)
+        internal static SQLDataType ToSQLDataType(this CLRDataType clrDataType) => clrDataType switch
         {
-            switch (clrDataType)
-            {
-                case CLRDataType.Int16: return SQLDataType.SMALLINT;
-                case CLRDataType.Int32: return SQLDataType.INT;
-                case CLRDataType.Int64: return SQLDataType.BIGINT;
-                case CLRDataType.Single: return SQLDataType.SINGLE;
-                case CLRDataType.Double: return SQLDataType.DOUBLE;
-                case CLRDataType.Decimal: return SQLDataType.DECIMAL;
-                case CLRDataType.Byte: return SQLDataType.TINYINT;
-                case CLRDataType.String: return SQLDataType.TEXT;
-                case CLRDataType.Boolean: return SQLDataType.BOOLEAN;
-                case CLRDataType.DateTime: return SQLDataType.DATETIME;
-                default: return SQLDataType.Unsupported;
-            }
-        }
+            CLRDataType.Int16 => SQLDataType.SMALLINT,
+            CLRDataType.Int32 => SQLDataType.INT,
+            CLRDataType.Int64 => SQLDataType.BIGINT,
+            CLRDataType.Single => SQLDataType.SINGLE,
+            CLRDataType.Double => SQLDataType.DOUBLE,
+            CLRDataType.Decimal => SQLDataType.DECIMAL,
+            CLRDataType.Byte => SQLDataType.TINYINT,
+            CLRDataType.String => SQLDataType.TEXT,
+            CLRDataType.Boolean => SQLDataType.BOOLEAN,
+            CLRDataType.DateTime => SQLDataType.DATETIME,
+            _ => SQLDataType.Unsupported
+        };
 
-        internal static DbType? ToDbTypeCode(this SQLDataType sqlDataType)
+        internal static DbType? ToDbTypeCode(this SQLDataType sqlDataType) => sqlDataType switch
         {
-            switch (sqlDataType)
-            {
-                case SQLDataType.SMALLINT: return DbType.Int16;
-                case SQLDataType.INT: return DbType.Int32;
-                case SQLDataType.BIGINT: return DbType.Int64;
-                case SQLDataType.SINGLE: return DbType.Single;
-                case SQLDataType.DOUBLE: return DbType.Double;
-                case SQLDataType.DECIMAL: return DbType.Decimal;
-                case SQLDataType.TINYINT: return DbType.Byte;
-                case SQLDataType.TEXT: return DbType.String;
-                case SQLDataType.BOOLEAN: return DbType.Boolean;
-                case SQLDataType.DATETIME: return DbType.DateTime;
-                default: return null;
-            }
-        }
+            SQLDataType.SMALLINT => DbType.Int16,
+            SQLDataType.INT => DbType.Int32,
+            SQLDataType.BIGINT => DbType.Int64,
+            SQLDataType.SINGLE => DbType.Single,
+            SQLDataType.DOUBLE => DbType.Double,
+            SQLDataType.DECIMAL => DbType.Decimal,
+            SQLDataType.TINYINT => DbType.Byte,
+            SQLDataType.TEXT => DbType.String,
+            SQLDataType.BOOLEAN => DbType.Boolean,
+            SQLDataType.DATETIME => DbType.DateTime,
+            _ => null
+        };
 
 
-        internal static CLRDataType ToCLRTypeCode(this SQLDataType sqlDataType)
+        internal static CLRDataType ToCLRTypeCode(this SQLDataType sqlDataType) => sqlDataType switch
         {
-            switch (sqlDataType)
-            {
-                case SQLDataType.SMALLINT: return CLRDataType.Int16;
-                case SQLDataType.INT: return CLRDataType.Int32;
-                case SQLDataType.BIGINT: return CLRDataType.Int64;
-                case SQLDataType.SINGLE: return CLRDataType.Single;
-                case SQLDataType.DOUBLE: return CLRDataType.Double;
-                case SQLDataType.DECIMAL: return CLRDataType.Decimal;
-                case SQLDataType.TINYINT: return CLRDataType.Byte;
-                case SQLDataType.TEXT: return CLRDataType.String;
-                case SQLDataType.BOOLEAN: return CLRDataType.Boolean;
-                case SQLDataType.DATETIME: return CLRDataType.DateTime;
-                default: return CLRDataType.Unsupported;
-            }
-        }
+            SQLDataType.SMALLINT => CLRDataType.Int16,
+            SQLDataType.INT => CLRDataType.Int32,
+            SQLDataType.BIGINT => CLRDataType.Int64,
+            SQLDataType.SINGLE => CLRDataType.Single,
+            SQLDataType.DOUBLE => CLRDataType.Double,
+            SQLDataType.DECIMAL => CLRDataType.Decimal,
+            SQLDataType.TINYINT => CLRDataType.Byte,
+            SQLDataType.TEXT => CLRDataType.String,
+            SQLDataType.BOOLEAN => CLRDataType.Boolean,
+            SQLDataType.DATETIME => CLRDataType.DateTime,
+            _ => CLRDataType.Unsupported
+        };
 
         private static string MakeSQLValueLiteral(this object o)
         {
@@ -119,19 +108,16 @@ namespace RESTable.SQLite
             }
         }
 
-        private static string GetSQLOperator(Operators op)
+        private static string GetSQLOperator(Operators op) => op switch
         {
-            switch (op)
-            {
-                case EQUALS: return "=";
-                case NOT_EQUALS: return "<>";
-                case LESS_THAN: return "<";
-                case GREATER_THAN: return ">";
-                case LESS_THAN_OR_EQUALS: return "<=";
-                case GREATER_THAN_OR_EQUALS: return ">=";
-                default: throw new ArgumentOutOfRangeException(nameof(op), op, null);
-            }
-        }
+            EQUALS => "=",
+            NOT_EQUALS => "<>",
+            LESS_THAN => "<",
+            GREATER_THAN => ">",
+            LESS_THAN_OR_EQUALS => "<=",
+            GREATER_THAN_OR_EQUALS => ">=",
+            _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
+        };
 
         internal static string ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
         {
@@ -142,16 +128,12 @@ namespace RESTable.SQLite
                 var valueLiteral = MakeSQLValueLiteral(c.Value);
                 if (valueLiteral == "NULL")
                 {
-                    switch (c.Operator)
+                    op = c.Operator switch
                     {
-                        case EQUALS:
-                            op = "IS";
-                            break;
-                        case NOT_EQUALS:
-                            op = "IS NOT";
-                            break;
-                        default: throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL");
-                    }
+                        EQUALS => "IS",
+                        NOT_EQUALS => "IS NOT",
+                        _ => throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL")
+                    };
                 }
                 return $"{key.Fnuttify()} {op} {valueLiteral}";
             }));

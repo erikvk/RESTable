@@ -157,13 +157,13 @@ namespace RESTable
         internal static long ByteCount(this PropertyInfo property, object target)
         {
             if (target == null) throw new NullReferenceException(nameof(target));
-            switch (property.GetValue(target))
+            return property.GetValue(target) switch
             {
-                case null: return 0;
-                case string str: return Encoding.UTF8.GetByteCount(str);
-                case byte[] binary: return binary.Length;
-                default: return CountBytes(property.PropertyType);
-            }
+                null => 0,
+                string str => Encoding.UTF8.GetByteCount(str),
+                byte[] binary => binary.Length,
+                _ => CountBytes(property.PropertyType)
+            };
         }
 
         internal static long CountBytes(this Type type)
@@ -256,21 +256,21 @@ namespace RESTable
         public static (string, string) TSplit(this string str, char separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.RemoveEmptyEntries);
-            if (!trim)
+            return trim switch
             {
-                switch (split.Length)
+                false => split.Length switch
                 {
-                    case 1: return (split[0], null);
-                    case 2: return (split[0], split[1]);
-                    default: return (null, null);
+                    1 => (split[0], null),
+                    2 => (split[0], split[1]),
+                    _ => throw new ArgumentOutOfRangeException()
+                },
+                true => split.Length switch
+                {
+                    1 => (split[0].Trim(), null),
+                    2 => (split[0].Trim(), split[1].Trim()),
+                    _ => throw new ArgumentOutOfRangeException()
                 }
-            }
-            switch (split.Length)
-            {
-                case 1: return (split[0].Trim(), null);
-                case 2: return (split[0].Trim(), split[1].Trim());
-                default: return (null, null);
-            }
+            };
         }
 
         /// <summary>
@@ -280,36 +280,35 @@ namespace RESTable
         public static (string, string) TSplit(this string str, string separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
-            if (!trim)
-                switch (split.Length)
-                {
-                    default: return (null, null);
-                    case 1: return (split[0], null);
-                    case 2: return (split[0], split[1]);
-                }
-            switch (split.Length)
+            return trim switch
             {
-                default: return (null, null);
-                case 1: return (split[0].Trim(), null);
-                case 2: return (split[0].Trim(), split[1].Trim());
-            }
+                false => split.Length switch
+                {
+                    1 => (split[0], null),
+                    2 => (split[0], split[1]),
+                    _ => throw new ArgumentOutOfRangeException()
+                },
+                true => split.Length switch
+                {
+                    1 => (split[0].Trim(), null),
+                    2 => (split[0].Trim(), split[1].Trim()),
+                    _ => throw new ArgumentOutOfRangeException()
+                }
+            };
         }
 
         #endregion
 
         #region Resource helpers
 
-        internal static ResourceKind GetResourceKind(this Type metatype)
+        internal static ResourceKind GetResourceKind(this Type metatype) => metatype switch
         {
-            switch (metatype)
-            {
-                case var _ when typeof(IEntityResource).IsAssignableFrom(metatype): return ResourceKind.EntityResource;
-                case var _ when typeof(ITerminalResource).IsAssignableFrom(metatype): return ResourceKind.TerminalResource;
-                case var _ when typeof(IBinaryResource).IsAssignableFrom(metatype): return ResourceKind.BinaryResource;
-                case var _ when typeof(IEventResource).IsAssignableFrom(metatype): return ResourceKind.EventResource;
-                default: return ResourceKind.All;
-            }
-        }
+            _ when typeof(IEntityResource).IsAssignableFrom(metatype) => ResourceKind.EntityResource,
+            _ when typeof(ITerminalResource).IsAssignableFrom(metatype) => ResourceKind.TerminalResource,
+            _ when typeof(IBinaryResource).IsAssignableFrom(metatype) => ResourceKind.BinaryResource,
+            _ when typeof(IEventResource).IsAssignableFrom(metatype) => ResourceKind.EventResource,
+            _ => ResourceKind.All
+        };
 
         internal static (bool allowDynamic, TermBindingRule bindingRule) GetDynamicConditionHandling(this Type type, RESTableAttribute attribute)
         {
@@ -345,7 +344,7 @@ namespace RESTable
             switch (entity)
             {
                 case JObject j: return j;
-                case Dictionary<string, dynamic> _idict: return _idict.ToJObject();
+                case Dictionary<string, object> _idict: return _idict.ToJObject();
                 case IDictionary idict:
                     var _jobj = new JObject();
                     foreach (DictionaryEntry pair in idict)
@@ -357,14 +356,11 @@ namespace RESTable
 
             var jobj = new JObject();
             var typeCache = ApplicationServicesAccessor.TypeCache;
-            typeCache.GetDeclaredProperties(entity.GetType())
-                .Values
-                .Where(p => !p.Hidden)
-                .ForEach(prop =>
-                {
-                    object val = prop.GetValue(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, jsonProvider.GetSerializer());
-                });
+            foreach (var property in typeCache.GetDeclaredProperties(entity.GetType()).Values.Where(p => !p.Hidden))
+            {
+                var propertyValue = property.GetValue(entity);
+                jobj[property.Name] = propertyValue == null ? null : JToken.FromObject(propertyValue, jsonProvider.GetSerializer());
+            }
             return jobj;
         }
 
@@ -457,14 +453,6 @@ namespace RESTable
             dict[pair.Key] = pair.Value;
         }
 
-        /// <summary>
-        /// Gets the value of a key from an IDictionary, or null if the dictionary does not contain the key.
-        /// </summary>
-        private static dynamic SafeGet(this IDictionary dict, string key)
-        {
-            return dict.Contains(key) ? dict[key] : null;
-        }
-
         internal static Dictionary<TKey, T> SafeToDictionary<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector,
             IEqualityComparer<TKey> equalityComparer)
         {
@@ -508,10 +496,11 @@ namespace RESTable
         /// <summary>
         /// Converts a Dictionary object to a JSON.net JObject
         /// </summary>
-        public static JObject ToJObject(this Dictionary<string, dynamic> d)
+        public static JObject ToJObject(this Dictionary<string, object> dictionary)
         {
             var jobj = new JObject();
-            d.ForEach(pair => jobj[pair.Key] = MakeJToken(pair.Value));
+            foreach (var (key, value) in dictionary)
+                jobj[key] = MakeJToken(value);
             return jobj;
         }
 
@@ -542,43 +531,37 @@ namespace RESTable
 
         private static readonly CultureInfo en_US = new("en-US");
 
-        internal static string GetFriendlyTypeName(this Type type)
+        internal static string GetFriendlyTypeName(this Type type) => Type.GetTypeCode(type) switch
         {
-            switch (Type.GetTypeCode(type))
-            {
-                case var _ when type.IsNullable(out var @base): return @base.GetFriendlyTypeName();
-                case TypeCode.Boolean: return "a boolean (true or false)";
-                case TypeCode.Char: return "a single character";
-                case TypeCode.SByte: return $"an integer ({sbyte.MinValue} to {sbyte.MaxValue})";
-                case TypeCode.Byte: return $"a positive integer ({byte.MinValue} to {byte.MaxValue})";
-                case TypeCode.Int16: return $"an integer ({short.MinValue} to {short.MaxValue})";
-                case TypeCode.UInt16: return $"a positive integer ({ushort.MinValue} to {ushort.MaxValue})";
-                case TypeCode.Int32: return "an integer (32-bit)";
-                case TypeCode.Int64: return "an integer (64-bit)";
-                case TypeCode.UInt32: return "a positive integer (32-bit)";
-                case TypeCode.UInt64: return "a positive integer (64-bit)";
-                case TypeCode.Single: return "a floating point number (single)";
-                case TypeCode.Double: return "a floating point number (double)";
-                case TypeCode.Decimal: return "a floating point number";
-                case TypeCode.String: return "a string";
-                case TypeCode.DateTime: return "a date time";
-                default: return type.FullName;
-            }
-        }
+            TypeCode.Boolean => "a boolean (true or false)",
+            TypeCode.Char => "a single character",
+            TypeCode.SByte => $"an integer ({sbyte.MinValue} to {sbyte.MaxValue})",
+            TypeCode.Byte => $"a positive integer ({byte.MinValue} to {byte.MaxValue})",
+            TypeCode.Int16 => $"an integer ({short.MinValue} to {short.MaxValue})",
+            TypeCode.UInt16 => $"a positive integer ({ushort.MinValue} to {ushort.MaxValue})",
+            TypeCode.Int32 => "an integer (32-bit)",
+            TypeCode.Int64 => "an integer (64-bit)",
+            TypeCode.UInt32 => "a positive integer (32-bit)",
+            TypeCode.UInt64 => "a positive integer (64-bit)",
+            TypeCode.Single => "a floating point number (single)",
+            TypeCode.Double => "a floating point number (double)",
+            TypeCode.Decimal => "a floating point number",
+            TypeCode.String => "a string",
+            TypeCode.DateTime => "a date time",
+            _ when type.IsNullable(out var baseType) => baseType.GetFriendlyTypeName(),
+            _ => type.FullName
+        };
 
-        public static Error AsError(this Exception exception)
+        public static Error AsError(this Exception exception) => exception switch
         {
-            switch (exception)
-            {
-                case Error re: return re;
-                case FormatException _: return new UnsupportedContent(exception);
-                case JsonReaderException jre: return new FailedJsonDeserialization(jre);
-                case RuntimeBinderException _: return new BinderPermissions(exception);
-                case ArgumentException _: return new BadRequest(ErrorCodes.Unknown, exception.Message, exception);
-                case NotImplementedException _: return new FeatureNotImplemented("RESTable encountered a call to a non-implemented method");
-                default: return new Unknown(exception);
-            }
-        }
+            Error re => re,
+            FormatException _ => new UnsupportedContent(exception),
+            JsonReaderException jre => new FailedJsonDeserialization(jre),
+            RuntimeBinderException _ => new BinderPermissions(exception),
+            ArgumentException _ => new BadRequest(ErrorCodes.Unknown, exception.Message, exception),
+            NotImplementedException _ => new FeatureNotImplemented("RESTable encountered a call to a non-implemented method"),
+            _ => new Unknown(exception)
+        };
 
         public static Error AsResultOf(this Exception exception, IRequest request)
         {
@@ -913,21 +896,6 @@ namespace RESTable
             }
         }
 
-        //        /// <summary>
-        //        /// Converts an IEnumerable of T to an Excel workbook
-        //        /// </summary>
-        //        public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
-        //        {
-        //            var resource = Resource<T>.Get;
-        //            var dataSet = new DataSet();
-        //            var table = entities.MakeDataTable(resource);
-        //            if (table.Rows.Count == 0) return null;
-        //            dataSet.Tables.Add(table);
-        //            var workbook = new ClosedXML.Excel.XLWorkbook();
-        //            workbook.AddWorksheet(dataSet);
-        //            return workbook;
-        //        }
-
         /// <summary>
         /// Converts a boolean into an XML boolean string, i.e. "true" or "false" 
         /// </summary>
@@ -936,9 +904,10 @@ namespace RESTable
         public static string XMLBool(this bool @bool)
         {
             const string trueString = "true";
-            const string FalseString = "false";
-            if (@bool) return trueString;
-            return FalseString;
+            const string falseString = "false";
+            if (@bool)
+                return trueString;
+            return falseString;
         }
 
         /// <summary>

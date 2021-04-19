@@ -48,36 +48,20 @@ namespace RESTable.Json
         {
             var contract = base.CreateContract(objectType);
             var entityTypeContract = TypeCache.GetEntityTypeContract(objectType);
-            switch (objectType)
+            contract.Converter = objectType switch
             {
-                case var _ when objectType.HasAttribute<JsonConverterAttribute>(out var attribute):
-                    contract.Converter = (JsonConverter) Activator.CreateInstance(attribute.ConverterType, attribute.ConverterParameters);
-                    break;
-                case var _ when objectType.IsSubclassOf(typeof(Type)):
-                    contract.Converter = TypeConverter;
-                    break;
-                case var _ when objectType == typeof(Headers):
-                    contract.Converter = HeadersConverter;
-                    break;
-                case var _ when objectType == typeof(ContentType):
-                    contract.Converter = ContentTypeConverter;
-                    break;
-                case var _ when objectType == typeof(ContentTypes):
-                    contract.Converter = ContentTypesConverter;
-                    break;
-                case var _ when objectType == typeof(Term):
-                    contract.Converter = ToStringConverter;
-                    break;
-                case var _ when objectType == typeof(Aggregator):
-                    contract.Converter = AggregatorTemplateConverter;
-                    break;
-                case var _ when objectType.IsEnum:
-                    contract.Converter = StringEnumConverter;
-                    break;
-                case var _ when objectType.ImplementsGenericInterface(typeof(IAsyncEnumerable<>)):
-                    contract.Converter = AsyncEnumerableConverter;
-                    break;
-            }
+                _ when objectType.HasAttribute<JsonConverterAttribute>(out var attribute) => (JsonConverter) Activator.CreateInstance(attribute.ConverterType,
+                    attribute.ConverterParameters),
+                _ when objectType.IsSubclassOf(typeof(Type)) => TypeConverter,
+                _ when objectType == typeof(Headers) => HeadersConverter,
+                _ when objectType == typeof(ContentType) => ContentTypeConverter,
+                _ when objectType == typeof(ContentTypes) => ContentTypesConverter,
+                _ when objectType == typeof(Term) => ToStringConverter,
+                _ when objectType == typeof(Aggregator) => AggregatorTemplateConverter,
+                _ when objectType.IsEnum => StringEnumConverter,
+                _ when objectType.ImplementsGenericInterface(typeof(IAsyncEnumerable<>)) => AsyncEnumerableConverter,
+                _ => contract.Converter
+            };
             if (entityTypeContract.CustomCreator != null)
                 contract.DefaultCreator = () => entityTypeContract.CustomCreator();
             return contract;

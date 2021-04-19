@@ -9,7 +9,6 @@ using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using RESTable.Linq;
 
 namespace RESTable
 {
@@ -106,23 +105,29 @@ namespace RESTable
                         break;
 
                     case var _ when checkedTypes.Add(type):
-                        type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+                    {
+                        var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
                             .Where(p => !p.RESTableIgnored())
-                            .Select(p => p.FieldType)
-                            .ForEach(parseType);
-                        typeCache.GetDeclaredProperties(type).Values
+                            .Select(p => p.FieldType);
+                        foreach (var field in fields)
+                            parseType(field);
+                        var properties = typeCache.GetDeclaredProperties(type).Values
                             .Where(p => !p.Hidden)
-                            .Select(p => p.Type)
-                            .ForEach(parseType);
+                            .Select(p => p.Type);
+                        foreach (var property in properties)
+                            parseType(property);
                         break;
+                    }
                 }
             }
 
             var entityTypes = entityResources.Select(r => r.Type).ToHashSet();
             var terminalTypes = terminalResources.Select(r => r.Type).ToHashSet();
-            entityTypes.ForEach(parseType);
+            foreach (var type in entityTypes)
+                parseType(type);
             checkedTypes.ExceptWith(entityTypes);
-            terminalTypes.ForEach(parseType);
+            foreach (var type in terminalTypes)
+                parseType(type);
             checkedTypes.ExceptWith(terminalTypes);
 
             return new Metadata

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTable.Linq;
 using RESTable.Requests;
 
 namespace RESTable.Json
@@ -28,8 +27,13 @@ namespace RESTable.Json
         public override void WriteJson(JsonWriter writer, Headers headers, JsonSerializer s)
         {
             var jobj = new JObject();
-            var _headers = (IHeadersInternal) headers;
-            _headers?.GetCustom(WhitelistedNonCustomHeaders).ForEach(pair => jobj[pair.Key] = pair.Value);
+
+            if (headers is IHeadersInternal headersInternal)
+            {
+                foreach (var (key, value) in headersInternal.GetCustom(WhitelistedNonCustomHeaders))
+                    jobj[key] = value;
+            }
+
             jobj.WriteTo(writer);
         }
 
@@ -41,8 +45,9 @@ namespace RESTable.Json
         {
             IEnumerable<KeyValuePair<string, JToken>> values = JObject.Load(reader);
             headers ??= new Headers();
-            values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Key) || pair.Key.IsCustomHeaderName())
-                .ForEach(pair => headers[pair.Key] = pair.Value.ToObject<string>());
+            var headersToRead = values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Key) || pair.Key.IsCustomHeaderName());
+            foreach (var (key, value) in headersToRead)
+                headers[key] = value.ToObject<string>();
             return headers;
         }
     }

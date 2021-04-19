@@ -16,7 +16,7 @@ namespace RESTable.Resources.Operations
         private Authenticator<TResource> SyncAuthenticator { get; set; }
         private Counter<TResource> SyncCounter { get; set; }
 
-        // All operations are transformed into async delegates on resolve
+        // All non-async operations are transformed into async delegates on resolve
 
         private AsyncSelector<TResource> AsyncSelector { get; set; }
         private AsyncInserter<TResource> AsyncInserter { get; set; }

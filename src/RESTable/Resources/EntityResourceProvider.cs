@@ -7,7 +7,6 @@ using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources.Operations;
-using RESTable.Linq;
 using static System.Reflection.BindingFlags;
 
 namespace RESTable.Resources
@@ -89,7 +88,13 @@ namespace RESTable.Resources
         bool IEntityResourceProviderInternal.RemoveProceduralResource(Type resourceType) => RemoveProceduralResource(resourceType);
         void IEntityResourceProviderInternal.InsertProcedural(IProceduralEntityResource resource) => InsertProcedural(resource, ResourceValidator);
         bool IEntityResourceProviderInternal.Include(Type type) => Include(type);
-        void IEntityResourceProviderInternal.MakeClaimProcedural() => SelectProceduralResources().ForEach(r => InsertProcedural(r, ResourceValidator));
+
+        void IEntityResourceProviderInternal.MakeClaimProcedural()
+        {
+            foreach (var resource in SelectProceduralResources())
+                InsertProcedural(resource, ResourceValidator);
+        }
+
         void IEntityResourceProviderInternal.Validate() => Validate();
 
         IProceduralEntityResource IEntityResourceProviderInternal.InsertProceduralResource(string n, string d, Method[] m, dynamic data)
@@ -107,21 +112,27 @@ namespace RESTable.Resources
             SetProceduralResourceDescription(resource, newDescription);
         }
 
-        void IEntityResourceProviderInternal.MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
+        void IEntityResourceProviderInternal.MakeClaimRegular(IEnumerable<Type> types)
         {
-            var resource = _InsertResource(type);
-            if (!IsValid(resource, TypeCache, out var reason))
-                throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
-                                                              $"type '{type.GetRESTableTypeName()}': " + reason);
-        });
+            foreach (var type in types)
+            {
+                var resource = _InsertResource(type);
+                if (!IsValid(resource, TypeCache, out var reason))
+                    throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
+                                                                  $"type '{type.GetRESTableTypeName()}': " + reason);
+            }
+        }
 
-        void IEntityResourceProviderInternal.MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
+        void IEntityResourceProviderInternal.MakeClaimWrapped(IEnumerable<Type> types)
         {
-            var resource = _InsertWrapperResource(type, type.GetWrappedType());
-            if (!IsValid(resource, TypeCache, out var reason))
-                throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
-                                                              $"type '{type.GetRESTableTypeName()}': " + reason);
-        });
+            foreach (var type in types)
+            {
+                var resource = _InsertWrapperResource(type, type.GetWrappedType());
+                if (!IsValid(resource, TypeCache, out var reason))
+                    throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
+                                                                  $"type '{type.GetRESTableTypeName()}': " + reason);
+            }
+        }
 
         #endregion
 

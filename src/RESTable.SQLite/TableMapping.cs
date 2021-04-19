@@ -13,7 +13,6 @@ using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Resources.Templates;
 using RESTable.SQLite.Meta;
-using RESTable.Linq;
 
 namespace RESTable.SQLite
 {
@@ -156,12 +155,6 @@ namespace RESTable.SQLite
                 throw new SQLiteException($"RESTable.SQLite encountered an unknown type: '{type.GUID}'");
             if (type.Namespace == null)
                 throw new SQLiteException($"RESTable.SQLite encountered a type '{type}' with no specified namespace.");
-            // if ((type.FullName.StartsWith("RESTable.", StringComparison.OrdinalIgnoreCase) ||
-            //      type.Namespace.StartsWith("RESTable.", StringComparison.OrdinalIgnoreCase))
-            //     && !type.Assembly.Equals(typeof(TableMapping).Assembly)
-            //     && !type.Assembly.Equals(TypeBuilder.Assembly))
-            //     throw new SQLiteException($"RESTable.SQLite encountered a type '{type}' with an invalid name or namespace. Must not " +
-            //                               "start with 'RESTable'");
             if (type.IsGenericType)
                 throw new SQLiteException($"Invalid SQLite table mapping for CLR class '{type}'. Cannot map a " +
                                           "generic CLR class.");
@@ -196,7 +189,8 @@ namespace RESTable.SQLite
 
         internal async Task DropColumns(IRequest request, List<ColumnMapping> mappings)
         {
-            mappings.ForEach(mapping => ColumnMappings.Remove(mapping.CLRProperty.Name));
+            foreach (var mapping in mappings)
+                ColumnMappings.Remove(mapping.CLRProperty.Name);
             ReloadColumnNames();
             var tempColumnNames = new HashSet<string>(SQLColumnNames);
             tempColumnNames.Remove("rowid");
@@ -259,12 +253,15 @@ namespace RESTable.SQLite
             await ColumnMappings.Push().ConfigureAwait(false);
             var columnNames = MakeColumnNames();
             var columns = await GetSqlColumns().ConfigureAwait(false);
-            columns.Where(column => !columnNames.Contains(column.Name)).ForEach(column => ColumnMappings[column.Name] = new ColumnMapping
-            (
-                tableMapping: this,
-                clrProperty: new CLRProperty(column.Name, column.Type.ToCLRTypeCode()),
-                sqlColumn: column
-            ));
+            foreach (var column in columns.Where(column => !columnNames.Contains(column.Name)))
+            {
+                ColumnMappings[column.Name] = new ColumnMapping
+                (
+                    tableMapping: this,
+                    clrProperty: new CLRProperty(column.Name, column.Type.ToCLRTypeCode()),
+                    sqlColumn: column
+                );
+            }
             ReloadColumnNames();
             TransactMappings = ColumnMappings.Values.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
         }

@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using RESTable.Linq;
 
 namespace RESTable.Meta.Internal
 {
@@ -113,13 +112,16 @@ namespace RESTable.Meta.Internal
             Members = typeCache.GetDeclaredProperties(typeof(T));
             Delegates = delegates;
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
-            views?.ForEach(view =>
+            if (views != null)
             {
-                if (ViewDictionaryInternal.ContainsKey(view.Name))
-                    throw new InvalidResourceViewDeclarationException(view.Type, $"Found multiple views with name '{view.Name}'.");
-                ViewDictionaryInternal[view.Name] = view;
-                view.SetEntityResource(this);
-            });
+                foreach (var view in views)
+                {
+                    if (ViewDictionaryInternal.ContainsKey(view.Name))
+                        throw new InvalidResourceViewDeclarationException(view.Type, $"Found multiple views with name '{view.Name}'.");
+                    ViewDictionaryInternal[view.Name] = view;
+                    view.SetEntityResource(this);
+                }
+            }
             CheckOperationsSupport();
             resourceCollection.AddResource(this);
         }
@@ -131,33 +133,48 @@ namespace RESTable.Meta.Internal
             return resource.GetCustomAttribute<RESTableAttribute>()?.AvailableMethods;
         }
 
-        private static RESTableOperations[] NecessaryOpDefs(IEnumerable<Method> restMethods) => restMethods
-            .SelectMany(method =>
+        private static RESTableOperations[] NecessaryOpDefs(IEnumerable<Method> restMethods)
+        {
+            var methodDefinitions = new HashSet<RESTableOperations>();
+            foreach (var method in restMethods)
             {
                 switch (method)
                 {
                     case Method.HEAD:
                     case Method.REPORT:
-                    case Method.GET: return new[] {RESTableOperations.Select};
-                    case Method.POST: return new[] {RESTableOperations.Insert};
-                    case Method.PUT: return new[] {RESTableOperations.Select, RESTableOperations.Insert, RESTableOperations.Update};
-                    case Method.PATCH: return new[] {RESTableOperations.Select, RESTableOperations.Update};
-                    case Method.DELETE: return new[] {RESTableOperations.Select, RESTableOperations.Delete};
-                    default: return null;
+                    case Method.GET:
+                        methodDefinitions.Add(RESTableOperations.Select);
+                        break;
+                    case Method.POST:
+                        methodDefinitions.Add(RESTableOperations.Insert);
+                        break;
+                    case Method.PUT:
+                        methodDefinitions.Add(RESTableOperations.Select);
+                        methodDefinitions.Add(RESTableOperations.Insert);
+                        methodDefinitions.Add(RESTableOperations.Update);
+                        break;
+                    case Method.PATCH:
+                        methodDefinitions.Add(RESTableOperations.Select);
+                        methodDefinitions.Add(RESTableOperations.Update);
+                        break;
+                    case Method.DELETE:
+                        methodDefinitions.Add(RESTableOperations.Select);
+                        methodDefinitions.Add(RESTableOperations.Delete);
+                        break;
+                    default: throw new ArgumentOutOfRangeException();
                 }
-            }).Distinct().ToArray();
-
-        private bool HasDelegateForOperation(RESTableOperations op)
-        {
-            switch (op)
-            {
-                case RESTableOperations.Select: return CanSelect;
-                case RESTableOperations.Insert: return CanInsert;
-                case RESTableOperations.Update: return CanUpdate;
-                case RESTableOperations.Delete: return CanDelete;
-                default: throw new ArgumentOutOfRangeException(nameof(op));
             }
+            return methodDefinitions.ToArray();
         }
+
+        private bool HasDelegateForOperation(RESTableOperations op) => op switch
+        {
+            RESTableOperations.Select => CanSelect,
+            RESTableOperations.Insert => CanInsert,
+            RESTableOperations.Update => CanUpdate,
+            RESTableOperations.Delete => CanDelete,
+            _ => throw new ArgumentOutOfRangeException(nameof(op))
+        };
 
         private void CheckOperationsSupport()
         {

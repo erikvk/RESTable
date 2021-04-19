@@ -13,7 +13,6 @@ using RESTable.Meta;
 using RESTable.ProtocolProviders;
 using RESTable.Requests;
 using RESTable.Results;
-using RESTable.Linq;
 using static RESTable.ErrorCodes;
 using static RESTable.OData.QueryOptions;
 using static RESTable.Requests.RESTableMetaCondition;
@@ -64,18 +63,15 @@ namespace RESTable.OData
                     if (hasOther)
                     {
                         if (hasFilter) b.Write("&");
-                        var conds = components.MetaConditions.Select(c =>
+                        var conds = components.MetaConditions.Select(c => c.Key switch
                         {
-                            switch (c.Key)
-                            {
-                                case "order_asc": return $"$orderby={c.ValueLiteral} asc";
-                                case "order_desc": return $"$orderby={c.ValueLiteral} desc";
-                                case "select": return $"$select={c.ValueLiteral}";
-                                case "offset": return $"$skip={c.ValueLiteral}";
-                                case "limit": return $"$top={c.ValueLiteral}";
-                                case "search": return $"$search={c.ValueLiteral}";
-                                default: return "";
-                            }
+                            "order_asc" => $"$orderby={c.ValueLiteral} asc",
+                            "order_desc" => $"$orderby={c.ValueLiteral} desc",
+                            "select" => $"$select={c.ValueLiteral}",
+                            "offset" => $"$skip={c.ValueLiteral}",
+                            "limit" => $"$top={c.ValueLiteral}",
+                            "search" => $"$search={c.ValueLiteral}",
+                            _ => ""
                         });
                         b.Write(string.Join("&", conds));
                     }
@@ -95,19 +91,13 @@ namespace RESTable.OData
             var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
             var options = uriMatch.Groups["options"].Value.TrimStart('?');
             var uri = new ODataUriComponents(this);
-            var resourceCollection = context.Services.GetService<ResourceCollection>();
-            switch (entitySet)
+            var resources = context.Services.GetService<ResourceCollection>();
+            uri.ResourceSpecifier = entitySet switch
             {
-                case "":
-                    uri.ResourceSpecifier = resourceCollection.GetResourceSpecifier<ServiceDocument>();
-                    break;
-                case "$metadata":
-                    uri.ResourceSpecifier = resourceCollection.GetResourceSpecifier<MetadataDocument>();
-                    break;
-                default:
-                    uri.ResourceSpecifier = entitySet;
-                    break;
-            }
+                "" => resources.GetResourceSpecifier<ServiceDocument>(),
+                "$metadata" => resources.GetResourceSpecifier<MetadataDocument>(),
+                _ => entitySet
+            };
             if (options.Length != 0)
                 PopulateFromOptions(uri, options);
             return uri;
@@ -141,18 +131,18 @@ namespace RESTable.OData
                             case filter:
                                 if (Regex.Match(decodedValue, @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )") is Match {Success: true} m)
                                     throw new FeatureNotImplemented($"Not implemented operator '{m.Value}' in $filter");
-                                decodedValue
+                                var toAdd = decodedValue
                                     .Replace("(", "")
                                     .Replace(")", "")
                                     .Split(" and ")
-                                    .Select(c =>
+                                    .Select<string, IUriCondition>(c =>
                                     {
                                         var parts = c.Split(' ');
                                         if (parts.Length != 3)
                                             throw new InvalidODataSyntax(InvalidConditionSyntax, "Invalid syntax in $filter query option");
                                         return new UriCondition(parts[0], GetOperator(parts[1]), parts[2], TypeCode.String);
-                                    })
-                                    .ForEach(cond => args.Conditions.Add(cond));
+                                    });
+                                args.Conditions.AddRange(toAdd);
                                 break;
                             case orderby:
                                 if (decodedValue.Contains(","))
@@ -195,33 +185,27 @@ namespace RESTable.OData
             }
         }
 
-        private static string GetOperatorString(Operators op)
+        private static string GetOperatorString(Operators op) => op switch
         {
-            switch (op)
-            {
-                case Operators.EQUALS: return "eq";
-                case Operators.NOT_EQUALS: return "ne";
-                case Operators.LESS_THAN: return "lt";
-                case Operators.GREATER_THAN: return "gt";
-                case Operators.LESS_THAN_OR_EQUALS: return "le";
-                case Operators.GREATER_THAN_OR_EQUALS: return "ge";
-                default: throw new FeatureNotImplemented($"Unknown or not implemented operator '{op}' in $filter");
-            }
-        }
+            Operators.EQUALS => "eq",
+            Operators.NOT_EQUALS => "ne",
+            Operators.LESS_THAN => "lt",
+            Operators.GREATER_THAN => "gt",
+            Operators.LESS_THAN_OR_EQUALS => "le",
+            Operators.GREATER_THAN_OR_EQUALS => "ge",
+            _ => throw new FeatureNotImplemented($"Unknown or not implemented operator '{op}' in $filter")
+        };
 
-        private static Operators GetOperator(string op)
+        private static Operators GetOperator(string op) => op switch
         {
-            switch (op)
-            {
-                case "eq": return Operators.EQUALS;
-                case "ne": return Operators.NOT_EQUALS;
-                case "lt": return Operators.LESS_THAN;
-                case "gt": return Operators.GREATER_THAN;
-                case "le": return Operators.LESS_THAN_OR_EQUALS;
-                case "ge": return Operators.GREATER_THAN_OR_EQUALS;
-                default: throw new FeatureNotImplemented($"Unknown or not implemented operator '{op}' in $filter");
-            }
-        }
+            "eq" => Operators.EQUALS,
+            "ne" => Operators.NOT_EQUALS,
+            "lt" => Operators.LESS_THAN,
+            "gt" => Operators.GREATER_THAN,
+            "le" => Operators.LESS_THAN_OR_EQUALS,
+            "ge" => Operators.GREATER_THAN_OR_EQUALS,
+            _ => throw new FeatureNotImplemented($"Unknown or not implemented operator '{op}' in $filter")
+        };
 
         /// <inheritdoc />
         public bool IsCompliant(IRequest request, out string invalidReason)
