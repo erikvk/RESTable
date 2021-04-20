@@ -169,7 +169,7 @@ namespace RESTable
                 switch (token)
                 {
                     case JObject apiKey:
-                        var keyString = apiKey["Key"].Value<string>();
+                        var keyString = apiKey["Key"]?.Value<string>();
                         if (keyString == null || Regex.IsMatch(keyString, @"[\(\)]") || !Regex.IsMatch(keyString, RegEx.ApiKey))
                             throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                                 "whitespace or parentheses, and only containing ASCII characters 33 through 126");

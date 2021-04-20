@@ -106,7 +106,10 @@ namespace RESTable.Json
             var properties = base.CreateProperties(type, memberSerialization);
             var declaredPropertiesCopy = TypeCache.GetDeclaredProperties(type).ToDictionary(p => p.Key, p => p.Value);
             foreach (var property in properties)
-                declaredPropertiesCopy.Remove(property.PropertyName);
+            {
+                if (property.PropertyName is string name)
+                    declaredPropertiesCopy.Remove(name);
+            }
             var additionalProperties = declaredPropertiesCopy
                 .Values
                 .Where(p => !p.Hidden)
