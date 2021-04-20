@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using static RESTable.Internal.EntityResourceProviderController;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+    /// <inheritdoc cref="IAsyncUpdater{T}" />
     /// <summary>
     /// A meta-resource that provides representations of all resources in a RESTable instance
     /// </summary>
@@ -44,7 +44,8 @@ namespace RESTable.Admin
         /// <summary>
         /// Is this resource procedural, as opposed to declared?
         /// </summary>
-        [RESTableMember(name: "IsProcedural")] public bool _IsProcedural => !IsDeclared;
+        [RESTableMember(name: "IsProcedural")]
+        public bool _IsProcedural => !IsDeclared;
 
         /// <summary>
         /// Is this resource internal?
@@ -59,12 +60,14 @@ namespace RESTable.Admin
         /// <summary>
         /// The views for this resource
         /// </summary>
-        [RESTableMember(hideIfNull: true)] public ViewInfo[] Views { get; private set; }
+        [RESTableMember(hideIfNull: true)]
+        public ViewInfo[] Views { get; private set; }
 
         /// <summary>
         /// The IResource of this resource
         /// </summary>
-        [RESTableMember(hide: true)] public IResource IResource { get; private set; }
+        [RESTableMember(hide: true)]
+        public IResource IResource { get; private set; }
 
         /// <summary>
         /// The resource provider that generated this resource
@@ -79,26 +82,8 @@ namespace RESTable.Admin
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [RESTableMember(hideIfNull: true)] public IEnumerable<Resource> InnerResources { get; private set; }
-
-        private bool IsProcedural(out IProceduralEntityResource proceduralResource, out IEntityResource entityResource,
-            out IEntityResourceProviderInternal provider)
-        {
-            proceduralResource = null;
-            entityResource = null;
-            provider = null;
-
-            if (IResource is IEntityResource _entityResource)
-                entityResource = _entityResource;
-            else return false;
-            if (!EntityResourceProviders.TryGetValue(entityResource.Provider, out provider) || !(provider is IProceduralEntityResourceProvider))
-                return false;
-            var resource = entityResource;
-            if (provider.SelectProceduralResources().FirstOrDefault(r => r.Name == resource.Name) is IProceduralEntityResource _dynamicResource)
-                proceduralResource = _dynamicResource;
-            else return false;
-            return true;
-        }
+        [RESTableMember(hideIfNull: true)]
+        public IEnumerable<Resource> InnerResources { get; private set; }
 
         internal static T Make<T>(IResource iresource) where T : Resource, new()
         {
@@ -127,11 +112,11 @@ namespace RESTable.Admin
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return RESTableConfig.Resources
+            return request
+                .GetRequiredService<ResourceCollection>()
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.Name)
                 .Select(Make<Resource>);
         }
-
     }
 }

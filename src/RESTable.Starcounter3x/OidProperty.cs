@@ -1,9 +1,10 @@
 using System;
+using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using Starcounter.Database;
 
-namespace RESTable.Meta.Internal
+namespace RESTable.Starcounter3x
 {
     /// <inheritdoc />
     /// <summary>
@@ -41,7 +42,9 @@ namespace RESTable.Meta.Internal
             customDateTimeFormat: null,
             getter: GetOid,
             owner: owner,
-            setter: null
+            readOnly: false,
+            setter: null,
+            mergeOntoOwner: false
         ) { }
     }
 }

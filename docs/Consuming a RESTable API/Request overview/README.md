@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Consuming%20a%20RESTable%20API/Request%20overview/
+permalink: /Consuming%20a%20RESTable%20API/Request%20overview/
 ---
 
 # Request overview

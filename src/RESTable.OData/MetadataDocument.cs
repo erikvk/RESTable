@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Newtonsoft.Json.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -20,7 +22,7 @@ namespace RESTable.OData
     [RESTable(GETAvailableToAll = true, Description = description)]
     public class MetadataDocument : IBinary<MetadataDocument>
     {
-        private const string description = "The OData metadata document defining the metadata for the " +
+        private const string description = "The OData metadata document, defining the metadata for the " +
                                            "resources of this application";
 
         #region Annotations
@@ -74,105 +76,115 @@ namespace RESTable.OData
         private static readonly ContentType ContentType = "application/xml; charset=utf-8";
 
         /// <inheritdoc />
-        public (Stream stream, ContentType contentType) Select(IRequest<MetadataDocument> request)
+        public BinaryResult Select(IRequest<MetadataDocument> request)
         {
-            var stream = new MemoryStream();
-            var metadata = Metadata.Get(MetadataLevel.Full);
-            using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            var configurator = request.GetRequiredService<RESTableConfigurator>();
+
+            async Task WriteStream(Stream stream, CancellationToken cancellationToken)
             {
-                swr.Write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                swr.Write("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>");
-                swr.Write("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">");
+                cancellationToken.ThrowIfCancellationRequested();
 
-                var (enumTypes, complexTypes) = metadata.PeripheralTypes.Split(t => t.Key.IsEnum);
+                var metadata = Metadata.Get(MetadataLevel.Full, configurator);
 
-                #region Print enum types
-
-                foreach (var pair in enumTypes)
+                var swr = new StreamWriter(stream, Encoding.UTF8, 4096, true);
+#if NETSTANDARD2_1
+                await using (swr)
+#else
+                using (swr)
+#endif
                 {
-                    swr.Write($"<EnumType Name=\"{pair.Key.FullName}\">");
-                    foreach (var member in EnumMember.GetMembers(pair.Key))
-                        swr.Write($"<Member Name=\"{member.Name}\" Value=\"{member.NumericValue}\"/>");
-                    swr.Write("</EnumType>");
+                    await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>").ConfigureAwait(false);
+                    await swr.WriteAsync("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>").ConfigureAwait(false);
+                    await swr.WriteAsync("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">").ConfigureAwait(false);
+
+                    var (enumTypes, complexTypes) = metadata.PeripheralTypes.Split(t => t.Key.IsEnum);
+
+                    #region Print enum types
+
+                    foreach (var (key, _) in enumTypes)
+                    {
+                        await swr.WriteAsync($"<EnumType Name=\"{key.FullName}\">").ConfigureAwait(false);
+                        foreach (var member in EnumMember.GetMembers(key))
+                            await swr.WriteAsync($"<Member Name=\"{member.Name}\" Value=\"{member.NumericValue}\"/>").ConfigureAwait(false);
+                        await swr.WriteAsync("</EnumType>").ConfigureAwait(false);
+                    }
+
+                    #endregion
+
+                    #region Print complex types
+
+                    foreach (var (type, members) in complexTypes)
+                    {
+                        var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
+                        var isOpenType = type.IsDynamic() || dynamicMembers.Any();
+                        await swr.WriteAsync($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
+                        await WriteMembers(swr, declaredMembers).ConfigureAwait(false);
+                        await swr.WriteAsync("</ComplexType>").ConfigureAwait(false);
+                    }
+
+                    #endregion
+
+                    #region Print entity types
+
+                    foreach (var (type, members) in metadata.EntityResourceTypes.Where(t => t.Key != typeof(Metadata)))
+                    {
+                        var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
+                        var isOpenType = type.IsDynamic() || dynamicMembers.Any();
+                        await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
+                        var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
+                        if (key != null) await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
+                        await WriteMembers(swr, declaredMembers.Where(p => p is not DeclaredProperty {Hidden: true} d || d.Equals(key))).ConfigureAwait(false);
+                        await swr.WriteAsync("</EntityType>").ConfigureAwait(false);
+                    }
+                    await swr.WriteAsync("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>").ConfigureAwait(false);
+
+                    #endregion
+
+                    #region Write entity container and entity sets
+
+                    await swr.WriteAsync($"<EntityContainer Name=\"{EntityContainerName}\">").ConfigureAwait(false);
+                    foreach (var entitySet in metadata.EntityResources.Where(t => t.Type != typeof(Metadata)))
+                    {
+                        await swr.WriteAsync($"<EntitySet EntityType=\"{GetEdmTypeName(entitySet.Type)}\" Name=\"{entitySet.Name}\">").ConfigureAwait(false);
+                        var methods = metadata.CurrentAccessScope[entitySet].Intersect(entitySet.AvailableMethods).ToList();
+                        await swr.WriteAsync(InsertableAnnotation(methods.Contains(Method.POST))).ConfigureAwait(false);
+                        await swr.WriteAsync(UpdatableAnnotation(methods.Contains(Method.PATCH))).ConfigureAwait(false);
+                        await swr.WriteAsync(DeletableAnnotation(methods.Contains(Method.DELETE))).ConfigureAwait(false);
+                        await swr.WriteAsync("</EntitySet>");
+                    }
+                    await swr.WriteAsync("</EntityContainer>").ConfigureAwait(false);
+                    await swr.WriteAsync($"<Annotations Target=\"global.{EntityContainerName}\">").ConfigureAwait(false);
+                    await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.ConformanceLevel\"><EnumMember>Org.OData.Capabilities.V1." +
+                                         "ConformanceLevelType/Minimal</EnumMember></Annotation>").ConfigureAwait(false);
+                    await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.SupportedFormats\">").ConfigureAwait(false);
+                    await swr.WriteAsync("<Collection>").ConfigureAwait(false);
+                    await swr.WriteAsync("<String>application/json;odata.metadata=minimal;IEEE754Compatible=false;odata.streaming=true</String>").ConfigureAwait(false);
+                    await swr.WriteAsync("</Collection>").ConfigureAwait(false);
+                    await swr.WriteAsync("</Annotation>").ConfigureAwait(false);
+                    await swr.WriteAsync("<Annotation Bool=\"true\" Term=\"Org.OData.Capabilities.V1.AsynchronousRequestsSupported\"/>").ConfigureAwait(false);
+                    await swr.WriteAsync("<Annotation Term=\"Org.OData.Capabilities.V1.FilterFunctions\"><Collection></Collection></Annotation>").ConfigureAwait(false);
+                    await swr.WriteAsync("</Annotations>").ConfigureAwait(false);
+                    await swr.WriteAsync("</Schema>").ConfigureAwait(false);
+                    await swr.WriteAsync("</edmx:DataServices></edmx:Edmx>").ConfigureAwait(false);
+
+                    #endregion
                 }
-
-                #endregion
-
-                #region Print complex types
-
-                foreach (var pair in complexTypes)
-                {
-                    var (type, members) = (pair.Key, pair.Value);
-                    var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
-                    var isOpenType = type.IsDynamic() || dynamicMembers.Any();
-                    swr.Write($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
-                    WriteMembers(swr, declaredMembers);
-                    swr.Write("</ComplexType>");
-
-                }
-
-                #endregion
-
-                #region Print entity types
-
-                foreach (var pair in metadata.EntityResourceTypes.Where(t => t.Key != typeof(Metadata)))
-                {
-                    var (type, members) = (pair.Key, pair.Value);
-                    var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
-                    var isOpenType = type.IsDynamic() || dynamicMembers.Any();
-                    swr.Write($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
-                    var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
-                    if (key != null) swr.Write($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>");
-                    WriteMembers(swr, declaredMembers.Where(p => !(p is DeclaredProperty d) || !d.Hidden || d.Equals(key)));
-                    swr.Write("</EntityType>");
-                }
-                swr.Write("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>");
-
-                #endregion
-
-                #region Write entity container and entity sets
-
-                swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
-                foreach (var entitySet in metadata.EntityResources.Where(t => t.Type != typeof(Metadata)))
-                {
-                    swr.Write($"<EntitySet EntityType=\"{GetEdmTypeName(entitySet.Type)}\" Name=\"{entitySet.Name}\">");
-                    var methods = metadata.CurrentAccessScope[entitySet].Intersect(entitySet.AvailableMethods).ToList();
-                    swr.Write(InsertableAnnotation(methods.Contains(Method.POST)));
-                    swr.Write(UpdatableAnnotation(methods.Contains(Method.PATCH)));
-                    swr.Write(DeletableAnnotation(methods.Contains(Method.DELETE)));
-                    swr.Write("</EntitySet>");
-                }
-                swr.Write("</EntityContainer>");
-                swr.Write($"<Annotations Target=\"global.{EntityContainerName}\">");
-                swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.ConformanceLevel\"><EnumMember>Org.OData.Capabilities.V1." +
-                          "ConformanceLevelType/Minimal</EnumMember></Annotation>");
-                swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.SupportedFormats\">");
-                swr.Write("<Collection>");
-                swr.Write("<String>application/json;odata.metadata=minimal;IEEE754Compatible=false;odata.streaming=true</String>");
-                swr.Write("</Collection>");
-                swr.Write("</Annotation>");
-                swr.Write("<Annotation Bool=\"true\" Term=\"Org.OData.Capabilities.V1.AsynchronousRequestsSupported\"/>");
-                swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.FilterFunctions\"><Collection></Collection></Annotation>");
-                swr.Write("</Annotations>");
-                swr.Write("</Schema>");
-                swr.Write("</edmx:DataServices></edmx:Edmx>");
-
-                #endregion
             }
-            return (stream, ContentType);
+
+            return new BinaryResult(WriteStream, ContentType);
         }
 
-        private static void WriteMembers(TextWriter swr, IEnumerable<Member> members)
+        private static async Task WriteMembers(TextWriter swr, IEnumerable<Member> members)
         {
             foreach (var member in members)
             {
-                swr.Write($"<Property Name=\"{member.Name}\" Nullable=\"{member.IsNullable.XMLBool()}\" " +
-                          $"Type=\"{GetEdmTypeName(member.Type)}\" ");
+                await swr.WriteAsync($"<Property Name=\"{member.Name}\" Nullable=\"{member.IsNullable.XMLBool()}\" " +
+                                     $"Type=\"{GetEdmTypeName(member.Type)}\" ").ConfigureAwait(false);
                 if (member.IsReadOnly)
-                    swr.Write($">{ReadOnlyAnnotation}</Property>");
+                    await swr.WriteAsync($">{ReadOnlyAnnotation}</Property>").ConfigureAwait(false);
                 else if (member.IsWriteOnly)
-                    swr.Write($">{WriteOnlyAnnotation}</Property>");
-                else swr.Write("/>");
+                    await swr.WriteAsync($">{WriteOnlyAnnotation}</Property>").ConfigureAwait(false);
+                else await swr.WriteAsync("/>").ConfigureAwait(false);
             }
         }
 
@@ -182,43 +194,39 @@ namespace RESTable.OData
         private static string GetEdmTypeName(Type type)
         {
             if (type.IsEnum) return "global." + type.FullName;
-            switch (Type.GetTypeCode(type))
+            return Type.GetTypeCode(type) switch
             {
-                case TypeCode.Object:
-                    switch (type)
-                    {
-                        case var _ when type == typeof(Guid): return "Edm.Guid";
-                        case var _ when type.IsNullable(out var t): return GetEdmTypeName(t);
-                        case var _ when type.ImplementsGenericInterface(typeof(IDictionary<,>), out var p) && p[0] == typeof(string):
-                            return "global.RESTable.DynamicResource";
-                        case var _ when typeof(JValue).IsAssignableFrom(type): return "Edm.PrimitiveType";
-                        case var _ when typeof(JToken).IsAssignableFrom(type): return "Edm.ComplexType";
-                        case var _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p): return $"Collection({GetEdmTypeName(p[0])})";
-                        default: return $"global.{type.FullName}";
-                    }
-                case TypeCode.Boolean: return "Edm.Boolean";
-                case TypeCode.Byte: return "Edm.Byte";
-                case TypeCode.DateTime: return "Edm.DateTimeOffset";
-                case TypeCode.Decimal: return "Edm.Decimal";
-                case TypeCode.Double: return "Edm.Double";
-                case TypeCode.Single: return "Edm.Single";
-                case TypeCode.Int16: return "Edm.Int16";
-                case TypeCode.UInt16:
-                case TypeCode.Int32: return "Edm.Int32";
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                case TypeCode.Int64: return "Edm.Int64";
-                case TypeCode.SByte: return "Edm.SByte";
-                case TypeCode.Char:
-                case TypeCode.String: return "Edm.String";
-                default: return $"global.{type.FullName}";
-            }
+                TypeCode.Object => type switch
+                {
+                    _ when type == typeof(Guid) => "Edm.Guid",
+                    _ when type.IsNullable(out var baseType) => GetEdmTypeName(baseType),
+                    _ when type.ImplementsGenericInterface(typeof(IDictionary<,>), out var p) && p[0] == typeof(string) => "global.RESTable.DynamicResource",
+                    _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p) => $"Collection({GetEdmTypeName(p[0])})",
+                    _ => $"global.{type.FullName}"
+                },
+                TypeCode.Boolean => "Edm.Boolean",
+                TypeCode.Byte => "Edm.Byte",
+                TypeCode.DateTime => "Edm.DateTimeOffset",
+                TypeCode.Decimal => "Edm.Decimal",
+                TypeCode.Double => "Edm.Double",
+                TypeCode.Single => "Edm.Single",
+                TypeCode.Int16 => "Edm.Int16",
+                TypeCode.UInt16 => "Edm.Int32",
+                TypeCode.Int32 => "Edm.Int32",
+                TypeCode.UInt32 => "Edm.Int64",
+                TypeCode.UInt64 => "Edm.Int64",
+                TypeCode.Int64 => "Edm.Int64",
+                TypeCode.SByte => "Edm.SByte",
+                TypeCode.Char => "Edm.String",
+                TypeCode.String => "Edm.String",
+                _ => $"global.{type.FullName}"
+            };
         }
 
         /// <summary>
         /// We have to know whether the member is of dynamic type. If it is, the type has to be 
         /// declared as open.
         /// </summary>
-        private static bool IsDynamicMember(Member member) => member.Type == typeof(object) || typeof(JToken).IsAssignableFrom(member.Type);
+        private static bool IsDynamicMember(Member member) => member.Type == typeof(object);
     }
 }

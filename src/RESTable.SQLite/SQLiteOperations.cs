@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.SQLite.Meta;
 using RESTable.Linq;
@@ -8,7 +9,7 @@ namespace RESTable.SQLite
 {
     internal static class SQLiteOperations<T> where T : SQLiteTable
     {
-        public static IEnumerable<T> Select(IRequest<T> request)
+        public static IAsyncEnumerable<T> SelectAsync(IRequest<T> request)
         {
             var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
             request.Conditions = post;
@@ -18,30 +19,32 @@ namespace RESTable.SQLite
             );
         }
 
-        public static int Insert(IRequest<T> request)
+        public static async ValueTask<int> InsertAsync(IRequest<T> request)
         {
-            return SQLite<T>.Insert(request.GetInputEntities());
+            return await SQLite<T>.Insert(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
-        public static int Update(IRequest<T> request)
+        public static async ValueTask<int> UpdateAsync(IRequest<T> request)
         {
-            return SQLite<T>.Update(request.GetInputEntities().ToList());
+            return await SQLite<T>.Update(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
-        public static int Delete(IRequest<T> request)
+        public static async ValueTask<int> DeleteAsync(IRequest<T> request)
         {
-            return SQLite<T>.Delete(request.GetInputEntities().ToList());
+            return await SQLite<T>.Delete(request.GetInputEntitiesAsync()).ConfigureAwait(false);
         }
 
-        public static long Count(IRequest<T> request)
+        public static async ValueTask<long> CountAsync(IRequest<T> request)
         {
             var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
-            return post.Any()
-                ? SQLite<T>
+            if (post.Any())
+            {
+                return await SQLite<T>
                     .Select(sql.ToSQLiteWhereClause())
                     .Where(post)
-                    .Count()
-                : SQLite<T>.Count(sql.ToSQLiteWhereClause());
+                    .CountAsync().ConfigureAwait(false);
+            }
+            return await SQLite<T>.Count(sql.ToSQLiteWhereClause()).ConfigureAwait(false);
         }
 
         private static bool IsSQLiteQueryable(ICondition condition)

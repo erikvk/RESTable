@@ -8,11 +8,6 @@ namespace RESTable
     public interface ITraceable
     {
         /// <summary>
-        /// A unique ID
-        /// </summary>
-        string TraceId { get; }
-
-        /// <summary>
         /// The context to which this trace can be led
         /// </summary>
         RESTableContext Context { get; }

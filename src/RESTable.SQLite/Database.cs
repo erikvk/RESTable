@@ -1,51 +1,55 @@
 ﻿using System;
+using System.Data.Common;
 using System.Data.SQLite;
+using System.Threading.Tasks;
 
 namespace RESTable.SQLite
 {
     internal static class Database
     {
-        internal static int Query(string sql)
+        internal static async Task<int> QueryAsync(string sql)
         {
-            using (var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn())
-            using (var command = connection.CreateCommand())
+            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            return await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        internal static async Task QueryAsync(string sql, Action<DbDataReader> rowAction) => await QueryAsync(sql, reader =>
+        {
+            rowAction(reader);
+            return default;
+        }).ConfigureAwait(false);
+
+        internal static async Task QueryAsync(string sql, Func<DbDataReader, ValueTask> rowTask)
+        {
+            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+            await using var command = new SQLiteCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+            while (await reader.ReadAsync().ConfigureAwait(false))
+                await rowTask(reader).ConfigureAwait(false);
+        }
+
+        internal static async Task<int> TransactAsync(Func<SQLiteCommand, Task<int>> callback)
+        {
+            return await TransactAsync((_, command) => callback(command)).ConfigureAwait(false);
+        }
+
+        internal static async Task<int> TransactAsync(Func<SQLiteConnection, SQLiteCommand, Task<int>> callback)
+        {
+            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+            await using var command = connection.CreateCommand();
+            await using var transaction = await connection.BeginTransactionAsync().ConfigureAwait(false);
+            try
             {
-                command.CommandText = sql;
-                return command.ExecuteNonQuery();
+                var result = await callback(connection, command).ConfigureAwait(false);
+                await transaction.CommitAsync().ConfigureAwait(false);
+                return result;
             }
-        }
-
-        internal static void Query(string sql, Action<SQLiteDataReader> rowAction)
-        {
-            using (var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn())
-            using (var command = new SQLiteCommand(sql, connection))
-            using (var reader = command.ExecuteReader())
-                while (reader.Read())
-                    rowAction(reader);
-        }
-
-        internal static int Transact(Func<SQLiteCommand, int> callback)
-        {
-            return Transact((connection, command) => callback(command));
-        }
-
-        internal static int Transact(Func<SQLiteConnection, SQLiteCommand, int> callback)
-        {
-            using (var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn())
-            using (var command = connection.CreateCommand())
-            using (var transaction = connection.BeginTransaction())
+            catch
             {
-                try
-                {
-                    var result = callback(connection, command);
-                    transaction.Commit();
-                    return result;
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
+                await transaction.RollbackAsync().ConfigureAwait(false);
+                throw;
             }
         }
     }

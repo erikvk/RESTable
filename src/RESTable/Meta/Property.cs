@@ -23,16 +23,16 @@ namespace RESTable.Meta
         /// The allowed condition operators for this property
         /// </summary>
         public Operators AllowedConditionOperators { get; protected set; } = Operators.All;
-        
+
         /// <summary>
         /// Gets the value of this property, for a given target object
         /// </summary>
-        public virtual dynamic GetValue(object target) => Getter?.Invoke(target);
+        public virtual object GetValue(object target) => Getter?.Invoke(target);
 
         /// <summary>
         /// Sets the value of this property, for a given target object and a given value
         /// </summary>
-        public virtual void SetValue(object target, dynamic value) => Setter?.Invoke(target, value);
+        public virtual void SetValue(object target, object value) => Setter?.Invoke(target, value);
 
         /// <summary>
         /// </summary>
@@ -42,20 +42,14 @@ namespace RESTable.Meta
         /// </summary>
         internal Getter Getter { get; set; }
 
+        public bool ReadOnly { get; set; }
+
         /// <inheritdoc />
         public override bool IsReadable => Getter != null;
 
         /// <inheritdoc />
-        public override bool IsWritable => Setter != null;
+        public override bool IsWritable => !ReadOnly && Setter != null;
 
-        /// <summary>
-        /// Parses an input property name string and returns a Property describing the 
-        /// corresponding resource property.
-        /// </summary>
-        public static Property Parse(string keyString, Type resource, bool dynamic)
-        {
-            if (dynamic) return DynamicProperty.Parse(keyString);
-            return DeclaredProperty.Find(resource, keyString);
-        }
+        protected Property(Type owner) : base(owner) { }
     }
 }

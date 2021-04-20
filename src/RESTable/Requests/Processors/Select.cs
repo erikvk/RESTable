@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Meta;
-using RESTable.Linq;
 
 namespace RESTable.Requests.Processors
 {
@@ -14,30 +12,27 @@ namespace RESTable.Requests.Processors
     /// </summary>
     public class Select : List<Term>, IProcessor
     {
-        internal Select(IEntityResource resource, string keys, ICollection<string> dynDomain) => keys
-            .Split(',')
-            .Distinct()
-            .Select(key => resource.MakeOutputTerm(key, dynDomain))
-            .ForEach(Add);
+        public Select(IEnumerable<Term> collection) : base(collection) { }
 
-        private Select(Select other) : base(other) { }
-        internal Select GetCopy() => new Select(this);
+        internal Select GetCopy() => new(this);
 
         internal JObject Apply<T>(T entity)
         {
             var jobj = new JObject();
-            ForEach(term =>
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            var serializer = jsonProvider.GetSerializer();
+            foreach (var term in this)
             {
-                if (jobj[term.Key] != null) return;
-                object val = term.Evaluate(entity, out var actualKey);
-                jobj[actualKey] = val == null ? null : JToken.FromObject(val, JsonProvider.Serializer);
-            });
+                if (jobj[term.Key] != null) continue;
+                var termValue = term.GetValue(entity, out var actualKey);
+                jobj[actualKey] = termValue == null ? null : JToken.FromObject(termValue, serializer);
+            }
             return jobj;
         }
 
         /// <summary>
         /// Selects a set of properties from an IEnumerable of entities
         /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(Apply);
+        public IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities) => entities?.Select(Apply);
     }
 }

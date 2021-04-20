@@ -5,7 +5,7 @@ namespace RESTable.Meta.IL
     internal sealed class MatchContext
     {
         internal Instruction Instruction;
-        private readonly Dictionary<object, object> data = new Dictionary<object, object>();
+        private readonly Dictionary<object, object> data = new();
         internal bool success;
 
         internal bool IsMatch

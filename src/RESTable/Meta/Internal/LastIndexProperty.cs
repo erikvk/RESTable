@@ -19,6 +19,7 @@ namespace RESTable.Meta.Internal
             skipConditions: false,
             hidden: true,
             hiddenIfNull: false,
+            readOnly: false,
             isEnum: type.IsEnum,
             customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
@@ -70,7 +71,8 @@ namespace RESTable.Meta.Internal
                             catch { }
                             break;
                     }
-                })
+                }),
+            mergeOntoOwner: false
         ) { }
     }
 }

@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/RESTable.Admin/PropertyCache/
+permalink: /Built-in%20resources/RESTable.Admin/PropertyCache/
 ---
 
 # `PropertyCache`

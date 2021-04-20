@@ -1,18 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using RESTable.Meta.Internal;
-using RESTable.Linq;
 
 namespace RESTable.Meta
 {
-    /// <summary>
-    /// Defines the operation of handling a change observed by a property monitoring tree
-    /// </summary>
-    /// <param name="termRelativeRoot">A term representing the changing object, relative to the root</param>
-    /// <param name="oldValue">The old value of the changing object</param>
-    /// <param name="newValue">The new and current value of the changing object</param>
-    public delegate void ObservedChangeHandler(Term termRelativeRoot, object oldValue, object newValue);
-
     /// <inheritdoc />
     /// <summary>
     /// Property monitoring trees is a data structure for properties (and properties of properties
@@ -51,7 +42,8 @@ namespace RESTable.Meta
             Type rootType,
             string outputTermComponentSeparator,
             Term stub,
-            ObservedChangeHandler handleObservedChange
+            ObservedChangeHandler handleObservedChange,
+            TypeCache typeCache
         )
         {
             OutputTermComponentSeparator = outputTermComponentSeparator;
@@ -70,7 +62,7 @@ namespace RESTable.Meta
                     var link = new PropertyLink(this, rootWard, new AnyIndexProperty(elementType, owner));
                     recurseTree(elementType, link);
                 }
-                foreach (var property in owner.GetDeclaredProperties().Values)
+                foreach (var property in typeCache.GetDeclaredProperties(owner).Values)
                 {
                     var link = new PropertyLink(this, rootWard, property);
                     recurseTree(property.Type, link);
@@ -85,9 +77,17 @@ namespace RESTable.Meta
         /// <summary>
         /// Makes all links active and registers all event listeners
         /// </summary>
-        public void Activate() => AllLinks.ForEach(link => link.Activate());
+        public void Activate()
+        {
+            foreach (var link in AllLinks)
+                link.Activate();
+        }
 
         /// <inheritdoc />
-        public void Dispose() => AllLinks.ForEach(link => link.Dispose());
+        public void Dispose()
+        {
+            foreach (var link in AllLinks)
+                link.Dispose();
+        }
     }
 }

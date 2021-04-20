@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Results;
 
 namespace RESTable.Linq
@@ -10,6 +11,8 @@ namespace RESTable.Linq
     /// </summary>
     public static class Enumerable
     {
+        public static IAsyncEnumerable<T> ToAsyncSingleton<T>(this T item) => AsyncEnumerable.Repeat(item, 1);
+
         /// <summary>
         /// Generates an IEnumerable of string using the selector function applied to the source IEnumerable, 
         /// and then joins those strings using the separator.
@@ -154,92 +157,6 @@ namespace RESTable.Linq
         }
 
         /// <summary>
-        /// Evaluates the predicate. If the boolean condition is true, returns the result of the 'then'
-        /// function applied to the source IEnumerable. Else, returns the source IEnumerable.
-        /// </summary>
-        public static IEnumerable<T> If<T>(this IEnumerable<T> source, bool @if,
-            Func<IEnumerable<T>, IEnumerable<T>> then)
-        {
-            return @if ? then(source) : source;
-        }
-
-        /// <summary>
-        /// Evaluates the predicate. If the boolean condition is true, returns the result of the 'then'
-        /// function applied to the source IEnumerable. Else, returns the result of the 'else' function 
-        /// applied to the source IEnumerable.
-        /// </summary>
-        public static IEnumerable<T2> If<T1, T2>(this IEnumerable<T1> source, bool @if,
-            Func<IEnumerable<T1>, IEnumerable<T2>> then, Func<IEnumerable<T1>, IEnumerable<T2>> @else)
-        {
-            return @if ? then(source) : @else(source);
-        }
-
-        /// <summary>
-        /// Evaluates the predicate. If the predicate evaluates to true, returns the result of the 'then'
-        /// function applied to the source IEnumerable. Else, returns the source IEnumerable.
-        /// </summary>
-        public static IEnumerable<T> If<T>(this IEnumerable<T> source, Func<bool> @if,
-            Func<IEnumerable<T>, IEnumerable<T>> then)
-        {
-            return @if() ? then(source) : source;
-        }
-
-        /// <summary>
-        /// Performs an action for each element in an IEnumerable, disregarding any exception thrown
-        /// during evaluation of the action.
-        /// </summary>
-        public static void SafeForEach<T>(this IEnumerable<T> source, Action<T> action)
-        {
-            foreach (var e in source)
-            {
-                try
-                {
-                    action(e);
-                }
-                catch { }
-            }
-        }
-
-        /// <summary>
-        /// Performs an action for each element in an IEnumerable, disregarding any exception thrown
-        /// during evaluation of the action. Exposes the element index.
-        /// </summary>
-        public static void SafeForEach<T>(this IEnumerable<T> source, Action<T, int> action)
-        {
-            var i = 0;
-            foreach (var e in source)
-            {
-                try
-                {
-                    action(e, i);
-                }
-                catch { }
-                i += 1;
-            }
-        }
-
-        /// <summary>
-        /// Performs an action for each element in an IEnumerable.
-        /// </summary>
-        public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
-        {
-            foreach (var e in source) action(e);
-        }
-
-        /// <summary>
-        /// Performs an action for each element in an IEnumerable. Exposes the element index.
-        /// </summary>
-        public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
-        {
-            var i = 0;
-            foreach (var e in source)
-            {
-                action(e, i);
-                i += 1;
-            }
-        }
-
-        /// <summary>
         /// Splits an input IEnumerable into two lists, one for which the given predicate is true, and one
         /// for which the given predicate is false
         /// </summary>
@@ -256,15 +173,15 @@ namespace RESTable.Linq
             return (trues, falses);
         }
 
-        internal static IEnumerable<T> UnsafeLimit<T>(this IEnumerable<T> source, bool limit = true)
+        internal static IAsyncEnumerable<T> UnsafeLimit<T>(this IAsyncEnumerable<T> source, bool limit = true)
         {
             if (!limit) return source;
             if (source == null) return null;
 
-            IEnumerable<T> apply()
+            async IAsyncEnumerable<T> apply()
             {
                 var i = 1;
-                foreach (var entity in source)
+                await foreach (var entity in source.ConfigureAwait(false))
                 {
                     if (i > 1) throw new AmbiguousMatch();
                     i += 1;
@@ -275,15 +192,15 @@ namespace RESTable.Linq
             return apply();
         }
 
-        internal static IEnumerable<T> InputLimit<T>(this IEnumerable<T> source, bool limit = true)
+        internal static IAsyncEnumerable<T> InputLimit<T>(this IAsyncEnumerable<T> source, bool limit = true)
         {
             if (!limit) return source;
             if (source == null) return null;
 
-            IEnumerable<T> apply()
+            async IAsyncEnumerable<T> apply()
             {
                 var i = 1;
-                foreach (var entity in source)
+                await foreach (var entity in source.ConfigureAwait(false))
                 {
                     if (i > 1) throw new InvalidInputCount();
                     i += 1;

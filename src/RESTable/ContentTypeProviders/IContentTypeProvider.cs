@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.ContentTypeProviders
@@ -48,18 +50,18 @@ namespace RESTable.ContentTypeProviders
         /// <summary>
         /// Serializes the entity collection to the given Stream and returns the number of entities serialized.
         /// </summary>
-        ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null);
+        Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class;
 
         /// <summary>
         /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        IEnumerable<T> DeserializeCollection<T>(Stream stream);
+        IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream);
 
         /// <summary>
         /// Populates the data from the byte array to all entities in the given collection. Populate calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body);
+        IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body);
     }
 }

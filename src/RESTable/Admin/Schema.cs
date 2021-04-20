@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
+using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -11,13 +12,12 @@ using static RESTable.Requests.Operators;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="JObject" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <summary>
     /// The Schema resource provides schemas for non-dynamic RESTable resources
     /// </summary>
     [RESTable(GET, Description = description)]
-    internal class Schema : JObject, ISelector<Schema>
+    internal class Schema : Dictionary<string, object>, ISelector<Schema>
     {
         private const string description = "The Schema resource provides schemas for " +
                                            "non-dynamic RESTable resources.";
@@ -27,20 +27,29 @@ namespace RESTable.Admin
         /// </summary>
         public string Resource { private get; set; }
 
+        public Schema(IEnumerable<KeyValuePair<string, object>> collection)
+        {
+            foreach (var (key, value) in collection)
+            {
+                Add(key, value);
+            }
+        }
+
         /// <inheritdoc />
         public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var resourceCondition = request.Conditions.Pop("resource", EQUALS);
-            if (!(resourceCondition?.Value is string resourceName))
+            var resourceCondition = request.Conditions.Pop(nameof(Resource), EQUALS);
+            if (resourceCondition?.Value is not string resourceName)
                 throw new Exception("Invalid syntax in request to RESTable.Schema. Format: " +
-                                    "/schema/resource=insert_resource_name_here");
-            var res = Meta.Resource.Find(resourceName) as IEntityResource;
-            if (res?.IsDynamic != false)
+                                    "/RESTable.Admin.Schema/resource=<insert_resource_name_here>");
+            var resource = request.GetRequiredService<ResourceCollection>().FindResource(resourceName) as IEntityResource;
+            if (resource?.IsDynamic != false)
                 yield break;
-            var schema = new Schema();
-            res.Members.Values.ForEach(p => schema[p.Name] = p.Type.FullName);
-            yield return schema;
+            yield return new Schema
+            (
+                collection: resource.Members.Values.Select(p => new KeyValuePair<string, object>(p.Name, p.Type.FullName))
+            );
         }
     }
 }

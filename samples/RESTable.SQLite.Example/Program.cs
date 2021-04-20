@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -17,14 +19,13 @@ namespace RESTable.SQLite.Example
     {
         public static void Main()
         {
-            RESTableConfig.Init
-            (
-                port: 8282,
-                uri: "/api",
-                requireApiKey: true,
-                configFilePath: "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteEntityResourceProvider("\\data_debug2")}
-            );
+            new ServiceCollection()
+                .AddSqliteProvider("\\data_debug2")
+                .AddJsonProvider()
+                .AddRESTable()
+                .BuildServiceProvider()
+                .GetRequiredService<RESTableConfigurator>()
+                .ConfigureRESTable(requireApiKey: true, configFilePath: "./Config.xml");
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers
             // The 'uri' argument sets the root uri of the REST API
@@ -57,10 +58,10 @@ namespace RESTable.SQLite.Example
         public int Int { get; set; }
         public MyEnum Enum { get; set; }
 
-        protected override void OnInsert()
+        protected override Task OnInsert()
         {
-            base.OnInsert();
             Enum = MyEnum.B;
+            return base.OnInsert();
         }
     }
 
@@ -87,7 +88,7 @@ namespace RESTable.SQLite.Example
     }
 
     [RESTable(GET)]
-    public class SuperheroReport : ISelector<SuperheroReport>
+    public class SuperheroReport : IAsyncSelector<SuperheroReport>
     {
         public long NumberOfSuperheroes { get; private set; }
         public Superhero FirstSuperheroInserted { get; private set; }
@@ -98,25 +99,22 @@ namespace RESTable.SQLite.Example
         /// This method returns an IEnumerable of the resource type. RESTable will call this 
         /// on GET requests and send the results back to the client as e.g. JSON.
         /// </summary>
-        public IEnumerable<SuperheroReport> Select(IRequest<SuperheroReport> request)
+        public async IAsyncEnumerable<SuperheroReport> SelectAsync(IRequest<SuperheroReport> request)
         {
-            var superHeroesOrdered = SQLite<Superhero>
+            var superHeroesOrdered = await SQLite<Superhero>
                 .Select()
                 .OrderBy(r => r.RowId)
-                .ToList();
-            return new[]
+                .ToListAsync();
+            yield return new SuperheroReport
             {
-                new SuperheroReport
-                {
-                    NumberOfSuperheroes = SQLite<Superhero>.Count(),
-                    FirstSuperheroInserted = superHeroesOrdered.FirstOrDefault(),
-                    LastSuperheroInserted = superHeroesOrdered.LastOrDefault(),
-                }
+                NumberOfSuperheroes = await SQLite<Superhero>.Count(),
+                FirstSuperheroInserted = superHeroesOrdered.FirstOrDefault(),
+                LastSuperheroInserted = superHeroesOrdered.LastOrDefault()
             };
         }
     }
 
-    [SQLite(CustomTableName = "Heroes"), RESTable]
+    [SQLite(customTableName: "Heroes"), RESTable]
     public class Superhero : SQLiteTable
     {
         public string Name { get; set; }

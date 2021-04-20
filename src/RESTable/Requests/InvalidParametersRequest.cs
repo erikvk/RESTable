@@ -1,65 +1,60 @@
 ﻿using System;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Results;
 
 namespace RESTable.Requests
 {
-    internal class InvalidParametersRequest : IRequest, IRequestInternal
+    internal class InvalidParametersRequest : IRequest
     {
         public bool IsValid { get; }
         private Exception Error { get; }
-        public IResult Evaluate() => Error.AsResultOf(this);
-        public Type TargetType => null;
+        public Task<IResult> GetResult(CancellationToken cancellationToken = new()) => Task.FromResult<IResult>(Error.AsResultOf(this));
+        public ITarget Target => null;
         public bool HasConditions => false;
 
         #region Logable
 
         private ILogable LogItem => Parameters;
+        private IHeaderHolder HeaderHolder => Parameters;
         MessageType ILogable.MessageType => LogItem.MessageType;
-        string ILogable.LogMessage => LogItem.LogMessage;
-        string ILogable.LogContent => LogItem.LogContent;
+        ValueTask<string> ILogable.GetLogMessage() => LogItem.GetLogMessage();
+        ValueTask<string> ILogable.GetLogContent() => LogItem.GetLogContent();
 
         /// <inheritdoc />
         public DateTime LogTime { get; } = DateTime.Now;
 
-        string ILogable.HeadersStringCache
+        string IHeaderHolder.HeadersStringCache
         {
-            get => LogItem.HeadersStringCache;
-            set => LogItem.HeadersStringCache = value;
+            get => HeaderHolder.HeadersStringCache;
+            set => HeaderHolder.HeadersStringCache = value;
         }
 
-        bool ILogable.ExcludeHeaders => LogItem.ExcludeHeaders;
+        bool IHeaderHolder.ExcludeHeaders => HeaderHolder.ExcludeHeaders;
 
         #endregion
 
         #region Parameter bindings
 
         public RequestParameters Parameters { get; }
-        public string TraceId => Parameters.TraceId;
+        public string ProtocolIdentifier => Parameters.ProtocolIdentifier;
         public RESTableContext Context => Parameters.Context;
         public CachedProtocolProvider CachedProtocolProvider => Parameters.CachedProtocolProvider;
         public IUriComponents UriComponents => Parameters.UriComponents;
         public Headers Headers => Parameters.Headers;
         public IResource Resource { get; }
-        public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
-        public TimeSpan TimeElapsed => Parameters.Stopwatch.Elapsed;
-        public void EnsureServiceAttached<T>(T service) where T : class { }
-        public void EnsureServiceAttached<TService, TImplementation>(TImplementation service) where TService : class where TImplementation : class, TService { }
-        public object GetService(Type serviceType) => null;
+        public TimeSpan TimeElapsed => default;
+        public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
 
         #endregion
 
         public Method Method { get; set; }
         public MetaConditions MetaConditions { get; }
-        private readonly Body body;
-        public Body GetBody() => body;
         public Headers ResponseHeaders { get; }
         public Cookies Cookies => Context.Client.Cookies;
-
-        public void SetBody(object content, ContentType? contentType = null) =>
-            throw new InvalidOperationException("Cannot set body of an invalid request");
+        public Body Body { get; set; }
 
         internal InvalidParametersRequest(RequestParameters parameters)
         {
@@ -69,31 +64,17 @@ namespace RESTable.Requests
             Resource = parameters.iresource;
             MetaConditions = null;
             Method = parameters.Method;
-            var contentType = Headers.ContentType
-                              ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
-                              ?? ContentType.JSON;
-            if (parameters.BodyBytes?.Any() == true)
-                body = new Body
-                (
-                    stream: new RESTableStream
-                    (
-                        contentType: contentType,
-                        buffer: parameters.BodyBytes
-                    ),
-                    protocolProvider: parameters.CachedProtocolProvider
-                );
+            Body = parameters.Body;
             ResponseHeaders = null;
         }
 
-        public IRequest GetCopy(string newProtocol = null)
+        public Task<IRequest> GetCopy(string newProtocol = null)
         {
             // We do not care about changing the protocol of an invalid parameters request.
-            return new InvalidParametersRequest(Parameters);
+            return Task.FromResult<IRequest>(new InvalidParametersRequest(Parameters));
         }
 
-        public void Dispose()
-        {
-            GetBody().Dispose();
-        }
+        public void Dispose() => Body.Dispose();
+        public async ValueTask DisposeAsync() => await Body.DisposeAsync().ConfigureAwait(false);
     }
 }

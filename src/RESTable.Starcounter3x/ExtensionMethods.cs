@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Requests;
-using RESTable.Resources;
 using Starcounter.Database;
 using static RESTable.Requests.Operators;
 
@@ -13,18 +11,6 @@ namespace RESTable.Starcounter3x
 {
     public static class ExtensionMethods
     {
-        public static IServiceCollection AddStarcounterResourceProvider(this IServiceCollection services)
-        {
-            services.Add(new ServiceDescriptor(typeof(IEntityResourceProvider), new StarcounterDeclaredResourceProvider()));
-            return services;
-        }
-
-        public static IServiceCollection AddStarcounterEntityTypeResolver(this IServiceCollection services)
-        {
-            services.Add(new ServiceDescriptor(typeof(IEntityTypeContractResolver), new StarcounterEntityTypeContractResolver()));
-            return services;
-        }
-
         public static bool IsStarcounterDatabaseType(this MemberInfo type)
         {
             return type.HasAttribute<DatabaseAttribute>();
@@ -71,25 +57,21 @@ namespace RESTable.Starcounter3x
             var hasOtherIndex = true;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
-                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
+                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.ParsedOperator.SQL, c.Value);
                 if (value == null)
                 {
-                    switch (c.Operator)
+                    op = c.Operator switch
                     {
-                        case EQUALS:
-                            op = "IS NULL";
-                            break;
-                        case NOT_EQUALS:
-                            op = "IS NOT NULL";
-                            break;
-                        default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
-                    }
+                        EQUALS => "IS NULL",
+                        NOT_EQUALS => "IS NOT NULL",
+                        _ => throw new Exception($"Operator '{op}' is not valid for comparison with NULL")
+                    };
                     return $"t.{key} {op}";
                 }
                 literals.Add(c.Value);
                 hasOtherIndex = false;
                 _valuesAssignments[index] = literals.Count - 1;
-                return $"t.{key} {c.InternalOperator.SQL} ? ";
+                return $"t.{key} {c.ParsedOperator.SQL} ? ";
             }));
             useOrderBy = !hasOtherIndex;
             if (clause.Length == 0)
@@ -108,24 +90,20 @@ namespace RESTable.Starcounter3x
             var hasOtherIndex = false;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
-                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
+                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.ParsedOperator.SQL, c.Value);
                 if (value == null)
                 {
-                    switch (c.Operator)
+                    op = c.Operator switch
                     {
-                        case EQUALS:
-                            op = "IS NULL";
-                            break;
-                        case NOT_EQUALS:
-                            op = "IS NOT NULL";
-                            break;
-                        default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
-                    }
+                        EQUALS => "IS NULL",
+                        NOT_EQUALS => "IS NOT NULL",
+                        _ => throw new Exception($"Operator '{op}' is not valid for comparison with NULL")
+                    };
                     return $"t.{key} {op}";
                 }
                 literals.Add(c.Value);
                 hasOtherIndex = false;
-                return $"t.{key} {c.InternalOperator.SQL} ? ";
+                return $"t.{key} {c.ParsedOperator.SQL} ? ";
             }));
             useOrderBy = !hasOtherIndex;
             return clause.Length > 0 ? ($"WHERE {clause} ", literals.ToArray()) : (null, null);
@@ -135,7 +113,7 @@ namespace RESTable.Starcounter3x
         {
             return declaredProperty.Owner.IsStarcounterDatabaseType() && declaredProperty.Type.IsStarcounterCompatible();
         }
-        
+
         private static bool IsStarcounterQueryable<T>(this Condition<T> condition) where T : class
         {
             return condition.Term.HasFlag(Constants.StarcounterQueryableFlag);

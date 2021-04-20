@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Net;
-using RESTable.Internal;
+using System.Threading.Tasks;
 using RESTable.Requests;
-using RESTable.Linq;
 
 namespace RESTable.Results
 {
@@ -15,7 +11,7 @@ namespace RESTable.Results
     /// <summary>
     /// A super class for all custom RESTable exceptions
     /// </summary>
-    public abstract class Error : RESTableException, IResult, ISerializedResult, ITraceable
+    public abstract class Error : RESTableException, IResult, ITraceable
     {
         /// <inheritdoc />
         public HttpStatusCode StatusCode { get; protected set; }
@@ -24,7 +20,7 @@ namespace RESTable.Results
         public string StatusDescription { get; protected set; }
 
         /// <inheritdoc />
-        public Headers Headers { get; } = new Headers();
+        public Headers Headers { get; } = new();
 
         /// <inheritdoc />
         public Cookies Cookies => Context.Client.Cookies;
@@ -37,14 +33,10 @@ namespace RESTable.Results
 
         #region ITraceable, ILogable
 
-        internal void SetTrace(ITraceable request)
+        internal void SetContext(RESTableContext context)
         {
-            TraceId = request.TraceId;
-            Context = request.Context;
+            Context = context;
         }
-
-        /// <inheritdoc />
-        public string TraceId { get; private set; }
 
         /// <inheritdoc />
         public RESTableContext Context { get; private set; }
@@ -53,23 +45,20 @@ namespace RESTable.Results
         public MessageType MessageType => MessageType.HttpOutput;
 
         /// <inheritdoc />
-        public string LogMessage
+        public ValueTask<string> GetLogMessage()
         {
-            get
-            {
-                var info = Headers.Info;
-                var errorInfo = Headers.Error;
-                var tail = "";
-                if (info != null)
-                    tail += $". {info}";
-                if (errorInfo != null)
-                    tail += $" (see {errorInfo})";
-                return $"{StatusCode.ToCode()}: {StatusDescription}{tail}";
-            }
+            var info = Headers.Info;
+            var errorInfo = Headers.Error;
+            var tail = "";
+            if (info != null)
+                tail += $". {info}";
+            if (errorInfo != null)
+                tail += $" (see {errorInfo})";
+            return new ValueTask<string>($"{StatusCode.ToCode()}: {StatusDescription}{tail}");
         }
 
         /// <inheritdoc />
-        public string LogContent { get; } = null;
+        public ValueTask<string> GetLogContent() => new(_logContent);
 
         /// <inheritdoc />
         public DateTime LogTime { get; } = DateTime.Now;
@@ -104,60 +93,23 @@ namespace RESTable.Results
         /// <inheritdoc />
         public void ThrowIfError() => throw this;
 
-        internal IRequestInternal RequestInternal { get; set; }
-
-        private Stream _body;
-        private bool IsSerializing;
+        /// <inheritdoc />
+        public IProtocolHolder ProtocolHolder => Request;
 
         /// <inheritdoc />
-        public Stream Body
+        public IRequest Request { get; set; }
+
+        /// <inheritdoc />
+        public void Dispose() => Request?.Body?.Dispose();
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
         {
-            get => _body ?? (IsSerializing ? _body = new RESTableStream(default) : null);
-            set
-            {
-                if (_body is RESTableStream rsc)
-                    rsc.CanClose = true;
-                _body?.Dispose();
-                _body = value;
-            }
+            if (Request?.Body is Body body)
+                await body.DisposeAsync();
         }
 
-        /// <inheritdoc />
-        public bool IsSerialized { get; private set; }
-
-        /// <inheritdoc />
-        public ISerializedResult Serialize(ContentType? contentType = null)
-        {
-            if (RequestInternal == null)
-            {
-                IsSerialized = true;
-                Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-                return this;
-            }
-            IsSerializing = true;
-            var stopwatch = Stopwatch.StartNew();
-            ISerializedResult result = this;
-            var cachedProvider = RequestInternal.CachedProtocolProvider ?? ProtocolController.DefaultProtocolProvider;
-            var acceptProvider = RequestInternal.SafeSelect(request => ContentTypeController.ResolveOutputContentTypeProvider(request, contentType))
-                                 ?? cachedProvider.DefaultOutputProvider;
-            try
-            {
-                return cachedProvider.ProtocolProvider.Serialize(this, acceptProvider).Finalize(acceptProvider);
-            }
-            catch (Exception exception)
-            {
-                result.Body?.Dispose();
-                return exception.AsResultOf(RequestInternal).Serialize();
-            }
-            finally
-            {
-                IsSerializing = false;
-                IsSerialized = true;
-                stopwatch.Stop();
-                TimeElapsed = TimeElapsed + stopwatch.Elapsed;
-                Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-            }
-        }
+        private readonly string _logContent = null;
 
         /// <inheritdoc />
         public virtual string Metadata => $"{GetType().Name};;";
@@ -166,17 +118,6 @@ namespace RESTable.Results
         /// <summary>
         /// The time elapsed from the start of reqeust evaluation
         /// </summary>
-        public TimeSpan TimeElapsed { get; internal set; }
-
-        /// <inheritdoc />
-        public override string ToString() => LogMessage;
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (Body is RESTableStream rsc)
-                rsc.CanClose = true;
-            Body?.Dispose();
-        }
+        public TimeSpan TimeElapsed => Request?.TimeElapsed ?? default;
     }
 }

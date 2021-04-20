@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace RESTable.Requests.Filters
@@ -11,18 +12,22 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Applies the distinct filtering
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T : class
+        public IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
         {
             if (entities == null) return null;
             return DistinctIterator(entities);
         }
 
-        private static IEnumerable<TSource> DistinctIterator<TSource>(IEnumerable<TSource> source)
+        private static async IAsyncEnumerable<TSource> DistinctIterator<TSource>(IAsyncEnumerable<TSource> source)
         {
             var set = new HashSet<JObject>(JToken.EqualityComparer);
-            foreach (var element in source)
+            await foreach (var element in source.ConfigureAwait(false))
+            {
                 if (set.Add(element.ToJObject()))
+                {
                     yield return element;
+                }
+            }
         }
     }
 }

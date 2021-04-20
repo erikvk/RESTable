@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -11,9 +10,9 @@ namespace RESTable.Meta.Internal
     internal interface IBinaryResource<T> : IBinaryResource, IResource<T> where T : class
     {
         /// <summary>
-        /// Selects binary content from a binary resource
+        /// Selects binary content asynchronously from a binary resource
         /// </summary>
-        (Stream stream, ContentType contentType) SelectBinary(IRequest<T> request);
+        BinaryResult SelectBinary(IRequest<T> request);
     }
 
     internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResource<T> where T : class
@@ -36,19 +35,19 @@ namespace RESTable.Meta.Internal
         public bool GETAvailableToAll { get; }
         public Type InterfaceType { get; }
 
+        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
         public IEnumerable<T> Select(IRequest<T> request) => throw new InvalidOperationException();
-            
-        public (Stream stream, ContentType contentType) SelectBinary(IRequest<T> request)
+
+        public BinaryResult SelectBinary(IRequest<T> request)
         {
             return BinarySelector(request);
         }
 
         public IReadOnlyList<IResource> InnerResources { get; set; }
-        public void SetAlias(string alias) => Alias = alias;
         public ResourceKind ResourceKind { get; }
         private BinarySelector<T> BinarySelector { get; }
 
-        internal BinaryResource(BinarySelector<T> binarySelectorSelector)
+        internal BinaryResource(BinarySelector<T> binarySelector, TypeCache typeCache)
         {
             Name = typeof(T).GetRESTableTypeName() ?? throw new Exception();
             Type = typeof(T);
@@ -58,12 +57,15 @@ namespace RESTable.Meta.Internal
             InterfaceType = typeof(T).GetRESTableInterfaceType();
             ResourceKind = ResourceKind.BinaryResource;
             (_, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
-            Description = attribute.Description;
-            BinarySelector = binarySelectorSelector;
-            Members = typeof(T).GetDeclaredProperties();
-            GETAvailableToAll = attribute.GETAvailableToAll;
+            if (attribute != null)
+            {
+                Description = attribute.Description;
+                BinarySelector = binarySelector;
+                Members = typeCache.GetDeclaredProperties(typeof(T));
+                GETAvailableToAll = attribute.GETAvailableToAll;
+            }
             var typeName = typeof(T).FullName;
-            if (typeName?.Contains('+') == true)
+            if (typeName?.Contains("+") == true)
             {
                 IsInnerResource = true;
                 var location = typeName.LastIndexOf('+');

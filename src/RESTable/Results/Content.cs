@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Net;
 using RESTable.Requests;
+using RESTable.Resources;
 
 namespace RESTable.Results
 {
@@ -10,10 +12,12 @@ namespace RESTable.Results
     public abstract class Content : OK
     {
         /// <summary>
-        /// Us this content locked, for example due to it being tied to a certain
+        /// Is this content locked, for example due to it being tied to a certain
         /// Websocket streaming operation?
         /// </summary>
         internal bool IsLocked { get; set; }
+
+        [RESTableMember(ignore: true)] public Type ResourceType { get; }
 
         /// <summary>
         /// Sets the ContentDisposition header to a unique file name of a given extension
@@ -21,11 +25,23 @@ namespace RESTable.Results
         public void SetContentDisposition(string extension)
         {
             if (extension == null) return;
-            Headers["Content-Disposition"] =
-                $"attachment;filename={Request.Resource}_{DateTime.UtcNow:yyMMddHHmmssfff}{extension}";
+            Headers["Content-Disposition"] = $"attachment;filename={Request.Resource}_{DateTime.UtcNow:yyMMddHHmmssfff}{extension}";
         }
 
         /// <inheritdoc />
-        protected Content(IRequest request) : base(request) { }
+        protected Content(IRequest request, ContentType? contentType = null) : base(request)
+        {
+            ResourceType = request.Resource.Type;
+            Headers.ContentType = contentType ?? request.GetOutputContentTypeProvider().ContentType;
+        }
+
+        public void MakeNoContent()
+        {
+            StatusCode = HttpStatusCode.NoContent;
+            StatusDescription = "No content";
+            Headers.Info = "No entities found matching request.";
+            if (Request.Headers.Metadata == "full")
+                Headers.Metadata = Metadata;
+        }
     }
 }

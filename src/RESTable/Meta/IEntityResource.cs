@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -59,7 +60,7 @@ namespace RESTable.Meta
         /// </summary>
         bool RequiresValidation { get; }
 
-        
+
         /// <summary>
         /// The views for this resource
         /// </summary>
@@ -76,67 +77,24 @@ namespace RESTable.Meta
     /// <summary>
     /// The common generic interface for all entity resources used by RESTable
     /// </summary>
-    public interface IEntityResource<T> : IResource<T>, IEntityResource where T : class
+    public interface IEntityResource<TResource> : IResource<TResource>, IEntityResource where TResource : class
     {
-        /// <summary>
-        /// RESTable inserter (don't call)
-        /// </summary>
-        int Insert(IRequest<T> request);
-
-        /// <summary>
-        /// RESTable updater (don't call)
-        /// </summary>
-        int Update(IRequest<T> request);
-
-        /// <summary>
-        /// RESTable deleter (don't call)
-        /// </summary>
-        int Delete(IRequest<T> request);
-
-        /// <summary>
-        /// RESTable authenticator (don't call)
-        /// </summary>
-        AuthResults Authenticate(IRequest<T> request);
-
-        /// <summary>
-        /// RESTable counter (don't call)
-        /// </summary>
-        long Count(IRequest<T> request);
-
-        /// <summary>
-        /// Runs resource-specific validation on an <see cref="IEnumerable{T}"/>
-        /// and throws a FailedValidation if any entity failed validation.
-        /// </summary>
-        IEnumerable<T> Validate(IEnumerable<T> entities);
-
         /// <summary>
         /// The Views registered for this resource
         /// </summary>
-        IReadOnlyDictionary<string, ITarget<T>> ViewDictionary { get; }
+        IReadOnlyDictionary<string, ITarget<TResource>> ViewDictionary { get; }
 
-        /// <summary>
-        /// Can this resource select entities?
-        /// </summary>
         bool CanSelect { get; }
-
-        /// <summary>
-        /// Can this resource insert entities?
-        /// </summary>
         bool CanInsert { get; }
-
-        /// <summary>
-        /// Can this resource update entities?
-        /// </summary>
         bool CanUpdate { get; }
-
-        /// <summary>
-        /// Can this resource delete entities?
-        /// </summary>
         bool CanDelete { get; }
-
-        /// <summary>
-        /// Can this resource delete entities?
-        /// </summary>
         bool CanCount { get; }
+
+        ValueTask<int> InsertAsync(IRequest<TResource> request);
+        ValueTask<int> UpdateAsync(IRequest<TResource> request);
+        ValueTask<int> DeleteAsync(IRequest<TResource> request);
+        ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request);
+        ValueTask<long> CountAsync(IRequest<TResource> request);
+        IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context);
     }
 }

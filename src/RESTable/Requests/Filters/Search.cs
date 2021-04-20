@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
-using RESTable.Admin;
-using RESTable.ContentTypeProviders;
+using RESTable.Meta;
 using static System.StringComparison;
 
 namespace RESTable.Requests.Filters
@@ -64,19 +62,21 @@ namespace RESTable.Requests.Filters
             IgnoreCase = ignoreCase;
         }
 
-        internal Search GetCopy() => new Search(Pattern, Selector, IgnoreCase);
+        internal Search GetCopy() => new(Pattern, Selector, IgnoreCase);
 
         /// <summary>
         /// Searches the entities for a given case insensitive string pattern, and returns only 
         /// those that contain the pattern.
         /// </summary>
-        public virtual IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T : class
+        public virtual IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
         {
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
-            var formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
             var comparison = IgnoreCase ? OrdinalIgnoreCase : Ordinal;
             if (Selector == null)
-                return entities.Where(e => Providers.Json.Serialize(e, formatting).IndexOf(Pattern, comparison) >= 0);
+            {
+                var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+                return entities.Where(e => jsonProvider.Serialize(e).IndexOf(Pattern, comparison) >= 0);
+            }
             return entities.Where(e => e?.ToJObject().GetValue(Selector, OrdinalIgnoreCase)?.ToString().IndexOf(Pattern, comparison) >= 0);
         }
 

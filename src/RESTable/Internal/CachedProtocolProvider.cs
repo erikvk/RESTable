@@ -6,14 +6,14 @@ using RESTable.ProtocolProviders;
 
 namespace RESTable.Internal
 {
-    internal class CachedProtocolProvider
+    public class CachedProtocolProvider
     {
-        internal IProtocolProvider ProtocolProvider { get; }
+        public IProtocolProvider ProtocolProvider { get; }
         internal IDictionary<string, IContentTypeProvider> InputMimeBindings { get; }
         internal IDictionary<string, IContentTypeProvider> OutputMimeBindings { get; }
         internal IContentTypeProvider DefaultInputProvider => InputMimeBindings.FirstOrDefault().Value;
         internal IContentTypeProvider DefaultOutputProvider => OutputMimeBindings.FirstOrDefault().Value;
-
+        
         public CachedProtocolProvider(IProtocolProvider protocolProvider)
         {
             ProtocolProvider = protocolProvider;

@@ -1,10 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Net;
-using RESTable.Internal;
+using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using RESTable.ContentTypeProviders;
+using RESTable.Internal.Auth;
+using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
 
@@ -18,15 +20,19 @@ namespace RESTable.Results
     {
         private IResource Resource { get; }
         private bool HasResource => Resource != null;
+        private IContentTypeProvider ContentTypeProvider { get; }
+        public sealed override IRequest Request { get; }
 
         internal static Options Create(RequestParameters parameters)
         {
             var options = new Options(parameters);
             if (!parameters.IsValid)
                 return options;
-            if (RESTableConfig.AllowAllOrigins)
+            var configuration = parameters.Context.Services.GetRequiredService<RESTableConfiguration>();
+            var authenticator = parameters.Context.Services.GetRequiredService<Authenticator>();
+            if (configuration.AllowAllOrigins)
                 options.Headers.AccessControlAllowOrigin = "*";
-            else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && RESTableConfig.AllowedOrigins.Contains(origin))
+            else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && authenticator.AllowedOrigins.Contains(origin))
             {
                 options.Headers.AccessControlAllowOrigin = origin.ToString();
                 options.Headers.Vary = "Origin";
@@ -42,41 +48,24 @@ namespace RESTable.Results
 
         private Options(RequestParameters parameters) : base(parameters)
         {
+            Request = null;
             StatusCode = HttpStatusCode.OK;
             StatusDescription = "OK";
             Resource = parameters.iresource;
+            ContentTypeProvider = parameters.GetOutputContentTypeProvider();
         }
 
-        public override ISerializedResult Serialize(ContentType? contentType = null)
+        public ISerializedResult Serialize(CancellationToken cancellationToken = new())
         {
-            if (IsSerialized) return this;
             if (!HasResource)
-                return base.Serialize(contentType);
+                return new SerializedResult(this);
+            var serializedResult = new SerializedResult(this);
             var stopwatch = Stopwatch.StartNew();
             var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
-            var provider = ContentTypeController.ResolveOutputContentTypeProvider(null, contentType);
-            Body = new MemoryStream();
-            provider.SerializeCollection(new[] {optionsBody}, Body);
-            this.Finalize(provider);
-            IsSerialized = true;
-            stopwatch.Stop();
-            TimeElapsed = TimeElapsed + stopwatch.Elapsed;
-            Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-            return this;
-        }
-    }
-
-    internal class OptionsBody
-    {
-        public string Resource { get; }
-        public ResourceKind ResourceKind { get; }
-        public IEnumerable<Method> Methods { get; }
-
-        public OptionsBody(string resource, ResourceKind resourceKind, IEnumerable<Method> methods)
-        {
-            Resource = resource;
-            ResourceKind = resourceKind;
-            Methods = methods;
+            ContentTypeProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), serializedResult.Body, null, cancellationToken);
+            serializedResult.Body.TryRewind();
+            Headers.Elapsed = stopwatch.Elapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+            return serializedResult;
         }
     }
 }

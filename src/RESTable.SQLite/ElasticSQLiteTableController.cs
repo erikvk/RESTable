@@ -1,19 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources.Operations;
 using RESTable.SQLite.Meta;
 
 namespace RESTable.SQLite
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+    /// <inheritdoc cref="IAsyncUpdater{T}" />
     /// <summary>
     /// Defines a controller for a given elastic SQLite table mapping
     /// </summary>
     /// <typeparam name="TController"></typeparam>
     /// <typeparam name="TTable"></typeparam>
-    public class ElasticSQLiteTableController<TController, TTable> : ISelector<TController>, IUpdater<TController>
+    public class ElasticSQLiteTableController<TController, TTable> : IAsyncSelector<TController>, IAsyncUpdater<TController>
         where TTable : ElasticSQLiteTable
         where TController : ElasticSQLiteTableController<TController, TTable>, new()
     {
@@ -40,10 +41,13 @@ namespace RESTable.SQLite
         public string[] DroppedColumns { get; set; }
 
         /// <inheritdoc />
-        public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select();
+        public virtual IAsyncEnumerable<TController> SelectAsync(IRequest<TController> request) => Select().ToAsyncEnumerable();
 
         /// <inheritdoc />
-        public virtual int Update(IRequest<TController> request) => request.GetInputEntities().Count(entity => entity.Update());
+        public virtual async ValueTask<int> UpdateAsync(IRequest<TController> request) => await request
+            .GetInputEntitiesAsync()
+            .WhereAwait(async entity => await entity.Update(request).ConfigureAwait(false))
+            .CountAsync().ConfigureAwait(false);
 
         protected ElasticSQLiteTableController() { }
 
@@ -58,7 +62,7 @@ namespace RESTable.SQLite
                 TableMapping = mapping,
                 CLRTypeName = mapping.CLRClass.FullName,
                 SQLTableName = mapping.TableName,
-                Columns = mapping.ColumnMappings.ToDictionary(
+                Columns = mapping.ColumnMappings.Values.ToDictionary(
                     keySelector: columnMapping => columnMapping.CLRProperty.Name,
                     elementSelector: columnMapping => columnMapping.CLRProperty.Type),
                 DroppedColumns = new string[0]
@@ -69,12 +73,12 @@ namespace RESTable.SQLite
         /// </summary>
         /// <param name="columnNames"></param>
         /// <returns></returns>
-        protected bool DropColumns(params string[] columnNames)
+        protected async Task<bool> DropColumns(IRequest request, params string[] columnNames)
         {
             var toDrop = columnNames
                 .Select(columnName =>
                 {
-                    var mapping = TableMapping.ColumnMappings.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
+                    var mapping = TableMapping.ColumnMappings.Values.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
                     if (mapping == null) return null;
                     if (mapping.IsRowId || mapping.CLRProperty.IsDeclared)
                         throw new SQLiteException($"Cannot drop column '{mapping.SQLColumn.Name}' from table '{TableMapping.TableName}'. " +
@@ -84,7 +88,7 @@ namespace RESTable.SQLite
                 .Where(mapping => mapping != null)
                 .ToList();
             if (!toDrop.Any()) return false;
-            TableMapping.DropColumns(toDrop);
+            await TableMapping.DropColumns(request, toDrop).ConfigureAwait(false);
             return true;
         }
 
@@ -92,25 +96,25 @@ namespace RESTable.SQLite
         /// Updates the column definition and pushes it to the SQL table
         /// </summary>
         /// <returns></returns>
-        public bool Update()
+        public async Task<bool> Update(IRequest request)
         {
             var updated = false;
             var columnsToAdd = Columns.Keys
                 .Except(TableMapping.SQLColumnNames)
                 .Select(name => (name, type: Columns[name]));
-            DropColumns(DroppedColumns);
+            await DropColumns(request, DroppedColumns).ConfigureAwait(false);
             foreach (var (name, type) in columnsToAdd.Where(c => c.type != CLRDataType.Unsupported))
             {
-                TableMapping.ColumnMappings.Add(new ColumnMapping
+                TableMapping.ColumnMappings[name] = new ColumnMapping
                 (
                     tableMapping: TableMapping,
                     clrProperty: new CLRProperty(name, type),
                     sqlColumn: new SQLColumn(name, type.ToSQLDataType())
-                ));
+                );
                 updated = true;
             }
-            TableMapping.ColumnMappings.Push();
-            TableMapping.Update();
+            await TableMapping.ColumnMappings.Push().ConfigureAwait(false);
+            await TableMapping.Update().ConfigureAwait(false);
             return updated;
         }
     }

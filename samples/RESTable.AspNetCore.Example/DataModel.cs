@@ -22,10 +22,10 @@ namespace RESTable.Example
 
         public Job Job
         {
-            get => SQLite<Job>.Select($"WHERE RowId={JobRowId}").FirstOrDefault();
+            get => SQLite<Job>.Select($"WHERE RowId={JobRowId}").FirstOrDefaultAsync().Result;
             set
             {
-                SQLite<Job>.Insert(value);
+                SQLite<Job>.Insert(value).Wait();
                 JobRowId = value.RowId;
             }
         }
@@ -39,7 +39,7 @@ namespace RESTable.Example
         public override bool Equals(object obj) => obj is Person other && other.ObjectID == ObjectID;
         public override int GetHashCode() => ObjectID.GetHashCode();
     }
-
+    
     [RESTable, SQLite]
     public class Animal : SQLiteTable
     {

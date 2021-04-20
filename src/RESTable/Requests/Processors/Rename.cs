@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Meta;
-using RESTable.Linq;
 
 namespace RESTable.Requests.Processors
 {
@@ -15,42 +13,42 @@ namespace RESTable.Requests.Processors
     /// </summary>
     public class Rename : Dictionary<Term, string>, IProcessor
     {
-        internal Rename(IEntityResource resource, string keys, out ICollection<string> dynamicDomain)
+        internal Rename(IEnumerable<(Term term, string newName)> terms, out ICollection<string> dynamicDomain)
         {
-            keys.Split(',').ForEach(keyString =>
-            {
-                var (termKey, newName) = keyString.TSplit(keys.Contains("->") ? "->" : "-%3E");
-                Add(resource.MakeOutputTerm(termKey.ToLower(), null), newName);
-            });
+            foreach (var (term, newName) in terms)
+                Add(term, newName);
             dynamicDomain = Values;
         }
 
         private Rename(Rename other) : base(other) { }
-        internal Rename GetCopy() => new Rename(this);
+        internal Rename GetCopy() => new(this);
 
         private JObject Renamed(JObject entity)
         {
-            this.ForEach(pair =>
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            var serializer = jsonProvider.GetSerializer();
+            foreach (var pair in this)
             {
-                var value = entity.GetValue(pair.Key.Key, StringComparison.OrdinalIgnoreCase);
+                var (key, newName) = pair;
+                var value = entity.GetValue(key.Key, StringComparison.OrdinalIgnoreCase);
                 if (value == null)
                 {
-                    value = pair.Key.Evaluate(entity, out _);
-                    entity[pair.Value] = value == null ? null : JToken.FromObject(value, JsonProvider.Serializer);
-                    return;
+                    var termValue = key.GetValue(entity, out _);
+                    entity[newName] = termValue == null ? null : JToken.FromObject(termValue, serializer);
+                    continue;
                 }
                 var property = (JProperty) value.Parent;
-                var actualKey = property.Name;
+                var actualKey = property?.Name;
                 if (actualKey != null)
                     entity.Remove(actualKey);
-                entity[pair.Value] = value;
-            });
+                entity[newName] = value;
+            }
             return entity;
         }
 
         /// <summary>
         /// Renames properties in an IEnumerable
         /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(entity => Renamed(entity.ToJObject()));
+        public IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities) => entities?.Select(entity => Renamed(entity.ToJObject()));
     }
 }

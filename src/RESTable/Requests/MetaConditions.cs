@@ -5,7 +5,6 @@ using RESTable.Meta;
 using RESTable.Requests.Filters;
 using RESTable.Requests.Processors;
 using RESTable.Results;
-using RESTable.Linq;
 using static RESTable.ErrorCodes;
 using static RESTable.Requests.Operators;
 
@@ -13,71 +12,6 @@ using static RESTable.Requests.Operators;
 
 namespace RESTable.Requests
 {
-    /// <summary>
-    /// The meta-conditions available in RESTable
-    /// </summary>
-    public enum RESTableMetaCondition
-    {
-        /// <summary />
-        Unsafe,
-
-        /// <summary />
-        Limit,
-
-        /// <summary />
-        Offset,
-
-        /// <summary />
-        Order_asc,
-
-        /// <summary />
-        Order_desc,
-
-        /// <summary />
-        Select,
-
-        /// <summary />
-        Add,
-
-        /// <summary />
-        Rename,
-
-        /// <summary />
-        Distinct,
-
-        /// <summary />
-        Search,
-
-        /// <summary />
-        Search_regex,
-
-        /// <summary />
-        Safepost
-    }
-
-    internal static class MetaConditionsExtensions
-    {
-        internal static Type GetExpectedType(this RESTableMetaCondition condition)
-        {
-            switch (condition)
-            {
-                case RESTableMetaCondition.Unsafe: return typeof(bool);
-                case RESTableMetaCondition.Limit: return typeof(int);
-                case RESTableMetaCondition.Offset: return typeof(int);
-                case RESTableMetaCondition.Order_asc: return typeof(string);
-                case RESTableMetaCondition.Order_desc: return typeof(string);
-                case RESTableMetaCondition.Select: return typeof(string);
-                case RESTableMetaCondition.Add: return typeof(string);
-                case RESTableMetaCondition.Rename: return typeof(string);
-                case RESTableMetaCondition.Distinct: return typeof(bool);
-                case RESTableMetaCondition.Search: return typeof(string);
-                case RESTableMetaCondition.Search_regex: return typeof(string);
-                case RESTableMetaCondition.Safepost: return typeof(string);
-                default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
-            }
-        }
-    }
-
     /// <summary>
     /// Contains the metaconditions for a request
     /// </summary>
@@ -140,179 +74,209 @@ namespace RESTable.Requests
         internal bool HasProcessors { get; private set; }
         internal bool CanUseExternalCounter { get; private set; } = true;
 
-        private static string AllMetaConditions =>
-            $"{string.Join(", ", Enum.GetNames(typeof(RESTableMetaCondition)).Except(new[] {"New", "Delete"}))}";
-
-        internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource)
+        internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource, TermFactory termFactory)
         {
             if (uriMetaConditions?.Any() != true) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
-            var regular = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
-            var mc = new MetaConditions {Empty = false};
+            var others = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
+            var metaConditions = new MetaConditions {Empty = false};
             ICollection<string> dynamicDomain = default;
 
-            void make(IEnumerable<IUriCondition> conds) => conds.ForEach(cond =>
+            void make(IEnumerable<IUriCondition> conditions)
             {
-                var (key, op, valueLiteral) = (cond.Key, cond.Operator, cond.ValueLiteral);
-                if (op != EQUALS)
-                    throw new InvalidSyntax(InvalidMetaConditionOperator,
-                        "Invalid operator for meta-condition. One and only one '=' is allowed");
-                if (!Enum.TryParse(key, true, out RESTableMetaCondition metaCondition))
-                    throw new InvalidSyntax(InvalidMetaConditionKey,
-                        $"Invalid meta-condition '{key}'. Available meta-conditions: {AllMetaConditions}");
-
-                var expectedType = metaCondition.GetExpectedType();
-
-                switch (valueLiteral)
+                foreach (var condition in conditions)
                 {
-                    case null:
-                    case "null":
-                    case "": return;
-                    case "∞":
+                    var (key, op, valueLiteral) = (condition.Key, condition.Operator, condition.ValueLiteral);
+                    if (op != EQUALS)
+                        throw new InvalidSyntax(InvalidMetaConditionOperator,
+                            "Invalid operator for meta-condition. One and only one '=' is allowed");
+                    if (!Enum.TryParse(key, true, out RESTableMetaCondition metaCondition))
+                    {
+                        throw new InvalidSyntax(InvalidMetaConditionKey, $"Invalid meta-condition '{key}'. Available meta-conditions: " +
+                                                                         $"{string.Join(", ", EnumMember<RESTableMetaCondition>.Names)}");
+                    }
+
+                    var expectedType = metaCondition.GetExpectedType();
+
+                    if (valueLiteral == "∞")
                         valueLiteral = int.MaxValue.ToString();
-                        break;
-                    case "-∞":
+                    else if (valueLiteral == "-∞")
                         valueLiteral = int.MinValue.ToString();
-                        break;
-                }
 
-                var (first, length) = (valueLiteral.FirstOrDefault(), valueLiteral.Length);
+                    var (first, length) = (valueLiteral.FirstOrDefault(), valueLiteral.Length);
 
-                switch (first)
-                {
-                    case '\'':
-                    case '\"':
-                        if (length > 1 && valueLiteral[length - 1] == first)
-                            valueLiteral = valueLiteral.Substring(1, length - 2);
-                        break;
-                }
+                    switch (first)
+                    {
+                        case '\'':
+                        case '\"':
+                            if (length > 1 && valueLiteral[length - 1] == first)
+                                valueLiteral = valueLiteral.Substring(1, length - 2);
+                            break;
+                    }
 
-                dynamic value;
-                try
-                {
-                    value = Convert.ChangeType(valueLiteral, expectedType) ?? throw new Exception();
+                    object value;
+                    try
+                    {
+                        value = Convert.ChangeType(valueLiteral, expectedType);
+                    }
+                    catch
+                    {
+                        throw new InvalidSyntax(InvalidMetaConditionValueType,
+                            $"Invalid data type for value '{valueLiteral}' assigned to meta-condition '{key}'. Expected {GetTypeString(expectedType)}.");
+                    }
+                    switch (metaCondition)
+                    {
+                        case RESTableMetaCondition.Unsafe:
+                            metaConditions.Unsafe = (bool) value;
+                            break;
+                        case RESTableMetaCondition.Limit:
+                            metaConditions.Limit = (int) value;
+                            break;
+                        case RESTableMetaCondition.Offset:
+                            metaConditions.Offset = (int) value;
+                            break;
+                        case RESTableMetaCondition.Order_asc:
+                        {
+                            var term = termFactory.MakeOutputTerm(resource, (string) value, dynamicDomain);
+                            metaConditions.OrderBy = new OrderByAscending(resource, term);
+                            break;
+                        }
+                        case RESTableMetaCondition.Order_desc:
+                        {
+                            var term = termFactory.MakeOutputTerm(resource, (string) value, dynamicDomain);
+                            metaConditions.OrderBy = new OrderByDescending(resource, term);
+                            break;
+                        }
+                        case RESTableMetaCondition.Select:
+                        {
+                            var selectKeys = (string) value;
+                            var domain = dynamicDomain;
+                            var terms = selectKeys
+                                .Split(',')
+                                .Distinct()
+                                .Select(selectKey => termFactory.MakeOutputTerm(resource, selectKey, domain));
+                            metaConditions.Select = new Select(terms);
+                            break;
+                        }
+                        case RESTableMetaCondition.Add:
+                        {
+                            var addKeys = (string) value;
+                            var domain = dynamicDomain;
+                            var terms = addKeys
+                                .ToLower()
+                                .Split(',')
+                                .Distinct()
+                                .Select(addKey => termFactory.MakeOutputTerm(resource, addKey, domain));
+                            metaConditions.Add = new Add(terms);
+                            break;
+                        }
+                        case RESTableMetaCondition.Rename:
+                        {
+                            var renameKeys = (string) value;
+                            var terms = renameKeys.Split(',').Select(keyString =>
+                            {
+                                var (termKey, newName) = keyString.TSplit(renameKeys.Contains("->") ? "->" : "-%3E");
+                                return
+                                (
+                                    termFactory.MakeOutputTerm(resource, termKey.ToLowerInvariant(), null),
+                                    newName
+                                );
+                            });
+                            metaConditions.Rename = new Rename(terms, out dynamicDomain);
+                            break;
+                        }
+                        case RESTableMetaCondition.Distinct:
+                            if ((bool) value)
+                                metaConditions.Distinct = new Distinct();
+                            break;
+                        case RESTableMetaCondition.Search:
+                            metaConditions.Search = new Search((string) value);
+                            break;
+                        case RESTableMetaCondition.Search_regex:
+                            metaConditions.Search = new RegexSearch((string) value);
+                            break;
+                        case RESTableMetaCondition.Safepost:
+                            metaConditions.SafePost = (string) value;
+                            break;
+                        default: throw new ArgumentOutOfRangeException();
+                    }
                 }
-                catch
-                {
-                    throw new InvalidSyntax(InvalidMetaConditionValueType,
-                        $"Invalid data type assigned to meta-condition '{key}'. Expected {GetTypeString(expectedType)}.");
-                }
-                switch (metaCondition)
-                {
-                    case RESTableMetaCondition.Unsafe:
-                        mc.Unsafe = value;
-                        break;
-                    case RESTableMetaCondition.Limit:
-                        mc.Limit = (Limit) (int) value;
-                        break;
-                    case RESTableMetaCondition.Offset:
-                        mc.Offset = (Offset) (int) value;
-                        break;
-                    case RESTableMetaCondition.Order_asc:
-                        mc.OrderBy = new OrderByAscending(resource, (string) value, dynamicDomain);
-                        break;
-                    case RESTableMetaCondition.Order_desc:
-                        mc.OrderBy = new OrderByDescending(resource, (string) value, dynamicDomain);
-                        break;
-                    case RESTableMetaCondition.Select:
-                        mc.Select = new Select(resource, (string) value, dynamicDomain);
-                        break;
-                    case RESTableMetaCondition.Add:
-                        mc.Add = new Add(resource, (string) value, dynamicDomain);
-                        break;
-                    case RESTableMetaCondition.Rename:
-                        mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
-                        break;
-                    case RESTableMetaCondition.Distinct:
-                        if ((bool) value)
-                            mc.Distinct = new Distinct();
-                        break;
-                    case RESTableMetaCondition.Search:
-                        mc.Search = new Search((string) value);
-                        break;
-                    case RESTableMetaCondition.Search_regex:
-                        mc.Search = new RegexSearch((string) value);
-                        break;
-                    case RESTableMetaCondition.Safepost:
-                        mc.SafePost = value;
-                        break;
-                    default: throw new ArgumentOutOfRangeException();
-                }
-            });
+            }
 
             make(renames);
-            make(regular);
+            make(others);
 
-            mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select}.Where(p => p != null).ToArray();
-            mc.HasProcessors = mc.Processors.Any();
-            mc.CanUseExternalCounter = mc.Search == null && mc.Distinct == null && mc.Limit.Number == -1 && mc.Offset.Number == 0;
+            metaConditions.Processors = new IProcessor[] {metaConditions.Add, metaConditions.Rename, metaConditions.Select}.Where(p => p != null).ToArray();
+            metaConditions.HasProcessors = metaConditions.Processors.Any();
+            metaConditions.CanUseExternalCounter = metaConditions.Search == null
+                                                   && metaConditions.Distinct == null
+                                                   && metaConditions.Limit.Number == -1
+                                                   && metaConditions.Offset.Number == 0;
 
-            if (mc.OrderBy != null)
+            if (metaConditions.OrderBy != null)
             {
-                if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
-                    && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
+                if (metaConditions.Rename?.Any(p => p.Key.Key.EqualsNoCase(metaConditions.OrderBy.Key)) == true
+                    && !metaConditions.Rename.Any(p => p.Value.EqualsNoCase(metaConditions.OrderBy.Key)))
                     throw new InvalidSyntax(InvalidMetaConditionSyntax,
-                        $"The {(mc.OrderBy is OrderByAscending ? RESTableMetaCondition.Order_asc : RESTableMetaCondition.Order_desc)} " +
+                        $"The {(metaConditions.OrderBy is OrderByAscending ? RESTableMetaCondition.Order_asc : RESTableMetaCondition.Order_desc)} " +
                         "meta-condition cannot refer to a property x that is to be renamed " +
                         "unless some other property is renamed to x");
             }
 
-            if (mc.Select != null && mc.Rename != null)
+            if (metaConditions.Select != null && metaConditions.Rename != null)
             {
-                if (mc.Select.Any(pc => mc.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
-                                        !mc.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
+                if (metaConditions.Select.Any(pc => metaConditions.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
+                                                    !metaConditions.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
                     throw new InvalidSyntax(InvalidMetaConditionSyntax,
                         "A 'Select' meta-condition cannot refer to a property x that is " +
                         "to be renamed unless some other property is renamed to x. Use the " +
                         "new property name instead.");
             }
 
-            return mc;
+            return metaConditions;
         }
 
-        private static string GetTypeString(Type type)
+        private static string GetTypeString(Type type) => type switch
         {
-            if (type == typeof(string)) return "string";
-            if (type == typeof(int)) return "integer";
-            if (type == typeof(bool)) return "boolean";
-            return null;
-        }
+            _ when type == typeof(string) => "a string",
+            _ when type == typeof(int) => "an integer",
+            _ when type == typeof(bool) => "a boolean",
+            _ => null
+        };
 
         /// <summary>
         /// Converts the MetaConditions object into a collection of IUriCondition instances
         /// </summary>
-        public IEnumerable<IUriCondition> AsConditionList()
+        public IEnumerable<IUriCondition> GetEnumerable()
         {
-            var list = new List<IUriCondition>();
             if (Unsafe)
-                list.Add(new UriCondition(RESTableMetaCondition.Unsafe, "true"));
+                yield return new UriCondition(RESTableMetaCondition.Unsafe, "true");
             if (Limit.Number > -1)
-                list.Add(new UriCondition(RESTableMetaCondition.Limit, Limit.Number.ToString()));
+                yield return new UriCondition(RESTableMetaCondition.Limit, Limit.Number.ToString());
             if (Offset.Number == int.MinValue)
-                list.Add(new UriCondition(RESTableMetaCondition.Offset, "-∞"));
+                yield return new UriCondition(RESTableMetaCondition.Offset, "-∞");
             else if (Offset.Number == int.MaxValue)
-                list.Add(new UriCondition(RESTableMetaCondition.Offset, "∞"));
+                yield return new UriCondition(RESTableMetaCondition.Offset, "∞");
             else if (Offset.Number != 0)
-                list.Add(new UriCondition(RESTableMetaCondition.Offset, Offset.Number.ToString()));
+                yield return new UriCondition(RESTableMetaCondition.Offset, Offset.Number.ToString());
             if (OrderBy is OrderByDescending)
-                list.Add(new UriCondition(RESTableMetaCondition.Order_desc, OrderBy.Term.ToString()));
+                yield return new UriCondition(RESTableMetaCondition.Order_desc, OrderBy.Term.ToString());
             else if (OrderBy != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Order_asc, OrderBy.Term.ToString()));
+                yield return new UriCondition(RESTableMetaCondition.Order_asc, OrderBy.Term.ToString());
             if (Select != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Select, string.Join(",", Select)));
+                yield return new UriCondition(RESTableMetaCondition.Select, string.Join(",", Select));
             if (Add != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Add, string.Join(",", Add)));
+                yield return new UriCondition(RESTableMetaCondition.Add, string.Join(",", Add));
             if (Rename != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Rename, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}"))));
+                yield return new UriCondition(RESTableMetaCondition.Rename, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}")));
             if (Distinct != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Distinct, "true"));
+                yield return new UriCondition(RESTableMetaCondition.Distinct, "true");
             if (Search is RegexSearch)
-                list.Add(new UriCondition(RESTableMetaCondition.Search_regex, Search.GetValueLiteral()));
+                yield return new UriCondition(RESTableMetaCondition.Search_regex, Search.GetValueLiteral());
             else if (Search != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Search, Search.GetValueLiteral()));
+                yield return new UriCondition(RESTableMetaCondition.Search, Search.GetValueLiteral());
             if (SafePost != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Safepost, SafePost));
-            return list;
+                yield return new UriCondition(RESTableMetaCondition.Safepost, SafePost);
         }
 
         internal MetaConditions GetCopy()

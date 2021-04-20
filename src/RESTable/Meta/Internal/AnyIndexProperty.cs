@@ -29,7 +29,9 @@ namespace RESTable.Meta.Internal
             allowedConditionOperators: Operators.All,
             owner: owner,
             getter: null,
-            setter: null
+            setter: null,
+            mergeOntoOwner: false,
+            readOnly: false
         ) { }
     }
 }

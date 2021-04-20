@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Threading.Tasks;
 using RESTable.Resources;
 using static System.StringComparison;
 
@@ -45,24 +46,24 @@ namespace RESTable.SQLite.Meta
 
         internal void SetMapping(ColumnMapping mapping) => Mapping = mapping;
 
-        internal void Push()
+        internal async Task Push()
         {
             if (Mapping == null)
                 throw new InvalidOperationException($"Cannot push the unmapped SQL column '{Name}' to the database");
-            foreach (var column in Mapping.TableMapping.GetSQLColumns())
+            foreach (var column in await Mapping.TableMapping.GetSqlColumns().ConfigureAwait(false))
             {
                 if (column.Equals(this)) return;
                 if (string.Equals(Name, column.Name, OrdinalIgnoreCase))
                     throw new SQLiteException($"Cannot push column '{Name}' to SQLite table '{Mapping.TableMapping.TableName}'. " +
-                                              $"The table already contained a column definition '({column.ToSQL()})'.");
+                                              $"The table already contained a column definition '({column.ToSql()})'.");
             }
-            Database.Query($"BEGIN TRANSACTION;ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSQL()};COMMIT;");
+            await Database.QueryAsync($"BEGIN TRANSACTION;ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSql()};COMMIT;").ConfigureAwait(false);
         }
 
-        internal string ToSQL() => $"{Name.Fnuttify()} {Type}";
+        internal string ToSql() => $"{Name.Fnuttify()} {Type}";
 
         /// <inheritdoc />
-        public override string ToString() => ToSQL();
+        public override string ToString() => ToSql();
 
         /// <inheritdoc />
         public override bool Equals(object obj) => obj is SQLColumn col

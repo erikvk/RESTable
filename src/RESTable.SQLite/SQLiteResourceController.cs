@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 
@@ -45,13 +46,13 @@ namespace RESTable.SQLite
             });
 
         /// <inheritdoc />
-        public override int Update(IRequest<TController> request)
+        public override async ValueTask<int> UpdateAsync(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in request.GetInputEntities().ToList())
+            foreach (var resource in await request.GetInputEntitiesAsync().ToListAsync().ConfigureAwait(false))
             {
                 resource.Update();
-                resource.Definition.Update();
+                await resource.Definition.Update(request).ConfigureAwait(false);
                 i += 1;
             }
             return i;
@@ -66,10 +67,5 @@ namespace RESTable.SQLite
                                           "subclass of RESTable.SQLite.ElasticSQLiteTable with at least one defined column property.");
             Data = new SQLiteProceduralResourceData {BaseTypeName = BaseType.AssemblyQualifiedName};
         }
-    }
-
-    internal class SQLiteProceduralResourceData
-    {
-        public string BaseTypeName { get; set; }
     }
 }

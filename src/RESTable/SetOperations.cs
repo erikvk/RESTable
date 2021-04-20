@@ -2,29 +2,29 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Results;
-using RESTable.Linq;
 using static System.StringComparison;
 using static RESTable.Method;
-using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
 #pragma warning disable 1591
 
 namespace RESTable
 {
     /// <inheritdoc cref="JObject" />
-    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <summary>
     /// The SetOperations resource can perform advanced operations on entities in one
     /// or more RESTable resources. See the RESTable Specification for details.
     /// </summary>
     [RESTable(GET, Description = description, AllowDynamicConditions = true)]
-    public class SetOperations : JObject, ISelector<SetOperations>
+    public class SetOperations : JObject, IAsyncSelector<SetOperations>
     {
         private const string description = "The SetOperations resource can perform advanced operations " +
                                            "on entities in one or more RESTable resources. See the RESTable " +
@@ -34,61 +34,99 @@ namespace RESTable
         private SetOperations(JObject other) : base(other) { }
 
         /// <inheritdoc />
-        public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
+        public async IAsyncEnumerable<SetOperations> SelectAsync(IRequest<SetOperations> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var body = request.GetBody();
-            if (!body.HasContent)
-                throw new Exception("Missing data source for SetOperations request");
-            var jobject = body.Deserialize<JObject>().FirstOrDefault();
+            var jobject = await request.Expecting
+            (
+                selector: async r => await r.Body.Deserialize<JObject>().FirstAsync().ConfigureAwait(false),
+                errorMessage: "Expected expression tree as request body"
+            ).ConfigureAwait(false);
 
-            JTokens recursor(JToken token)
+            var jsonSerializer = request.GetRequiredService<JsonSerializer>();
+
+            async IAsyncEnumerable<JToken> Recursor(JToken token)
             {
                 switch (token)
                 {
-                    case JValue value when value.Type == JTokenType.String:
-                        var argument = value.Value<string>();
+                    case JValue {Type: JTokenType.String} stringValue:
+                        var argument = stringValue.Value<string>();
+                        if (argument?.StartsWith("GET ") == true)
+                            argument = argument.Substring(4);
                         switch (argument?.FirstOrDefault())
                         {
-                            case null: throw new Exception("Invalid operation expression. Expected string, found null");
-                            case default(char): throw new Exception("Operation expressions cannot be empty strings");
-                            case '[': return JArray.Parse(argument);
+                            case null: throw new ArgumentException("Invalid operation expression. Expected string, found null");
+                            case default(char): throw new ArgumentException("Operation expressions cannot be empty strings");
+                            case '[':
+                            {
+                                foreach (var arrayItem in JArray.Parse(argument))
+                                    yield return arrayItem;
+                                yield break;
+                            }
                             case '/':
-                                switch (request.Context.CreateRequest(argument).Evaluate())
+                            {
+                                var innerRequest = request.Context.CreateRequest(uri: argument);
+                                await using var result = await innerRequest.GetResult().ConfigureAwait(false);
+                                switch (result)
                                 {
-                                    case NoContent _: return new JArray();
-                                    case IEntities entities: return JArray.FromObject(entities, JsonProvider.Serializer);
-                                    case var other: throw new Exception($"Could not get source data from '{argument}'. {other.LogMessage}");
+                                    case IEntities entities:
+                                    {
+                                        foreach (var item in JArray.FromObject(entities, jsonSerializer))
+                                            yield return item;
+                                        yield break;
+                                    }
+                                    case var other: throw new ArgumentException($"Could not get source data from '{argument}'. {other.GetLogMessage().Result}");
                                 }
+                            }
                             default:
-                                throw new Exception($"Invalid string '{argument}'. Must be a relative REST request URI " +
-                                                    "beginning with '/<resource locator>' or a JSON array.");
+                                throw new ArgumentException($"Invalid string '{argument}'. Must be a relative REST request URI " +
+                                                            "beginning with '/<resource locator>' or a JSON array.");
                         }
-                    case JObject obj when obj.Count == 1 && obj.First is JProperty prop && prop.Value is JArray arr:
+                    case JObject {Count: 1, First: JProperty {Value: JArray arr} prop}:
                         switch (prop.Name.ToLower())
                         {
                             case "distinct":
                                 if (arr.Count != 1)
-                                    throw new Exception("Distinct takes one and only one set as operand");
-                                return Distinct(recursor(arr.First));
+                                    throw new ArgumentException("Distinct takes one and only one set as operand");
+                                await foreach (var item in Distinct(Recursor(arr.First)).ConfigureAwait(false))
+                                    yield return item;
+                                yield break;
                             case "except":
                                 if (arr.Count != 2)
-                                    throw new Exception("Except takes two and only two argument sets as operands");
-                                return Except(recursor(arr[0]), recursor(arr[1]));
+                                    throw new ArgumentException("Except takes two and only two argument sets as operands");
+                                await foreach (var item in Except(Recursor(arr[0]), Recursor(arr[1])).ConfigureAwait(false))
+                                    yield return item;
+                                yield break;
                             case "intersect":
+                            {
                                 if (arr.Count < 2)
-                                    throw new Exception("Intersect takes at least two sets as operands");
-                                return Intersect(arr.Select(recursor).ToArray());
+                                    throw new ArgumentException("Intersect takes at least two sets as operands");
+
+                                var tokens = new IAsyncEnumerable<JToken>[arr.Count];
+                                for (var i = 0; i < tokens.Length; i += 1)
+                                    tokens[i] = Recursor(arr[i]);
+                                await foreach (var item in Intersect(tokens).ConfigureAwait(false))
+                                    yield return item;
+                                yield break;
+                            }
                             case "union":
+                            {
                                 if (arr.Count < 2)
-                                    throw new Exception("Union takes at least two sets as operands");
-                                return Union(arr.Select(recursor).ToArray());
+                                    throw new ArgumentException("Union takes at least two sets as operands");
+                                var tokens = new IAsyncEnumerable<JToken>[arr.Count];
+                                for (var i = 0; i < tokens.Length; i += 1)
+                                    tokens[i] = Recursor(arr[i]);
+                                await foreach (var item in Union(tokens).ConfigureAwait(false))
+                                    yield return item;
+                                yield break;
+                            }
                             case "map":
                                 if (arr.Count != 2)
-                                    throw new Exception("Map takes two and only two arguments");
-                                return Map(recursor(arr[0]), (string) arr[1], request);
+                                    throw new ArgumentException("Map takes two and only two arguments");
+                                await foreach (var item in Map(Recursor(arr[0]), (string) arr[1], request).ConfigureAwait(false))
+                                    yield return item;
+                                yield break;
                             default:
-                                throw new ArgumentOutOfRangeException(
+                                throw new ArgumentException(
                                     $"Unknown operation '{prop.Name}'. Avaliable operations: distinct, except, " +
                                     "intersect, union.");
                         }
@@ -99,23 +137,38 @@ namespace RESTable
                 }
             }
 
-            return recursor(jobject).Select(token =>
+            await foreach (var token in Recursor(jobject).ConfigureAwait(false))
             {
-                switch (token)
+                yield return token switch
                 {
-                    case JValue value: return new SetOperations(new JObject(new JProperty("Value", value)));
-                    case JObject @object: return new SetOperations(@object);
-                    default: throw new Exception("Invalid entity type in set operation");
-                }
-            });
+                    JValue value => new SetOperations(new JObject(new JProperty("Value", value))),
+                    JObject @object => new SetOperations(@object),
+                    _ => throw new Exception("Invalid entity type in set operation")
+                };
+            }
         }
 
-        private static JTokens Distinct(JTokens array) => array?.Distinct(EqualityComparer);
-        private static JTokens Intersect(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Intersect(y, EqualityComparer));
-        private static JTokens Union(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Union(y, EqualityComparer));
-        private static JTokens Except(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Except(y, EqualityComparer));
+        private static IAsyncEnumerable<JToken> Distinct(IAsyncEnumerable<JToken> array)
+        {
+            return array?.Distinct(EqualityComparer);
+        }
 
-        private static JTokens Map(JTokens set, string mapper, IRequest request)
+        private static IAsyncEnumerable<JToken> Intersect(params IAsyncEnumerable<JToken>[] arrays)
+        {
+            return Checked(arrays).Aggregate((x, y) => x.Intersect(y, EqualityComparer));
+        }
+
+        private static IAsyncEnumerable<JToken> Union(params IAsyncEnumerable<JToken>[] arrays)
+        {
+            return Checked(arrays).Aggregate((x, y) => x.Union(y, EqualityComparer));
+        }
+
+        private static IAsyncEnumerable<JToken> Except(params IAsyncEnumerable<JToken>[] arrays)
+        {
+            return Checked(arrays).Aggregate((x, y) => x.Except(y, EqualityComparer));
+        }
+
+        private static async IAsyncEnumerable<JToken> Map(IAsyncEnumerable<JToken> set, string mapper, IRequest request)
         {
             if (set == null) throw new ArgumentException(nameof(set));
             if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
@@ -131,45 +184,56 @@ namespace RESTable
             var argumentCount = keys.Count;
             var valueBuffer = new object[argumentCount];
 
-            Distinct(set).ForEach(item =>
+            await foreach (var item in Distinct(set).ConfigureAwait(false))
             {
                 var obj = item as JObject ?? throw new Exception("JSON syntax error in map set. Set must be of objects");
                 var localMapper = mapper;
+                var skip = false;
                 for (var i = 0; i < argumentCount; i += 1)
                 {
                     string value;
                     switch (obj.GetValue(keys[i], OrdinalIgnoreCase))
                     {
-                        case JValue jvalue when jvalue.Type == JTokenType.Null:
+                        case JValue {Type: JTokenType.Null}:
                         case null:
                             value = "null";
                             break;
-                        case JValue jvalue when jvalue.Type == JTokenType.Date:
+                        case JValue {Type: JTokenType.Date} jvalue:
                             value = jvalue.Value<DateTime>().ToString("O");
                             break;
                         case JValue jvalue when jvalue.Value<string>() is string stringValue:
                             value = stringValue == "" ? "\"\"" : stringValue;
                             break;
-                        default: return;
+                        default:
+                            value = null;
+                            skip = true;
+                            break;
                     }
+                    if (skip) break;
                     valueBuffer[i] = value.UriEncode();
                 }
+                if (skip) continue;
                 localMapper = string.Format(localMapper, valueBuffer);
-                switch (request.Context.CreateRequest(localMapper).Evaluate())
+                var innerRequest = request.Context.CreateRequest(uri: localMapper);
+                await using var result = await innerRequest.GetResult().ConfigureAwait(false);
+                if (result is IEntities<object> entities)
                 {
-                    case NoContent _: break;
-                    case IEntities<object> entities:
-                        mapped.UnionWith(entities.Select(e => e.ToJObject()));
-                        break;
-                    case var other:
-                        throw new Exception($"Could not get source data from '{localMapper}'. {other.LogMessage}");
+                    await foreach (var entity in entities)
+                        mapped.Add(entity.ToJObject());
                 }
-            });
-            return mapped;
+                else throw new Exception($"Could not get source data from '{localMapper}'. {await result.GetLogMessage().ConfigureAwait(false)}");
+            }
+            foreach (var item in mapper)
+            {
+                yield return item;
+            }
         }
 
-        private static JTokens[] Checked(JTokens[] arrays) => arrays == null || arrays.Length < 2 || arrays.Any(a => a == null)
-            ? throw new ArgumentException(nameof(arrays))
-            : arrays;
+        private static IAsyncEnumerable<JToken>[] Checked(IAsyncEnumerable<JToken>[] arrays)
+        {
+            if (arrays == null || arrays.Length < 2 || arrays.Any(a => a == null))
+                throw new ArgumentException(nameof(arrays));
+            return arrays;
+        }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RESTable.Meta;
+﻿using RESTable.Meta;
 using RESTable.Resources;
 
 namespace RESTable.SQLite
@@ -16,8 +15,7 @@ namespace RESTable.SQLite
         /// </summary>
         [
             SQLiteMember(ignore: true),
-            RESTableMember(hide: true),
-            JsonExtensionData(ReadData = true, WriteData = true)
+            RESTableMember(hide: true, mergeOntoOwner: true)
         ]
         public DynamicMemberCollection DynamicMembers { get; }
 
@@ -33,7 +31,10 @@ namespace RESTable.SQLite
         /// <summary>
         /// Creates a new instance of this ElasticSQLiteTable type
         /// </summary>
-        protected ElasticSQLiteTable() => DynamicMembers = new DynamicMemberCollection();
+        protected ElasticSQLiteTable()
+        {
+            DynamicMembers = new DynamicMemberCollection(TableMapping.GetTableMapping(GetType()));
+        }
 
         /// <inheritdoc />
         public bool TryGetValue(string memberName, out object value, out string actualMemberName)

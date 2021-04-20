@@ -45,6 +45,6 @@ namespace RESTable.Meta
         /// <summary>
         /// RESTable selector (don't use)
         /// </summary>
-        IEnumerable<T> Select(IRequest<T> request);
+        IAsyncEnumerable<T> SelectAsync(IRequest<T> request);
     }
 }

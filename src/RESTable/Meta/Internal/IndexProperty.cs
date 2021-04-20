@@ -29,6 +29,7 @@ namespace RESTable.Meta.Internal
             isEnum: type.IsEnum,
             customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
+            readOnly: false,
             owner: owner,
             getter: target =>
             {
@@ -73,7 +74,8 @@ namespace RESTable.Meta.Internal
                             catch { }
                             break;
                     }
-                })
+                }),
+            mergeOntoOwner: false
         ) { }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Resources;
 using RESTable.Resources.Templates;
 
@@ -21,7 +22,7 @@ namespace RESTable.Admin
             (
                 command: "ReloadConfigFile",
                 description: "Reloads the configuration file and updates the access rights for API keys",
-                action: args => RESTableConfig.UpdateConfiguration()
+                action: _ => Services.GetRequiredService<RESTableConfigurator>().UpdateConfiguration()
             );
         }
     }

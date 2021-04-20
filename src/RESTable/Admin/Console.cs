@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal.Logging;
 using RESTable.Requests;
@@ -8,13 +10,11 @@ using RESTable.Resources;
 using RESTable.Resources.Templates;
 using RESTable.Results;
 using RESTable.WebSockets;
-using RESTable.Linq;
-using static Newtonsoft.Json.Formatting;
 
 namespace RESTable.Admin
 {
     [RESTable(Description = description)]
-    internal sealed class Console : FeedTerminal
+    internal sealed class Console : FeedTerminal, IDisposable
     {
         private const string description = "The Console is a terminal resource that allows a WebSocket client to receive " +
                                            "pushed updates when the REST API receives requests and WebSocket events.";
@@ -28,172 +28,188 @@ namespace RESTable.Admin
         public bool IncludeClient { get; set; } = true;
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
-
+        
         private IWebSocketInternal ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
 
         /// <inheritdoc />
-        protected override string WelcomeHeader { get; } = "RESTable network console";
+        protected override string WelcomeHeader => "RESTable network console";
 
         /// <inheritdoc />
-        protected override string WelcomeBody { get; } = "Use the console to receive pushed updates when the \n" +
-                                                         "REST API receives requests and WebSocket events.";
+        protected override string WelcomeBody =>
+            "Use the console to receive pushed updates when the \n" +
+            "REST API receives requests and WebSocket events.";
 
-        public override void Open()
+        protected override async Task Open()
         {
-            base.Open();
+            await base.Open().ConfigureAwait(false);
             Consoles.Add(this);
         }
 
-        public override void Dispose() => Consoles.Remove(this);
+        public void Dispose() => Consoles.Remove(this);
 
         #region Console
+        
+        private static IJsonProvider JsonProvider { get; set; }
 
-        internal static void Log(IRequest request, ISerializedResult result)
+        internal static async Task Log(IRequest request, ISerializedResult serializedResult)
         {
+            JsonProvider ??= request.GetRequiredService<IJsonProvider>();
+            var result = serializedResult.Result;
             var milliseconds = result.TimeElapsed.TotalMilliseconds;
             if (result is WebSocketUpgradeSuccessful) return;
-            Consoles.AsParallel().Where(c => c.IsOpen).GroupBy(c => c.Format).ForEach(group =>
+            foreach (var group in Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
             {
                 switch (group.Key)
                 {
                     case ConsoleFormat.Line:
+                    {
                         var requestStub = GetLogLineStub(request);
                         var responseStub = GetLogLineStub(result, milliseconds);
-                        group.AsParallel().ForEach(c => c.PrintLines(
-                            new StringBuilder(requestStub), request,
-                            new StringBuilder(responseStub), result)
-                        );
+                        foreach (var console in group)
+                        {
+                            await console.PrintLines(
+                                new StringBuilder(requestStub), request,
+                                new StringBuilder(responseStub), result
+                            ).ConfigureAwait(false);
+                        }
                         break;
+                    }
                     case ConsoleFormat.JSON:
-                        group.AsParallel().ForEach(c =>
+                    {
+                        foreach (var console in group)
                         {
                             var item = new InputOutput
                             {
                                 Type = "HTTPRequestResponse",
-                                In = new LogItem {Id = request.TraceId, Message = request.LogMessage},
-                                Out = new LogItem {Id = result.TraceId, Message = result.LogMessage},
+                                In = new LogItem {Id = request.Context.TraceId, Message = await request.GetLogMessage().ConfigureAwait(false)},
+                                Out = new LogItem {Id = result.Context.TraceId, Message = await result.GetLogMessage().ConfigureAwait(false)},
                                 ElapsedMilliseconds = milliseconds
                             };
-                            if (c.IncludeClient)
+                            if (console.IncludeClient)
                                 item.ClientInfo = new ClientInfo(request.Context.Client);
-                            if (c.IncludeHeaders)
+                            if (console.IncludeHeaders)
                             {
                                 if (!request.ExcludeHeaders)
                                     item.In.CustomHeaders = request.Headers;
                                 if (!result.ExcludeHeaders)
                                     item.Out.CustomHeaders = result.Headers;
                             }
-                            if (c.IncludeContent)
+                            if (console.IncludeContent)
                             {
-                                item.In.Content = request.LogContent;
-                                item.Out.Content = result.LogContent;
+                                item.In.Content = await request.GetLogContent().ConfigureAwait(false);
+                                item.Out.Content = await serializedResult.GetLogContent().ConfigureAwait(false);
                             }
-                            var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            c.ActualSocket.SendTextRaw(json);
-                        });
+                            var json = JsonProvider.Serialize(item, true, ignoreNulls: true);
+                            await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
+                        }
                         break;
+                    }
                     default: throw new ArgumentOutOfRangeException();
                 }
-            });
+            }
         }
 
-        internal static void Log(ILogable logable) => Consoles
-            .AsParallel()
-            .Where(c => c.IsOpen)
-            .GroupBy(c => c.Format)
-            .ForEach(group =>
+        internal static async Task Log(ILogable logable)
+        {
+            foreach (var group in Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
             {
-                switch (group.Key)
+                switch (@group.Key)
                 {
                     case ConsoleFormat.Line:
+                    {
                         var requestStub = GetLogLineStub(logable);
-                        group.AsParallel().ForEach(c => c.PrintLine(new StringBuilder(requestStub), logable));
+                        foreach (var console in group)
+                        {
+                            await console.PrintLine(new StringBuilder(requestStub), logable).ConfigureAwait(false);
+                        }
                         break;
+                    }
                     case ConsoleFormat.JSON:
-                        group.AsParallel().ForEach(c =>
+                    {
+                        foreach (var console in group)
                         {
                             var item = new LogItem
                             {
                                 Type = logable.MessageType.ToString(),
-                                Id = logable.TraceId,
-                                Message = logable.LogMessage,
+                                Id = logable.Context.TraceId,
+                                Message = await logable.GetLogMessage().ConfigureAwait(false),
                                 Time = logable.LogTime
                             };
-                            if (c.IncludeClient)
+                            if (console.IncludeClient)
                                 item.Client = new ClientInfo(logable.Context.Client);
-                            if (c.IncludeHeaders && !logable.ExcludeHeaders)
-                                item.CustomHeaders = logable.Headers;
-                            if (c.IncludeContent)
-                                item.Content = logable.LogContent;
-                            var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            c.ActualSocket.SendTextRaw(json);
-                        });
+                            if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
+                                item.CustomHeaders = hh.Headers;
+                            var json = JsonProvider.Serialize(item, true, ignoreNulls: true);
+                            await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
+                        }
                         break;
+                    }
+                    default: throw new ArgumentOutOfRangeException();
                 }
-            });
-
+            }
+        }
 
         private const string connection = " | Connection: ";
         private const string headers = " | Custom headers: ";
         private const string content = " | Content: ";
 
-        private void PrintLine(StringBuilder builder, ILogable logable)
+        private async Task PrintLine(StringBuilder builder, ILogable logable)
         {
             if (IncludeClient)
             {
                 builder.Append(connection);
-                builder.Append(logable.Context.Client.ClientIP);
+                builder.Append(logable.Context.Client.ClientIp);
             }
-            if (IncludeHeaders && !logable.ExcludeHeaders)
+            if (IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
             {
                 builder.Append(headers);
-                if (logable.HeadersStringCache == null)
-                    logable.HeadersStringCache = string.Join(", ", logable.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
-                builder.Append(logable.HeadersStringCache);
+                if (hh.HeadersStringCache == null)
+                    hh.HeadersStringCache = string.Join(", ", hh.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
+                builder.Append(hh.HeadersStringCache);
             }
             if (IncludeContent)
             {
                 builder.Append(content);
-                builder.Append(logable.LogContent ?? "null");
+                builder.Append(await logable.GetLogContent().ConfigureAwait(false) ?? "null");
             }
-            ActualSocket.SendTextRaw(builder.ToString());
+            await ActualSocket.SendTextRaw(builder.ToString()).ConfigureAwait(false);
         }
 
-        private void PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
+        private async Task PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
         {
             if (IncludeClient)
             {
                 builder1.Append(connection);
                 builder2.Append(connection);
-                builder1.Append(logable1.Context.Client.ClientIP);
-                builder2.Append(logable2.Context.Client.ClientIP);
+                builder1.Append(logable1.Context.Client.ClientIp);
+                builder2.Append(logable2.Context.Client.ClientIp);
             }
             if (IncludeHeaders)
             {
-                if (!logable1.ExcludeHeaders)
+                if (logable1 is IHeaderHolder {ExcludeHeaders: false} hh1)
                 {
                     builder1.Append(headers);
-                    if (logable1.HeadersStringCache == null)
-                        logable1.HeadersStringCache = string.Join(", ", logable1.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
-                    builder1.Append(logable1.HeadersStringCache);
+                    if (hh1.HeadersStringCache == null)
+                        hh1.HeadersStringCache = string.Join(", ", hh1.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
+                    builder1.Append(hh1.HeadersStringCache);
                 }
-                if (!logable2.ExcludeHeaders)
+                if (logable2 is IHeaderHolder {ExcludeHeaders: false} hh2)
                 {
                     builder2.Append(headers);
-                    if (logable2.HeadersStringCache == null)
-                        logable2.HeadersStringCache = string.Join(", ", logable2.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
-                    builder2.Append(logable2.HeadersStringCache);
+                    if (hh2.HeadersStringCache == null)
+                        hh2.HeadersStringCache = string.Join(", ", hh2.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
+                    builder2.Append(hh2.HeadersStringCache);
                 }
             }
             if (IncludeContent)
             {
                 builder1.Append(content);
                 builder2.Append(content);
-                builder1.Append(logable1.LogContent ?? "null");
-                builder2.Append(logable2.LogContent ?? "null");
+                builder1.Append(await logable1.GetLogContent().ConfigureAwait(false) ?? "null");
+                builder2.Append(await logable2.GetLogContent().ConfigureAwait(false) ?? "null");
             }
-            ActualSocket.SendTextRaw(builder1.ToString());
-            ActualSocket.SendTextRaw(builder2.ToString());
+            await ActualSocket.SendTextRaw(builder1.ToString()).ConfigureAwait(false);
+            await ActualSocket.SendTextRaw(builder2.ToString()).ConfigureAwait(false);
         }
 
         private static string GetLogLineStub(ILogable logable, double? milliseconds = null)
@@ -218,8 +234,8 @@ namespace RESTable.Admin
             }
             var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz");
             builder.Append(dateTimeString);
-            builder.Append($"[{logable.TraceId}] ");
-            builder.Append(logable.LogMessage);
+            builder.Append($"[{logable.Context.TraceId}] ");
+            builder.Append(logable.GetLogMessage());
             if (milliseconds != null)
                 builder.Append($" ({milliseconds} ms)");
             return builder.ToString();

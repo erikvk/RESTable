@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.ProtocolProviders;
 using RESTable.Results;
@@ -10,69 +10,12 @@ namespace RESTable.Requests
 {
     /// <inheritdoc />
     /// <summary>
-    /// Encodes read and writable URI components
-    /// </summary>
-    public class UriComponents : IUriComponents
-    {
-        /// <inheritdoc />
-        public string ResourceSpecifier { get; }
-
-        /// <inheritdoc />
-        public string ViewName { get; }
-
-        /// <summary>
-        /// The read and writable conditions list
-        /// </summary>
-        public List<IUriCondition> Conditions { get; }
-
-        /// <summary>
-        /// The read and writable meta-conditions list
-        /// </summary>
-        public List<IUriCondition> MetaConditions { get; }
-
-        /// <inheritdoc />
-        public IProtocolProvider ProtocolProvider { get; }
-
-        /// <inheritdoc />
-        public IMacro Macro { get; }
-
-        /// <inheritdoc />
-        IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
-
-        /// <inheritdoc />
-        IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
-
-        public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions,
-            IEnumerable<IUriCondition> metaConditions, IProtocolProvider protocolProvider, IMacro macro)
-        {
-            ResourceSpecifier = resourceSpecifier;
-            ViewName = viewName;
-            Conditions = conditions.ToList();
-            MetaConditions = metaConditions.ToList();
-            ProtocolProvider = protocolProvider;
-            Macro = macro;
-        }
-
-        internal UriComponents(IUriComponents existing)
-        {
-            ResourceSpecifier = existing.ResourceSpecifier;
-            ViewName = existing.ViewName;
-            Conditions = existing.Conditions.ToList();
-            MetaConditions = existing.MetaConditions.ToList();
-            ProtocolProvider = existing.ProtocolProvider;
-            Macro = existing.Macro;
-        }
-
-        /// <inheritdoc />
-        public override string ToString() => this.ToUriString();
-    }
-
-    /// <inheritdoc />
-    /// <summary>
     /// Encodes a URI that is used in a request
     /// </summary>
     internal class URI : IUriComponents
     {
+        public string ProtocolIdentifier { get; private set; }
+
         /// <inheritdoc />
         public string ResourceSpecifier { get; private set; }
 
@@ -90,11 +33,15 @@ namespace RESTable.Requests
         internal Exception Error { get; private set; }
         internal bool HasError => Error != null;
 
-        /// <inheritdoc />
-        public IProtocolProvider ProtocolProvider { get; private set; }
+        public IProtocolProvider ProtocolProvider { get; set; }
 
-        internal static URI ParseInternal(string uriString, bool percentCharsEscaped, RESTableContext context,
-            out CachedProtocolProvider cachedProtocolProvider)
+        internal static URI ParseInternal
+        (
+            string uriString,
+            bool percentCharsEscaped,
+            RESTableContext context,
+            out CachedProtocolProvider cachedProtocolProvider
+        )
         {
             var uri = new URI();
             if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
@@ -103,7 +50,9 @@ namespace RESTable.Requests
             if (protocolString.StartsWith("-"))
                 protocolString = protocolString.Substring(1);
             var tail = groups["tail"].Value;
-            if (!ProtocolController.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
+            uri.ProtocolIdentifier = protocolString.ToLowerInvariant();
+            var protocolProviders = context.Services.GetRequiredService<ProtocolProviderManager>().CachedProtocolProviders;
+            if (!protocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {
                 uri.Error = new UnknownProtocol(protocolString);
                 return uri;
@@ -133,7 +82,6 @@ namespace RESTable.Requests
         {
             Conditions = new List<IUriCondition>();
             MetaConditions = new List<IUriCondition>();
-            ProtocolProvider = ProtocolController.DefaultProtocolProvider.ProtocolProvider;
         }
 
         internal URI(string resourceSpecifier, string viewName) : this()

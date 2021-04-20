@@ -4,40 +4,21 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
-using RESTable.Admin;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 using RESTable.ProtocolProviders;
 using RESTable.Requests;
 using RESTable.Results;
-using RESTable.Linq;
-using static Newtonsoft.Json.Formatting;
 using static RESTable.ErrorCodes;
 using static RESTable.OData.QueryOptions;
 using static RESTable.Requests.RESTableMetaCondition;
 
 namespace RESTable.OData
 {
-    internal class ODataUriComponents : IUriComponents
-    {
-        public string ResourceSpecifier { get; internal set; }
-        public string ViewName { get; internal set; }
-        IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
-        IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
-        public List<IUriCondition> Conditions { get; }
-        public List<IUriCondition> MetaConditions { get; }
-        public IMacro Macro { get; internal set; }
-        public IProtocolProvider ProtocolProvider { get; }
-
-        public ODataUriComponents(IProtocolProvider protocolProvider)
-        {
-            ProtocolProvider = protocolProvider;
-            Conditions = new List<IUriCondition>();
-            MetaConditions = new List<IUriCondition>();
-        }
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// The protocol provider for OData. Instantiate this class and include a reference in 
@@ -48,17 +29,17 @@ namespace RESTable.OData
         /// <inheritdoc />
         public IEnumerable<IContentTypeProvider> GetCustomContentTypeProviders()
         {
-            return new[] {new JsonProvider {MatchStrings = new[] {"application/json"}}};
+            yield return JsonProvider;
         }
 
         /// <inheritdoc />
         public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings => ExternalContentTypeProviderSettings.DontAllow;
 
         /// <inheritdoc />
-        public string ProtocolName { get; } = "OData v4.0";
+        public string ProtocolName => "OData v4.0";
 
         /// <inheritdoc />
-        public string ProtocolIdentifier { get; } = "OData";
+        public string ProtocolIdentifier => "OData";
 
         /// <inheritdoc />
         public string MakeRelativeUri(IUriComponents components)
@@ -82,18 +63,15 @@ namespace RESTable.OData
                     if (hasOther)
                     {
                         if (hasFilter) b.Write("&");
-                        var conds = components.MetaConditions.Select(c =>
+                        var conds = components.MetaConditions.Select(c => c.Key switch
                         {
-                            switch (c.Key)
-                            {
-                                case "order_asc": return $"$orderby={c.ValueLiteral} asc";
-                                case "order_desc": return $"$orderby={c.ValueLiteral} desc";
-                                case "select": return $"$select={c.ValueLiteral}";
-                                case "offset": return $"$skip={c.ValueLiteral}";
-                                case "limit": return $"$top={c.ValueLiteral}";
-                                case "search": return $"$search={c.ValueLiteral}";
-                                default: return "";
-                            }
+                            "order_asc" => $"$orderby={c.ValueLiteral} asc",
+                            "order_desc" => $"$orderby={c.ValueLiteral} desc",
+                            "select" => $"$select={c.ValueLiteral}",
+                            "offset" => $"$skip={c.ValueLiteral}",
+                            "limit" => $"$top={c.ValueLiteral}",
+                            "search" => $"$search={c.ValueLiteral}",
+                            _ => ""
                         });
                         b.Write(string.Join("&", conds));
                     }
@@ -113,21 +91,25 @@ namespace RESTable.OData
             var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
             var options = uriMatch.Groups["options"].Value.TrimStart('?');
             var uri = new ODataUriComponents(this);
-            switch (entitySet)
+            var resources = context.Services.GetRequiredService<ResourceCollection>();
+            uri.ResourceSpecifier = entitySet switch
             {
-                case "":
-                    uri.ResourceSpecifier = Resource<ServiceDocument>.ResourceSpecifier;
-                    break;
-                case "$metadata":
-                    uri.ResourceSpecifier = Resource<MetadataDocument>.ResourceSpecifier;
-                    break;
-                default:
-                    uri.ResourceSpecifier = entitySet;
-                    break;
-            }
+                "" => resources.GetResourceSpecifier<ServiceDocument>(),
+                "$metadata" => resources.GetResourceSpecifier<MetadataDocument>(),
+                _ => entitySet
+            };
             if (options.Length != 0)
                 PopulateFromOptions(uri, options);
             return uri;
+        }
+
+        private IJsonProvider JsonProvider { get; }
+        private RESTableConfiguration Configuration { get; }
+
+        public ODataProtocolProvider(IJsonProvider jsonProvider, RESTableConfiguration configuration)
+        {
+            JsonProvider = jsonProvider;
+            Configuration = configuration;
         }
 
         private static void PopulateFromOptions(ODataUriComponents args, string options)
@@ -147,21 +129,20 @@ namespace RESTable.OData
                         switch (option)
                         {
                             case filter:
-                                if (Regex.Match(decodedValue, @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )") is Match m &&
-                                    m.Success)
+                                if (Regex.Match(decodedValue, @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )") is Match {Success: true} m)
                                     throw new FeatureNotImplemented($"Not implemented operator '{m.Value}' in $filter");
-                                decodedValue
+                                var toAdd = decodedValue
                                     .Replace("(", "")
                                     .Replace(")", "")
                                     .Split(" and ")
-                                    .Select(c =>
+                                    .Select<string, IUriCondition>(c =>
                                     {
                                         var parts = c.Split(' ');
                                         if (parts.Length != 3)
                                             throw new InvalidODataSyntax(InvalidConditionSyntax, "Invalid syntax in $filter query option");
                                         return new UriCondition(parts[0], GetOperator(parts[1]), parts[2], TypeCode.String);
-                                    })
-                                    .ForEach(cond => args.Conditions.Add(cond));
+                                    });
+                                args.Conditions.AddRange(toAdd);
                                 break;
                             case orderby:
                                 if (decodedValue.Contains(","))
@@ -204,33 +185,27 @@ namespace RESTable.OData
             }
         }
 
-        private static string GetOperatorString(Operators op)
+        private static string GetOperatorString(Operators op) => op switch
         {
-            switch (op)
-            {
-                case Operators.EQUALS: return "eq";
-                case Operators.NOT_EQUALS: return "ne";
-                case Operators.LESS_THAN: return "lt";
-                case Operators.GREATER_THAN: return "gt";
-                case Operators.LESS_THAN_OR_EQUALS: return "le";
-                case Operators.GREATER_THAN_OR_EQUALS: return "ge";
-                default: throw new FeatureNotImplemented($"Unknown or not implemented operator '{op}' in $filter");
-            }
-        }
+            Operators.EQUALS => "eq",
+            Operators.NOT_EQUALS => "ne",
+            Operators.LESS_THAN => "lt",
+            Operators.GREATER_THAN => "gt",
+            Operators.LESS_THAN_OR_EQUALS => "le",
+            Operators.GREATER_THAN_OR_EQUALS => "ge",
+            _ => throw new FeatureNotImplemented($"Unknown or not implemented operator '{op}' in $filter")
+        };
 
-        private static Operators GetOperator(string op)
+        private static Operators GetOperator(string op) => op switch
         {
-            switch (op)
-            {
-                case "eq": return Operators.EQUALS;
-                case "ne": return Operators.NOT_EQUALS;
-                case "lt": return Operators.LESS_THAN;
-                case "gt": return Operators.GREATER_THAN;
-                case "le": return Operators.LESS_THAN_OR_EQUALS;
-                case "ge": return Operators.GREATER_THAN_OR_EQUALS;
-                default: throw new FeatureNotImplemented($"Unknown or not implemented operator '{op}' in $filter");
-            }
-        }
+            "eq" => Operators.EQUALS,
+            "ne" => Operators.NOT_EQUALS,
+            "lt" => Operators.LESS_THAN,
+            "gt" => Operators.GREATER_THAN,
+            "le" => Operators.LESS_THAN_OR_EQUALS,
+            "ge" => Operators.GREATER_THAN_OR_EQUALS,
+            _ => throw new FeatureNotImplemented($"Unknown or not implemented operator '{op}' in $filter")
+        };
 
         /// <inheritdoc />
         public bool IsCompliant(IRequest request, out string invalidReason)
@@ -246,53 +221,72 @@ namespace RESTable.OData
             }
         }
 
-        private static string GetServiceRoot(IEntities entities)
+        private string GetServiceRoot(IEntities entities)
         {
+            if (entities == null) throw new ArgumentNullException(nameof(entities));
             var origin = entities.Request.Context.Client;
-            var hostAndPath = $"{origin.Host}{Settings._Uri}-odata";
-            return origin.HTTPS ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
+            var hostAndPath = $"{origin.Host}{Configuration.RootUri}-odata";
+            return origin.Https ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
+        }
+
+        public void SetResultHeaders(IResult result)
+        {
+            result.Headers.ContentType = "application/json; odata.metadata=minimal; odata.streaming=true; charset=utf-8";
+            result.Headers["OData-Version"] = "4.0";
         }
 
         /// <inheritdoc />
-        public ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider)
+        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
-            result.Headers["OData-Version"] = "4.0";
-            if (!(result is IEntities entities))
-                return result as ISerializedResult;
+            switch (toSerialize.Result)
+            {
+                case Binary binary:
+                    await binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken).ConfigureAwait(false);
+                    return;
+                case not IEntities: return;
+            }
 
-            var contextFragment = $"#{entities.Request.Resource.Name}";
-            var writeMetadata = true;
+            string contextFragment;
+            bool writeMetadata;
+            var entities = (IEntities) toSerialize.Result;
             switch (entities)
             {
-                case IEnumerable<ServiceDocument> _:
+                case IEntities<ServiceDocument> _:
                     contextFragment = null;
                     writeMetadata = false;
                     break;
+                default:
+                    contextFragment = $"#{entities.Request.Resource.Name}";
+                    writeMetadata = true;
+                    break;
             }
-            using (var swr = new StreamWriter(entities.Body, Encoding.UTF8, 1024, true))
-            using (var jwr = new ODataJsonWriter(swr))
+            var swr = new StreamWriter(toSerialize.Body, Encoding.Default, 4096, true);
+#if NETSTANDARD2_1
+            await using (swr)
+#else
+            using (swr)
+#endif
             {
-                jwr.Formatting = Settings._PrettyPrint ? Indented : None;
-                jwr.WriteStartObject();
-                jwr.WritePropertyName("@odata.context");
-                jwr.WriteValue($"{GetServiceRoot(entities)}/$metadata{contextFragment}");
-                jwr.WritePropertyName("value");
-                Providers.Json.Serialize(jwr, entities);
-                entities.EntityCount = jwr.ObjectsWritten;
+                using var jwr = JsonProvider.GetJsonWriter(swr);
+                await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("@odata.context", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}", cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("value", cancellationToken).ConfigureAwait(false);
+                jwr.StartCountObjectsWritten();
+                JsonProvider.Serialize(jwr, entities);
+                toSerialize.EntityCount = jwr.StopCountObjectsWritten();
                 if (writeMetadata)
                 {
-                    jwr.WritePropertyName("@odata.count");
-                    jwr.WriteValue(entities.EntityCount);
-                    if (entities.IsPaged)
+                    await jwr.WritePropertyNameAsync("@odata.count", cancellationToken).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(toSerialize.EntityCount, cancellationToken).ConfigureAwait(false);
+                    if (toSerialize.HasNextPage)
                     {
-                        jwr.WritePropertyName("@odata.nextLink");
-                        jwr.WriteValue(MakeRelativeUri(entities.GetNextPageLink()));
+                        await jwr.WritePropertyNameAsync("@odata.nextLink", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink(toSerialize.EntityCount, -1)), cancellationToken).ConfigureAwait(false);
                     }
                 }
-                jwr.WriteEndObject();
+                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
             }
-            entities.Headers.ContentType = "application/json; odata.metadata=minimal; odata.streaming=true; charset=utf-8";
-            return entities;
         }
     }
 }

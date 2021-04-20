@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Administering%20a%20RESTable%20API/CORS/
+permalink: /Administering%20a%20RESTable%20API/CORS/
 ---
 
 # CORS

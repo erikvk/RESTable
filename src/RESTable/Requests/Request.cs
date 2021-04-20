@@ -5,91 +5,31 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Resources.Operations;
 using RESTable.Results;
 using RESTable.Internal.Auth;
-using static RESTable.Method;
 using static RESTable.ErrorCodes;
-using RESTable.Linq;
+using static RESTable.Method;
+using Error = RESTable.Results.Error;
 
 namespace RESTable.Requests
 {
     internal class Request<T> : IRequest, IRequest<T>, IEntityRequest<T>, ITraceable where T : class
     {
-        private bool IsEvaluating { get; set; }
+        public RequestParameters Parameters { get; }
+        public IResource<T> Resource { get; }
         public ITarget<T> Target { get; }
-        public Type TargetType { get; }
-        public bool HasConditions => !(_conditions?.Count > 0);
+        ITarget IRequest.Target => Target;
+        private Exception Error { get; set; }
+        private bool IsEvaluating { get; set; }
         private Headers _responseHeaders;
         public Headers ResponseHeaders => _responseHeaders ??= new Headers();
-        public Cookies Cookies => Context.Client.Cookies;
-        public Headers Headers { get; }
-        public CachedProtocolProvider CachedProtocolProvider { get; }
-        private Exception Error { get; }
-        public bool IsValid => Error == null;
-        public IResource<T> Resource { get; }
-        public TimeSpan TimeElapsed => Stopwatch.Elapsed;
-        private Stopwatch Stopwatch { get; }
-        private IDictionary<Type, object> Services { get; }
-
-        public Func<IEnumerable<T>> Selector { private get; set; }
-        public Func<IEnumerable<T>, IEnumerable<T>> Updater { private get; set; }
-
-        public Func<IEnumerable<T>> EntitiesProducer { get; set; }
-
-        IEntityResource<T> IEntityRequest<T>.EntityResource => Resource as IEntityResource<T>;
-        Func<IEnumerable<T>, IEnumerable<T>> IEntityRequest<T>.GetUpdater() => Updater;
-        IEnumerable<T> IRequest<T>.GetInputEntities() => EntitiesProducer?.Invoke() ?? new T[0];
-        Func<IEnumerable<T>> IEntityRequest<T>.GetSelector() => Selector;
-        IResource IRequest.Resource => Resource;
-        private Method method;
-
-        public Method Method
-        {
-            get => method;
-            set
-            {
-                if (IsEvaluating) return;
-                method = value;
-            }
-        }
-
-        public TData GetClientData<TData>(string key)
-        {
-            if (Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data) && data.TryGetValue(key, out var value))
-                return (TData) value;
-            return default;
-        }
-
-        public void SetClientData<TData>(string key, TData value)
-        {
-            if (!Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data))
-                data = Context.Client.ResourceClientDataMappings[Resource] = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            data[key] = value;
-        }
-
-        public void EnsureServiceAttached<TService>(TService service) where TService : class
-        {
-            if (Services.ContainsKey(typeof(TService))) return;
-            Services[typeof(TService)] = service;
-        }
-
-        public void EnsureServiceAttached<TService, TImplementation>(TImplementation service)
-            where TImplementation : class, TService
-            where TService : class
-        {
-            if (Services.ContainsKey(typeof(TService))) return;
-            Services[typeof(TService)] = service;
-        }
-
-        public object GetService(Type serviceType)
-        {
-            return Services.TryGetValue(serviceType, out var service) ? service : null;
-        }
 
         private List<Condition<T>> _conditions;
 
@@ -107,80 +47,238 @@ namespace RESTable.Requests
             set => _metaConditions = value;
         }
 
-        private Func<Body> BodyFunc { get; set; }
-        private Body _body;
+        #region Forwarding properties
 
-        public Body GetBody()
+        public Cookies Cookies => Context.Client.Cookies;
+        public bool HasConditions => !(_conditions?.Count > 0);
+        public bool IsValid => Error == null;
+        public string ProtocolIdentifier => Parameters.ProtocolIdentifier;
+        public TimeSpan TimeElapsed => Stopwatch.Elapsed;
+        private Stopwatch Stopwatch { get; }
+        IEntityResource<T> IEntityRequest<T>.EntityResource => Resource as IEntityResource<T>;
+
+        public Func<IAsyncEnumerable<T>> GetSelector() => Selector;
+        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> GetUpdater() => Updater;
+
+        public Func<IAsyncEnumerable<T>> Selector { private get; set; }
+        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { private get; set; }
+
+        public Func<IAsyncEnumerable<T>> EntitiesProducer { get; set; }
+
+        public IEnumerable<T> GetInputEntities() => GetInputEntitiesAsync().ToEnumerable();
+
+        public async IAsyncEnumerable<T> GetInputEntitiesAsync()
         {
-            if (BodyFunc != null)
+            if (EntitiesProducer == null) yield break;
+            await foreach (var item in EntitiesProducer().ConfigureAwait(false))
+                yield return item;
+        }
+
+        IResource IRequest.Resource => Resource;
+        public Headers Headers => Parameters.Headers;
+        public RESTableContext Context => Parameters.Context;
+        public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
+        public IMacro Macro => Parameters.UriComponents.Macro;
+        private ILogable LogItem => Parameters;
+        private IHeaderHolder HeaderHolder => Parameters;
+        MessageType ILogable.MessageType => LogItem.MessageType;
+        ValueTask<string> ILogable.GetLogMessage() => LogItem.GetLogMessage();
+        ValueTask<string> ILogable.GetLogContent() => LogItem.GetLogContent();
+        public DateTime LogTime { get; } = DateTime.Now;
+        bool IHeaderHolder.ExcludeHeaders => HeaderHolder.ExcludeHeaders;
+        private RESTableConfiguration Configuration { get; }
+
+        public Body Body
+        {
+            get => Parameters.Body;
+            set
             {
-                _body = BodyFunc();
-                BodyFunc = null;
+                if (IsEvaluating)
+                    throw new InvalidOperationException("Cannot set the request body whilst the request is evaluating");
+                Parameters.Body = value;
             }
-            return _body;
         }
 
-        private void SetBody(Body value)
+        public CachedProtocolProvider CachedProtocolProvider
         {
-            if (IsEvaluating)
-                throw new InvalidOperationException("Cannot set the request body whilst the request is evaluating");
-            BodyFunc = null;
-            _body = value;
+            get => Parameters.CachedProtocolProvider;
+            private set => Parameters.CachedProtocolProvider = value;
         }
 
-        public void SetBody(object content, ContentType? contentType = null) => SetBody(new Body
-        (
-            stream: content.ToStream(contentType, this),
-            protocolProvider: CachedProtocolProvider
-        ));
+
+        public Method Method
+        {
+            get => Parameters.Method;
+            set
+            {
+                if (IsEvaluating) return;
+                Parameters.Method = value;
+            }
+        }
+
 
         public IUriComponents UriComponents => new UriComponents
         (
             resourceSpecifier: Resource.Name,
             viewName: Target is IView ? Target.Name : null,
             conditions: Conditions,
-            metaConditions: MetaConditions.AsConditionList(),
+            metaConditions: MetaConditions.GetEnumerable(),
             protocolProvider: CachedProtocolProvider.ProtocolProvider,
             macro: Parameters.UriComponents.Macro
         );
 
-        #region Parameter bindings
-
-        public RequestParameters Parameters { get; }
-
-        public string TraceId => Parameters.TraceId;
-        public RESTableContext Context => Parameters.Context;
-        public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
-        public IMacro Macro => Parameters.UriComponents.Macro;
-
-        #endregion
-
-        #region ILogable
-
-        private ILogable LogItem => Parameters;
-        MessageType ILogable.MessageType => LogItem.MessageType;
-        string ILogable.LogMessage => LogItem.LogMessage;
-        string ILogable.LogContent => LogItem.LogContent;
-        public DateTime LogTime { get; } = DateTime.Now;
-
-        string ILogable.HeadersStringCache
+        string IHeaderHolder.HeadersStringCache
         {
-            get => LogItem.HeadersStringCache;
-            set => LogItem.HeadersStringCache = value;
+            get => HeaderHolder.HeadersStringCache;
+            set => HeaderHolder.HeadersStringCache = value;
         }
 
-        bool ILogable.ExcludeHeaders => LogItem.ExcludeHeaders;
-
         #endregion
 
-        public IEntities<T> EvaluateToEntities()
+        public TData GetClientData<TData>(string key)
         {
-            var result = Evaluate();
+            if (Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data) && data.TryGetValue(key, out var value))
+                return (TData) value;
+            return default;
+        }
+
+        public void SetClientData<TData>(string key, TData value)
+        {
+            if (!Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data))
+                data = Context.Client.ResourceClientDataMappings[Resource] = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            data[key] = value;
+        }
+
+        public async Task<IEntities<T>> GetResultEntities()
+        {
+            var result = await GetResult().ConfigureAwait(false);
             if (result is Error e) throw e;
             return (IEntities<T>) result;
         }
 
-        public IResult Evaluate()
+        public async Task<IResult> GetResult(CancellationToken cancellationToken = new())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Stopwatch.Restart();
+            var sourceDelegate = GetSourceDelegate();
+            var destinationDelegate = GetDestinationDelegate();
+            var result = GetQuickErrorResult();
+
+            if (result == null)
+            {
+                Body = await sourceDelegate(Body).ConfigureAwait(false);
+                await Body.Initialize(cancellationToken).ConfigureAwait(false);
+                result = await EvaluateAndGetResult(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (IsWebSocketUpgrade && result is not WebSocketUpgradeSuccessful)
+            {
+                await using (var webSocket = Context.WebSocket)
+                {
+                    if (result is Forbidden forbidden)
+                        return new WebSocketUpgradeFailed(forbidden);
+                    await Context.WebSocket.Open(this, false).ConfigureAwait(false);
+                    await webSocket.SendResult(result);
+                    var message = await webSocket.GetMessageStream(false).ConfigureAwait(false);
+#if NETSTANDARD2_1
+                    await using (message)
+#else
+                    using (message)
+#endif
+                    {
+                        await result.Serialize(message, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    }
+                    return new WebSocketTransferSuccess(this);
+                }
+            }
+
+            result = await destinationDelegate(result).ConfigureAwait(false);
+
+            result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+            if (Headers.Metadata == "full" && result.Metadata is string metadata)
+                result.Headers.Metadata = metadata;
+            result.Headers.Version = Configuration.Version;
+            if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
+                throw loop;
+            return result;
+        }
+
+        private async Task<IResult> EvaluateAndGetResult(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                Context.IncreaseDepth();
+                IsEvaluating = true;
+
+                switch (Resource)
+                {
+                    case ITerminalResource<T> terminalResource:
+                    {
+                        if (!Context.HasWebSocket)
+                            throw new UpgradeRequired(terminalResource.Name);
+                        if (IsWebSocketUpgrade)
+                        {
+                            var terminalResourceInternal = (TerminalResource<T>) terminalResource;
+                            var terminal = terminalResourceInternal.MakeTerminal(Context, Conditions);
+                            await Context.WebSocket.Open(this).ConfigureAwait(false);
+                            await Context.WebSocket.ConnectTo(terminal, terminalResourceInternal).ConfigureAwait(false);
+                            await terminal.OpenTerminal().ConfigureAwait(false);
+                            return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
+                        }
+                        return await SwitchTerminal(terminalResource).ConfigureAwait(false);
+                    }
+
+                    case IBinaryResource<T> binary:
+                    {
+                        var binaryResult = binary.SelectBinary(this);
+                        if (!this.Accepts(binaryResult.ContentType, out var acceptHeader))
+                            throw new NotAcceptable(acceptHeader, binaryResult.ContentType.ToString());
+                        var binaryContent = new Binary(this, binaryResult);
+                        return binaryContent;
+                    }
+
+                    case IEntityResource<T> entity:
+                    {
+                        if (entity.RequiresAuthentication)
+                        {
+                            var authenticator = this.GetRequiredService<Authenticator>();
+                            await authenticator.RunResourceAuthentication(this, entity).ConfigureAwait(false);
+                        }
+                        if (MetaConditions.SafePost != null)
+                        {
+                            if (!entity.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
+                            if (!entity.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
+                        }
+                        var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
+                        var result = await evaluator(this).ConfigureAwait(false);
+                        foreach (var (key, value) in ResponseHeaders)
+                            result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
+                        if (Configuration.AllowAllOrigins)
+                            result.Headers.AccessControlAllowOrigin = "*";
+                        else if (Headers.Origin is string origin)
+                            result.Headers.AccessControlAllowOrigin = origin;
+                        return result;
+                    }
+                    
+                    case var other: throw new UnknownResource(other.Name);
+                }
+            }
+            catch (Exception exception)
+            {
+                var result = exception.AsResultOf(this);
+                foreach (var (key, value) in ResponseHeaders)
+                    result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
+                return result;
+            }
+            finally
+            {
+                Context.DecreaseDepth();
+                IsEvaluating = false;
+            }
+        }
+
+        private IResult GetQuickErrorResult()
         {
             if (!IsValid) return Error.AsResultOf(this);
             if (!Context.MethodIsAllowed(Method, Resource, out var error)) return error.AsResultOf(this);
@@ -194,113 +292,27 @@ namespace RESTable.Requests
                 catch (NotImplementedException) { }
             }
             if (IsEvaluating) throw new InfiniteLoop();
-
-            var result = RunEvaluation();
-
-            result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-            if (Headers.Metadata == "full" && result.Metadata is string metadata)
-                result.Headers.Metadata = metadata;
-            result.Headers.Version = RESTableConfig.Version;
-            if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
-                throw loop;
-            return result;
+            return null;
         }
 
-        private IResult RunEvaluation()
+        private async Task<IResult> SwitchTerminal(ITerminalResource<T> resource)
         {
-            try
-            {
-                Context.IncreaseDepth();
-                IsEvaluating = true;
-
-                switch (Resource)
-                {
-                    case ITerminalResource<T> terminal:
-                        if (!Context.HasWebSocket)
-                            throw new UpgradeRequired(terminal.Name);
-                        if (IsWebSocketUpgrade)
-                            return MakeWebSocketUpgrade(terminal);
-                        return SwitchTerminal(terminal);
-
-                    case IBinaryResource<T> binary:
-                        var (stream, contentType) = binary.SelectBinary(this);
-                        return new Binary(this, stream, contentType);
-
-                    case IEntityResource<T> entity:
-                        if (entity.RequiresAuthentication)
-                            this.RunResourceAuthentication(entity);
-                        if (MetaConditions.SafePost != null)
-                        {
-                            if (!entity.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
-                            if (!entity.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
-                        }
-
-                        var evaluator = EntityOperations<T>.GetEvaluator(Method);
-
-                        var result = evaluator(this);
-
-                        ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
-                        if (RESTableConfig.AllowAllOrigins)
-                            result.Headers.AccessControlAllowOrigin = "*";
-                        else if (Headers.Origin is string origin)
-                            result.Headers.AccessControlAllowOrigin = origin;
-
-                        if (!IsWebSocketUpgrade)
-                            return result;
-
-                        var serialized = result.Serialize();
-                        Context.WebSocket.Open();
-                        Context.WebSocket.SendResult(serialized);
-                        Context.WebSocket.Disconnect();
-                        return new WebSocketUpgradeSuccessful(this, Task.CompletedTask);
-
-                    case var other: throw new UnknownResource(other.Name);
-                }
-            }
-            catch (Exception exception)
-            {
-                var result = exception.AsResultOf(this);
-                ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
-                return result;
-            }
-            finally
-            {
-                Context.DecreaseDepth();
-                IsEvaluating = false;
-            }
-        }
-
-        private ISerializedResult SwitchTerminal(ITerminalResource<T> resource)
-        {
-            var _resource = (Meta.Internal.TerminalResource<T>) resource;
-            var newTerminal = _resource.MakeTerminal(Conditions);
-            Context.WebSocket.ConnectTo(newTerminal, resource);
-            newTerminal.Open();
+            var _resource = (TerminalResource<T>) resource;
+            var newTerminal = _resource.MakeTerminal(Context, Conditions);
+            await Context.WebSocket.ConnectTo(newTerminal, resource).ConfigureAwait(false);
+            await newTerminal.OpenTerminal().ConfigureAwait(false);
             return new SwitchedTerminal(this);
-        }
-
-        private ISerializedResult MakeWebSocketUpgrade(ITerminalResource<T> resource)
-        {
-            var _resource = (Meta.Internal.TerminalResource<T>) resource;
-            var terminal = _resource.MakeTerminal(Conditions);
-            Context.WebSocket.SetContext(this);
-            Context.WebSocket.ConnectTo(terminal, resource);
-            var wsLifeTime = Context.WebSocket.Open();
-            terminal.Open();
-            return new WebSocketUpgradeSuccessful(this, wsLifeTime);
         }
 
         internal Request(IResource<T> resource, RequestParameters parameters)
         {
             Parameters = parameters;
-            Services = new Dictionary<Type, object>();
             Resource = resource;
             Target = resource;
-            TargetType = typeof(T);
-            Method = parameters.Method;
-            Headers = parameters.Headers;
-            Stopwatch = parameters.Stopwatch;
-            CachedProtocolProvider = parameters.CachedProtocolProvider;
+            Body = parameters.Body;
+            Stopwatch = new Stopwatch();
+            var termFactory = this.GetRequiredService<TermFactory>();
+            Configuration = this.GetRequiredService<RESTableConfiguration>();
 
             try
             {
@@ -308,7 +320,7 @@ namespace RESTable.Requests
                     throw new ResourceIsInternal(resource);
                 if (Resource is IEntityResource<T> entityResource)
                 {
-                    MetaConditions = MetaConditions.Parse(parameters.UriComponents.MetaConditions, entityResource);
+                    MetaConditions = MetaConditions.Parse(parameters.UriComponents.MetaConditions, entityResource, termFactory);
                     if (parameters.UriComponents.ViewName != null)
                     {
                         if (!entityResource.ViewDictionary.TryGetValue(parameters.UriComponents.ViewName, out var view))
@@ -317,85 +329,14 @@ namespace RESTable.Requests
                     }
                 }
                 if (parameters.UriComponents.Conditions.Count > 0)
-                    Conditions = Condition<T>.Parse(parameters.UriComponents.Conditions, Target);
+                {
+                    var cache = this.GetRequiredService<ConditionCache<T>>();
+                    Conditions = Condition<T>.Parse(parameters.UriComponents.Conditions, Target, termFactory, cache);
+                }
                 if (parameters.Headers.UnsafeOverride)
                 {
                     MetaConditions.Unsafe = true;
                     parameters.Headers.UnsafeOverride = false;
-                }
-                var defaultContentType = CachedProtocolProvider.DefaultInputProvider.ContentType;
-                if (Headers.Source == null)
-                {
-                    if (!Parameters.HasBody) return;
-                    SetBody(new Body
-                    (
-                        stream: new RESTableStream
-                        (
-                            contentType: Headers.ContentType ?? defaultContentType,
-                            buffer: Parameters.BodyBytes
-                        ),
-                        protocolProvider: CachedProtocolProvider
-                    ));
-                }
-                else
-                {
-                    Body getBodyFromExternalSourceSync()
-                    {
-                        try
-                        {
-                            Body body;
-                            var source = new HeaderRequestParameters(Headers.Source);
-                            if (source.Method != GET) throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
-                            if (source.IsInternal)
-                            {
-                                var result = Context.CreateRequest(source.URI, source.Method, null, source.Headers)
-                                    .Evaluate();
-                                if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
-                                var serialized = result.Serialize();
-                                if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");
-                                body = new Body
-                                (
-                                    stream: new RESTableStream
-                                    (
-                                        contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
-                                        stream: serialized.Body
-                                    ),
-                                    protocolProvider: CachedProtocolProvider
-                                );
-                            }
-                            else
-                            {
-                                if (source.Headers.Accept == null) source.Headers.Accept = defaultContentType;
-                                var request = new HttpRequest(this, source, null);
-                                var response = request.GetResponseAsync().Result ?? throw new InvalidExternalSource(source.URI, "No response");
-                                if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(source.URI, response.LogMessage);
-                                if (response.Body.CanSeek && response.Body.Length == 0)
-                                    throw new InvalidExternalSource(source.URI, "Response was empty");
-                                body = new Body
-                                (
-                                    stream: new RESTableStream
-                                    (
-                                        contentType: response.Headers.ContentType ?? defaultContentType,
-                                        stream: response.Body
-                                    ),
-                                    protocolProvider: CachedProtocolProvider
-                                );
-                            }
-                            return body;
-                        }
-                        catch (HttpRequestException re)
-                        {
-                            BodyFunc = null;
-                            throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
-                        }
-                        catch
-                        {
-                            BodyFunc = null;
-                            throw;
-                        }
-                    }
-
-                    BodyFunc = getBodyFromExternalSourceSync;
                 }
             }
             catch (Exception e)
@@ -406,61 +347,152 @@ namespace RESTable.Requests
 
         private Request
         (
-            Method method,
             IResource<T> resource,
             ITarget<T> target,
-            Type targetType,
             CachedProtocolProvider cachedProtocolProvider,
             RequestParameters parameters,
             Body body,
-            Headers headers,
             MetaConditions metaConditions,
             List<Condition<T>> conditions,
-            Exception error,
-            string protocol
+            Exception error
         )
         {
-            Method = method;
-            Services = new Dictionary<Type, object>();
+            Parameters = parameters;
             Resource = resource;
             Target = target;
-            TargetType = targetType;
-            Parameters = parameters;
-            _body = body;
-            Headers = headers;
+            Body = body;
             MetaConditions = metaConditions;
             Conditions = conditions;
             Error = error;
-            Stopwatch = Stopwatch.StartNew();
-            CachedProtocolProvider = protocol != null
-                ? ProtocolController.ResolveProtocolProvider(protocol)
-                : cachedProtocolProvider;
+            CachedProtocolProvider = cachedProtocolProvider;
+            Stopwatch = new Stopwatch();
         }
 
-        public IRequest GetCopy(string newProtocol = null) => new Request<T>
-        (
-            method: Method,
-            resource: Resource,
-            target: Target,
-            targetType: TargetType,
-            cachedProtocolProvider: CachedProtocolProvider,
-            parameters: Parameters,
-            body: GetBody().GetCopy(newProtocol),
-            headers: Headers.GetCopy(),
-            metaConditions: MetaConditions.GetCopy(),
-            conditions: Conditions.ToList(),
-            error: Error,
-            protocol: newProtocol
-        );
+        #region Source and destination
 
-        public void Dispose()
+        private Func<IResult, Task<IResult>> SendToDestinationDelegate(string destinationHeader)
         {
-            BodyFunc = null;
-            GetBody().Dispose();
-            foreach (var disposable in Services.Values.OfType<IAsyncDisposable>())
-                disposable.DisposeAsync();
-            foreach (var disposable in Services.Values.OfType<IDisposable>())
-                disposable.Dispose();
+            if (!HeaderRequestParameters.TryParse(destinationHeader, out var parameters, out var parseError))
+            {
+                Error = parseError;
+                return Task.FromResult;
+            }
+
+            if (parameters.IsInternal)
+            {
+                return async result =>
+                {
+                    var serializedResult = await result.Serialize().ConfigureAwait(false);
+                    var internalRequest = serializedResult.Context.CreateRequest
+                    (
+                        method: parameters.Method,
+                        uri: parameters.URI,
+                        body: serializedResult.Body,
+                        headers: parameters.Headers
+                    );
+                    return await internalRequest.GetResult();
+                };
+            }
+            return async result =>
+            {
+                var externalRequest = new HttpRequest(result, parameters, async stream =>
+                {
+                    await result.Serialize(stream).ConfigureAwait(false);
+                });
+                var response = await externalRequest.GetResponseAsync().ConfigureAwait(false)
+                               ?? throw new InvalidExternalDestination(externalRequest, "No response");
+                if (response.StatusCode >= HttpStatusCode.BadRequest)
+                    throw new InvalidExternalDestination(externalRequest,
+                        $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.Info}");
+                if (result.Headers.AccessControlAllowOrigin is string h)
+                    response.Headers.AccessControlAllowOrigin = h;
+                return new ExternalDestinationResult(result.Request, response);
+            };
         }
+
+        private Func<Body, Task<Body>> GetBodyFromSourceDelegate(string sourceHeader)
+        {
+            if (!HeaderRequestParameters.TryParse(sourceHeader, out var parameters, out var parseError))
+            {
+                Error = parseError;
+                return Task.FromResult;
+            }
+            if (parameters.Method != GET)
+            {
+                Error = new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
+                return Task.FromResult;
+            }
+
+            return async body =>
+            {
+                if (body != null)
+                    await body.DisposeAsync().ConfigureAwait(false);
+                if (parameters.IsInternal)
+                {
+                    var internalRequest = Context.CreateRequest
+                    (
+                        method: parameters.Method,
+                        uri: parameters.URI,
+                        body: null,
+                        headers: parameters.Headers
+                    );
+                    var result = await internalRequest.GetResult().ConfigureAwait(false);
+                    if (result is not IEntities)
+                        throw new InvalidExternalSource(parameters.URI, await result.GetLogMessage().ConfigureAwait(false));
+                    var serialized = await result.Serialize();
+                    if (serialized.Result is Error error) throw error;
+                    if (serialized.EntityCount == 0) throw new InvalidExternalSource(parameters.URI, "Response was empty");
+                    return serialized.Body;
+                }
+                parameters.Headers.Accept ??= ContentType.JSON;
+                var request = new HttpRequest(this, parameters, null);
+                var response = await request.GetResponseAsync().ConfigureAwait(false);
+                if (response == null)
+                    throw new InvalidExternalSource(parameters.URI, "No response");
+                if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(parameters.URI, response.LogMessage);
+
+                if (response.Body.CanSeek && response.Body.Length == 0)
+                    throw new InvalidExternalSource(parameters.URI, "Response was empty");
+                return new Body(this, response.Body);
+            };
+        }
+
+        private Func<Body, Task<Body>> GetSourceDelegate() => Headers.Source switch
+        {
+            string sourceHeader => GetBodyFromSourceDelegate(sourceHeader),
+            _ => Task.FromResult
+        };
+
+        private Func<IResult, Task<IResult>> GetDestinationDelegate() => Headers.Destination switch
+        {
+            string destinationHeader => SendToDestinationDelegate(destinationHeader),
+            _ => Task.FromResult
+        };
+
+        #endregion
+
+        public async Task<IRequest> GetCopy(string newProtocol = null)
+        {
+            var protocolController = this.GetRequiredService<ProtocolProviderManager>();
+            return new Request<T>
+            (
+                resource: Resource,
+                target: Target,
+                cachedProtocolProvider: newProtocol != null
+                    ? protocolController.ResolveCachedProtocolProvider(newProtocol)
+                    : CachedProtocolProvider,
+                parameters: Parameters,
+                body: await Body.GetCopy().ConfigureAwait(false),
+                metaConditions: MetaConditions.GetCopy(),
+                conditions: Conditions.ToList(),
+                error: Error
+            );
+        }
+
+        public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
+
+        public void Dispose() => Body.Dispose();
+
+        public async ValueTask DisposeAsync() => await Body.DisposeAsync().ConfigureAwait(false);
     }
 }

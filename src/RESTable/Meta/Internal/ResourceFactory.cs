@@ -5,37 +5,111 @@ using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
 using static System.Reflection.BindingFlags;
-using static RESTable.Internal.EntityResourceProviderController;
 
 namespace RESTable.Meta.Internal
 {
-    internal static class ResourceFactory
+    public class ResourceFactory
     {
-        private static IEntityResourceProviderInternal VrProvider { get; }
-        private static TerminalResourceProvider TerminalProvider { get; }
-        private static BinaryResourceProvider BinaryProvider { get; }
+        private IEntityResourceProviderInternal VrProvider { get; }
+        private TerminalResourceProvider TerminalProvider { get; }
+        private BinaryResourceProvider BinaryProvider { get; }
+        private List<IEntityResourceProvider> ExternalResourceProviders { get; }
+        private TypeCache TypeCache { get; }
+        private ResourceValidator ResourceValidator { get; }
+        private ResourceCollection ResourceCollection { get; }
+        private RESTableConfigurator Configurator { get; set; }
+        internal IDictionary<string, IEntityResourceProviderInternal> EntityResourceProviders { get; }
 
-        static ResourceFactory()
+        public ResourceFactory
+        (
+            IEnumerable<IEntityResourceProvider> resourceProviders,
+            TerminalResourceProvider terminalResourceProvider,
+            BinaryResourceProvider binaryResourceProvider,
+            VirtualResourceProvider virtualResourceProvider,
+            TypeCache typeCache,
+            ResourceValidator resourceValidator,
+            ResourceCollection resourceCollection
+        )
         {
-            VrProvider = new VirtualResourceProvider();
-            TerminalProvider = new TerminalResourceProvider();
-            BinaryProvider = new BinaryResourceProvider();
+            TerminalProvider = terminalResourceProvider;
+            BinaryProvider = binaryResourceProvider;
+            VrProvider = virtualResourceProvider;
+            ExternalResourceProviders = resourceProviders.ToList();
+            TypeCache = typeCache;
+            ResourceValidator = resourceValidator;
+            ResourceCollection = resourceCollection;
+            EntityResourceProviders = new Dictionary<string, IEntityResourceProviderInternal>();
         }
 
-        private static void ValidateEntityResourceProviders(ICollection<IEntityResourceProvider> _entityResourceProviders)
+        internal void SetConfiguration(RESTableConfigurator configurator)
         {
-            if (_entityResourceProviders == null) return;
-            var entityResourceProviders = _entityResourceProviders
+            Configurator = configurator;
+        }
+
+        internal void MakeResources()
+        {
+            ValidateEntityResourceProviders();
+
+            foreach (var provider in EntityResourceProviders.Values)
+            {
+                provider.TypeCache = TypeCache;
+                provider.ResourceCollection = ResourceCollection;
+                provider.ResourceValidator = ResourceValidator;
+            }
+
+            ValidateAndBuildTypeLists
+            (
+                out var regularTypes,
+                out var wrapperTypes,
+                out var terminalTypes,
+                out var binaryTypes,
+                out _
+            );
+
+            foreach (var provider in EntityResourceProviders.Values)
+            {
+                var claim = regularTypes.Where(provider.Include).ToList();
+                regularTypes = regularTypes.Except(claim).ToList();
+                provider.MakeClaimRegular(claim);
+            }
+
+            foreach (var provider in EntityResourceProviders.Values)
+            {
+                var claim = wrapperTypes.Where(provider.Include).ToList();
+                wrapperTypes = wrapperTypes.Except(claim).ToList();
+                provider.MakeClaimWrapped(claim);
+            }
+
+            foreach (var provider in EntityResourceProviders.Values)
+            {
+                provider.ReceiveClaimed(ResourceCollection.OfType<IEntityResource>()
+                    .Where(r => r.Provider == provider.Id)
+                    .ToList());
+                if (provider is IProceduralEntityResourceProvider)
+                    provider.MakeClaimProcedural();
+            }
+
+            TerminalProvider.RegisterTerminalTypes(terminalTypes);
+            BinaryProvider.RegisterBinaryTypes(binaryTypes);
+            ValidateInnerResources();
+        }
+
+        private void ValidateEntityResourceProviders()
+        {
+            if (ExternalResourceProviders == null) return;
+
+            var entityResourceProviders = ExternalResourceProviders
                 .Select(p => p as IEntityResourceProviderInternal ??
                              throw new InvalidEntityResourceProviderException(p.GetType(),
                                  "Must be a subclass of 'RESTable.Resources.EntityResourceProvider'"))
                 .ToArray();
-            entityResourceProviders.ForEach(p =>
+
+            foreach (var provider in entityResourceProviders)
             {
-                if (p == null)
+                if (provider == null)
                     throw new ArgumentNullException(nameof(entityResourceProviders), "Found null value in entity resource providers collection");
-                p.Validate();
-            });
+                provider.Validate();
+            }
             if (entityResourceProviders.ContainsDuplicates(p => p.GetType().GetRESTableTypeName(), out var typeDupe))
                 throw new InvalidEntityResourceProviderException(typeDupe.GetType(),
                     $"Two or more external ResourceProviders with the same type '{typeDupe.GetType().GetRESTableTypeName()}' was found. Include " +
@@ -76,11 +150,11 @@ namespace RESTable.Meta.Internal
         /// 
         /// </summary>
         /// <returns></returns>
-        private static void ValidateAndBuildTypeLists(out List<Type> regularTypes, out List<Type> wrapperTypes, out List<Type> terminalTypes,
+        private void ValidateAndBuildTypeLists(out List<Type> regularTypes, out List<Type> wrapperTypes, out List<Type> terminalTypes,
             out List<Type> binaryTypes, out List<Type> eventTypes)
         {
             var allTypes = typeof(object).GetSubclasses().ToList();
-            var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTableAttribute>(out var a) && !(a is RESTableProceduralAttribute)).ToArray();
+            var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTableAttribute>(out var a) && a is not RESTableProceduralAttribute).ToArray();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTableViewAttribute>()).ToArray();
             if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.GetRESTableTypeName()?.ToLower() ?? "unknown", out var dupe))
                 throw new InvalidResourceDeclarationException("Types used by RESTable must have unique case insensitive names. Found " +
@@ -107,8 +181,8 @@ namespace RESTable.Meta.Internal
                     else if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != resource)
                         throw new InvalidResourceViewDeclarationException(viewType,
                             $"Expected view type to implement ISelector<{resource.GetRESTableTypeName()}>");
-                    var resourceProperties = resource.GetDeclaredProperties();
-                    foreach (var property in viewType.FindAndParseDeclaredProperties().Where(prop => resourceProperties.ContainsKey(prop.Name)))
+                    var resourceProperties = TypeCache.GetDeclaredProperties(resource);
+                    foreach (var property in TypeCache.FindAndParseDeclaredProperties(viewType).Where(prop => resourceProperties.ContainsKey(prop.Name)))
                         throw new InvalidResourceViewDeclarationException(viewType,
                             $"Invalid property '{property.Name}'. Resource view types must not contain any public instance " +
                             "properties with the same name (case insensitive) as a property of the corresponding resource. " +
@@ -120,60 +194,24 @@ namespace RESTable.Meta.Internal
             ValidateViewTypes(viewTypes);
         }
 
-        private static void ValidateInnerResources() => RESTableConfig.Resources
-            .GroupBy(r => r.ParentResourceName)
-            .Where(group => group.Key != null)
-            .ForEach(group =>
+        private void ValidateInnerResources()
+        {
+            var resourceGroups = ResourceCollection
+                .GroupBy(r => r.ParentResourceName)
+                .Where(group => group.Key != null);
+            foreach (var group in resourceGroups)
             {
-                var parentResource = (IResourceInternal) Resource.SafeGet(group.Key);
+                var parentResource = (IResourceInternal) ResourceCollection.SafeGetResource(group.Key);
                 if (parentResource == null)
                     throw new InvalidResourceDeclarationException(
                         $"Resource type(s) {string.Join(", ", group.Select(item => $"'{item.Name}'"))} is/are declared " +
                         $"within the scope of another class '{group.Key}', that is not a RESTable resource. Inner " +
                         "resources must be declared within a resource class.");
                 parentResource.InnerResources = group.ToList();
-            });
-
-        internal static void MakeResources(IEntityResourceProvider[] externalProviders)
-        {
-            ValidateEntityResourceProviders(externalProviders);
-
-            ValidateAndBuildTypeLists
-            (
-                out var regularTypes,
-                out var wrapperTypes,
-                out var terminalTypes,
-                out var binaryTypes,
-                out _
-            );
-
-            foreach (var provider in EntityResourceProviders.Values)
-            {
-                var claim = regularTypes.Where(provider.Include).ToList();
-                regularTypes = regularTypes.Except(claim).ToList();
-                provider.MakeClaimRegular(claim);
             }
-
-            foreach (var provider in EntityResourceProviders.Values)
-            {
-                var claim = wrapperTypes.Where(provider.Include).ToList();
-                wrapperTypes = wrapperTypes.Except(claim).ToList();
-                provider.MakeClaimWrapped(claim);
-            }
-
-            foreach (var provider in EntityResourceProviders.Values)
-            {
-                provider.ReceiveClaimed(Resource.ClaimedBy(provider));
-                if (provider is IProceduralEntityResourceProvider)
-                    provider.MakeClaimProcedural();
-            }
-
-            TerminalProvider.RegisterTerminalTypes(terminalTypes);
-            BinaryProvider.RegisterBinaryTypes(binaryTypes);
-            ValidateInnerResources();
         }
 
-        internal static void BindControllers()
+        internal void BindControllers()
         {
             foreach (var (provider, controller, baseType) in typeof(Admin.Resource)
                 .GetConcreteSubclasses()
@@ -209,9 +247,9 @@ namespace RESTable.Meta.Internal
         /// <summary>
         /// All resources are now in place and metadata can be built. This checks for any additional errors
         /// </summary>
-        internal static void FinalCheck()
+        internal void FinalCheck()
         {
-            var metadata = Metadata.Get(MetadataLevel.Full);
+            var metadata = Metadata.Get(MetadataLevel.Full, Configurator);
             foreach (var enumType in metadata.PeripheralTypes.Keys.Where(t => t.IsEnum))
             {
                 if (Enum.GetNames(enumType).Select(name => name.ToLower()).ContainsDuplicates(out var dupe))

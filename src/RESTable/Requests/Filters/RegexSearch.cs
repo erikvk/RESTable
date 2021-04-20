@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
-using RESTable.Admin;
-using RESTable.ContentTypeProviders;
+using RESTable.Meta;
 using static System.StringComparison;
 
 namespace RESTable.Requests.Filters
@@ -22,13 +20,13 @@ namespace RESTable.Requests.Filters
         /// Searches the entities using Pattern as a regex pattern, and returns only 
         /// those that match the pattern.
         /// </summary>
-        public override IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        public override IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities)
         {
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
-            var formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             var options = IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             if (Selector == null)
-                return entities.Where(e => Regex.IsMatch(Providers.Json.Serialize(e, formatting), Pattern, options));
+                return entities.Where(e => Regex.IsMatch(jsonProvider.Serialize(e), Pattern, options));
             return entities.Where(e => e?.ToJObject().GetValue(Selector, OrdinalIgnoreCase)?.ToString() is string s && Regex.IsMatch(s, Pattern, options));
         }
     }

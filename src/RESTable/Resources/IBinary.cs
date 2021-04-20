@@ -1,5 +1,4 @@
-﻿using System.IO;
-using RESTable.Requests;
+﻿using RESTable.Requests;
 
 namespace RESTable.Resources
 {
@@ -12,6 +11,6 @@ namespace RESTable.Resources
         /// <summary>
         /// Generates a binary stream and content type for a request
         /// </summary>
-        (Stream stream, ContentType contentType) Select(IRequest<T> request);
+        BinaryResult Select(IRequest<T> request);
     }
 }

@@ -88,6 +88,7 @@ namespace RESTable.Resources
         /// <param name="replaceOnUpdate">Should this object be replaced with a new instance on update, or reused? Applicable for types such as Dictionaries and Lists.</param>
         /// <param name="dateTimeFormat">A custom datetime format string to use when writing and reading this property</param>
         /// <param name="mergeOntoOwner">Should this member, and all its members, be merged onto the owner type when serializing?</param>
+        /// <param name="required">Should this member be required to have a value set in a condition in all requests to this resource?</param>
         public RESTableMemberAttribute(bool ignore = false, string name = null, int order = int.MinValue, bool hide = false,
             bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
             string excelReducer = null, bool replaceOnUpdate = false, string dateTimeFormat = null, bool mergeOntoOwner = false)

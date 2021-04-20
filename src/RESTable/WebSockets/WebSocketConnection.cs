@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
-using RESTable.Linq;
 
 namespace RESTable.WebSockets
 {
-    internal class WebSocketConnection : IWebSocket, IDisposable
+    internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     {
-        private IWebSocketInternal duringSuspend;
+        private IWebSocketInternal _duringSuspend;
         private IWebSocketInternal _webSocket;
 
         internal IWebSocketInternal WebSocket
@@ -20,45 +23,54 @@ namespace RESTable.WebSockets
         }
 
         internal ITerminalResource Resource { get; private set; }
-        internal ITerminal Terminal { get; private set; }
-        public string TraceId { get; }
+        internal Terminal Terminal { get; private set; }
         public RESTableContext Context { get; private set; }
+        private TaskCompletionSource<byte> SuspendTaskSource { get; set; }
+        private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
+        public CancellationToken CancellationToken => WebSocket.CancellationToken;
 
-        private bool IsSuspended { get; set; }
-
-        internal WebSocketConnection(WebSocket webSocket, ITerminal terminal, ITerminalResource resource)
+        internal WebSocketConnection(WebSocket webSocket, Terminal terminal, ITerminalResource resource)
         {
-            TraceId = webSocket.Id;
             Context = webSocket.Context;
             if (webSocket == null || webSocket.Status == WebSocketStatus.Closed)
                 throw new WebSocketNotConnectedException();
             WebSocket = webSocket;
             Resource = resource;
             Terminal = terminal;
-            Terminal.WebSocket = this;
+            Terminal.SetWebSocket(this);
+            SuspendTaskSource = new TaskCompletionSource<byte>();
+            SuspendTaskSource.SetResult(default);
         }
 
-        internal void Suspend()
+        internal async Task Suspend()
         {
-            if (IsSuspended) return;
-            duringSuspend?.Dispose();
-            duringSuspend = WebSocket;
-            WebSocket = new WebSocketQueue(duringSuspend);
-            IsSuspended = true;
+            if (_duringSuspend != null)
+                await _duringSuspend.DisposeAsync().ConfigureAwait(false);
+            _duringSuspend = WebSocket;
+            SuspendTaskSource = new TaskCompletionSource<byte>();
+            WebSocket = new AwaitingWebSocket(_duringSuspend, SuspendTaskSource.Task);
         }
 
         internal void Unsuspend()
         {
-            if (!IsSuspended || !(WebSocket is WebSocketQueue queue)) return;
-            IsSuspended = false;
-            WebSocket = duringSuspend;
-            duringSuspend = null;
-            queue.ActionQueue.ForEach(a => a());
+            if (!IsSuspended || WebSocket is not AwaitingWebSocket)
+                return;
+            WebSocket = _duringSuspend;
+            _duringSuspend = null;
+            SuspendTaskSource.SetResult(default);
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            Terminal.Dispose();
+            switch (Terminal)
+            {
+                case IAsyncDisposable asyncDisposable:
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                    break;
+                case IDisposable disposable:
+                    disposable.Dispose();
+                    break;
+            }
             WebSocket = null;
             Resource = null;
             Terminal = null;
@@ -68,26 +80,44 @@ namespace RESTable.WebSockets
         #region IWebSocket
 
         /// <inheritdoc />
-        public void SendText(string data) => WebSocket.SendText(data);
+        public Task SendText(string data) => WebSocket.SendText(data);
 
         /// <inheritdoc />
-        public void SendText(byte[] data, int offset, int length) => WebSocket.SendText(data, offset, length);
+        public Task SendText(ArraySegment<byte> buffer) => WebSocket.SendText(buffer);
 
         /// <inheritdoc />
-        public void SendBinary(byte[] data, int offset, int length) => WebSocket.SendBinary(data, offset, length);
+        public Task SendText(Stream stream) => WebSocket.SendText(stream);
 
         /// <inheritdoc />
-        public void SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);
+        public Task SendBinary(ArraySegment<byte> buffer) => WebSocket.SendBinary(buffer);
 
         /// <inheritdoc />
-        public void SendResult(IResult r, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.SendResult(r, t, w, d);
+        public Task SendBinary(Stream stream) => WebSocket.SendBinary(stream);
 
         /// <inheritdoc />
-        public void StreamResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,
-            bool disposeResult = true) => WebSocket.StreamResult(result, messageSize, timeElapsed, writeHeaders, disposeResult);
+        public Task<Stream> GetMessageStream(bool asText) => WebSocket.GetMessageStream(asText);
 
         /// <inheritdoc />
-        public void SendException(Exception exception) => WebSocket.SendException(exception);
+        public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false) =>
+            WebSocket.SendJson(i, at, p, ig);
+
+        /// <inheritdoc />
+        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false) => WebSocket.SendResult(r, t, w);
+
+        /// <inheritdoc />
+        public Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false,
+            bool d = true) => WebSocket.SendSerializedResult(serializedResult, t, w, d);
+
+        /// <inheritdoc />
+        public Task StreamSerializedResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null,
+            bool writeHeaders = false,
+            bool disposeResult = true)
+        {
+            return WebSocket.StreamSerializedResult(result, messageSize, timeElapsed, writeHeaders, disposeResult);
+        }
+
+        /// <inheritdoc />
+        public Task SendException(Exception exception) => WebSocket.SendException(exception);
 
         /// <inheritdoc />
         public Headers Headers => WebSocket.Headers;
@@ -96,11 +126,25 @@ namespace RESTable.WebSockets
         public ReadonlyCookies Cookies => WebSocket.Cookies;
 
         /// <inheritdoc />
-        public void DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => WebSocket.DirectToShell(assignments);
+        public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) =>
+            WebSocket.DirectToShell(assignments);
 
         /// <inheritdoc />
-        public void DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : class, ITerminal =>
-            WebSocket.DirectTo(terminalResource, assignments);
+        public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null)
+            where T : Terminal
+        {
+            return WebSocket.DirectTo(terminalResource, assignments);
+        }
+
+        public string HeadersStringCache
+        {
+            get => WebSocket.HeadersStringCache;
+            set => WebSocket.HeadersStringCache = value;
+        }
+
+        public bool ExcludeHeaders => WebSocket.ExcludeHeaders;
+        public string ProtocolIdentifier => WebSocket.ProtocolIdentifier;
+        public CachedProtocolProvider CachedProtocolProvider => WebSocket.CachedProtocolProvider;
 
         /// <inheritdoc />
         public WebSocketStatus Status => IsSuspended ? WebSocketStatus.Suspended : WebSocket.Status;

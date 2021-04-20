@@ -1,37 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Results;
 
 namespace RESTable.ProtocolProviders
 {
-    /// <summary>
-    /// Enumeration used to configure how a RESTable protocol provider works with external 
-    /// content type providers.
-    /// </summary>
-    public enum ExternalContentTypeProviderSettings
-    {
-        /// <summary>
-        /// Allow all external content type providers
-        /// </summary>
-        AllowAll,
-
-        /// <summary>
-        /// Allow external content type providers only when deserializing request bodies
-        /// </summary>
-        AllowInput,
-
-        /// <summary>
-        /// Allow external content type providers only when serializing response bodies
-        /// </summary>
-        AllowOutput,
-
-        /// <summary>
-        /// Do not allow any external content type providers
-        /// </summary>
-        DontAllow
-    }
-
     /// <summary>
     /// Interface for RESTable protocol providers. Protocol providers provide the logic for 
     /// parsing requests according to some protocol.
@@ -88,7 +63,7 @@ namespace RESTable.ProtocolProviders
         /// Takes a result and generates an ISerializedResult entity from it, that can - for example - be returned 
         /// to a network component and streamed over a TCP connection.
         /// </summary>
-        ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider);
+        Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken);
 
         /// <summary>
         /// This method is called when RESTableConfig.Init() is done initializing the RESTable instance.

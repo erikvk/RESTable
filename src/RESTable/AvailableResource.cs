@@ -46,12 +46,14 @@ namespace RESTable
         /// <summary>
         /// The views for this resource
         /// </summary>
-        [RESTableMember(hideIfNull: true)] public ViewInfo[] Views { get; private set; }
+        [RESTableMember(hideIfNull: true)]
+        public ViewInfo[] Views { get; private set; }
 
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [RESTableMember(hideIfNull: true)] public AvailableResource[] InnerResources { get; private set; }
+        [RESTableMember(hideIfNull: true)]
+        public AvailableResource[] InnerResources { get; private set; }
 
         /// <inheritdoc />
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
@@ -81,7 +83,7 @@ namespace RESTable
                 var @namespace = request.Conditions.Pop(nameof(Namespace), Operators.EQUALS).Value as string;
                 if (@namespace != null)
                     if (!@namespace.EndsWith("."))
-                        @namespace = @namespace + ".";
+                        @namespace += ".";
                 if (@namespace == null)
                     return request.Context.Client.AccessRights.Keys?
                         .Where(r => r.IsGlobal && !r.IsInnerResource)
@@ -95,19 +97,22 @@ namespace RESTable
             }
         }
 
-        internal static AvailableResource Make(IResource iresource, ITraceable trace) => new AvailableResource
+        internal static AvailableResource Make(IResource iresource, ITraceable trace) => new()
         {
             Name = iresource.Name,
             Description = iresource.Description ?? "No description",
-            Methods = trace.Context.Client.AccessRights.SafeGet(iresource)?
-                          .Intersect(iresource.AvailableMethods)
-                          .ToArray() ?? new Method[0],
+            Methods = trace.Context.Client.AccessRights
+                .SafeGet(iresource)?
+                .Intersect(iresource.AvailableMethods)
+                .ToArray() ?? new Method[0],
             Kind = iresource.ResourceKind,
             Views = iresource is IEntityResource er
-                ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
-                  ?? new ViewInfo[0]
+                ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray() ?? new ViewInfo[0]
                 : null,
-            InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(r => Make(r, trace)).ToArray()
+            InnerResources = ((IResourceInternal) iresource)
+                .InnerResources?
+                .Select(r => Make(r, trace))
+                .ToArray()
         };
     }
 }

@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/RESTable/Help/
+permalink: /Built-in%20resources/RESTable/Help/
 ---
 
 # `Help`

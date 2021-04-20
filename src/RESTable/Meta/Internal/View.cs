@@ -28,11 +28,15 @@ namespace RESTable.Meta.Internal
         /// <inheritdoc />
         public Type Type { get; }
 
+        private AsyncViewSelector<TResource> AsyncViewSelector { get; }
         private ViewSelector<TResource> ViewSelector { get; }
 
         public IEnumerable<TResource> Select(IRequest<TResource> request) => ViewSelector(request);
 
+        public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request) => AsyncViewSelector(request);
+
         /// <inheritdoc />
+        [RESTableMember(hide: true)]
         public IEntityResource EntityResource { get; private set; }
 
         public void SetEntityResource(IEntityResource resource) => EntityResource = resource;
@@ -40,17 +44,21 @@ namespace RESTable.Meta.Internal
         /// <inheritdoc />
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
 
-        internal View(Type viewType)
+        internal View(Type viewType, TypeCache typeCache)
         {
             var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
             Type = viewType;
-            Name = viewAttribute.CustomName ?? viewType.Name;
-            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
-            Members = viewType.GetDeclaredProperties();
-            Description = viewAttribute.Description;
-            ConditionBindingRule = viewAttribute.AllowDynamicConditions
-                ? TermBindingRule.DeclaredWithDynamicFallback
-                : TermBindingRule.OnlyDeclared;
+            if (viewAttribute != null)
+            {
+                Name = viewAttribute.CustomName ?? viewType.Name;
+                ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
+                AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType);
+                Members = typeCache.GetDeclaredProperties(viewType);
+                Description = viewAttribute.Description;
+                ConditionBindingRule = viewAttribute.AllowDynamicConditions
+                    ? TermBindingRule.DeclaredWithDynamicFallback
+                    : TermBindingRule.OnlyDeclared;
+            }
         }
 
         /// <inheritdoc />

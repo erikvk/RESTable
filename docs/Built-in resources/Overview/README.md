@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/Overview/
+permalink: /Built-in%20resources/Overview/
 ---
 
 # Built-in resources overview
@@ -13,9 +13,5 @@ RESTable has a number of built-in web resources that provide useful utilities an
 - **RESTable.Admin**
 
 > Utilities for administrators
-
-- **RESTable.Dynamic**
-
-> Dynamic resources created at runtime
 
 It is recommended that the `RESTable.Admin` namespace is [restricted to only administrators](../Administering%20a%20RESTable%20API/API%20keys). Use the sidebar menu to explore the namespaces.

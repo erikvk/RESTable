@@ -5,7 +5,7 @@ using RESTable.Resources.Operations;
 
 namespace RESTable
 {
-    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="IInserter{T}" />
     /// <inheritdoc cref="IUpdater{T}" />
     /// <inheritdoc cref="IDeleter{T}" />

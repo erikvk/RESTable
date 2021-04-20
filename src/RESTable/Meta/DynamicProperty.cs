@@ -30,16 +30,16 @@ namespace RESTable.Meta
         /// if no dynamic property can be found in the target entity?</param>
         /// <returns>A dynamic property that represents the runtime property
         /// described by the key string</returns>
-        public static DynamicProperty Parse(string keyString, bool declaredFallback = false) =>
-            new DynamicProperty(keyString, declaredFallback);
+        public static DynamicProperty Parse(string keyString, bool declaredFallback = false) => new(keyString, declaredFallback);
 
         internal void SetName(string name) => Name = name;
 
-        private DynamicProperty(string name, bool declaredFallback)
+        private DynamicProperty(string name, bool declaredFallback) : base(null)
         {
             Name = ActualName = name;
             DeclaredFallback = declaredFallback;
             Type = typeof(object);
+            var typeCache = ApplicationServicesAccessor.TypeCache;
 
             Getter = obj =>
             {
@@ -47,12 +47,12 @@ namespace RESTable.Meta
                 string actualKey = null;
                 string capitalized;
 
-                dynamic getFromStatic()
+                object getFromStatic()
                 {
                     var type = obj.GetType();
                     value = Do.Try(() =>
                     {
-                        var prop = DeclaredProperty.Find(type, Name);
+                        var prop = typeCache.FindDeclaredProperty(type, Name);
                         actualKey = prop.Name;
                         return prop.GetValue(obj);
                     }, default(object));
@@ -70,10 +70,10 @@ namespace RESTable.Meta
                         }
                         return DeclaredFallback ? getFromStatic() : null;
                     case JObject jobj:
-                        if (!(jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is JProperty property))
+                        if (jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is not JProperty property)
                             return DeclaredFallback ? getFromStatic() : null;
                         Name = property.Name;
-                        return property.Value.ToObject<dynamic>();
+                        return property.Value.ToObject<object>();
                     case IDictionary<string, object> dict:
                         capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
@@ -98,7 +98,7 @@ namespace RESTable.Meta
                     case IDynamicMemberValueProvider dm:
                         dm.TrySetValue(Name, value);
                         break;
-                    case IDictionary<string, dynamic> ddict:
+                    case IDictionary<string, object> ddict:
                         ddict[Name] = value;
                         break;
                     case IDictionary idict:
@@ -109,7 +109,7 @@ namespace RESTable.Meta
                         break;
                     default:
                         var type = obj.GetType();
-                        Do.Try(() => DeclaredProperty.Find(type, Name)?.SetValue(obj, value));
+                        Do.Try(() => typeCache.FindDeclaredProperty(type, Name)?.SetValue(obj, value));
                         break;
                 }
             };

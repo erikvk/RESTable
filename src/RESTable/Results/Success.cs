@@ -1,71 +1,73 @@
 ﻿using System;
-using System.IO;
 using System.Net;
-using RESTable.Internal;
+using System.Threading.Tasks;
 using RESTable.Requests;
+using RESTable.Resources;
 
 namespace RESTable.Results
 {
     /// <inheritdoc cref="IResult"/>
-    /// <inheritdoc cref="ISerializedResult"/>
-    public abstract class Success : IResult, ISerializedResult
+    public abstract class Success : IResult
     {
         /// <inheritdoc />
-        public string TraceId { get; }
-
-        /// <inheritdoc />
+        [RESTableMember(ignore: true)]
         public RESTableContext Context { get; }
 
         /// <inheritdoc />
+        [RESTableMember(hide: true)]
         public HttpStatusCode StatusCode { get; protected set; }
 
         /// <inheritdoc />
+        [RESTableMember(hide: true)]
         public string StatusDescription { get; protected set; }
 
         /// <inheritdoc />
-        public virtual Headers Headers { get; }
+        [RESTableMember(ignore: true)]
+        public Headers Headers { get; }
 
         /// <inheritdoc />
+        [RESTableMember(ignore: true)]
+        public abstract IRequest Request { get; }
+
+        /// <inheritdoc />
+        [RESTableMember(ignore: true)]
+        public IProtocolHolder ProtocolHolder { get; }
+
+        /// <inheritdoc />
+        [RESTableMember(ignore: true)]
         public Cookies Cookies => Context.Client.Cookies;
 
         /// <inheritdoc />
-        public bool IsSerialized { get; protected set; }
+        [RESTableMember(hide: true)]
+        public TimeSpan TimeElapsed => Request?.TimeElapsed ?? default;
 
         /// <inheritdoc />
-        public virtual ISerializedResult Serialize(ContentType? contentType = null)
-        {
-            IsSerialized = true;
-            return this;
-        }
-
-        /// <inheritdoc />
-        public virtual Stream Body { get; set; }
-
-        /// <inheritdoc />
-        public TimeSpan TimeElapsed { get; protected set; }
-
-        /// <inheritdoc />
+        [RESTableMember(ignore: true)]
         public virtual MessageType MessageType => MessageType.HttpOutput;
 
         /// <inheritdoc />
-        public virtual string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes)";
+        public virtual ValueTask<string> GetLogMessage() => new($"{StatusCode.ToCode()}: {StatusDescription}");
+
+        public ValueTask<string> GetLogContent() => new(default(string));
 
         /// <inheritdoc />
-        public string LogContent { get; protected set; }
-
-        /// <inheritdoc />
+        [RESTableMember(ignore: true)]
         public string HeadersStringCache { get; set; }
 
         /// <inheritdoc />
+        [RESTableMember(hide: true)]
         public bool IsSuccess { get; }
 
         /// <inheritdoc />
+        [RESTableMember(hide: true)]
         public bool IsError => !IsSuccess;
 
         /// <inheritdoc />
+        [RESTableMember(ignore: true)]
         public bool ExcludeHeaders { get; }
 
         /// <inheritdoc />
+        [RESTableMember(ignore: true)]
         public DateTime LogTime { get; }
 
         /// <inheritdoc />
@@ -74,27 +76,28 @@ namespace RESTable.Results
         /// <inheritdoc />
         public void ThrowIfError() { }
 
-        protected Success(ITraceable trace)
+        /// <inheritdoc />
+        public void Dispose() => Request?.Body?.Dispose();
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
         {
-            Context = trace.Context;
-            TraceId = trace.TraceId;
+            if (Request?.Body is Body body)
+                await body.DisposeAsync();
+        }
+
+        protected Success(IProtocolHolder protocolHolder, Headers headers = null)
+        {
+            ProtocolHolder = protocolHolder;
+            Context = protocolHolder.Context;
             ExcludeHeaders = false;
-            Headers = new Headers();
-            IsSerialized = false;
+            Headers = headers ?? new Headers();
             LogTime = DateTime.Now;
-            Body = null;
             IsSuccess = true;
         }
 
         /// <inheritdoc />
+        [RESTableMember(hide: true)]
         public virtual string Metadata => $"{GetType().Name};;";
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (Body is RESTableStream rsc)
-                rsc.CanClose = true;
-            Body?.Dispose();
-        }
     }
 }

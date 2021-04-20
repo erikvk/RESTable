@@ -7,6 +7,7 @@
       <Resource>RESTable.Admin.*</Resource>
       <Resource>RESTable.Dynamic.*</Resource>
       <Resource>RESTable.Tutorial.*</Resource>
+      <Resource>RESTable.AspNetCore.*</Resource>
       <Methods>*</Methods>
     </AllowAccess>
   </ApiKey>

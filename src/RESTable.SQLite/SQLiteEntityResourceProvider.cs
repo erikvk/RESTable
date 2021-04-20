@@ -4,6 +4,7 @@ using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -28,12 +29,13 @@ namespace RESTable.SQLite
         private static void Init()
         {
             if (IsInitiated) return;
-            typeof(SQLiteTable).GetConcreteSubclasses().ForEach(TableMapping.Create);
+            foreach (var clrClass in typeof(SQLiteTable).GetConcreteSubclasses())
+                TableMapping.CreateMapping(clrClass).Wait();
             IsInitiated = true;
         }
 
         /// <inheritdoc />
-        protected override bool IsValid(IEntityResource resource, out string reason)
+        protected override bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
         {
             reason = null;
             return true;
@@ -105,7 +107,7 @@ namespace RESTable.SQLite
         {
             foreach (var claimed in claimedResources)
             {
-                var tableMapping = TableMapping.Get(claimed.Type) ?? throw new SQLiteException(
+                var tableMapping = TableMapping.GetTableMapping(claimed.Type) ?? throw new SQLiteException(
                     $"A resource '{claimed}' was claimed by the SQLite resource provider, " +
                     "but had no existing table mapping");
                 tableMapping.Resource = claimed;
@@ -116,30 +118,30 @@ namespace RESTable.SQLite
         protected override Type AttributeType => typeof(SQLiteAttribute);
 
         /// <inheritdoc />
-        protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => SQLiteOperations<T>.Select(request);
+        protected override IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.SelectAsync(request);
 
         /// <inheritdoc />
-        protected override int DefaultInsert<T>(IRequest<T> request) => SQLiteOperations<T>.Insert(request);
+        protected override ValueTask<int> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.InsertAsync(request);
 
         /// <inheritdoc />
-        protected override int DefaultUpdate<T>(IRequest<T> request) => SQLiteOperations<T>.Update(request);
+        protected override ValueTask<int> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.UpdateAsync(request);
 
         /// <inheritdoc />
-        protected override int DefaultDelete<T>(IRequest<T> request) => SQLiteOperations<T>.Delete(request);
+        protected override ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request) => SQLiteOperations<T>.DeleteAsync(request);
 
         /// <inheritdoc />
-        protected override long DefaultCount<T>(IRequest<T> request) => SQLiteOperations<T>.Count(request);
+        protected override ValueTask<long> DefaultCountAsync<T>(IRequest<T> request) => SQLiteOperations<T>.CountAsync(request);
 
         /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()
         {
-            foreach (var resource in SQLite<ProceduralResource>.Select().ToList())
+            foreach (var resource in SQLite<ProceduralResource>.Select().ToEnumerable())
             {
                 var type = resource.Type;
                 if (type != null)
                 {
-                    if (TableMapping.Get(type) == null)
-                        TableMapping.Create(type);
+                    if (TableMapping.GetTableMapping(type) == null)
+                        TableMapping.CreateMapping(type).Wait();
                     yield return resource;
                 }
             }
@@ -160,8 +162,8 @@ namespace RESTable.SQLite
                 throw new SQLiteException(
                     $"Could not locate basetype '{resource.BaseTypeName}' when building procedural resource '{resource.Name}'. " +
                     "Was the assembly modified between builds?");
-            TableMapping.Create(resourceType);
-            SQLite<ProceduralResource>.Insert(new[] {resource});
+            TableMapping.CreateMapping(resourceType).Wait();
+            SQLite<ProceduralResource>.Insert(resource).Wait();
             return resource;
         }
 
@@ -170,7 +172,7 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Methods = methods;
-            SQLite<ProceduralResource>.Update(new[] {_resource});
+            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).Wait();
         }
 
         /// <inheritdoc />
@@ -178,15 +180,15 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Description = newDescription;
-            SQLite<ProceduralResource>.Update(new[] {_resource});
+            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).Wait();
         }
 
         /// <inheritdoc />
         protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
         {
             var _resource = (ProceduralResource) resource;
-            TableMapping.Drop(_resource.Type);
-            SQLite<ProceduralResource>.Delete(new[] {_resource});
+            TableMapping.Drop(_resource.Type).Wait();
+            SQLite<ProceduralResource>.Delete(_resource.ToAsyncSingleton()).Wait();
             return true;
         }
     }

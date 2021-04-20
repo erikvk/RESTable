@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.Admin;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
@@ -9,10 +10,10 @@ using RESTable.Resources.Operations;
 
 namespace RESTable.Resources
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IInserter{T}" />
-    /// <inheritdoc cref="IUpdater{T}" />
-    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+    /// <inheritdoc cref="IAsyncInserter{T}" />
+    /// <inheritdoc cref="IAsyncUpdater{T}" />
+    /// <inheritdoc cref="IAsyncDeleter{T}" />
     /// <inheritdoc cref="ResourceController{TController,TProvider}" />
     /// <summary>
     /// Resource controllers attach to entity resource providers that support procedural resources,
@@ -23,17 +24,18 @@ namespace RESTable.Resources
     public abstract class ResourceController<TController, TProvider> :
         Resource,
         ISelector<TController>,
-        IInserter<TController>,
-        IUpdater<TController>,
-        IDeleter<TController>
+        IAsyncInserter<TController>,
+        IAsyncUpdater<TController>,
+        IAsyncDeleter<TController>
         where TController : ResourceController<TController, TProvider>, new()
         where TProvider : IEntityResourceProvider, IProceduralEntityResourceProvider
     {
         internal static string BaseNamespace { private get; set; }
         internal static TProvider ResourceProvider { private get; set; }
+
         private static IEntityResourceProviderInternal ResourceProviderInternal => (IEntityResourceProviderInternal) ResourceProvider;
 
-        private static void ResolveDynamicResourceName(ref string name)
+        private void ResolveDynamicResourceName(ref string name)
         {
             switch (name)
             {
@@ -53,14 +55,15 @@ namespace RESTable.Resources
                 }
                 else name = $"{BaseNamespace}.{name}";
             }
-            if (RESTableConfig.ResourceByName.ContainsKey(name))
+            if (ResourceProviderInternal.ResourceCollection.ResourceByName.ContainsKey(name))
                 throw new Exception($"Invalid resource name '{name}'. Name already in use.");
         }
 
         /// <summary>
         /// Additional data associated with this resource (as defined by the resource provider)
         /// </summary>
-        [RESTableMember(ignore: true)] protected virtual dynamic Data { get; } = null;
+        [RESTableMember(ignore: true)]
+        protected virtual dynamic Data => null;
 
         /// <summary>
         /// Selects the instances that have been inserted by this controller
@@ -68,12 +71,12 @@ namespace RESTable.Resources
         protected static IEnumerable<TController> Select() => ResourceProviderInternal
             .SelectProceduralResources()
             .OrderBy(r => r.Name)
-            .Select(r => Make<TController>(Meta.Resource.SafeGet(r.Name)));
+            .Select(r => Make<TController>(ResourceProviderInternal.ResourceCollection.SafeGetResource(r.Name)));
 
         /// <summary>
         /// Inserts the current instance as a new procedural resource
         /// </summary>
-        protected void Insert()
+        protected void Insert(IRequest request)
         {
             var name = Name;
             var methods = EnabledMethods;
@@ -83,7 +86,8 @@ namespace RESTable.Resources
             ResolveDynamicResourceName(ref name);
             var methodsArray = methods.ResolveMethodRestrictions().ToArray();
 
-            var inserted = ResourceProviderInternal.InsertProceduralResource(name, description, methodsArray, (object) Data);
+            var inserted =
+                ResourceProviderInternal.InsertProceduralResource(name, description, methodsArray, (object) Data);
             if (inserted != null)
                 ResourceProviderInternal.InsertProcedural(inserted);
         }
@@ -93,10 +97,13 @@ namespace RESTable.Resources
         /// </summary>
         protected void Update()
         {
-            var procedural = ResourceProviderInternal.SelectProceduralResources()?.FirstOrDefault(item => item.Name == Name) ??
-                             throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
-            var resource = (IResourceInternal) Meta.Resource.SafeGet(procedural.Type) ??
-                           throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
+            var procedural = ResourceProviderInternal.SelectProceduralResources()
+                                 ?.FirstOrDefault(item => item.Name == Name) ??
+                             throw new InvalidOperationException(
+                                 $"Cannot update resource '{Name}'. Resource has not been inserted.");
+            var resource = (IResourceInternal) ResourceProviderInternal.ResourceCollection.SafeGetResource(procedural.Type) ??
+                           throw new InvalidOperationException(
+                               $"Cannot update resource '{Name}'. Resource has not been inserted.");
             ResourceProviderInternal.SetProceduralResourceDescription(procedural, Description);
             resource.Description = Description;
             var methods = EnabledMethods.ResolveMethodRestrictions().ToArray();
@@ -109,7 +116,8 @@ namespace RESTable.Resources
         /// </summary>
         protected void Delete()
         {
-            var procedural = ResourceProviderInternal.SelectProceduralResources()?.FirstOrDefault(item => item.Name == Name);
+            var procedural = ResourceProviderInternal.SelectProceduralResources()
+                ?.FirstOrDefault(item => item.Name == Name);
             if (procedural == null) return;
             var type = procedural.Type;
             if (ResourceProviderInternal.DeleteProceduralResource(procedural))
@@ -121,23 +129,21 @@ namespace RESTable.Resources
         /// <inheritdoc />
         public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select();
 
-        /// <inheritdoc />
-        public virtual int Insert(IRequest<TController> request)
+        public virtual async ValueTask<int> InsertAsync(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in request.GetInputEntities())
+            await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
-                resource.Insert();
+                resource.Insert(request);
                 i += 1;
             }
             return i;
         }
 
-        /// <inheritdoc />
-        public virtual int Update(IRequest<TController> request)
+        public virtual async ValueTask<int> UpdateAsync(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in request.GetInputEntities())
+            await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 resource.Update();
                 i += 1;
@@ -145,11 +151,10 @@ namespace RESTable.Resources
             return i;
         }
 
-        /// <inheritdoc />
-        public virtual int Delete(IRequest<TController> request)
+        public virtual async ValueTask<int> DeleteAsync(IRequest<TController> request)
         {
             var i = 0;
-            foreach (var resource in request.GetInputEntities())
+            await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 resource.Delete();
                 i += 1;

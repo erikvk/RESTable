@@ -14,7 +14,7 @@ namespace RESTable.Meta
         /// <inheritdoc />
         public override bool IsWritable { get; }
 
-        internal Field(FieldInfo fieldInfo)
+        internal Field(FieldInfo fieldInfo) : base(fieldInfo.DeclaringType)
         {
             Name = fieldInfo.RESTableMemberName();
             ActualName = fieldInfo.Name;

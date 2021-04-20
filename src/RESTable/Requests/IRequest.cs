@@ -1,29 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using RESTable.Internal;
+using System.Threading;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Results;
 
 namespace RESTable.Requests
 {
-    internal interface IRequestInternal : IRequest
-    {
-        bool IsWebSocketUpgrade { get; }
-        CachedProtocolProvider CachedProtocolProvider { get; }
-    }
-
-    internal interface IEntityRequest : IRequestInternal
-    {
-        IMacro Macro { get; }
-    }
-
-    internal interface IEntityRequest<T> : IEntityRequest, IRequestInternal, IRequest<T> where T : class
+    internal interface IEntityRequest<T> : IEntityRequest, IRequest, IRequest<T> where T : class
     {
         IEntityResource<T> EntityResource { get; }
-        Func<IEnumerable<T>> EntitiesProducer { get; set; }
-        Func<IEnumerable<T>> GetSelector();
-        Func<IEnumerable<T>, IEnumerable<T>> GetUpdater();
+        Func<IAsyncEnumerable<T>> EntitiesProducer { get; set; }
+        Func<IAsyncEnumerable<T>> GetSelector();
+        Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> GetUpdater();
     }
 
     /// <inheritdoc />
@@ -45,7 +34,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The target to use when binding conditions and selecting entities for this request
         /// </summary>
-        ITarget<T> Target { get; }
+        new ITarget<T> Target { get; }
 
         /// <summary>
         /// Selects, processes and returns the input entities for this request. Use this in Inserters and
@@ -57,25 +46,33 @@ namespace RESTable.Requests
         IEnumerable<T> GetInputEntities();
 
         /// <summary>
+        /// Selects, processes and returns the input entities for this request. Use this in Inserters and
+        /// Deleters to receive the entities to insert or delete, and in Updaters to receive and update the
+        /// entities selected by the request. The entities may be generated in various different ways, depending
+        /// on the request, for example by deserializing input JSON data to this request type. This will run the
+        /// entire select query for all entities selected by the request, so it should only be called once.
+        /// </summary>
+        IAsyncEnumerable<T> GetInputEntitiesAsync();
+
+        /// <summary>
         /// The method used when selecting entities for request input. Set this property to override the default behavior.
         /// This delegate is used in GetInputEntities(). By default RESTable will generate entities by deserializing the request 
-        /// body to an <see cref="IEnumerable{T}"/> using the content type provided in the Content-Type header.
+        /// body to an <see cref="IAsyncEnumerable{T}"/> using the content type provided in the Content-Type header.
         /// </summary>
-        Func<IEnumerable<T>> Selector { set; }
+        Func<IAsyncEnumerable<T>> Selector { set; }
 
         /// <summary>
         /// The method used when updating existing entities. Set this property to override the default behavior.
         /// By default RESTable will populate the existing entities with content from the request body, using the 
         /// content type provided in the Content-Type header.
         /// </summary>
-        Func<IEnumerable<T>, IEnumerable<T>> Updater { set; }
+        Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { set; }
 
         /// <summary>
-        /// Evaluates the request synchronously and returns the result as an entity collection. Only valid for GET requests.
-        /// If an error is encountered while evaluating the request, an exception is thrown. Equivalent to Evaluate().ToEntities&lt;T&gt;()
-        /// but shorter and with one less generic type parameter.
+        /// Evaluates the request asynchronously and returns the result as an entity collection. Only valid for GET requests.
+        /// If an error is encountered while evaluating the request, an exception is thrown.
         /// </summary>
-        IEntities<T> EvaluateToEntities();
+        Task<IEntities<T>> GetResultEntities();
 
         /// <summary>
         /// Gets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTable
@@ -98,7 +95,7 @@ namespace RESTable.Requests
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTable
     /// </summary>
-    public interface IRequest : IServiceProvider, ITraceable, ILogable, IDisposable
+    public interface IRequest : IServiceProvider, IProtocolHolder, IHeaderHolder, ITraceable, ILogable, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// The method of the request
@@ -111,10 +108,10 @@ namespace RESTable.Requests
         IResource Resource { get; }
 
         /// <summary>
-        /// The type of the request target
+        /// The target of the request
         /// </summary>
-        Type TargetType { get; }
-
+        ITarget Target { get; }
+        
         /// <summary>
         /// Does this request have conditions?
         /// </summary>
@@ -126,19 +123,9 @@ namespace RESTable.Requests
         MetaConditions MetaConditions { get; }
 
         /// <summary>
-        /// Gets the request body
+        /// The body of the request
         /// </summary>
-        Body GetBody();
-
-        /// <summary>
-        /// Assigns a new Body instance from a .NET object and, optionally, a content type.
-        /// If string, Stream or byte array, the content is used directly - with the content type
-        /// given in Headers. Otherwise it is serialized using the given content type, or the
-        /// protocol default if contentType is null.
-        /// </summary>
-        /// <param name="content"></param>
-        /// <param name="contentType"></param>
-        void SetBody(object content, ContentType? contentType = null);
+        Body Body { get; set; }
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 
@@ -161,9 +148,9 @@ namespace RESTable.Requests
         IUriComponents UriComponents { get; }
 
         /// <summary>
-        /// Evaluates the request synchronously and returns the result
+        /// Evaluates the request asynchronously and returns the result
         /// </summary>
-        IResult Evaluate();
+        Task<IResult> GetResult(CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Is this request valid?
@@ -176,107 +163,9 @@ namespace RESTable.Requests
         TimeSpan TimeElapsed { get; }
 
         /// <summary>
-        /// Gets an exacy copy of this request
+        /// Gets a deep exact copy of this request
         /// </summary>
         /// <returns></returns>
-        IRequest GetCopy(string newProtocol = null);
-
-        /// <summary>
-        /// Adds a service object to this request, that is disposed when the
-        /// request is disposed.
-        /// </summary>
-        void EnsureServiceAttached<T>(T service) where T : class;
-
-        /// <summary>
-        /// Adds a service object to this request, that is disposed when the
-        /// request is disposed.
-        /// </summary>
-        void EnsureServiceAttached<TService, TImplementation>(TImplementation service) where TImplementation : class, TService where TService : class;
-    }
-
-    /// <summary>
-    /// Extension methods for IRequest
-    /// </summary>
-    public static class ExtensionMethods
-    {
-        /// <summary>
-        /// Sets the given method to the request, and returns the request
-        /// </summary>
-        public static IRequest WithMethod(this IRequest request, Method method)
-        {
-            if (request == null) return null;
-            request.Method = method;
-            return request;
-        }
-
-        /// <summary>
-        /// Sets the given body to the request, and returns the request
-        /// </summary>
-        public static IRequest WithBody(this IRequest request, object content, ContentType? contentType = null)
-        {
-            if (request == null) return null;
-            request.SetBody(content, contentType);
-            return request;
-        }
-
-
-        /// <summary>
-        /// Sets the given method to the request, and returns the request
-        /// </summary>
-        public static IRequest<T> WithMethod<T>(this IRequest<T> request, Method method) where T : class
-        {
-            if (request == null) return null;
-            request.Method = method;
-            return request;
-        }
-
-        /// <summary>
-        /// Sets the given body to the request, and returns the request
-        /// </summary>
-        public static IRequest<T> WithBody<T>(this IRequest<T> request, object content, ContentType? contentType = null) where T : class
-        {
-            if (request == null) return null;
-            request.SetBody(content, contentType);
-            return request;
-        }
-
-        /// <summary>
-        /// Sets the given conditions to the request, and returns the request
-        /// </summary>
-        public static IRequest<T> WithConditions<T>(this IRequest<T> request, IEnumerable<Condition<T>> conditions) where T : class
-        {
-            if (request == null) return null;
-            request.Conditions = conditions?.ToList();
-            return request;
-        }
-
-        /// <summary>
-        /// Sets the given conditions to the request, and returns the request
-        /// </summary>
-        public static IRequest<T> WithConditions<T>(this IRequest<T> request, params Condition<T>[] conditionsArray) where T : class
-        {
-            if (request == null) return null;
-            return WithConditions(request, conditions: conditionsArray);
-        }
-
-        /// <summary>
-        /// Sets the given selector to the request, and returns the request
-        /// </summary>
-        public static IRequest<T> WithSelector<T>(this IRequest<T> request, Func<IEnumerable<T>> selector) where T : class
-        {
-            if (request == null) return null;
-            request.Selector = selector;
-            return request;
-        }
-
-        /// <summary>
-        /// Sets the given selector to the request, and returns the request
-        /// </summary>
-        public static IRequest<T> WithUpdater<T>(this IRequest<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater) where T : class
-        {
-            if (request == null) return null;
-            request.Updater = updater;
-            return request;
-        }
+        Task<IRequest> GetCopy(string newProtocol = null);
     }
 }

@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace RESTable.WebSockets
 {
-    internal interface IWebSocketInternal : IWebSocket, IDisposable
+    internal interface IWebSocketInternal : IWebSocket, IAsyncDisposable
     {
-        void SendTextRaw(string text);
-        void Disconnect(string message = null);
+        Task SendTextRaw(string text);
         void SetStatus(WebSocketStatus status);
     }
 }

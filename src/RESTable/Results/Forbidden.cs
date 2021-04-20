@@ -9,13 +9,13 @@ namespace RESTable.Results
     /// </summary>
     public abstract class Forbidden : Error
     {
-        internal Forbidden(ErrorCodes code, string info) : base(code, info)
+        public Forbidden(ErrorCodes code, string info) : base(code, info)
         {
             StatusCode = HttpStatusCode.Forbidden;
             StatusDescription = "Forbidden";
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(Forbidden)};{RequestInternal?.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(Forbidden)};{Request?.Resource};{ErrorCode}";
     }
 }

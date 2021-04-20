@@ -125,8 +125,8 @@ namespace RESTable.Resources.Operations
         /// </summary>
         public static async Task Schedule(Action action, TimeSpan delay)
         {
-            await Task.Delay(delay);
-            await Task.Run(action);
+            await Task.Delay(delay).ConfigureAwait(false);
+            await Task.Run(action).ConfigureAwait(false);
         }
     }
 }

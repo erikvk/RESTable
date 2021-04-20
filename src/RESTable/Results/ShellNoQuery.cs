@@ -2,13 +2,12 @@
 
 namespace RESTable.Results
 {
-    internal class ShellNoQuery : Success
+    internal class ShellNoQuery : ShellSuccess
     {
-        internal ShellNoQuery(ITraceable trace) : base(trace)
+        internal ShellNoQuery(IProtocolHolder protocolHolder) : base(protocolHolder)
         {
             StatusCode = HttpStatusCode.NoContent;
             StatusDescription = "No query";
-            TimeElapsed = default;
         }
     }
 }

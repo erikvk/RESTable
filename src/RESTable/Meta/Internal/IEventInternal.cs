@@ -1,5 +1,4 @@
 ﻿using System;
-using RESTable.Requests;
 
 namespace RESTable.Meta.Internal
 {

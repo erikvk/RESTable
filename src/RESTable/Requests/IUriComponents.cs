@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Generic;   
 using RESTable.ProtocolProviders;
 
 namespace RESTable.Requests
@@ -8,6 +8,11 @@ namespace RESTable.Requests
     /// </summary>
     public interface IUriComponents
     {
+        /// <summary>
+        /// Specifies the protocol for the request
+        /// </summary>
+        string ProtocolIdentifier { get; }
+
         /// <summary>
         /// Specifies the resource for the request
         /// </summary>
@@ -37,47 +42,5 @@ namespace RESTable.Requests
         /// The protocol provider specified in the uri string
         /// </summary>
         IProtocolProvider ProtocolProvider { get; }
-    }
-
-    /// <inheritdoc cref="IUriComponents" />
-    /// <summary>
-    /// Defines the operations of a RESTable macro
-    /// </summary>
-    public interface IMacro : IUriComponents
-    {
-        /// <summary>
-        /// The name of the macro
-        /// </summary>
-        string Name { get; }
-
-        /// <summary>
-        /// Does this macro contain a body?
-        /// </summary>
-        bool HasBody { get; }
-
-        /// <summary>
-        /// The body of the macro, as byte array
-        /// </summary>
-        byte[] Body { get; }
-
-        /// <summary>
-        /// The content type of the body of the macro
-        /// </summary>
-        ContentType ContentType { get; }
-
-        /// <summary>
-        /// The headers of the macro
-        /// </summary>
-        IHeaders Headers { get; }
-
-        /// <summary>
-        /// Should the macro overwrite the body of the calling request?
-        /// </summary>
-        bool OverwriteBody { get; }
-
-        /// <summary>
-        /// Should the macro overwrite matching headers in the calling request?
-        /// </summary>
-        bool OverwriteHeaders { get; }
     }
 }

@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Resource%20kinds/
+permalink: /Resource%20kinds/
 ---
 
 # RESTable resource kinds

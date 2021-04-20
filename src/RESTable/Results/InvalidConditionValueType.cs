@@ -11,6 +11,7 @@ namespace RESTable.Results
     {
         internal InvalidConditionValueType(string valueLiteral, Member property)
             : base(ErrorCodes.InvalidConditionValueType,
-                $"Invalid type for condition value '{valueLiteral}'. Expected {property.Type.GetFriendlyTypeName()}") { }
+                $"Invalid condition targeting member '{property.Name}' of type '{property.Owner.GetRESTableTypeName()}': Condition value '{valueLiteral}' " +
+                $"could not be converted to {property.Type.GetFriendlyTypeName()}") { }
     }
 }

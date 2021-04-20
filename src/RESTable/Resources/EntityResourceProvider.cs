@@ -2,113 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources.Operations;
-using RESTable.Linq;
 using static System.Reflection.BindingFlags;
-using static RESTable.Resources.Operations.DelegateMaker;
-using Resource = RESTable.Meta.Resource;
 
 namespace RESTable.Resources
 {
-    /// <summary>
-    /// A common interface for all entity resource providers
-    /// </summary>
-    public interface IEntityResourceProvider
-    {
-        /// <summary>
-        /// The ID of the entity resource provider
-        /// </summary>
-        string Id { get; }
-    }
-
-    /// <inheritdoc />
-    /// <summary>
-    /// A common abstract class for generic EntityResourceProvider instances
-    /// </summary>
-    internal interface IEntityResourceProviderInternal : IEntityResourceProvider
-    {
-        /// <summary>
-        /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
-        /// created by this provider to have database indexes managed by that resource.
-        /// </summary>
-        IDatabaseIndexer DatabaseIndexer { get; }
-
-        /// <summary>
-        /// Should the given type be included in the claim of this entity resource provider?
-        /// </summary>
-        bool Include(Type type);
-
-        /// <summary>
-        /// Marks a collection of regular entity resource types as claimed by this entity resource provider
-        /// </summary>
-        void MakeClaimRegular(IEnumerable<Type> types);
-
-        /// <summary>
-        /// Marks a collection of wrapped entity resource types as claimed by this entity resource provider
-        /// </summary>
-        void MakeClaimWrapped(IEnumerable<Type> types);
-
-        /// <summary>
-        /// Triggers the collection of all procedural resources belonging to this entity resource provider
-        /// </summary>
-        void MakeClaimProcedural();
-
-        /// <summary>
-        /// Inserts the given resource as a new resource claimed by this entity resource provider
-        /// </summary>
-        void InsertProcedural(IProceduralEntityResource resource);
-
-        /// <summary>
-        /// Validates the entity resource provider
-        /// </summary>
-        void Validate();
-        
-        /// <summary>
-        /// Returns all procedural entity resources from the provider. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        IEnumerable<IProceduralEntityResource> SelectProceduralResources();
-
-        /// <summary>
-        /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data);
-
-        /// <summary>
-        /// Runs a given update operation. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods);
-
-        /// <summary>
-        /// Runs a given update operation. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription);
-
-        /// <summary>
-        /// Deletes a dynamic entity resource entity. Used by RESTable internally. Don't call this method.
-        /// </summary>
-        bool DeleteProceduralResource(IProceduralEntityResource resource);
-
-        /// <summary>
-        /// The ReceiveClaimed method is called by RESTable once one or more resources provided
-        /// by this ResourceProvider have been added. Override this to provide additional 
-        /// logic once resources have been validated and set up.
-        /// </summary>
-        void ReceiveClaimed(ICollection<IEntityResource> claimedResources);
-
-        /// <summary>
-        /// An optional method for modifying the RESTable resource attribute of a type before the resource is generated
-        /// </summary>
-        void ModifyResourceAttribute(Type type, RESTableAttribute attribute);
-
-        /// <summary>
-        /// Removes the procedural resource belonging to the given type
-        /// </summary>
-        bool RemoveProceduralResource(Type type);
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// An EntityResourceProvider gives default implementations for the operations of a group of entity resources, 
@@ -127,28 +29,50 @@ namespace RESTable.Resources
 
         #region Helpers
 
-        private void InsertProcedural(IProceduralEntityResource resource)
+        private void InsertProcedural(IProceduralEntityResource resource, ResourceValidator validator)
         {
             var attribute = new RESTableProceduralAttribute(resource.Methods) {Description = resource.Description};
             var type = resource.Type;
-            ResourceValidator.ValidateRuntimeInsertion(type, resource.Name, attribute);
-            ResourceValidator.Validate(type);
+            validator.ValidateRuntimeInsertion(type, resource.Name, attribute);
+            validator.Validate(type);
             var inserted = _InsertResource(type, resource.Name, attribute);
             ReceiveClaimed(new[] {inserted});
         }
 
         private bool RemoveProceduralResource(Type resourceType)
         {
-            var iresource = Resource.SafeGet(resourceType);
+            var iresource = ResourceCollection.SafeGetResource(resourceType);
             if (iresource == null) return true;
             return RemoveResource(iresource);
         }
+
+        TypeCache IEntityResourceProviderInternal.TypeCache
+        {
+            get => TypeCache;
+            set => TypeCache = value;
+        }
+
+        ResourceValidator IEntityResourceProviderInternal.ResourceValidator
+        {
+            get => ResourceValidator;
+            set => ResourceValidator = value;
+        }
+
+        ResourceCollection IEntityResourceProviderInternal.ResourceCollection
+        {
+            get => ResourceCollection;
+            set => ResourceCollection = value;
+        }
+
+        private ResourceValidator ResourceValidator { get; set; }
+        private TypeCache TypeCache { get; set; }
+        private ResourceCollection ResourceCollection { get; set; }
 
         private bool RemoveResource(IResource resource)
         {
             if (resource is IEntityResource er && er.Provider == Id)
             {
-                RESTableConfig.RemoveResource(resource);
+                ResourceCollection.RemoveResource(resource);
                 return true;
             }
             return false;
@@ -162,9 +86,15 @@ namespace RESTable.Resources
         void IEntityResourceProviderInternal.ReceiveClaimed(ICollection<IEntityResource> claimedResources) => ReceiveClaimed(claimedResources);
         void IEntityResourceProviderInternal.ModifyResourceAttribute(Type type, RESTableAttribute attribute) => ModifyResourceAttribute(type, attribute);
         bool IEntityResourceProviderInternal.RemoveProceduralResource(Type resourceType) => RemoveProceduralResource(resourceType);
-        void IEntityResourceProviderInternal.InsertProcedural(IProceduralEntityResource resource) => InsertProcedural(resource);
+        void IEntityResourceProviderInternal.InsertProcedural(IProceduralEntityResource resource) => InsertProcedural(resource, ResourceValidator);
         bool IEntityResourceProviderInternal.Include(Type type) => Include(type);
-        void IEntityResourceProviderInternal.MakeClaimProcedural() => SelectProceduralResources().ForEach(InsertProcedural);
+
+        void IEntityResourceProviderInternal.MakeClaimProcedural()
+        {
+            foreach (var resource in SelectProceduralResources())
+                InsertProcedural(resource, ResourceValidator);
+        }
+
         void IEntityResourceProviderInternal.Validate() => Validate();
 
         IProceduralEntityResource IEntityResourceProviderInternal.InsertProceduralResource(string n, string d, Method[] m, dynamic data)
@@ -182,22 +112,28 @@ namespace RESTable.Resources
             SetProceduralResourceDescription(resource, newDescription);
         }
 
-        void IEntityResourceProviderInternal.MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
+        void IEntityResourceProviderInternal.MakeClaimRegular(IEnumerable<Type> types)
         {
-            var resource = _InsertResource(type);
-            if (!IsValid(resource, out var reason))
-                throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
-                                                              $"type '{type.GetRESTableTypeName()}': " + reason);
-        });
+            foreach (var type in types)
+            {
+                var resource = _InsertResource(type);
+                if (!IsValid(resource, TypeCache, out var reason))
+                    throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
+                                                                  $"type '{type.GetRESTableTypeName()}': " + reason);
+            }
+        }
 
-        void IEntityResourceProviderInternal.MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
+        void IEntityResourceProviderInternal.MakeClaimWrapped(IEnumerable<Type> types)
         {
-            var resource = _InsertWrapperResource(type, type.GetWrappedType());
-            if (!IsValid(resource, out var reason))
-                throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
-                                                              $"type '{type.GetRESTableTypeName()}': " + reason);
-        });
-        
+            foreach (var type in types)
+            {
+                var resource = _InsertWrapperResource(type, type.GetWrappedType());
+                if (!IsValid(resource, TypeCache, out var reason))
+                    throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
+                                                                  $"type '{type.GetRESTableTypeName()}': " + reason);
+            }
+        }
+
         #endregion
 
         #region Internal virtual
@@ -239,7 +175,7 @@ namespace RESTable.Resources
         /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
         /// created by this provider to have database indexes managed by that resource.
         /// </summary>
-        protected virtual IDatabaseIndexer DatabaseIndexer { get; } = null;
+        protected virtual IDatabaseIndexer DatabaseIndexer => null;
 
         /// <summary>
         /// The ReceiveClaimed method is called by RESTable once one or more resources provided
@@ -252,13 +188,13 @@ namespace RESTable.Resources
         /// An optional method for modifying the RESTable resource attribute of a type before the resource is generated
         /// </summary>
         protected virtual void ModifyResourceAttribute(Type type, RESTableAttribute attribute) { }
-        
+
         /// <summary>
         /// Override this method to add a validation step to the resource claim process. 
         /// </summary>
         /// <param name="resource">The resource to check validity for</param>
         /// <param name="reason">Return the reason for this Type not being valid</param>
-        protected virtual bool IsValid(IEntityResource resource, out string reason)
+        protected virtual bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
         {
             reason = null;
             return true;
@@ -354,6 +290,56 @@ namespace RESTable.Resources
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// The default Selector to use for resources claimed by this ResourceProvider
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The default Inserter to use for resources claimed by this ResourceProvider
+        /// </summary>
+        ///  <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual ValueTask<int> DefaultInsertAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The default Updater to use for resources claimed by this ResourceProvider
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual ValueTask<int> DefaultUpdateAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The default Deleter to use for resources claimed by this ResourceProvider
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The default Counter to use for resources claimed by this ResourceProvider
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual ValueTask<long> DefaultCountAsync<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region Add resource API
@@ -392,20 +378,16 @@ namespace RESTable.Resources
         /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
         /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
         /// is fetched from the resource type declaration.</param>
-        /// <param name="selector">The selector to use. If null, the default selector is used</param>
-        /// <param name="inserter">The inserter to use. If null, the default inserter is used</param>
-        /// <param name="updater">The updater to use. If null, the default updater is used</param>
-        /// <param name="deleter">The deleter to use. If null, the default deleter is used</param>
-        /// <param name="counter">The counter to use. If null, the default counter is used</param>
-        /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TResource">The type to create the resource for</typeparam>
         /// <returns></returns>
-        private IEntityResource<TResource> InsertResource<TResource>(string fullName = null, RESTableAttribute attribute = null,
-            Selector<TResource> selector = null, Inserter<TResource> inserter = null, Updater<TResource> updater = null,
-            Deleter<TResource> deleter = null, Counter<TResource> counter = null,
-            Authenticator<TResource> authenticator = null) where TResource : class, TBase
+        private IEntityResource<TResource> InsertResource<TResource>
+        (
+            string fullName = null,
+            RESTableAttribute attribute = null,
+            DelegateSet<TResource> delegates = null
+        ) where TResource : class, TBase
         {
-            return _InsertResource(fullName, attribute, selector, inserter, updater, deleter, counter, authenticator);
+            return _InsertResource(fullName, attribute, delegates);
         }
 
         /// <summary>
@@ -414,31 +396,25 @@ namespace RESTable.Resources
         /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
         /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
         /// is fetched from the resource's type declaration.</param>
-        /// <param name="selector">The selector to use. If null, the default selector is used</param>
-        /// <param name="inserter">The inserter to use. If null, the default inserter is used</param>
-        /// <param name="updater">The updater to use. If null, the default updater is used</param>
-        /// <param name="deleter">The deleter to use. If null, the default deleter is used</param>
-        /// <param name="counter">The counter to use. If null, the default counter is used</param>
-        /// <param name="validator">The validator to use. If null, no validator is used.</param>
-        /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TWrapper">The resource wrapper type</typeparam>
         /// <typeparam name="TWrapped">The wrapped resource type</typeparam>
         /// <returns></returns>
-        private IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>(string fullName = null, RESTableAttribute attribute = null,
-            Selector<TWrapped> selector = null, Inserter<TWrapped> inserter = null, Updater<TWrapped> updater = null, Deleter<TWrapped> deleter = null,
-            Counter<TWrapped> counter = null, Validator<TWrapped> validator = null,
-            Authenticator<TWrapped> authenticator = null)
+        private IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>
+        (
+            string fullName = null,
+            RESTableAttribute attribute = null,
+            DelegateSet<TWrapped> delegates = null
+        )
             where TWrapper : ResourceWrapper<TWrapped> where TWrapped : class, TBase
         {
-            return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, selector, inserter, updater, deleter, counter,
-                authenticator, validator);
+            return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, delegates);
         }
 
         /// <summary>
         /// Removes the resource corresponding with the given resource type from the RESTable instance
         /// </summary>
         /// <returns>True if and only if a resource was successfully removed</returns>
-        private bool RemoveResource<TResource>() where TResource : class, TBase => RemoveResource(Resource<TResource>.SafeGet);
+        private bool RemoveResource<TResource>() where TResource : class, TBase => RemoveResource(ResourceCollection.SafeGetResource<TResource>());
 
         #endregion
 
@@ -457,79 +433,75 @@ namespace RESTable.Resources
         private IEntityResource _InsertResource(Type type, string fullName = null, RESTableAttribute attribute = null)
         {
             var method = InsertResourceMethod.MakeGenericMethod(type);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null});
         }
 
         private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string fullName = null, RESTableAttribute attribute = null)
         {
             var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null});
         }
 
-        private IEntityResource<TResource> _InsertResource<TResource>(
+        private IEntityResource<TResource> _InsertResource<TResource>
+        (
             string fullName = null,
             RESTableAttribute attribute = null,
-            Selector<TResource> selector = null,
-            Inserter<TResource> inserter = null,
-            Updater<TResource> updater = null,
-            Deleter<TResource> deleter = null,
-            Counter<TResource> counter = null,
-            Authenticator<TResource> authenticator = null,
-            Validator<TResource> validator = null
-        ) where TResource : class, TBase => new Meta.Internal.EntityResource<TResource>
+            DelegateSet<TResource> delegates = null
+        ) where TResource : class, TBase => new EntityResource<TResource>
         (
             fullName: fullName ?? typeof(TResource).GetRESTableTypeName(),
             attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTableAttribute>(),
-            selector: selector ?? GetDelegate<Selector<TResource>>(typeof(TResource)) ?? DefaultSelect,
-            inserter: inserter ?? GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? DefaultInsert,
-            updater: updater ?? GetDelegate<Updater<TResource>>(typeof(TResource)) ?? DefaultUpdate,
-            deleter: deleter ?? GetDelegate<Deleter<TResource>>(typeof(TResource)) ?? DefaultDelete,
-            counter: counter ?? GetDelegate<Counter<TResource>>(typeof(TResource)) ?? DefaultCount,
-            authenticator: authenticator ?? GetDelegate<Authenticator<TResource>>(typeof(TResource)),
-            validator: validator ?? GetDelegate<Validator<TResource>>(typeof(TResource)),
+            delegates: ResolveDelegateSet<TResource, TResource>(delegates),
             views: GetViews<TResource>(),
-            provider: this
+            provider: this,
+            typeCache: TypeCache,
+            resourceCollection: ResourceCollection
         );
 
-        private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>(
+        private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>
+        (
             string fullName = null,
             RESTableAttribute attribute = null,
-            Selector<TWrapped> selector = null,
-            Inserter<TWrapped> inserter = null,
-            Updater<TWrapped> updater = null,
-            Deleter<TWrapped> deleter = null,
-            Counter<TWrapped> counter = null,
-            Authenticator<TWrapped> authenticator = null,
-            Validator<TWrapped> validator = null
+            DelegateSet<TWrapped> delegates = null
         )
             where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class, TBase => new Meta.Internal.EntityResource<TWrapped>
+            where TWrapped : class, TBase => new EntityResource<TWrapped>
         (
             fullName: fullName ?? typeof(TWrapper).GetRESTableTypeName(),
             attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTableAttribute>(),
-            selector: selector ?? GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? DefaultSelect,
-            inserter: inserter ?? GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? DefaultInsert,
-            updater: updater ?? GetDelegate<Updater<TWrapped>>(typeof(TWrapper)) ?? DefaultUpdate,
-            deleter: deleter ?? GetDelegate<Deleter<TWrapped>>(typeof(TWrapper)) ?? DefaultDelete,
-            counter: counter ?? GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? DefaultCount,
-            authenticator: authenticator ?? GetDelegate<Authenticator<TWrapped>>(typeof(TWrapper)),
-            validator: validator ?? GetDelegate<Validator<TWrapped>>(typeof(TWrapper)),
+            delegates: ResolveDelegateSet<TWrapper, TWrapped>(delegates),
             views: GetWrappedViews<TWrapper, TWrapped>(),
-            provider: this
+            provider: this,
+            typeCache: TypeCache,
+            resourceCollection: ResourceCollection
         );
 
+        private DelegateSet<TResource> ResolveDelegateSet<TTarget, TResource>(DelegateSet<TResource> delegates)
+            where TResource : class, TBase
+            where TTarget : class => (delegates ?? new DelegateSet<TResource>())
+            .GetDelegatesFromTargetWhereNull<TTarget>()
+            .SetDelegatesToDefaultsWhereNull
+            (
+                selector: DefaultSelect, asyncSelector: DefaultSelectAsync,
+                inserter: DefaultInsert, asyncInserter: DefaultInsertAsync,
+                updater: DefaultUpdate, asyncUpdater: DefaultUpdateAsync,
+                deleter: DefaultDelete, asyncDeleter: DefaultDeleteAsync,
+                counter: DefaultCount, asyncCounter: DefaultCountAsync
+            )
+            .SetDelegatesToNullWhereNotImplemented()
+            .SetAsyncDelegatesToSyncWhereNull();
 
-        private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)
+        private View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)
             .GetNestedTypes()
             .Where(nested => nested.HasAttribute<RESTableViewAttribute>())
-            .Select(view => new View<TResource>(view))
+            .Select(view => new View<TResource>(view, TypeCache))
             .ToArray();
 
-        private static View<TWrapped>[] GetWrappedViews<TWrapper, TWrapped>() where TWrapper : ResourceWrapper<TWrapped>
+        private View<TWrapped>[] GetWrappedViews<TWrapper, TWrapped>() where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => typeof(TWrapper)
             .GetNestedTypes()
             .Where(nested => nested.HasAttribute<RESTableViewAttribute>())
-            .Select(view => new View<TWrapped>(view))
+            .Select(view => new View<TWrapped>(view, TypeCache))
             .ToArray();
 
         #endregion

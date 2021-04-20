@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/Datetime/
+permalink: /Built-in%20resources/Datetime/
 ---
 
 # `Datetime (ISO 8601)`

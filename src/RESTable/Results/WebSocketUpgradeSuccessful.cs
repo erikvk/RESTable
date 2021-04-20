@@ -1,23 +1,27 @@
 ﻿using System.Net;
-using System.Threading.Tasks;
 using RESTable.Requests;
+using RESTable.WebSockets;
 
 namespace RESTable.Results
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="RESTable.Results.Success" />
+    /// <inheritdoc cref="RESTable.Results.IRequestResult" />
     /// <summary>
     /// Returned when a WebSocket upgrade was performed successfully, and RESTable has taken over the 
     /// context from the network provider.
     /// </summary>
     public class WebSocketUpgradeSuccessful : Success
     {
-        public Task WebSocketLifeTime { get; }
-        internal WebSocketUpgradeSuccessful(IRequest request, Task lifetimeTask) : base(request)
+        public WebSocket WebSocket { get; }
+
+        public sealed override IRequest Request { get; }
+
+        internal WebSocketUpgradeSuccessful(IRequest request, WebSocket webSocket) : base(request)
         {
-            WebSocketLifeTime = lifetimeTask;
+            WebSocket = webSocket;
+            Request = request;
             StatusCode = HttpStatusCode.SwitchingProtocols;
             StatusDescription = "Switching protocols";
-            TimeElapsed = request.TimeElapsed;
         }
     }
-}   
+}

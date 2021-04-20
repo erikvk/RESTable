@@ -13,7 +13,7 @@ namespace RESTable.Results
         /// </summary>
         public int UpdatedCount { get; }
 
-        internal UpdatedEntities(IRequest request, int count) : base(request)
+        public UpdatedEntities(IRequest request, int count) : base(request)
         {
             UpdatedCount = count;
             Headers.Info = $"{count} entities updated in '{request.Resource}'";

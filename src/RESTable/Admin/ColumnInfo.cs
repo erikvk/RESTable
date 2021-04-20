@@ -30,7 +30,7 @@
         /// <param name="column"></param>
         public static implicit operator ColumnInfo((string Name, bool Descending) column)
         {
-            return new ColumnInfo(column.Name, column.Descending);
+            return new(column.Name, column.Descending);
         }
     }
 }

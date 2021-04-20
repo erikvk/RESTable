@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.WebSockets;
 
@@ -6,10 +7,10 @@ namespace RESTable.Internal.Logging
 {
     internal class WebSocketEvent : ILogable
     {
+        private readonly string _logMessage;
+        private readonly string _logContent;
+
         public MessageType MessageType { get; }
-        public string TraceId { get; }
-        public string LogMessage { get; }
-        public string LogContent { get; }
         public Headers Headers { get; }
         public string HeadersStringCache { get; set; }
         private WebSocket WebSocket { get; }
@@ -17,29 +18,24 @@ namespace RESTable.Internal.Logging
         public DateTime LogTime { get; }
         public RESTableContext Context { get; }
 
-        public WebSocketEvent(MessageType direction, WebSocket webSocket, string content = null, int length = 0)
+        public ValueTask<string> GetLogMessage() => new(_logMessage);
+        public ValueTask<string> GetLogContent() => new(_logContent);
+
+        public WebSocketEvent(MessageType direction, WebSocket webSocket, string content = null, long length = 0)
         {
             MessageType = direction;
-            TraceId = webSocket.TraceId;
             WebSocket = webSocket;
             ExcludeHeaders = false;
             LogTime = DateTime.Now;
-            switch (direction)
+            _logMessage = direction switch
             {
-                case MessageType.WebSocketInput:
-                    LogMessage = $"Received {length} bytes";
-                    break;
-                case MessageType.WebSocketOutput:
-                    LogMessage = $"Sent {length} bytes";
-                    break;
-                case MessageType.WebSocketOpen:
-                    LogMessage = "WebSocket opened";
-                    break;
-                case MessageType.WebSocketClose:
-                    LogMessage = "WebSocket closed";
-                    break;
-            }
-            LogContent = content;
+                MessageType.WebSocketInput => $"Received {length} bytes",
+                MessageType.WebSocketOutput => $"Sent {length} bytes",
+                MessageType.WebSocketOpen => "WebSocket opened",
+                MessageType.WebSocketClose => "WebSocket closed",
+                _ => _logMessage
+            };
+            _logContent = content;
             Context = webSocket.Context;
             Headers = webSocket.Headers;
         }

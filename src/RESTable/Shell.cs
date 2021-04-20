@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Admin;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
@@ -15,13 +16,14 @@ using static RESTable.Method;
 
 namespace RESTable
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="System.IAsyncDisposable" />
+    /// <inheritdoc cref="RESTable.Resources.Terminal" />
     /// <summary>
     /// The WebSocket shell, used to navigate and execute commands against RESTable resources
     /// from a connected WebSocket. 
     /// </summary>
     [RESTable(Description = description, GETAvailableToAll = true)]
-    public sealed class Shell : ITerminal
+    public sealed class Shell : Terminal, IAsyncDisposable
     {
         #region Private
 
@@ -36,23 +38,12 @@ namespace RESTable
 
         private string query;
         private string previousQuery;
-        private Action OnConfirm;
         private bool _autoGet;
         private int streamBufferSize;
-        private IEntities _previousEntities;
         private bool _autoOptions;
         private string _protocol;
 
-        private IEntities PreviousEntities
-        {
-            get => _previousEntities;
-            set
-            {
-                if (value?.Equals(_previousEntities) != true)
-                    _previousEntities?.Dispose();
-                _previousEntities = value;
-            }
-        }
+        private IEntities PreviousEntities { get; set; }
 
         /// <summary>
         /// Signals that there are changes to the query that have been made pre evaluation
@@ -65,7 +56,6 @@ namespace RESTable
         {
             streamBufferSize = MaxStreamBufferSize;
             Unsafe = false;
-            OnConfirm = null;
             PreviousEntities = null;
             query = "";
             previousQuery = "";
@@ -74,6 +64,8 @@ namespace RESTable
             AutoGet = false;
             ReformatQueries = true;
             _protocol = "";
+            ConfirmSource = new TaskCompletionSource<byte>();
+            ConfirmSource.SetResult(default);
         }
 
         #endregion
@@ -168,8 +160,11 @@ namespace RESTable
             get => _protocol == "" ? "restable" : _protocol;
             set
             {
-                var p = ProtocolController.ResolveProtocolProvider(value).ProtocolProvider;
-                _protocol = p.ProtocolIdentifier;
+                var provider = Services
+                    .GetRequiredService<ProtocolProviderManager>()
+                    .ResolveCachedProtocolProvider(value)
+                    .ProtocolProvider;
+                _protocol = provider.ProtocolIdentifier;
             }
         }
 
@@ -177,567 +172,622 @@ namespace RESTable
 
         public Shell()
         {
-            SupportsTextInput = true;
-            SupportsBinaryInput = true;
             Reset();
         }
 
-        /// <inheritdoc />
-        public void Dispose()
+        public ValueTask DisposeAsync()
         {
-            WebSocket.Context.Client.ShellConfig = Providers.Json.Serialize(this);
+            WebSocket.Context.Client.ShellConfig = JsonProvider.Serialize(this);
             Reset();
+            return default;
         }
 
         /// <inheritdoc />
-        public IWebSocket WebSocket { private get; set; }
-
-        /// <inheritdoc />
-        public void HandleBinaryInput(byte[] input)
+        public override async Task HandleBinaryInput(byte[] input)
         {
             if (!(input?.Length > 0)) return;
-            if (Query.Length == 0 || OnConfirm != null)
-                WebSocket.SendResult(new InvalidShellStateForBinaryInput());
-            else SafeOperation(POST, input);
+            if (Query.Length == 0 || AwaitingConfirmation)
+                await WebSocket.SendResult(new InvalidShellStateForBinaryInput()).ConfigureAwait(false);
+            else await SafeOperation(POST, input).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public bool SupportsTextInput { get; }
+        protected override bool SupportsTextInput => true;
 
         /// <inheritdoc />
-        public bool SupportsBinaryInput { get; }
+        protected override bool SupportsBinaryInput => true;
+
+        private IJsonProvider JsonProvider { get; set; }
 
         /// <inheritdoc />
-        public void Open()
+        protected override async Task Open()
         {
+            JsonProvider = Services.GetRequiredService<IJsonProvider>();
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
-                Providers.Json.Populate(config, this);
-                SendShellInit();
-                SendQuery();
+                JsonProvider.Populate(config, this);
+                await SendShellInit().ConfigureAwait(false);
+                await SendQuery().ConfigureAwait(false);
             }
             else if (Query != "")
-                Navigate();
-            else SendShellInit();
+                await Navigate().ConfigureAwait(false);
+            else await SendShellInit().ConfigureAwait(false);
         }
 
-        private void Navigate(string input = null)
+        private async Task Navigate(string input = null, bool sendQuery = true)
         {
             if (input != null)
                 Query = input;
-            if (!QueryIsValid(out var resource)) return;
+            var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
+            if (!valid) return;
             PreviousEntities = null;
-            if (AutoOptions) SendOptions(resource);
-            else if (AutoGet) SafeOperation(GET);
-            else SendQuery();
+            if (AutoOptions) await SendOptions(resource).ConfigureAwait(false);
+            else if (AutoGet) await SafeOperation(GET).ConfigureAwait(false);
+            else if (sendQuery) await SendQuery().ConfigureAwait(false);
+        }
+
+        private TaskCompletionSource<byte> ConfirmSource { get; set; }
+        private bool AwaitingConfirmation => !ConfirmSource.Task.IsCompleted;
+
+        private async Task Confirm(string message)
+        {
+            ConfirmSource = new TaskCompletionSource<byte>();
+            await SendConfirmRequest(message).ConfigureAwait(false);
+            await ConfirmSource.Task.ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public void HandleTextInput(string input)
+        public override async Task HandleTextInput(string input)
         {
-            if (OnConfirm != null)
+            try
             {
-                switch (input.FirstOrDefault())
+                if (AwaitingConfirmation)
                 {
-                    case var _ when input.Length > 1:
-                    default:
-                        SendConfirmationRequest();
-                        break;
-                    case 'Y':
-                    case 'y':
-                        OnConfirm();
-                        OnConfirm = null;
-                        break;
-                    case 'N':
-                    case 'n':
-                        OnConfirm = null;
-                        SendCancel();
-                        break;
-                }
-                return;
-            }
-
-            if (input == " ")
-                input = "GET";
-
-            switch (input.FirstOrDefault())
-            {
-                case '\0':
-                case '\n': break;
-                case '-':
-                case '/':
-                    Navigate(input);
-                    break;
-                case '[':
-                case '{':
-                    SafeOperation(POST, input.ToBytes());
-                    break;
-                case var _ when input.Length > MaxInputSize:
-                    SendBadRequest();
-                    break;
-                default:
-                    var (command, tail) = input.TSplit(' ');
-                    switch (command.ToUpperInvariant())
+                    switch (input.FirstOrDefault())
                     {
-                        case "GET":
-                            SafeOperation(GET, tail?.ToBytes());
+                        case var _ when input.Length > 1:
+                        default:
+                            await SendConfirmRequest().ConfigureAwait(false);
                             break;
-                        case "POST":
-                            SafeOperation(POST, tail?.ToBytes());
+                        case 'Y':
+                        case 'y':
+                            ConfirmSource.SetResult(default);
                             break;
-                        case "PATCH":
-                            UnsafeOperation(PATCH, tail?.ToBytes());
+                        case 'N':
+                        case 'n':
+                            ConfirmSource.SetCanceled();
                             break;
-                        case "PUT":
-                            SafeOperation(PUT, tail?.ToBytes());
-                            break;
-                        case "DELETE":
-                            UnsafeOperation(DELETE, tail?.ToBytes());
-                            break;
-                        case "REPORT":
-                            SafeOperation(REPORT, tail?.ToBytes());
-                            break;
-                        case "HEAD":
-                            SafeOperation(HEAD, tail?.ToBytes());
-                            break;
-                        case "STREAM":
-                            var result = WsEvaluate(GET, null);
-                            if (result is Content)
-                                StreamResult(result, result.TimeElapsed);
-                            else SendResult(result);
-                            break;
-                        case "OPTIONS":
-                        {
-                            if (!QueryIsValid(out var resource)) break;
-                            SendOptions(resource);
-                            break;
-                        }
-                        case "SCHEMA":
-                        {
-                            if (!QueryIsValid(out var resource)) break;
-                            var resourceCondition = new Condition<Schema>
-                            (
-                                key: "resource",
-                                op: Operators.EQUALS,
-                                value: resource.Name
-                            );
-                            var schema = WebSocket.Context
-                                .CreateRequest<Schema>()
-                                .WithConditions(resourceCondition)
-                                .EvaluateToEntities();
-                            SendResult(schema);
-                            break;
-                        }
-
-                        case "HEADERS":
-                        case "HEADER":
-                            tail = tail?.Trim();
-                            if (string.IsNullOrWhiteSpace(tail))
-                            {
-                                SendHeaders();
-                                break;
-                            }
-                            var (key, value) = tail.TSplit('=', true);
-                            if (value == null)
-                            {
-                                SendHeaders();
-                                break;
-                            }
-                            if (key.IsCustomHeaderName())
-                            {
-                                if (value == "null")
-                                {
-                                    WebSocket.Headers.Remove(key);
-                                    SendHeaders();
-                                    break;
-                                }
-                                WebSocket.Headers[key] = value;
-                                SendHeaders();
-                            }
-                            else WebSocket.SendText($"400: Bad request. Cannot read or write reserved header '{key}'.");
-                            return;
-
-                        case "VAR":
-                            if (string.IsNullOrWhiteSpace(tail))
-                            {
-                                WebSocket.SendJson(this);
-                                break;
-                            }
-                            var (property, valueString) = tail.TSplit('=', true);
-                            if (property == null || valueString == null)
-                            {
-                                WebSocket.SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>");
-                                break;
-                            }
-                            if (valueString.EqualsNoCase("null"))
-                                valueString = null;
-                            if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
-                            {
-                                WebSocket.SendText($"Unknown shell property '{property}'. To list properties, type VAR");
-                                break;
-                            }
-                            try
-                            {
-                                declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
-                                WebSocket.SendJson(this);
-                            }
-                            catch (Exception e)
-                            {
-                                WebSocket.SendException(e);
-                            }
-                            break;
-                        case "EXIT":
-                        case "QUIT":
-                        case "DISCONNECT":
-                        case "CLOSE":
-                            Close();
-                            break;
-
-                        case "GO":
-                        case "NAVIGATE":
-                        case "?":
-                            if (!string.IsNullOrWhiteSpace(tail))
-                            {
-                                Navigate(tail);
-                                break;
-                            }
-                            WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
-                            break;
-                        case "FIRST":
-                            Permute(p => p.GetFirstLink(tail.ToNumber() ?? 1));
-                            break;
-                        case "LAST":
-                            Permute(p => p.GetLastLink(tail.ToNumber() ?? 1));
-                            break;
-                        case "ALL":
-                            Permute(p => p.GetAllLink());
-                            break;
-                        case "NEXT":
-                            Permute(p => p.GetNextPageLink(tail.ToNumber() ?? -1));
-                            break;
-                        case "PREV":
-                        case "PREVIOUS":
-                            Permute(p => p.GetPreviousPageLink(tail.ToNumber() ?? -1));
-                            break;
-
-                        #region Nonsense
-
-                        case "HELLO" when tail.EqualsNoCase("world"):
-
-                            string getHelloWorld()
-                            {
-                                switch (new Random().Next(0, 7))
-                                {
-                                    case 0: return "The world says: 'hi!'";
-                                    case 1: return "The world says: 'what's up?'";
-                                    case 2: return "The world says: 'greetings!'";
-                                    case 3: return "The world is currently busy";
-                                    case 4: return "The world cannot answer right now";
-                                    case 5: return "The world is currently out on lunch";
-                                    default: return "The world says: 'why do people keep saying that?'";
-                                }
-                            }
-
-                            WebSocket.SendText(getHelloWorld());
-                            break;
-
-                        case "HI":
-                        case "HELLO":
-
-                            string getGreeting()
-                            {
-                                switch (new Random().Next(0, 10))
-                                {
-                                    case 0: return "Well, hello there :D";
-                                    case 1: return "Greetings, friend";
-                                    case 2: return "Hello, dear client";
-                                    case 3: return "Hello to you";
-                                    case 4: return "Hi!";
-                                    case 5: return "Nice to see you!";
-                                    case 6: return "What's up?";
-                                    case 7: return "✌️";
-                                    case 8: return "'sup";
-                                    default: return "Oh no, it's you again...";
-                                }
-                            }
-
-                            WebSocket.SendText(getGreeting());
-                            break;
-                        case "NICE":
-                        case "THANKS":
-                        case "THANK":
-
-                            string getYoureWelcome()
-                            {
-                                switch (new Random().Next(0, 7))
-                                {
-                                    case 0: return "😎";
-                                    case 1: return "👍";
-                                    case 2: return "🙌";
-                                    case 3: return "🎉";
-                                    case 4: return "🤘";
-                                    case 5: return "You're welcome!";
-                                    default: return "✌️";
-                                }
-                            }
-
-                            WebSocket.SendText(getYoureWelcome());
-                            break;
-                        case "CREDITS":
-                            SendCredits();
-                            break;
-                        case var unknown:
-                            SendUnknownCommand(unknown);
-                            break;
-
-                        #endregion
                     }
-                    break;
-            }
-        }
-
-        private void SendHeaders() => WebSocket.SendJson(new {WebSocket.Headers});
-
-        private void Permute(Func<IEntities, IUriComponents> permuter)
-        {
-            var stopwatch = Stopwatch.StartNew();
-            if (PreviousEntities == null)
-            {
-                WsGetPreliminary().Dispose();
-                if (PreviousEntities == null)
-                {
-                    SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
                     return;
                 }
+
+                if (input == " ")
+                    input = "GET";
+
+                switch (input.FirstOrDefault())
+                {
+                    case '\0':
+                    case '\n': break;
+                    case '-':
+                    case '/':
+                        await Navigate(input).ConfigureAwait(false);
+                        break;
+                    case '[':
+                    case '{':
+                        await SafeOperation(POST, input.ToBytes()).ConfigureAwait(false);
+                        break;
+                    case var _ when input.Length > MaxInputSize:
+                        await SendBadRequest().ConfigureAwait(false);
+                        break;
+                    default:
+                        var (command, tail) = input.TSplit(' ');
+                        if (tail != null)
+                        {
+                            var (path, tail2) = tail.TSplit(' ');
+                            if (path.StartsWith("/"))
+                            {
+                                await Navigate(path).ConfigureAwait(false);
+                                tail = tail2;
+                            }
+                        }
+                        switch (command.ToUpperInvariant())
+                        {
+                            case "GET":
+                                await SafeOperation(GET, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "POST":
+                                await SafeOperation(POST, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "PATCH":
+                                await UnsafeOperation(PATCH, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "PUT":
+                                await SafeOperation(PUT, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "DELETE":
+                                await UnsafeOperation(DELETE, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "REPORT":
+                                await SafeOperation(REPORT, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "HEAD":
+                                await SafeOperation(HEAD, tail?.ToBytes()).ConfigureAwait(false);
+                                break;
+                            case "STREAM":
+                            {
+                                await using var result = await GetResult(GET, null).ConfigureAwait(false);
+                                var serialized = await result.Serialize().ConfigureAwait(false);
+                                if (result is Content)
+                                    await StreamSerializedResult(serialized, result.TimeElapsed).ConfigureAwait(false);
+                                else await SendSerializedResult(serialized).ConfigureAwait(false);
+                                break;
+                            }
+                            case "OPTIONS":
+                            {
+                                var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
+                                if (!valid) break;
+                                await SendOptions(resource).ConfigureAwait(false);
+                                break;
+                            }
+                            case "SCHEMA":
+                            {
+                                var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
+                                if (!valid) break;
+                                var termFactory = Services.GetRequiredService<TermFactory>();
+                                var term = termFactory.MakeConditionTerm(resource, "resource");
+                                var resourceCondition = new Condition<Schema>
+                                (
+                                    term: term,
+                                    op: Operators.EQUALS,
+                                    value: resource.Name
+                                );
+                                var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
+                                await using var schemaResult = await schemaRequest.GetResultEntities().ConfigureAwait(false);
+                                await SerializeAndSendResult(schemaResult);
+                                break;
+                            }
+
+                            case "HEADERS":
+                            case "HEADER":
+                                tail = tail?.Trim();
+                                if (string.IsNullOrWhiteSpace(tail))
+                                {
+                                    await SendHeaders().ConfigureAwait(false);
+                                    break;
+                                }
+                                var (key, value) = tail.TSplit('=', true);
+                                if (value == null)
+                                {
+                                    await SendHeaders().ConfigureAwait(false);
+                                    break;
+                                }
+                                if (key.IsCustomHeaderName())
+                                {
+                                    if (value == "null")
+                                    {
+                                        WebSocket.Headers.Remove(key);
+                                        await SendHeaders().ConfigureAwait(false);
+                                        break;
+                                    }
+                                    WebSocket.Headers[key] = value;
+                                    await SendHeaders().ConfigureAwait(false);
+                                }
+                                else
+                                    await WebSocket
+                                        .SendText($"400: Bad request. Cannot read or write reserved header '{key}'.")
+                                        .ConfigureAwait(false);
+                                return;
+
+                            case "VAR":
+                                if (string.IsNullOrWhiteSpace(tail))
+                                {
+                                    await WebSocket.SendJson(this).ConfigureAwait(false);
+                                    break;
+                                }
+                                var (property, valueString) = tail.TSplit('=', true);
+                                if (property == null || valueString == null)
+                                {
+                                    await WebSocket
+                                        .SendText(
+                                            "Invalid property assignment syntax. Should be: VAR <property> = <value>")
+                                        .ConfigureAwait(false);
+                                    break;
+                                }
+                                if (valueString.EqualsNoCase("null"))
+                                    valueString = null;
+                                if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
+                                {
+                                    await WebSocket
+                                        .SendText($"Unknown shell property '{property}'. To list properties, type VAR")
+                                        .ConfigureAwait(false);
+                                    break;
+                                }
+                                try
+                                {
+                                    declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
+                                    await WebSocket.SendJson(this).ConfigureAwait(false);
+                                }
+                                catch (Exception e)
+                                {
+                                    await WebSocket.SendException(e).ConfigureAwait(false);
+                                }
+                                break;
+                            case "EXIT":
+                            case "QUIT":
+                            case "DISCONNECT":
+                            case "CLOSE":
+                                await Close().ConfigureAwait(false);
+                                break;
+
+                            case "GO":
+                            case "NAVIGATE":
+                            case "?":
+                                if (!string.IsNullOrWhiteSpace(tail))
+                                {
+                                    await Navigate(tail).ConfigureAwait(false);
+                                    break;
+                                }
+                                await WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}")
+                                    .ConfigureAwait(false);
+                                break;
+                            case "FIRST":
+                                await Permute(p => p.GetFirstLink(tail.ToNumber() ?? 1)).ConfigureAwait(false);
+                                break;
+                            case "LAST":
+                                await Permute(p => p.GetLastLink(tail.ToNumber() ?? 1)).ConfigureAwait(false);
+                                break;
+                            case "ALL":
+                                await Permute(p => p.GetAllLink()).ConfigureAwait(false);
+                                break;
+                            case "NEXT":
+                                await Permute
+                                (
+                                    asyncPermuter: async p => p.GetNextPageLink
+                                    (
+                                        entityCount: await p.CountAsync().ConfigureAwait(false),
+                                        nextPageSize: tail.ToNumber() ?? -1
+                                    )
+                                ).ConfigureAwait(false);
+                                break;
+                            case "PREV":
+                            case "PREVIOUS":
+                                await Permute
+                                (
+                                    asyncPermuter: async p => p.GetPreviousPageLink
+                                    (
+                                        entityCount: await p.CountAsync().ConfigureAwait(false),
+                                        nextPageSize: tail.ToNumber() ?? -1
+                                    )
+                                ).ConfigureAwait(false);
+                                break;
+
+                            #region Nonsense
+
+                            case "HELLO" when tail.EqualsNoCase(", world!"):
+
+                                string getHelloWorld() => new Random().Next(0, 7) switch
+                                {
+                                    0 => "The world says: 'hi!'",
+                                    1 => "The world says: 'what's up?'",
+                                    2 => "The world says: 'greetings!'",
+                                    3 => "The world is currently busy",
+                                    4 => "The world cannot answer right now",
+                                    5 => "The world is currently out on lunch",
+                                    _ => "The world says: 'why do people keep saying that?'"
+                                };
+
+                                await WebSocket.SendText(getHelloWorld()).ConfigureAwait(false);
+                                break;
+
+                            case "HI":
+                            case "HELLO":
+
+                                string getGreeting() => new Random().Next(0, 10) switch
+                                {
+                                    0 => "Well, hello there :D",
+                                    1 => "Greetings, friend",
+                                    2 => "Hello, dear client",
+                                    3 => "Hello to you",
+                                    4 => "Hi!",
+                                    5 => "Nice to see you!",
+                                    6 => "What's up?",
+                                    7 => "✌️",
+                                    8 => "'sup",
+                                    _ => "Oh no, it's you again..."
+                                };
+
+                                await WebSocket.SendText(getGreeting()).ConfigureAwait(false);
+                                break;
+                            case "NICE":
+                            case "THANKS":
+                            case "THANK":
+
+                                string getYoureWelcome() => new Random().Next(0, 7) switch
+                                {
+                                    0 => "😎",
+                                    1 => "👍",
+                                    2 => "🙌",
+                                    3 => "🎉",
+                                    4 => "🤘",
+                                    5 => "You're welcome!",
+                                    _ => "✌️"
+                                };
+
+                                await WebSocket.SendText(getYoureWelcome()).ConfigureAwait(false);
+                                break;
+                            case "CREDITS":
+                                await SendCredits().ConfigureAwait(false);
+                                break;
+                            case var unknown:
+                                await SendUnknownCommand(unknown).ConfigureAwait(false);
+                                break;
+
+                            #endregion
+                        }
+                        break;
+                }
             }
+            catch (TaskCanceledException)
+            {
+                await SendCancel().ConfigureAwait(false);
+            }
+        }
+
+        private async Task SendHeaders() => await WebSocket.SendJson(new {WebSocket.Headers}).ConfigureAwait(false);
+
+        private async Task EnsurePreviousEntities()
+        {
+            if (PreviousEntities == null)
+            {
+                await WsGetPreliminary().ConfigureAwait(false);
+                if (PreviousEntities == null)
+                {
+                    await SendResult(new ShellNoContent(WebSocket)).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task Permute(Func<IEntities, IUriComponents> permuter)
+        {
+            await EnsurePreviousEntities().ConfigureAwait(false);
             var link = permuter(PreviousEntities);
-            Navigate(link.ToString());
+            await Navigate(link.ToString()).ConfigureAwait(false);
         }
 
-        private IResult WsGetPreliminary()
+        private async Task Permute(Func<IEntities, ValueTask<IUriComponents>> asyncPermuter)
+        {
+            await EnsurePreviousEntities().ConfigureAwait(false);
+            var link = await asyncPermuter(PreviousEntities).ConfigureAwait(false);
+            await Navigate(link.ToString()).ConfigureAwait(false);
+        }
+
+        private async Task<IResult> WsGetPreliminary()
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            using (var request = WebSocket.Context.CreateRequest(local, GET, null, WebSocket.Headers))
+            var request = WebSocket.Context.CreateRequest(GET, local, null, WebSocket.Headers);
+            await using var result = await request.GetResult().ConfigureAwait(false);
+            switch (result)
             {
-                var result = request.Evaluate();
-                switch (result)
-                {
-                    case Error _ when queryChangedPreEval:
-                        query = previousQuery;
-                        break;
-                    case IEntities entities:
-                        query = local;
-                        PreviousEntities = entities;
-                        break;
-                    case Change _:
-                        query = local;
-                        PreviousEntities = null;
-                        break;
-                    default:
-                        query = local;
-                        break;
-                }
-                queryChangedPreEval = false;
-                return result;
+                case Results.Error _ when queryChangedPreEval:
+                    query = previousQuery;
+                    break;
+                case IEntities entities:
+                    query = local;
+                    PreviousEntities = entities;
+                    break;
+                case Change _:
+                    query = local;
+                    PreviousEntities = null;
+                    break;
+                default:
+                    query = local;
+                    break;
             }
+            queryChangedPreEval = false;
+            return result;
         }
 
-        private ISerializedResult WsEvaluate(Method method, byte[] body)
+        private async Task<IResult> GetResult(Method method, byte[] body)
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            using (var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers))
+            var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers);
+            var result = await request.GetResult().ConfigureAwait(false);
+            switch (result)
             {
-                var result = request.Evaluate().Serialize();
-                switch (result)
-                {
-                    case Error _ when queryChangedPreEval:
-                        query = previousQuery;
-                        break;
-                    case IEntities entities:
-                        query = local;
-                        PreviousEntities = entities;
-                        break;
-                    case Change _:
-                        query = local;
-                        PreviousEntities = null;
-                        break;
-                    default:
-                        query = local;
-                        break;
-                }
-                queryChangedPreEval = false;
-                return result;
+                case Results.Error _ when queryChangedPreEval:
+                    query = previousQuery;
+                    break;
+                case IEntities entities:
+                    query = local;
+                    PreviousEntities = entities;
+                    break;
+                case Change _:
+                    query = local;
+                    PreviousEntities = null;
+                    break;
+                default:
+                    query = local;
+                    break;
             }
+            queryChangedPreEval = false;
+            return result;
         }
 
-        private bool QueryIsValid(out IResource resource)
+        private async Task<(bool isValid, IResource resource)> ValidateQuery()
         {
             var localQuery = Query;
-            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out resource, out var components))
+            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out var resource, out var components))
             {
                 query = previousQuery;
-                SendResult(error);
-                return false;
+                await SendResult(error).ConfigureAwait(false);
+                return (false, null);
             }
             if (ReformatQueries)
                 localQuery = components.ToString();
             query = localQuery;
             queryChangedPreEval = false;
-            return true;
+            return (true, resource);
         }
 
-        private void SendQuery() => WebSocket.SendText("? " + Query);
+        private async Task SendQuery() => await WebSocket.SendText("? " + Query).ConfigureAwait(false);
 
-        private void SendOptions(IResource resource)
+        private async Task SendOptions(IResource resource)
         {
             var availableResource = AvailableResource.Make(resource, WebSocket);
             var options = new OptionsBody(availableResource.Name, availableResource.Kind, availableResource.Methods);
-            WebSocket.SendJson(options, true);
-            SendQuery();
+            await WebSocket.SendJson(options, true).ConfigureAwait(false);
+            await SendQuery().ConfigureAwait(false);
         }
 
-        private void SafeOperation(Method method, byte[] body = null)
+        private async Task SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
-            switch (WsEvaluate(method, body))
-            {
-                case Content content when content.Body is Stream _:
-                    if (!content.Body.CanRead)
-                    {
-                        SendResult(new UnreadableContentStream(content));
-                        break;
-                    }
-                    if (!content.Body.CanSeek)
-                    {
-                        content.Body = new RESTableStream
-                        (
-                            contentType: content.Headers.ContentType.GetValueOrDefault(),
-                            stream: content.Body
-                        );
-                        break;
-                    }
-                    if (content.Body.Length > ResultStreamThreshold)
-                    {
-                        OnConfirm = () => StreamResult(content, sw.Elapsed);
-                        SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
-                                                "Do you want to stream the result instead? ");
-                        break;
-                    }
-                    SendResult(content, sw.Elapsed);
-                    break;
-                case OK ok:
-                    SendResult(ok, sw.Elapsed);
-                    break;
-                case var other:
-                    SendResult(other);
-                    break;
-            }
-            sw.Stop();
+            await using var result = await GetResult(method, body).ConfigureAwait(false);
+            await SerializeAndSendResult(result, sw.Elapsed).ConfigureAwait(true);
         }
 
-        private void UnsafeOperation(Method method, byte[] body = null)
+        private async Task UnsafeOperation(Method method, byte[] body = null)
         {
-            void runOperation()
+            async Task runOperation()
             {
                 WebSocket.Headers.UnsafeOverride = true;
-                SafeOperation(method, body);
+                await SafeOperation(method, body).ConfigureAwait(false);
             }
 
             if (PreviousEntities == null)
             {
-                var result = WsEvaluate(GET, null);
-                if (result is IEntities entities)
-                    PreviousEntities = entities;
-                else
+                await using var result = await GetResult(GET, null).ConfigureAwait(false);
+                if (result is not IEntities)
                 {
-                    SendResult(result);
+                    await SendResult(result).ConfigureAwait(false);
                     return;
                 }
             }
 
-            switch (PreviousEntities.EntityCount)
+            switch (await PreviousEntities.CountAsync())
             {
                 case 0:
-                    SendBadRequest($". No entities for to run {method} on");
+                    await SendBadRequest($". No entities for to run {method} on").ConfigureAwait(false);
                     break;
                 case 1:
-                    runOperation();
+                    await runOperation().ConfigureAwait(false);
                     break;
                 case var multiple:
-                    if (Unsafe)
+                    if (!Unsafe)
                     {
-                        runOperation();
-                        break;
+                        await Confirm($"This will run {method} on {multiple} entities in resource " +
+                                      $"'{PreviousEntities.Request.Resource}'. ").ConfigureAwait(false);
                     }
-                    OnConfirm = runOperation;
-                    SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
-                                            $"'{PreviousEntities.Request.Resource}'. ");
+                    await runOperation().ConfigureAwait(false);
                     break;
             }
         }
 
-        private void SendResult(ISerializedResult result, TimeSpan? elapsed = null)
+        private async Task SendResult(IResult result, TimeSpan? elapsed = null)
         {
             if (result is SwitchedTerminal) return;
-            WebSocket.SendResult(result, elapsed, WriteHeaders);
+            await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
             switch (result)
             {
                 case var _ when Query == "":
                 case ShellNoQuery _:
-                    WebSocket.SendText("? <no query>");
+                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
                     break;
                 default:
-                    WebSocket.SendText("? " + Query);
+                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
                     break;
             }
         }
 
-        private void StreamResult(ISerializedResult result, TimeSpan? elapsed = null)
+        private async Task SerializeAndSendResult(IResult result, TimeSpan? elapsed = null)
         {
             if (result is SwitchedTerminal) return;
-            WebSocket.StreamResult(result, StreamBufferSize, elapsed, WriteHeaders);
+            await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
+            var message = await WebSocket.GetMessageStream(false).ConfigureAwait(false);
+#if NETSTANDARD2_1
+            await using (message)
+#else
+            using (message)
+#endif
+            {
+                await using var serialized = await result.Serialize(message).ConfigureAwait(false);
+            }
             switch (result)
             {
                 case var _ when Query == "":
                 case ShellNoQuery _:
-                    WebSocket.SendText("? <no query>");
+                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
                     break;
                 default:
-                    WebSocket.SendText("? " + Query);
+                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
                     break;
             }
         }
 
-        private void SendShellInit()
+        private async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null)
         {
-            WebSocket.SendText("### Entering the RESTable WebSocket shell... ###");
-            WebSocket.SendText("### Type a command to continue...            ###");
+            if (serializedResult.Result is SwitchedTerminal) return;
+            await WebSocket.SendSerializedResult(serializedResult, elapsed, WriteHeaders).ConfigureAwait(false);
+            switch (serializedResult.Result)
+            {
+                case var _ when Query == "":
+                case ShellNoQuery _:
+                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
+                    break;
+                default:
+                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
+                    break;
+            }
         }
 
-        private void SendConfirmationRequest(string initialInfo = null) => WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
-        private void SendCancel() => WebSocket.SendText("Operation cancelled");
-        private void SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
-        private void SendInvalidCommandArgument(string command, string arg) => WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
-        private void SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
-        private void SendCredits() => WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
-
-        private void Close()
+        private async Task StreamSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null)
         {
-            WebSocket.SendText("### Closing the RESTable WebSocket shell... ###");
+            if (serializedResult.Result is SwitchedTerminal) return;
+            await WebSocket.StreamSerializedResult(serializedResult, StreamBufferSize, elapsed, WriteHeaders)
+                .ConfigureAwait(false);
+            switch (serializedResult.Result)
+            {
+                case var _ when Query == "":
+                case ShellNoQuery _:
+                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
+                    break;
+                default:
+                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
+                    break;
+            }
+        }
+
+        private async Task SendShellInit()
+        {
+            await WebSocket.SendText("### Entering the RESTable WebSocket shell... ###").ConfigureAwait(false);
+            await WebSocket.SendText("### Type a command to continue...            ###").ConfigureAwait(false);
+        }
+
+        private const string ConfirmationText = "Type 'Y' to continue, 'N' to cancel";
+        private const string CancelText = "Operation cancelled";
+
+        private Task SendCancel() => WebSocket.SendText(CancelText);
+
+        private Task SendConfirmRequest(string initialInfo = null) =>
+            WebSocket.SendText(initialInfo + ConfirmationText);
+
+        private Task SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
+
+        private Task SendInvalidCommandArgument(string command, string arg) =>
+            WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+
+        private Task SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
+
+        private Task SendCredits() =>
+            WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © {DateTime.Now.Year}");
+
+        private async Task Close()
+        {
+            await WebSocket.SendText("### Closing the RESTable WebSocket shell... ###").ConfigureAwait(false);
             var connection = (WebSocketConnection) WebSocket;
-            connection.WebSocket.Disconnect();
-        }
-    }
-
-    internal static class ShellExtensions
-    {
-        internal static int? ToNumber(this string tail)
-        {
-            if (tail == null || !int.TryParse(tail, out var nr))
-                return null;
-            return nr;
+            await connection.WebSocket.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

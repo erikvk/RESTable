@@ -10,7 +10,7 @@ namespace RESTable.Requests
     /// Represents a cookie, as used in RESTable requests and results. Two cookies with the same name are
     /// considered equal, and new values will always replace existing ones in hash collections.
     /// </summary>
-    public struct Cookie : IEquatable<Cookie>
+    public readonly struct Cookie : IEquatable<Cookie>
     {
         /// <summary>
         /// The name of the cookie
@@ -44,7 +44,7 @@ namespace RESTable.Requests
         public bool HttpOnly { get; }
 
         /// <summary>
-        /// A secure cookie will only be sent to the server when a request is made using SSL
+        /// A secure cookie will only be sent to the server when a request is made using TCL
         /// </summary>
         public bool Secure { get; }
 
@@ -79,7 +79,7 @@ namespace RESTable.Requests
         /// <param name="domain">Specifies those hosts to which the cookie will be sent. If not specified, defaults to the host portion of
         /// the current document location (but not including subdomains)</param>
         /// <param name="httpOnly">HTTP-only cookies aren't accessible via JavaScript through the Document.cookie property or the XMLHttpRequest API</param>
-        /// <param name="secure">A secure cookie will only be sent to the server when a request is made using SSL</param>
+        /// <param name="secure">A secure cookie will only be sent to the server when a request is made using TCL</param>
         /// <param name="path">The path that this cookie will be placed at</param>
         public Cookie
         (

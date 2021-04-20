@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
-using RESTable.Internal;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Results;
 using RESTable.WebSockets;
@@ -13,13 +14,15 @@ namespace RESTable.Requests
     /// and define the root for each ITraceable tree. They also hold WebSocket connections
     /// and Client access rights.
     /// </summary>
-    public abstract class RESTableContext
+    public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable
     {
-        internal string InitialTraceId { get; }
+        public string TraceId { get; }
         private const int MaximumStackDepth = 500;
-        private WebSocket webSocket;
         private int StackDepth;
         internal bool IsBottomOfStack => StackDepth < 1;
+        public IServiceProvider Services { get; }
+
+        public RESTableContext Context => this;
 
         internal void IncreaseDepth()
         {
@@ -33,6 +36,8 @@ namespace RESTable.Requests
             StackDepth -= 1;
         }
 
+        private WebSocket webSocket;
+
         /// <summary>
         /// The websocket connected with this context
         /// </summary>
@@ -41,7 +46,7 @@ namespace RESTable.Requests
             get => webSocket;
             set
             {
-                WebSocketController.Add(value);
+                Services.GetRequiredService<WebSocketManager>().Add(value);
                 webSocket = value;
             }
         }
@@ -51,12 +56,12 @@ namespace RESTable.Requests
         /// <summary>
         /// Should return true if and only if the request is a WebSocket upgrade request
         /// </summary>
-        protected abstract bool IsWebSocketUpgrade { get; }
+        protected virtual bool IsWebSocketUpgrade => false;
 
         /// <summary>
         /// Gets a WebSocket instance for a given Context
         /// </summary>
-        protected abstract WebSocket CreateWebSocket();
+        protected virtual WebSocket CreateWebSocket() => throw new NotImplementedException();
 
         #endregion
 
@@ -80,45 +85,38 @@ namespace RESTable.Requests
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
         public virtual IRequest<T> CreateRequest<T>(Method method = GET, string protocolId = "restable", string viewName = null) where T : class
         {
-            var resource = Resource<T>.SafeGet ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
-            var parameters = new RequestParameters(this, method, resource, protocolId, viewName);
-            return new Request<T>(resource, parameters);
-        }
-
-        /// <summary>
-        /// Creates a request in this context for a given resource, using the given method and optional protocol id and 
-        /// view name. If the protocol ID is null, the default protocol will be used. T must be a registered resource type.
-        /// </summary>
-        /// <param name="resource">The resource to create a request for</param>
-        /// <param name="method">The method to perform, for example GET</param>
-        /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
-        /// protocol ID is null, the default protocol will be used.</param>0
-        /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
-        public virtual IRequest<T> CreateRequest<T>(IResource<T> resource, Method method = GET, string protocolId = "restable", string viewName = null)
-            where T : class
-        {
-            var parameters = new RequestParameters(this, method, resource, protocolId, viewName);
+            var resourceCollection = Services.GetRequiredService<ResourceCollection>();
+            var resource = resourceCollection.SafeGetResource<T>() ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
+            var parameters = new RequestParameters
+            (
+                context: this,
+                method: method,
+                resource: resource,
+                protocolIdentifier: protocolId,
+                viewName: viewName
+            );
+            parameters.SetBodyObject(null);
             return new Request<T>(resource, parameters);
         }
 
         /// <summary>
         /// Creates a request in this context using the given parameters.
         /// </summary>
-        /// <param name="uri">The URI of the request</param>
         /// <param name="method">The method to perform</param>
+        /// <param name="uri">The URI of the request</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public virtual IRequest CreateRequest(string uri, Method method = GET, byte[] body = null, Headers headers = null)
+        public virtual IRequest CreateRequest(Method method = GET, string uri = "/", object body = null, Headers headers = null)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
             {
                 WebSocket = CreateWebSocket();
-                WebSocket.Context = this;
             }
-            var parameters = new RequestParameters(this, method, uri, body, headers);
+            var parameters = new RequestParameters(this, method, uri, headers);
+            parameters.SetBodyObject(body);
             if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
-            return Construct((dynamic) parameters.IResource, parameters);
+            return DynamicCreateRequest((dynamic) parameters.IResource, parameters);
         }
 
         /// <summary>
@@ -132,25 +130,27 @@ namespace RESTable.Requests
         public bool UriIsValid(string uri, out Error error, out IResource resource, out IUriComponents uriComponents)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
-            var parameters = new RequestParameters(this, (Method) (-1), uri, null, null);
+            var parameters = new RequestParameters(this, (Method) (-1), uri, null);
             uriComponents = null;
             if (parameters.Error != null)
             {
                 var invalidParametersRequest = new InvalidParametersRequest(parameters);
-                error = (Error) parameters.Error.AsResultOf(invalidParametersRequest);
+                error = parameters.Error.AsResultOf(invalidParametersRequest);
                 resource = null;
                 return false;
             }
             resource = parameters.IResource;
-            IRequest request = Construct((dynamic) resource, parameters);
-            if (request.IsValid)
+            IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
+            if (!request.IsValid)
             {
-                uriComponents = request.UriComponents;
-                error = null;
-                return true;
+                // Will run synchronously since the request is not valid
+                using var result = request.GetResult().Result;
+                error = result as Error;
+                return false;
             }
-            error = request.Evaluate() as Error;
-            return false;
+            uriComponents = request.UriComponents;
+            error = null;
+            return true;
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace RESTable.Requests
         /// <returns></returns>
         public bool MethodIsAllowed(Method method, IResource resource, out MethodNotAllowed error)
         {
-            if (method < GET || method > HEAD)
+            if (method is < GET or > HEAD)
                 throw new ArgumentException($"Invalid method value {method} for request");
             if (resource?.AvailableMethods.Contains(method) != true)
             {
@@ -179,7 +179,7 @@ namespace RESTable.Requests
             return false;
         }
 
-        private static IRequest Construct<T>(IResource<T> r, RequestParameters p) where T : class => new Request<T>(r, p);
+        private static IRequest DynamicCreateRequest<T>(IResource<T> r, RequestParameters p) where T : class => new Request<T>(r, p);
 
         /// <summary>
         /// Use this method to check the origin of an incoming OPTIONS request. This will check the contents
@@ -189,44 +189,72 @@ namespace RESTable.Requests
         /// <param name="uri">The URI of the request</param>
         /// <param name="headers">The headers of the request</param>
         /// <returns></returns>
-        public ISerializedResult GetOptions(string uri, Headers headers)
+        public IResult GetOptions(string uri, Headers headers)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, uri, headers);
-            return Options.Create(parameters).Serialize();
+            return Options.Create(parameters);
         }
 
         /// <summary>
-        /// Creates a new context for a client.
+        /// Creates a new context for a client, with scoped services
         /// </summary>
         /// <param name="client">The client of the context</param>
-        protected RESTableContext(Client client)
+        /// <param name="services">The services to use in this context</param>
+        public RESTableContext(Client client, IServiceProvider services)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
-            InitialTraceId = NextId;
+            Services = services ?? throw new ArgumentNullException(nameof(services));
+            TraceId = NextId;
             StackDepth = 0;
         }
 
-        /// <summary>
-        /// The context of internal root-level access requests
-        /// </summary>
-        public static RESTableContext Root => new InternalContext();
-
-        /// <summary>
-        /// The context of a remote request to some external RESTable service
-        /// </summary>
-        /// <param name="serviceRoot">The URI of the remote RESTable service, for example https://my-service.com:8282/rest</param>
-        /// <param name="apiKey">The API key to use in remote request to this service</param>
-        public static RESTableContext Remote(string serviceRoot, string apiKey = null) => new RemoteContext(serviceRoot, apiKey);
-
         private static ulong IdNr;
+
         private static string NextId
         {
             get
             {
-                var bytes = BitConverter.GetBytes(IdNr += 1);
-                return Convert.ToBase64String(bytes);
+                var id = IdNr += 1;
+                var bytes = id switch
+                {
+                    < 1 << 8 => new[] {(byte) id},
+                    < 2 << 8 => new[] {byte.MaxValue, (byte) (id - 1 << 8)},
+                    < 3 << 8 => new[] {byte.MaxValue, byte.MaxValue, (byte) (id - 2 << 8)},
+                    < 4 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 3 << 8)},
+                    < 5 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 4 << 8)},
+                    < 6 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 5 << 8)},
+                    < 7 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 6 << 8)},
+                    _ => BitConverter.GetBytes(IdNr)
+                };
+                return Convert.ToBase64String(bytes).TrimEnd('=');
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is RESTableContext context && context.TraceId == TraceId;
+        }
+
+        public override int GetHashCode()
+        {
+            return TraceId.GetHashCode();
+        }
+
+        public void Dispose()
+        {
+            if (Services is IAsyncDisposable asyncDisposable)
+                asyncDisposable.DisposeAsync().AsTask().Wait();
+            if (Services is IDisposable disposable)
+                disposable.Dispose();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Services is IAsyncDisposable asyncDisposable)
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            if (Services is IDisposable disposable)
+                disposable.Dispose();
         }
     }
 }

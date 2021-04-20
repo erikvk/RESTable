@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/RESTable.Admin/Settings/
+permalink: /Built-in%20resources/RESTable.Admin/Settings/
 ---
 
 # `Settings`

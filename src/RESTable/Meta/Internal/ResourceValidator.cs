@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Newtonsoft.Json.Linq;
+using RESTable.Admin;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
@@ -12,28 +13,35 @@ using RESTable.Meta.IL;
 
 namespace RESTable.Meta.Internal
 {
-    internal static class ResourceValidator
+    public class ResourceValidator
     {
-        internal static void ValidateRuntimeInsertion(Type type, string fullName, RESTableAttribute attribute)
+        private TypeCache TypeCache { get; }
+        private ResourceCollection ResourceCollection { get; }
+        private RESTableConfiguration Configuration { get; }
+
+        public ResourceValidator(TypeCache typeCache, ResourceCollection resourceCollection, RESTableConfiguration configuration)
+        {
+            TypeCache = typeCache;
+            ResourceCollection = resourceCollection;
+            Configuration = configuration;
+        }
+
+        public void ValidateRuntimeInsertion(Type type, string fullName, RESTableAttribute attribute)
         {
             string name;
             if (fullName != null)
-            {
-                // if (fullName.StartsWith("RESTable.", StringComparison.OrdinalIgnoreCase) && !type.Assembly.Equals(typeof(ResourceValidator).Assembly))
-                //     throw new InvalidResourceDeclarationException($"Cannot add resource '{fullName}'. A resource name cannot start with 'RESTable'");
                 name = fullName;
-            }
             else name = type.GetRESTableTypeName();
             if (name == null)
                 throw new InvalidResourceDeclarationException(
                     "Encountered an unknown type. No further information is available.");
-            if (RESTableConfig.ResourceByType.ContainsKey(type))
+            if (ResourceCollection.ResourceByType.ContainsKey(type))
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same type ('{type.GetRESTableTypeName()}') has already been added to RESTable");
-            if (RESTableConfig.ResourceByName.ContainsKey(name))
+            if (ResourceCollection.ResourceByName.ContainsKey(name))
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same name has already been added to RESTable");
-            attribute = attribute ?? type.GetCustomAttribute<RESTableAttribute>();
+            attribute ??= type.GetCustomAttribute<RESTableAttribute>();
             if (attribute == null)
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. The type was not decorated with the RESTableAttribute attribute, and " +
@@ -41,11 +49,10 @@ namespace RESTable.Meta.Internal
             Validate(type);
         }
 
-        internal static (List<Type> regular, List<Type> wrappers, List<Type> terminals, List<Type> binaries, List<Type> events)
-            Validate(params Type[] types)
+        public (List<Type> regular, List<Type> wrappers, List<Type> terminals, List<Type> binaries, List<Type> events) Validate(params Type[] types)
         {
             var entityTypes = types
-                .Where(t => !typeof(ITerminal).IsAssignableFrom(t) &&
+                .Where(t => !typeof(Terminal).IsAssignableFrom(t) &&
                             !typeof(IEvent).IsAssignableFrom(t) &&
                             !t.ImplementsGenericInterface(typeof(IBinary<>)))
                 .ToList();
@@ -56,7 +63,7 @@ namespace RESTable.Meta.Internal
                 .Where(t => typeof(IResourceWrapper).IsAssignableFrom(t))
                 .ToList();
             var terminalTypes = types
-                .Where(t => typeof(ITerminal).IsAssignableFrom(t))
+                .Where(t => typeof(Terminal).IsAssignableFrom(t))
                 .ToList();
             var binaryTypes = types
                 .Where(t => t.ImplementsGenericInterface(typeof(IBinary<>)))
@@ -89,8 +96,8 @@ namespace RESTable.Meta.Internal
                 if (type.Namespace == null)
                     throw new InvalidResourceDeclarationException($"Invalid type '{type.GetRESTableTypeName()}'. Unknown namespace");
 
-                if (RESTableConfig.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
-                    type.Assembly != typeof(RESTableConfig).Assembly)
+                if (Configuration.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
+                    type.Assembly != typeof(RESTableConfigurator).Assembly)
                     throw new InvalidResourceDeclarationException(
                         $"Invalid namespace for resource type '{type.GetRESTableTypeName()}'. Namespace '{type.Namespace}' is reserved by RESTable");
 
@@ -113,9 +120,9 @@ namespace RESTable.Meta.Internal
                             $"Interface contained properties with duplicate names matching '{interfacePropDupe}' (case insensitive).");
 
                     var interfaceName = interfaceType.GetRESTableTypeName();
-                    type.GetInterfaceMap(interfaceType).TargetMethods.ForEach(method =>
+                    foreach (var method in type.GetInterfaceMap(interfaceType).TargetMethods)
                     {
-                        if (!method.IsSpecialName) return;
+                        if (!method.IsSpecialName) continue;
                         var interfaceProperty = interfaceType
                             .GetProperties()
                             .First(p => p.GetGetMethod()?.Name is string getname && method.Name.EndsWith(getname) ||
@@ -151,7 +158,7 @@ namespace RESTable.Meta.Internal
                                     : null)
                                 .LastOrDefault(p => p != null);
                         }
-                        else return;
+                        else continue;
 
                         if (projectedProperty == null)
                             throw new InvalidResourceDeclarationException(
@@ -167,7 +174,7 @@ namespace RESTable.Meta.Internal
                                 $"RESTable matched interface property '{interfaceProperty.Name}' with resource property '{projectedProperty.Name}' " +
                                 "using the interface property matching rules, but these properties have a type mismatch. Expected " +
                                 $"'{projectedProperty.PropertyType.GetRESTableTypeName()}' but found '{propertyType.GetRESTableTypeName()}' in interface");
-                    });
+                    }
                 }
 
                 #endregion
@@ -212,7 +219,7 @@ namespace RESTable.Meta.Internal
 
                 #region Check for properties with duplicate case insensitive names
 
-                if (type.FindAndParseDeclaredProperties().ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
+                if (TypeCache.FindAndParseDeclaredProperties(type).ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
                     throw new InvalidResourceMemberException(
                         $"Invalid properties for resource '{type.GetRESTableTypeName()}'. Names of public instance properties must " +
                         $"be unique (case insensitive). Two or more property names were equivalent to '{duplicate.Name}'."
@@ -250,7 +257,7 @@ namespace RESTable.Meta.Internal
                         throw new InvalidResourceWrapperException(_types, "cannot wrap types that are declared within the scope of some other class.");
                     if (wrapped.HasAttribute<RESTableAttribute>())
                         throw new InvalidResourceWrapperException(_types, "cannot wrap types already decorated with the 'RESTableAttribute' attribute");
-                    if (wrapper.Assembly == typeof(RESTableConfig).Assembly)
+                    if (wrapper.Assembly == typeof(RESTableConfigurator).Assembly)
                         throw new InvalidResourceWrapperException(_types, "cannot wrap RESTable types");
                 }
             }
@@ -260,15 +267,29 @@ namespace RESTable.Meta.Internal
                 foreach (var terminal in terminals)
                 {
                     ValidateCommon(terminal);
-
+                    var constructors = terminal.GetConstructors();
+                    if (constructors.Length != 1)
+                        throw new InvalidTerminalDeclarationException(terminal, "must have exactly one public constructor. Found " + constructors.Length);
+                    var constructorParameterNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var properties = TypeCache.GetDeclaredProperties(terminal);
+                    foreach (var parameter in constructors[0].GetParameters())
+                    {
+                        if (!constructorParameterNames.Add(parameter.Name))
+                            throw new InvalidTerminalDeclarationException(terminal, "must not define multiple constructor parameters with the same case " +
+                                                                                    $"insensitive parameter name. Found duplicate of '{parameter.Name.ToLowerInvariant()}'");
+                        if (!properties.ContainsKey(parameter.Name))
+                        {
+                            throw new InvalidTerminalDeclarationException(terminal, "must not define a constructor parameter with a name that does not equal the name of a " +
+                                                                                    "public instance property on the same type (case insensitive). Found parameter " +
+                                                                                    $"'{parameter.Name.ToLowerInvariant()}' with no matching public instance property.");
+                        }
+                    }
                     if (terminal.ImplementsGenericInterface(typeof(IEnumerable<>)))
                         throw new InvalidTerminalDeclarationException(terminal, "must not be collections");
                     if (terminal.HasResourceProviderAttribute())
                         throw new InvalidTerminalDeclarationException(terminal, "must not be decorated with a resource provider attribute");
                     if (typeof(IOperationsInterface).IsAssignableFrom(terminal))
                         throw new InvalidTerminalDeclarationException(terminal, "must not implement any other RESTable operations interfaces");
-                    if (terminal.GetConstructor(Type.EmptyTypes) == null)
-                        throw new InvalidTerminalDeclarationException(terminal, "must define a public parameterless constructor");
                 }
             }
 

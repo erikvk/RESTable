@@ -6,14 +6,13 @@ namespace RESTable.Results
     /// <inheritdoc />
     internal class ExternalDestinationResult : Success
     {
-        /// <inheritdoc />
-        public override Headers Headers { get; }
+        public sealed override IRequest Request { get; }
 
-        internal ExternalDestinationResult(IRequest request, HttpResponse response) : base(request)
+        internal ExternalDestinationResult(IRequest request, HttpResponse response) : base(request, response.Headers)
         {
+            Request = request;
             StatusCode = response.StatusCode;
             StatusDescription = response.StatusDescription;
-            Headers = response.Headers;
         }
     }
 }

@@ -8,7 +8,7 @@ namespace RESTable.Meta
     /// <summary>
     /// A struct to describe a member of an enumeration
     /// </summary>
-    public struct EnumMember
+    public readonly struct EnumMember
     {
         /// <summary>
         /// The name of the enumeration members
@@ -68,7 +68,7 @@ namespace RESTable.Meta
     /// <summary>
     /// A generic struct to describe a member of an enumeration
     /// </summary>
-    public struct EnumMember<T> where T : Enum
+    public readonly struct EnumMember<T> where T : Enum
     {
         /// <summary>
         /// The name of the enumeration members
@@ -132,7 +132,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets all values for named constants of an enumeration
         /// </summary>
-        public static T[] Values => typeof(T).IsEnum
+        public static readonly T[] Values = typeof(T).IsEnum
             ? typeof(T).GetFields()
                 .Where(field => field.FieldType.IsEnum)
                 .Select(field => (T) (field.GetValue(null) ?? -1))
@@ -142,7 +142,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets all names for named constants of an enumeration
         /// </summary>
-        public static string[] Names => typeof(T).IsEnum
+        public static readonly string[] Names = typeof(T).IsEnum
             ? Enum.GetNames(typeof(T))
             : throw new ArgumentException($"Type must be enum, found '{typeof(T).GetRESTableTypeName()}'");
 

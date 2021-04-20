@@ -1,13 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Threading;
 
 namespace RESTable.SQLite
 {
-    internal class EntityEnumerable<T> : IEnumerable<T> where T : SQLiteTable
+    internal class EntityEnumerable<T> : IAsyncEnumerable<T> where T : SQLiteTable
     {
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        private EntityEnumerator<T> Enumerator { get; }
+        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = new()) => Enumerator;
+        private IAsyncEnumerator<T> Enumerator { get; }
         internal EntityEnumerable(string sql, bool onlyRowId) => Enumerator = new EntityEnumerator<T>(sql, onlyRowId);
-        public IEnumerator<T> GetEnumerator() => Enumerator;
     }
 }

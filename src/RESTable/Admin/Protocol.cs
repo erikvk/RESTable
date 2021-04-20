@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.ProtocolProviders;
 using RESTable.Requests;
@@ -38,7 +39,10 @@ namespace RESTable.Admin
         public IEnumerable<ContentTypeInfo> ContentTypes { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<Protocol> Select(IRequest<Protocol> request) => ProtocolController.ProtocolProviders.Values
+        public IEnumerable<Protocol> Select(IRequest<Protocol> request) => request
+            .GetRequiredService<ProtocolProviderManager>()
+            .CachedProtocolProviders
+            .Values
             .Distinct()
             .Select(cachedProvider => new Protocol
             {

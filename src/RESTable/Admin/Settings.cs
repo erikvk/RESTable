@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -15,80 +16,44 @@ namespace RESTable.Admin
     {
         private const string description = "The Settings resource contains the current " +
                                            "settings for the RESTable instance.";
-        
-        public static ushort _Port => Instance.Port;
-        public static string _Uri => Instance.Uri;
-        public static bool _PrettyPrint => Instance.PrettyPrint;
-        public static int _DaysToSaveErrors => Instance.DaysToSaveErrors;
-        public static string _HelpResourcePath => Instance.DocumentationURL;
-        public static LineEndings _LineEndings => Instance.LineEndings;
+
+//        public static string _Uri => Instance.Uri;
+//        public static bool _PrettyPrint => Instance.PrettyPrint;
+//        public static int _NumberOfErrorsToKeep => Instance.NumberOfErrorsToKeep;
+//        public static LineEndings _LineEndings => Instance.LineEndings;
 
         /// <summary>
-        /// The port of the RESTable REST API
+        /// The root URI of the RESTable REST API
         /// </summary>
-        public ushort Port { get; private set; }
+        public string RootUri => Configuration.RootUri;
 
         /// <summary>
-        /// The URI of the RESTable REST API
+        /// The number of errors to store in the RESTable.Error resource
         /// </summary>
-        public string Uri { get; private set; }
-
-        /// <summary>
-        /// Will JSON be serialized with pretty print? (indented JSON)
-        /// </summary>
-        public bool PrettyPrint { get; set; }
-
-        /// <summary>
-        /// The line endings to use when writing JSON
-        /// </summary>
-        public LineEndings LineEndings { get; private set; }
-
-        /// <summary>
-        /// The path where help resources are available
-        /// </summary>
-        public string DocumentationURL => "https://develop.mopedo.com";
-
-        /// <summary>
-        /// The number of days to store errors in the RESTable.Error resource
-        /// </summary>
-        public int DaysToSaveErrors { get; private set; }
+        public int NumberOfErrorsToKeep => Configuration.NrOfErrorsToKeep;
 
         /// <summary>
         /// The RESTable version of the current application
         /// </summary>
-        public string RESTableVersion { get; private set; }
+        public string RESTableVersion => Configuration.Version;
+
+        private RESTableConfiguration Configuration { get; }
+
+        public Settings(RESTableConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
 
         /// <summary>
         /// The path where temporary files are created
         /// </summary>
-        [RESTableMember(hide: true)] public string TempFilePath { get; private set; }
+        [RESTableMember(hide: true)]
+        public string TempFilePath => Path.GetTempPath();
 
         public IEnumerable<Settings> Select(IRequest<Settings> request)
         {
-            yield return Instance;
-        }
-
-        private static Settings Instance { get; set; }
-
-        internal static void Init
-        (
-            ushort port,
-            string uri,
-            bool prettyPrint,
-            int daysToSaveErrors,
-            LineEndings lineEndings
-        )
-        {
-            Instance = new Settings
-            {
-                Port = port,
-                Uri = uri,
-                PrettyPrint = prettyPrint,
-                DaysToSaveErrors = daysToSaveErrors,
-                LineEndings = lineEndings,
-                TempFilePath = Path.GetTempPath(),
-                RESTableVersion = RESTableConfig.Version
-            };
+            var configuration = request.GetRequiredService<RESTableConfiguration>();
+            yield return new Settings(configuration);
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -10,13 +12,13 @@ using static RESTable.Method;
 
 namespace RESTable.Admin
 {
-    /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+    /// <inheritdoc cref="IAsyncDeleter{T}" />
     /// <summary>
     /// An entity resource containing all the currently open WebSockets
     /// </summary>
     [RESTable(GET, DELETE, Description = description)]
-    public class WebSocket : ISelector<WebSocket>, IDeleter<WebSocket>
+    public class WebSocket : ISelector<WebSocket>, IAsyncDeleter<WebSocket>
     {
         private const string description = "Lists all connected WebSockets";
 
@@ -33,41 +35,46 @@ namespace RESTable.Admin
         /// <summary>
         /// An object describing the terminal
         /// </summary>
-        public JObject Terminal { get; private set; }
+        public object Terminal { get; private set; }
 
         /// <summary>
         /// An object describing the client
         /// </summary>
-        public JObject Client { get; private set; }
+        public object Client { get; private set; }
 
         /// <summary>
         /// Does this WebSocket instance represent the currently connected client websocket?
         /// </summary>
         public bool IsThis { get; private set; }
 
-        private WebSockets.WebSocket _WebSocket { get; set; }
+        private WebSockets.WebSocket UnderlyingSocket { get; set; }
 
         /// <inheritdoc />
-        public IEnumerable<WebSocket> Select(IRequest<WebSocket> request) => WebSocketController
-            .AllSockets
-            .Values
-            .Select(socket => new WebSocket
-            {
-                Id = socket.TraceId,
-                IsThis = socket.TraceId == request.Context.WebSocket?.TraceId,
-                TerminalType = socket.TerminalResource?.Name,
-                Client = JObject.FromObject(socket.GetAppProfile(), JsonProvider.Serializer),
-                Terminal = socket.Terminal == null ? null : JObject.FromObject(socket.Terminal, JsonProvider.Serializer),
-                _WebSocket = socket
-            });
+        public IEnumerable<WebSocket> Select(IRequest<WebSocket> request)
+        {
+            var jsonSerializer = request.GetRequiredService<JsonSerializer>();
+            var webSocketController = request.GetRequiredService<WebSocketManager>();
+            return webSocketController
+                .ConnectedWebSockets
+                .Values
+                .Select(socket => new WebSocket
+                {
+                    Id = socket.Context.TraceId,
+                    IsThis = socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
+                    TerminalType = socket.TerminalResource?.Name,
+                    Client = JObject.FromObject(socket.GetAppProfile(), jsonSerializer),
+                    Terminal = socket.Terminal == null ? null : JObject.FromObject(socket.Terminal, jsonSerializer),
+                    UnderlyingSocket = socket
+                });
+        }
 
         /// <inheritdoc />
-        public int Delete(IRequest<WebSocket> request)
+        public async ValueTask<int> DeleteAsync(IRequest<WebSocket> request)
         {
             var count = 0;
-            foreach (var entity in request.GetInputEntities())
+            await foreach (var entity in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
-                entity._WebSocket.Disconnect();
+                await entity.UnderlyingSocket.DisposeAsync().ConfigureAwait(false);
                 count += 1;
             }
             return count;

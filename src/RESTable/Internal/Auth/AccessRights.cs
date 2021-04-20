@@ -2,17 +2,20 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using RESTable.Meta;
-using RESTable.Linq;
 
 namespace RESTable.Internal.Auth
 {
-    internal class AccessRights : ReadOnlyDictionary<IResource, Method[]>
+    /// <summary>
+    /// Describes a set of valid operations for a set of resources
+    /// </summary>
+    public class AccessRights : ReadOnlyDictionary<IResource, Method[]>
     {
-        static AccessRights() => Root = new AccessRights(null);
-        internal static AccessRights Root { get; }
-        internal static void ReloadRoot() => RESTableConfig.Resources.ForEach(r => Root[r] = RESTableConfig.Methods);
         internal string ApiKey { get; }
-        private AccessRights(string apiKey) : base(new Dictionary<IResource, Method[]>()) => ApiKey = apiKey;
+
+        protected AccessRights(string apiKey) : base(new Dictionary<IResource, Method[]>())
+        {
+            ApiKey = apiKey;
+        }
 
         internal static AccessRights ToAccessRights(IEnumerable<AccessRight> accessRights, string apiKeyHash)
         {

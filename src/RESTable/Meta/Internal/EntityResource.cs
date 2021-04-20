@@ -3,12 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using RESTable.Results;
-using RESTable.Linq;
 
 namespace RESTable.Meta.Internal
 {
@@ -30,23 +29,17 @@ namespace RESTable.Meta.Internal
         public IEnumerable<ITarget> Views => ViewDictionaryInternal?.Values;
         public TermBindingRule ConditionBindingRule { get; }
         public TermBindingRule OutputBindingRule { get; }
-        public bool RequiresAuthentication => Authenticator != null;
         public bool GETAvailableToAll { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         public Type InterfaceType { get; }
         public bool DeclaredPropertiesFlagged { get; }
         public override string ToString() => Name;
-        public bool RequiresValidation { get; }
         public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public bool ClaimedBy<T1>() where T1 : IEntityResourceProvider => Provider == typeof(T1).GetEntityResourceProviderId();
         public ResourceKind ResourceKind { get; }
         public bool IsDeclared { get; }
-        public bool CanSelect => Selector != null;
-        public bool CanInsert => Inserter != null;
-        public bool CanUpdate => Updater != null;
-        public bool CanDelete => Deleter != null;
-        public bool CanCount => Counter != null;
+        public bool RequiresValidation { get; }
 
         string IResourceInternal.Description
         {
@@ -58,37 +51,35 @@ namespace RESTable.Meta.Internal
             set => AvailableMethods = value;
         }
 
-        public IEnumerable<T> Select(IRequest<T> request) => Selector(request);
-        public int Insert(IRequest<T> request) => Inserter(request);
-        public int Update(IRequest<T> request) => Updater(request);
-        public int Delete(IRequest<T> request) => Deleter(request);
-        public AuthResults Authenticate(IRequest<T> request) => Authenticator(request);
-        public long Count(IRequest<T> request) => Counter(request);
-        
-        public IEnumerable<T> Validate(IEnumerable<T> entities)
-        {
-            if (Validator == null) return entities;
-            return entities?.Apply(e =>
-            {
-                if (!Validator(e, out var invalidReason))
-                    throw new FailedValidation(invalidReason);
-            });
-        }
+        public bool RequiresAuthentication => Delegates.RequiresAuthentication;
+        public bool CanSelect => Delegates.CanSelect;
+        public bool CanInsert => Delegates.CanInsert;
+        public bool CanUpdate => Delegates.CanUpdate;
+        public bool CanDelete => Delegates.CanDelete;
+        public bool CanCount => Delegates.CanCount;
+        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => Delegates.SelectAsync(request);
+        public ValueTask<int> InsertAsync(IRequest<T> request) => Delegates.InsertAsync(request);
+        public ValueTask<int> UpdateAsync(IRequest<T> request) => Delegates.UpdateAsync(request);
+        public ValueTask<int> DeleteAsync(IRequest<T> request) => Delegates.DeleteAsync(request);
+        public ValueTask<AuthResults> AuthenticateAsync(IRequest<T> request) => Delegates.AuthenticateAsync(request);
+        public ValueTask<long> CountAsync(IRequest<T> request) => Delegates.CountAsync(request);
+        public IAsyncEnumerable<T> Validate(IAsyncEnumerable<T> entities, RESTableContext context) => Delegates.Validate(entities, context);
 
-        private Selector<T> Selector { get; }
-        private Inserter<T> Inserter { get; }
-        private Updater<T> Updater { get; }
-        private Deleter<T> Deleter { get; }
-        private Authenticator<T> Authenticator { get; }
-        private Counter<T> Counter { get; }
-        private Validator<T> Validator { get; }
-        
+        private DelegateSet<T> Delegates { get; }
+
         /// <summary>
         /// All resources are constructed here
         /// </summary>
-        internal EntityResource(string fullName, RESTableAttribute attribute, Selector<T> selector, Inserter<T> inserter,
-            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Authenticator<T> authenticator,
-            Validator<T> validator, IEntityResourceProviderInternal provider, View<T>[] views)
+        internal EntityResource
+        (
+            string fullName,
+            RESTableAttribute attribute,
+            DelegateSet<T> delegates,
+            IEntityResourceProviderInternal provider,
+            View<T>[] views,
+            TypeCache typeCache,
+            ResourceCollection resourceCollection
+        )
         {
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)
@@ -118,26 +109,21 @@ namespace RESTable.Meta.Internal
             IsDDictionary = false;
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.Id;
-            Members = typeof(T).GetDeclaredProperties();
-
-            Selector = selector.AsImplemented();
-            Inserter = inserter.AsImplemented();
-            Updater = updater.AsImplemented();
-            Deleter = deleter.AsImplemented();
-            Counter = counter.AsImplemented();
-            Authenticator = authenticator.AsImplemented();
-            Validator = validator.AsImplemented();
-            
+            Members = typeCache.GetDeclaredProperties(typeof(T));
+            Delegates = delegates;
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
-            views?.ForEach(view =>
+            if (views != null)
             {
-                if (ViewDictionaryInternal.ContainsKey(view.Name))
-                    throw new InvalidResourceViewDeclarationException(view.Type, $"Found multiple views with name '{view.Name}'.");
-                ViewDictionaryInternal[view.Name] = view;
-                view.SetEntityResource(this);
-            });
+                foreach (var view in views)
+                {
+                    if (ViewDictionaryInternal.ContainsKey(view.Name))
+                        throw new InvalidResourceViewDeclarationException(view.Type, $"Found multiple views with name '{view.Name}'.");
+                    ViewDictionaryInternal[view.Name] = view;
+                    view.SetEntityResource(this);
+                }
+            }
             CheckOperationsSupport();
-            RESTableConfig.AddResource(this);
+            resourceCollection.AddResource(this);
         }
 
         private static IReadOnlyList<Method> GetAvailableMethods(Type resource)
@@ -147,42 +133,56 @@ namespace RESTable.Meta.Internal
             return resource.GetCustomAttribute<RESTableAttribute>()?.AvailableMethods;
         }
 
-        private static RESTableOperations[] NecessaryOpDefs(IEnumerable<Method> restMethods) => restMethods
-            .SelectMany(method =>
+        private static RESTableOperations[] NecessaryOpDefs(IEnumerable<Method> restMethods)
+        {
+            var methodDefinitions = new HashSet<RESTableOperations>();
+            foreach (var method in restMethods)
             {
                 switch (method)
                 {
                     case Method.HEAD:
                     case Method.REPORT:
-                    case Method.GET: return new[] {RESTableOperations.Select};
-                    case Method.POST: return new[] {RESTableOperations.Insert};
-                    case Method.PUT: return new[] {RESTableOperations.Select, RESTableOperations.Insert, RESTableOperations.Update};
-                    case Method.PATCH: return new[] {RESTableOperations.Select, RESTableOperations.Update};
-                    case Method.DELETE: return new[] {RESTableOperations.Select, RESTableOperations.Delete};
-                    default: return null;
+                    case Method.GET:
+                        methodDefinitions.Add(RESTableOperations.Select);
+                        break;
+                    case Method.POST:
+                        methodDefinitions.Add(RESTableOperations.Insert);
+                        break;
+                    case Method.PUT:
+                        methodDefinitions.Add(RESTableOperations.Select);
+                        methodDefinitions.Add(RESTableOperations.Insert);
+                        methodDefinitions.Add(RESTableOperations.Update);
+                        break;
+                    case Method.PATCH:
+                        methodDefinitions.Add(RESTableOperations.Select);
+                        methodDefinitions.Add(RESTableOperations.Update);
+                        break;
+                    case Method.DELETE:
+                        methodDefinitions.Add(RESTableOperations.Select);
+                        methodDefinitions.Add(RESTableOperations.Delete);
+                        break;
+                    default: throw new ArgumentOutOfRangeException();
                 }
-            }).Distinct().ToArray();
-
-        private Delegate GetOpDelegate(RESTableOperations op)
-        {
-            switch (op)
-            {
-                case RESTableOperations.Select: return Selector;
-                case RESTableOperations.Insert: return Inserter;
-                case RESTableOperations.Update: return Updater;
-                case RESTableOperations.Delete: return Deleter;
-                default: throw new ArgumentOutOfRangeException(nameof(op));
             }
+            return methodDefinitions.ToArray();
         }
+
+        private bool HasDelegateForOperation(RESTableOperations op) => op switch
+        {
+            RESTableOperations.Select => CanSelect,
+            RESTableOperations.Insert => CanInsert,
+            RESTableOperations.Update => CanUpdate,
+            RESTableOperations.Delete => CanDelete,
+            _ => throw new ArgumentOutOfRangeException(nameof(op))
+        };
 
         private void CheckOperationsSupport()
         {
             foreach (var op in NecessaryOpDefs(AvailableMethods))
             {
-                var del = GetOpDelegate(op);
-                if (del == null)
+                if (!HasDelegateForOperation(op))
                 {
-                    var @interface = DelegateMaker.MatchingInterface(op);
+                    var @interface = DelegateMaker.GetMatchingInterface(op);
                     throw new InvalidResourceDeclarationException(
                         $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{Name}', but " +
                         "RESTable found no implementation of the operation interface in the type declaration. Add an implementation of the " +

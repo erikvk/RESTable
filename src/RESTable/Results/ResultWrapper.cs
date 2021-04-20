@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -11,19 +12,16 @@ namespace RESTable.Results
     public abstract class ResultWrapper : IResult
     {
         /// <inheritdoc />
-        public string TraceId => Result.TraceId;
-
-        /// <inheritdoc />
         public RESTableContext Context => Result.Context;
 
         /// <inheritdoc />
         public MessageType MessageType => Result.MessageType;
 
         /// <inheritdoc />
-        public string LogMessage => Result.LogMessage;
+        public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
 
         /// <inheritdoc />
-        public string LogContent => Result.LogContent;
+        public ValueTask<string> GetLogContent() => Result.GetLogContent();
 
         /// <inheritdoc />
         public Headers Headers => Result.Headers;
@@ -57,12 +55,6 @@ namespace RESTable.Results
         public Cookies Cookies => Result.Cookies;
 
         /// <inheritdoc />
-        public bool IsSerialized => Result.IsSerialized;
-
-        /// <inheritdoc />
-        public ISerializedResult Serialize(ContentType? contentType = null) => Result.Serialize();
-
-        /// <inheritdoc />
         public void ThrowIfError() => Result.ThrowIfError();
 
         /// <inheritdoc />
@@ -72,15 +64,24 @@ namespace RESTable.Results
         public TimeSpan TimeElapsed => Result.TimeElapsed;
 
         /// <inheritdoc />
+        public IRequest Request => Result.Request;
+
+        /// <inheritdoc />
+        public IProtocolHolder ProtocolHolder => Result.ProtocolHolder;
+
+        /// <inheritdoc />
         public string Metadata => Result.Metadata;
 
         /// <inheritdoc />
         public void Dispose() => Result.Dispose();
 
+        /// <inheritdoc />
+        public ValueTask DisposeAsync() => Result.DisposeAsync();
+
         /// <summary>
         /// The wrapped result
         /// </summary>
-        protected readonly IResult Result;
+        private IResult Result { get; }
 
         protected ResultWrapper(IResult result) => Result = result;
     }

@@ -2,50 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using RESTable.WebSockets;
+using System.Threading.Tasks;
 
 namespace RESTable.Resources.Templates
 {
-    /// <summary>
-    /// Encodes an option for use in OptionsTerminal subclasses
-    /// </summary>
-    public class Option
-    {
-        /// <summary>
-        /// The command (case insensitive) to register the action for
-        /// </summary>
-        public string Command { get; }
-
-        /// <summary>
-        /// A description of the option
-        /// </summary>
-        public string Description { get; }
-
-        /// <summary>
-        /// The action to perform on the arguments (can be empty) when the command is called
-        /// </summary>
-        public Action<string[]> Action { get; }
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="Option"/> class.
-        /// </summary>
-        /// <param name="command">The command (case insensitive) to register the action for</param>
-        /// <param name="description">The command (case insensitive) to register the action for</param>
-        /// <param name="action">The action to perform on the arguments (can be empty) when the command is called</param>
-        public Option(string command, string description, Action<string[]> action)
-        {
-            if (command.Any(char.IsWhiteSpace))
-                throw new ArgumentException($"Invalid option command '{command}'. Commands cannot contain whitespace.");
-            if (command.ToUpperInvariant() == "CANCEL")
-                throw new ArgumentException($"Invalid option command '{command}'. 'Cancel' is reserved.");
-            Command = command;
-            if (string.IsNullOrWhiteSpace(description))
-                Description = "No description";
-            Description = description;
-            Action = action ?? throw new ArgumentNullException(nameof(action));
-        }
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// A simple resource template for creating terminal resources that expose a set of options. 
@@ -53,48 +13,45 @@ namespace RESTable.Resources.Templates
     /// exposed by this resource. Input and output cannot be handled by the implementing class.
     /// using commands.
     /// </summary>
-    public abstract class OptionsTerminal : ITerminal
+    public abstract class OptionsTerminal : Terminal
     {
-        /// <inheritdoc />
-        public IWebSocket WebSocket { protected get; set; }
-
         private IReadOnlyDictionary<string, Option> _options { get; set; }
 
-        void ITerminal.Open()
+        protected override async Task Open()
         {
             _options = GetOptions().SafeToDictionary(o => o.Command, StringComparer.OrdinalIgnoreCase);
-            PrintOptions();
+            await PrintOptions().ConfigureAwait(false);
         }
 
-        void ITerminal.HandleTextInput(string input)
+        public override async Task HandleTextInput(string input)
         {
             var (command, args) = input.TSplit(" ");
             switch (command.Trim())
             {
                 case var cancel when cancel.EqualsNoCase("cancel"):
-                    WebSocket.DirectToShell();
+                    await WebSocket.DirectToShell().ConfigureAwait(false);
                     break;
                 case var _ when _options.TryGetValue(command, out var option):
                     var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
-                    WebSocket.SendText($"> {option.Command}");
+                    await WebSocket.SendText($"> {option.Command}").ConfigureAwait(false);
                     try
                     {
-                        option.Action(argsArray);
-                        WebSocket.SendText("> Done!\n");
+                        await option.Action(argsArray).ConfigureAwait(false);
+                        await WebSocket.SendText("> Done!\n").ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
-                        WebSocket.SendException(e);
+                        await WebSocket.SendException(e).ConfigureAwait(false);
                     }
-                    PrintOptions();
+                    await PrintOptions().ConfigureAwait(false);
                     break;
                 case var unknown:
-                    WebSocket.SendText($"Unknown option '{unknown}'.");
+                    await WebSocket.SendText($"Unknown option '{unknown}'.").ConfigureAwait(false);
                     break;
             }
         }
 
-        private void PrintOptions()
+        private async Task PrintOptions()
         {
             var stringBuilder = new StringBuilder($"### {GetType().GetRESTableTypeName()} ###\n\n");
             if (!_options.Any())
@@ -111,13 +68,10 @@ namespace RESTable.Resources.Templates
                 first = false;
             }
             stringBuilder.Append("\n> Type an option to continue, or 'cancel' to return to the shell\n");
-            WebSocket.SendText(stringBuilder.ToString());
+            await WebSocket.SendText(stringBuilder.ToString()).ConfigureAwait(false);
         }
 
-        void ITerminal.HandleBinaryInput(byte[] input) => throw new NotImplementedException();
-        bool ITerminal.SupportsTextInput { get; } = true;
-        bool ITerminal.SupportsBinaryInput { get; } = false;
-        void IDisposable.Dispose() { }
+        protected override bool SupportsTextInput => true;
 
         /// <summary>
         /// Provides the options to make available in this resource

@@ -3,43 +3,65 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
 
 namespace RESTable.Internal.Auth
 {
-    internal static class Authenticator
+    /// <summary>
+    /// The authenticator handles authorization and authentication of clients
+    /// </summary>
+    public class Authenticator
     {
-        internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
-        internal static void NewState() => ApiKeys = new Dictionary<string, AccessRights>();
-        internal const string AuthHeaderMask = "*******";
+        internal IDictionary<string, AccessRights> ApiKeys { get; private set; }
+        internal HashSet<Uri> AllowedOrigins { get; private set; }
 
-        internal static void RunResourceAuthentication<T>(this IRequest<T> request, IEntityResource<T> resource) where T : class
+        private const string AuthHeaderMask = "*******";
+
+        private RESTableConfiguration Configuration { get; }
+        private RootAccess RootAccess { get; }
+
+        public Authenticator(RESTableConfiguration configuration, RootAccess rootAccess)
         {
-            if (request.Context.Client.ResourceAuthMappings.ContainsKey(resource))
-                return;
-            var authResults = resource.Authenticate(request);
-            if (authResults.Success)
-                request.Context.Client.ResourceAuthMappings[resource] = default;
-            else throw new FailedResourceAuthentication(authResults.Reason);
+            Configuration = configuration;
+            RootAccess = rootAccess;
         }
 
-        internal static AccessRights GetAccessRights(string apiKeyHash)
+        /// <summary>
+        /// Returns true if and only if this client is considered authenticated. This is a necessary precondition for 
+        /// being included in a context. If false, a NotAuthorized result object is returned in the out parameter, that 
+        /// can be returned to the client.
+        /// </summary>
+        /// <param name="context">The context to authenticate</param>
+        /// <param name="uri">The URI of the request</param>
+        /// <param name="headers">The headers of the request</param>
+        /// <param name="error">The error result, if not authenticated</param>
+        /// <returns></returns>
+        public bool TryAuthenticate(RESTableContext context, ref string uri, out Unauthorized error, Headers headers = null)
         {
-            return apiKeyHash != null && ApiKeys.TryGetValue(apiKeyHash, out var rights) ? rights : null;
+            context.Client.AccessRights = Configuration.RequireApiKey switch
+            {
+                true => GetAccessRights(ref uri, headers),
+                false => RootAccess
+            };
+            if (context.Client.AccessRights == null)
+            {
+                error = new Unauthorized();
+                error.SetContext(context);
+                if (headers?.Metadata == "full")
+                    error.Headers.Metadata = error.Metadata;
+                return false;
+            }
+            error = null;
+            return true;
         }
 
-        internal static AccessRights GetAccessRights(IHeaders headers)
-        {
-            string s = null;
-            return GetAccessRights(ref s, headers);
-        }
-
-        internal static AccessRights GetAccessRights(ref string uri, IHeaders headers)
+        private AccessRights GetAccessRights(ref string uri, IHeaders headers)
         {
             string authorizationHeader;
-            if (uri != null && Regex.Match(uri, RegEx.UriKey) is Match keyMatch && keyMatch.Success)
+            if (uri != null && Regex.Match(uri, RegEx.UriKey) is Match {Success: true} keyMatch)
             {
                 var keyGroup = keyMatch.Groups["key"];
                 uri = uri.Remove(keyGroup.Index, keyGroup.Length);
@@ -61,6 +83,16 @@ namespace RESTable.Internal.Auth
                 default: return null;
             }
             return ApiKeys.TryGetValue(key.SHA256(), out var _rights) ? _rights : null;
+        }
+
+        internal async Task RunResourceAuthentication<T>(IRequest<T> request, IEntityResource<T> resource) where T : class
+        {
+            if (request.Context.Client.ResourceAuthMappings.ContainsKey(resource))
+                return;
+            var authResults = await resource.AuthenticateAsync(request).ConfigureAwait(false);
+            if (authResults.Success)
+                request.Context.Client.ResourceAuthMappings[resource] = default;
+            else throw new FailedResourceAuthentication(authResults.FailedReason);
         }
     }
 }

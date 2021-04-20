@@ -3,7 +3,7 @@
     /// <summary>
     /// Contains a description of a resource size in memory
     /// </summary>
-    public struct ResourceSize
+    public readonly struct ResourceSize
     {
         /// <summary>
         /// The size in bytes

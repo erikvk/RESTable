@@ -8,7 +8,7 @@ namespace RESTable.Internal
     /// <summary>
     /// Encodes an operator, used in conditions
     /// </summary>
-    public struct Operator
+    public readonly struct Operator
     {
         /// <summary>
         /// The code for this operator
@@ -18,29 +18,23 @@ namespace RESTable.Internal
         /// <summary>
         /// The common string representation of this operator
         /// </summary>
-        internal string Common
+        internal string Common => OpCode switch
         {
-            get
-            {
-                switch (OpCode)
-                {
-                    case Operators.EQUALS: return "=";
-                    case Operators.NOT_EQUALS: return "!=";
-                    case Operators.LESS_THAN: return "<";
-                    case Operators.GREATER_THAN: return ">";
-                    case Operators.LESS_THAN_OR_EQUALS: return "<=";
-                    case Operators.GREATER_THAN_OR_EQUALS: return ">=";
-                    default: throw new ArgumentOutOfRangeException();
-                }
-            }
-        }
+            Operators.EQUALS => "=",
+            Operators.NOT_EQUALS => "!=",
+            Operators.LESS_THAN => "<",
+            Operators.GREATER_THAN => ">",
+            Operators.LESS_THAN_OR_EQUALS => "<=",
+            Operators.GREATER_THAN_OR_EQUALS => ">=",
+            _ => throw new ArgumentOutOfRangeException()
+        };
 
         /// <summary>
         /// The SQL string representation of this operator
         /// </summary>
         public string SQL => OpCode == Operators.NOT_EQUALS ? "<>" : Common;
 
-        internal bool Equality => OpCode == Operators.EQUALS || OpCode == Operators.NOT_EQUALS;
+        internal bool Equality => OpCode is Operators.EQUALS or Operators.NOT_EQUALS;
         internal bool Compare => !Equality;
         public override bool Equals(object obj) => obj is Operator op && op.OpCode == OpCode;
         public bool Equals(Operator other) => OpCode == other.OpCode;
@@ -72,19 +66,16 @@ namespace RESTable.Internal
             }
         }
 
-        private static Operator Parse(string common)
+        private static Operator Parse(string common) => common switch
         {
-            switch (common)
-            {
-                case "=": return Operators.EQUALS;
-                case "!=": return Operators.NOT_EQUALS;
-                case "<": return Operators.LESS_THAN;
-                case ">": return Operators.GREATER_THAN;
-                case "<=": return Operators.LESS_THAN_OR_EQUALS;
-                case ">=": return Operators.GREATER_THAN_OR_EQUALS;
-                default: throw new ArgumentException(nameof(common));
-            }
-        }
+            "=" => Operators.EQUALS,
+            "!=" => Operators.NOT_EQUALS,
+            "<" => Operators.LESS_THAN,
+            ">" => Operators.GREATER_THAN,
+            "<=" => Operators.LESS_THAN_OR_EQUALS,
+            ">=" => Operators.GREATER_THAN_OR_EQUALS,
+            _ => throw new ArgumentException(nameof(common))
+        };
 
         internal static bool TryParse(string common, out Operator op)
         {
@@ -100,6 +91,6 @@ namespace RESTable.Internal
             }
         }
 
-        public static implicit operator Operator(Operators op) => new Operator(op);
+        public static implicit operator Operator(Operators op) => new(op);
     }
 }

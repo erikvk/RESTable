@@ -1,9 +1,10 @@
 ﻿using System;
-using RESTable.Requests;
+using System.Threading.Tasks;
 
 namespace RESTable
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="RESTable.ITraceable" />
+    /// <inheritdoc cref="RESTable.IHeaderHolder" />
     /// <summary>
     /// Defines the operations of something that can be logged
     /// </summary>
@@ -17,27 +18,12 @@ namespace RESTable
         /// <summary>
         /// The message to log
         /// </summary>
-        string LogMessage { get; }
-
+        ValueTask<string> GetLogMessage();
+        
         /// <summary>
         /// The content to log
         /// </summary>
-        string LogContent { get; }
-
-        /// <summary>
-        /// The headers of the logable entity
-        /// </summary>
-        Headers Headers { get; }
-
-        /// <summary>
-        /// A string cache of the headers
-        /// </summary>
-        string HeadersStringCache { get; set; }
-
-        /// <summary>
-        /// Should headers be excluded?
-        /// </summary>
-        bool ExcludeHeaders { get; }
+        ValueTask<string> GetLogContent();
 
         /// <summary>
         /// The date and time of this logable instance

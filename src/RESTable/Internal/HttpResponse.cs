@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using RESTable.Requests;
 
@@ -13,14 +12,12 @@ namespace RESTable.Internal
         public ContentType? ContentType { get; }
         public Stream Body { get; }
         public Headers Headers { get; }
-        internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
-        public string TraceId { get; }
+        internal bool IsSuccessStatusCode => StatusCode is >= (HttpStatusCode) 200 and < (HttpStatusCode) 300;
         public RESTableContext Context { get; }
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes) {Headers.Info}";
 
         private HttpResponse(ITraceable trace)
         {
-            TraceId = trace.TraceId;
             Context = trace.Context;
             Headers = new Headers();
         }
@@ -37,7 +34,7 @@ namespace RESTable.Internal
             StatusDescription = webResponse.StatusDescription;
             ContentLength = webResponse.ContentLength;
             ContentType = webResponse.ContentType;
-            Body = webResponse.GetResponseStream() ?? throw new NullReferenceException("ResponseStream was null");
+            Body = webResponse.GetResponseStream();
             foreach (var header in webResponse.Headers.AllKeys)
                 Headers[header] = webResponse.Headers[header];
         }

@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Consuming%20a%20RESTable%20API/URI/
+permalink: /Consuming%20a%20RESTable%20API/URI/
 ---
 
 # URI
@@ -71,16 +71,20 @@ rename-scheme = property-locator, "->", ? A new name for the property (string) ?
 ### Instances
 
 ```
-https://RESTablehelp.mopedo-drtb.com:8282/api
-https://RESTablehelp.mopedo-drtb.com:8282/api/_
-https://RESTablehelp.mopedo-drtb.com:8282/api/_/_
-https://RESTablehelp.mopedo-drtb.com:8282/api/_/_/_
-https://RESTablehelp.mopedo-drtb.com:8282/api/_/_/limit=2
-https://RESTablehelp.mopedo-drtb.com:8282/api/_/name=Batman/limit=2
-https://RESTablehelp.mopedo-drtb.com:8282/api?/superhero/name=Batman/limit=2
-https://RESTablehelp.mopedo-drtb.com:8282/api?//name=Batman/limit=2
-https://RESTablehelp.mopedo-drtb.com:8282/api?///limit=2
-https://RESTablehelp.mopedo-drtb.com:8282/api?///
+<api-root> = "/api"
+```
+
+```
+/api
+/api/_
+/api/_/_
+/api/_/_/_
+/api/_/_/limit=2
+/api/_/name=Batman/limit=2
+/api?/superhero/name=Batman/limit=2
+/api?//name=Batman/limit=2
+/api?///limit=2
+/api?///
 ```
 
 ## Case sensitivity

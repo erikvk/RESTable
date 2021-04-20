@@ -1,27 +1,38 @@
 ﻿using System;
-using System.IO;
 
 namespace RESTable.Results
+{
+    public interface ISerializedResult : ILogable, ITraceable, IDisposable, IAsyncDisposable
     {
-        /// <inheritdoc cref="IResult" />
-        /// <inheritdoc cref="IDisposable" />
         /// <summary>
-        /// Represents a result that is ready to be sent back to the client, for example 
-        /// in an HTTP response or a WebSocket message.
+        /// The result that was serialized
         /// </summary>
-        public interface ISerializedResult : IResult
-        {
-            /// <summary>
-            /// The serialized body contained in the result. Can be seekable or non-seekable.
-            /// </summary>
-            Stream Body { get; set; }
-        }
-    
-        /// <inheritdoc cref="IResult{T}" />
-        /// <inheritdoc cref="ISerializedResult" />
+        IResult Result { get; }
+
         /// <summary>
-        /// Represents a result that is ready to be sent back to the client, for example 
-        /// in an HTTP response or a WebSocket message.
+        /// The serialized body contained in the result. Can be seekable or non-seekable.
         /// </summary>
-        public interface ISerializedResult<T> : IResult<T>, ISerializedResult where T : class { }
+        Body Body { get; }
+
+        /// <summary>
+        /// The time it took for RESTable to generate and serialize the result.
+        /// </summary>
+        TimeSpan TimeElapsed { get; }
+
+        /// <summary>
+        /// The number of entities in the collection. Should be set by the serializer, since it is unknown
+        /// until the collection is iterated.
+        /// </summary>
+        long EntityCount { get; set; }
+
+        /// <summary>
+        /// Is this a paged result with a next page?
+        /// </summary>
+        bool HasNextPage { get; }
+        
+        /// <summary>
+        /// Is this a paged result with a previous page?
+        /// </summary>
+        bool HasPreviousPage { get; }
     }
+}

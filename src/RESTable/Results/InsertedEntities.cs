@@ -14,7 +14,7 @@ namespace RESTable.Results
         /// </summary>
         public int InsertedCount { get; }
 
-        internal InsertedEntities(IRequest request, int count) : base(request)
+        public InsertedEntities(IRequest request, int count) : base(request)
         {
             InsertedCount = count;
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;
