@@ -24,11 +24,11 @@ namespace RESTable.AspNetCore
         /// <returns></returns>
         public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder)
         {
-            var configurator = builder.ApplicationServices.GetService<RESTableConfigurator>();
+            var configurator = builder.ApplicationServices.GetRequiredService<RESTableConfigurator>();
             if (!configurator.IsConfigured)
                 configurator.ConfigureRESTable();
-            var config = builder.ApplicationServices.GetService<RESTableConfiguration>();
-            var authenticator = builder.ApplicationServices.GetService<Authenticator>();
+            var config = builder.ApplicationServices.GetRequiredService<RESTableConfiguration>();
+            var authenticator = builder.ApplicationServices.GetRequiredService<Authenticator>();
 
             RootUri = config.RootUri;
             Template = RootUri + "/{resource?}/{conditions?}/{metaconditions?}";

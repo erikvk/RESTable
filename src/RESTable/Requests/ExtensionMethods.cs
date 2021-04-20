@@ -103,7 +103,8 @@ namespace RESTable.Requests
         public static IRequest<T> WithConditions<T>(this IRequest<T> request, IEnumerable<Condition<T>> conditions) where T : class
         {
             if (request == null) return null;
-            request.Conditions = conditions?.ToList();
+            if (conditions == null) return request;
+            request.Conditions.AddRange(conditions);
             return request;
         }
 
@@ -135,7 +136,7 @@ namespace RESTable.Requests
                 condition = null;
                 return null;
             }
-            var termFactory = request.GetService<TermFactory>();
+            var termFactory = request.GetRequiredService<TermFactory>();
             var target = request.Target;
             condition = new Condition<T>
             (
@@ -152,7 +153,7 @@ namespace RESTable.Requests
         public static IRequest<T> WithConditions<T>(this IRequest<T> request, params (string key, Operators op, object value)[] conditions) where T : class
         {
             if (request == null) return null;
-            var termFactory = request.GetService<TermFactory>();
+            var termFactory = request.GetRequiredService<TermFactory>();
             var target = request.Target;
 
             IEnumerable<Condition<T>> Converter()

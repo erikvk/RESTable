@@ -34,7 +34,7 @@ namespace RESTable
                 errorMessage: "Expected an aggregator template as request body"
             ).ConfigureAwait(false);
 
-            var jsonProvider = request.GetService<IJsonProvider>();
+            var jsonProvider = request.GetRequiredService<IJsonProvider>();
 
             async Task<object> Populator(object node)
             {

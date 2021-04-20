@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton<WebSocketManager>();
             serviceCollection.TryAddSingleton<RESTableConfiguration>();
             serviceCollection.TryAddSingleton<RESTableConfigurator>();
-            serviceCollection.TryAddSingleton<TermFactory>(pr => pr.GetService<TypeCache>().TermFactory);
+            serviceCollection.TryAddSingleton<TermFactory>(pr => pr.GetRequiredService<TypeCache>().TermFactory);
             serviceCollection.TryAddSingleton<ConditionRedirector>();
             serviceCollection.TryAddSingleton<ResourceCollection>();
             serviceCollection.TryAddSingleton<TerminalResourceProvider>();

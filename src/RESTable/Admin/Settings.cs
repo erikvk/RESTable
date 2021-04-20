@@ -52,7 +52,7 @@ namespace RESTable.Admin
 
         public IEnumerable<Settings> Select(IRequest<Settings> request)
         {
-            var configuration = request.GetService<RESTableConfiguration>();
+            var configuration = request.GetRequiredService<RESTableConfiguration>();
             yield return new Settings(configuration);
         }
     }

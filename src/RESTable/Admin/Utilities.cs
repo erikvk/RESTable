@@ -22,7 +22,7 @@ namespace RESTable.Admin
             (
                 command: "ReloadConfigFile",
                 description: "Reloads the configuration file and updates the access rights for API keys",
-                action: _ => Services.GetService<RESTableConfigurator>().UpdateConfiguration()
+                action: _ => Services.GetRequiredService<RESTableConfigurator>().UpdateConfiguration()
             );
         }
     }

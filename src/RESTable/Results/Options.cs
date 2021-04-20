@@ -28,8 +28,8 @@ namespace RESTable.Results
             var options = new Options(parameters);
             if (!parameters.IsValid)
                 return options;
-            var configuration = parameters.Context.Services.GetService<RESTableConfiguration>();
-            var authenticator = parameters.Context.Services.GetService<Authenticator>();
+            var configuration = parameters.Context.Services.GetRequiredService<RESTableConfiguration>();
+            var authenticator = parameters.Context.Services.GetRequiredService<Authenticator>();
             if (configuration.AllowAllOrigins)
                 options.Headers.AccessControlAllowOrigin = "*";
             else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && authenticator.AllowedOrigins.Contains(origin))

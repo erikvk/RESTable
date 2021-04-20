@@ -34,7 +34,7 @@ namespace RESTable.Internal
         /// </summary>
         public string SQL => OpCode == Operators.NOT_EQUALS ? "<>" : Common;
 
-        internal bool Equality => OpCode == Operators.EQUALS || OpCode == Operators.NOT_EQUALS;
+        internal bool Equality => OpCode is Operators.EQUALS or Operators.NOT_EQUALS;
         internal bool Compare => !Equality;
         public override bool Equals(object obj) => obj is Operator op && op.OpCode == OpCode;
         public bool Equals(Operator other) => OpCode == other.OpCode;
@@ -91,6 +91,6 @@ namespace RESTable.Internal
             }
         }
 
-        public static implicit operator Operator(Operators op) => new Operator(op);
+        public static implicit operator Operator(Operators op) => new(op);
     }
 }

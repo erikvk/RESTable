@@ -113,7 +113,7 @@ namespace RESTable.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             return request
-                .GetService<ResourceCollection>()
+                .GetRequiredService<ResourceCollection>()
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.Name)
                 .Select(Make<Resource>);

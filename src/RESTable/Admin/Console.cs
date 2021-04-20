@@ -53,7 +53,7 @@ namespace RESTable.Admin
 
         internal static async Task Log(IRequest request, ISerializedResult serializedResult)
         {
-            JsonProvider ??= request.GetService<IJsonProvider>();
+            JsonProvider ??= request.GetRequiredService<IJsonProvider>();
             var result = serializedResult.Result;
             var milliseconds = result.TimeElapsed.TotalMilliseconds;
             if (result is WebSocketUpgradeSuccessful) return;

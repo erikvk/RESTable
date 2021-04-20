@@ -1,4 +1,4 @@
-﻿namespace RESTable.Tests
+﻿namespace RESTable.Tests.OperationsTests
 {
     public class OperationsTestsFlags
     {

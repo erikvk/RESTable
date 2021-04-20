@@ -576,7 +576,7 @@ namespace RESTable
             }
             if (request.Headers.Metadata.EqualsNoCase("full"))
                 error.Headers.Metadata = error.Metadata;
-            error.Headers.Version = request.GetService<RESTableConfiguration>().Version;
+            error.Headers.Version = request.GetRequiredService<RESTableConfiguration>().Version;
             return error;
         }
 

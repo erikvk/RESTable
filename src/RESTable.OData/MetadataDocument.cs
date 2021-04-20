@@ -78,7 +78,7 @@ namespace RESTable.OData
         /// <inheritdoc />
         public BinaryResult Select(IRequest<MetadataDocument> request)
         {
-            var configurator = request.GetService<RESTableConfigurator>();
+            var configurator = request.GetRequiredService<RESTableConfigurator>();
 
             async Task WriteStream(Stream stream, CancellationToken cancellationToken)
             {

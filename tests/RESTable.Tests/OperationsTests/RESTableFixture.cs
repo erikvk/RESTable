@@ -1,14 +1,16 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.Requests;
 
-namespace RESTable.Tests
+namespace RESTable.Tests.OperationsTests
 {
     public class RESTableFixture
     {
         public RESTableConfigurator Configurator { get; }
         public IServiceProvider ServiceProvider { get; }
         public OperationsTestsFlags OperationsTestsFlags { get; }
-
+        public RESTableContext Context { get; }
+        
         public RESTableFixture()
         {
             OperationsTestsFlags = new OperationsTestsFlags();
@@ -18,7 +20,9 @@ namespace RESTable.Tests
                 .AddSingleton(OperationsTestsFlags)
                 .BuildServiceProvider();
             Configurator = ServiceProvider
-                .GetService<RESTableConfigurator>();
+                .GetRequiredService<RESTableConfigurator>();
+            var client = ServiceProvider.GetRequiredService<RootClient>();
+            Context = new RESTableContext(client, ServiceProvider);
             Configurator.ConfigureRESTable();
         }
     }

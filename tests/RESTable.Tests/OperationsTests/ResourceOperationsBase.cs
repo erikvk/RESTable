@@ -3,7 +3,7 @@ using System.Linq;
 
 #pragma warning disable 1998
 
-namespace RESTable.Tests
+namespace RESTable.Tests.OperationsTests
 {
     public class ResourceOperationsBase
     {

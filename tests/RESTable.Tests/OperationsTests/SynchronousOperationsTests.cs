@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 using RESTable.Results;
 using Xunit;
 
-namespace RESTable.Tests
+namespace RESTable.Tests.OperationsTests
 {
-    public class SynchronousOperationsTests : TestBase<ResourceSync>
+    public class SynchronousOperationsTests : OperationsTestBase<ResourceSync>
     {
         [Fact]
         public async Task SelectCallsSelector()

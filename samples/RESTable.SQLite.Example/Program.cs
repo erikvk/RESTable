@@ -24,7 +24,7 @@ namespace RESTable.SQLite.Example
                 .AddJsonProvider()
                 .AddRESTable()
                 .BuildServiceProvider()
-                .GetService<RESTableConfigurator>()
+                .GetRequiredService<RESTableConfigurator>()
                 .ConfigureRESTable(requireApiKey: true, configFilePath: "./Config.xml");
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers

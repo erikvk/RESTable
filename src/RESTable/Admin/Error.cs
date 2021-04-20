@@ -110,7 +110,7 @@ namespace RESTable.Admin
             var nl = Environment.NewLine;
             var stackTrace = string.Join($"{nl}§§§ INNER: §§§{nl}", errorStackTrace, innerStackTrace);
             var totalMessage = errorResult.ToString();
-            var errorsToKeep = request.GetService<RESTableConfiguration>().NrOfErrorsToKeep;
+            var errorsToKeep = request.GetRequiredService<RESTableConfiguration>().NrOfErrorsToKeep;
             if (Counter > errorsToKeep && Counter % DeleteBatch == 0)
             {
                 var cutoffId = Counter - errorsToKeep;

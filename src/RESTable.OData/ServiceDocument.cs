@@ -36,7 +36,7 @@ namespace RESTable.OData
         public IEnumerable<ServiceDocument> Select(IRequest<ServiceDocument> request) => Metadata
             .Get(
                 level: OnlyResources,
-                configurator: request.GetService<RESTableConfigurator>()
+                configurator: request.GetRequiredService<RESTableConfigurator>()
             )
             .EntityResources
             .Select(resource => new ServiceDocument

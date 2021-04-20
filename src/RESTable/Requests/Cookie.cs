@@ -10,7 +10,7 @@ namespace RESTable.Requests
     /// Represents a cookie, as used in RESTable requests and results. Two cookies with the same name are
     /// considered equal, and new values will always replace existing ones in hash collections.
     /// </summary>
-    public struct Cookie : IEquatable<Cookie>
+    public readonly struct Cookie : IEquatable<Cookie>
     {
         /// <summary>
         /// The name of the cookie

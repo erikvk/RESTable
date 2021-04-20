@@ -8,7 +8,7 @@ namespace RESTable
     /// <summary>
     /// Describes a content type
     /// </summary>
-    public struct ContentType
+    public readonly struct ContentType
     {
         /// <summary>
         /// The media type string, for example "application/json" 

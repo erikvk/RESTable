@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using Xunit;
 
-namespace RESTable.Tests
+namespace RESTable.Tests.OperationsTests
 {
-    public class BothOperationsTests : TestBase<ResourceBoth>
+    public class BothOperationsTests : OperationsTestBase<ResourceBoth>
     {
         [Fact]
         public async Task SelectCallsAsyncSelector()

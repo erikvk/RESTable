@@ -7,7 +7,7 @@ using RESTable.Resources.Operations;
 
 #pragma warning disable 1998
 
-namespace RESTable.Tests
+namespace RESTable.Tests.OperationsTests
 {
     [RESTable]
     public class ResourceBoth :
@@ -27,73 +27,73 @@ namespace RESTable.Tests
     {
         public async IAsyncEnumerable<ResourceBoth> SelectAsync(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().AsyncSelectorWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().AsyncSelectorWasCalled = true;
             yield break;
         }
 
         public async ValueTask<int> InsertAsync(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().AsyncInserterWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().AsyncInserterWasCalled = true;
             return 0;
         }
 
         public async ValueTask<int> UpdateAsync(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().AsyncUpdaterWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().AsyncUpdaterWasCalled = true;
             return 0;
         }
 
         public async ValueTask<int> DeleteAsync(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().AsyncDeleterWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().AsyncDeleterWasCalled = true;
             return 0;
         }
 
         public async ValueTask<long> CountAsync(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().AsyncCounterWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().AsyncCounterWasCalled = true;
             return 1;
         }
 
         public async ValueTask<AuthResults> AuthenticateAsync(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().AsyncAuthenticatorWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().AsyncAuthenticatorWasCalled = true;
             return request.Headers["FailMe"] != "yes";
         }
 
         public IEnumerable<ResourceBoth> Select(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().SelectorWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().SelectorWasCalled = true;
             yield break;
         }
 
         public int Insert(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().InserterWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().InserterWasCalled = true;
             return 0;
         }
 
         public int Update(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().UpdaterWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().UpdaterWasCalled = true;
             return 0;
         }
 
         public int Delete(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().DeleterWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().DeleterWasCalled = true;
             return 0;
         }
 
         public long Count(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().CounterWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().CounterWasCalled = true;
             return 1;
         }
 
         public AuthResults Authenticate(IRequest<ResourceBoth> request)
         {
-            request.GetService<OperationsTestsFlags>().AuthenticatorWasCalled = true;
+            request.GetRequiredService<OperationsTestsFlags>().AuthenticatorWasCalled = true;
             return request.Headers["FailMe"] != "yes";
         }
     }

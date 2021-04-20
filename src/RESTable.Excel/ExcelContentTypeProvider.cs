@@ -129,7 +129,7 @@ namespace RESTable.Excel
                 await writeEntities(collection).ConfigureAwait(false);
                 if (currentRow == 1) return 0;
                 worksheet.Cells.AutoFitColumns(0);
-                await package.SaveAsync(cancellationToken).ConfigureAwait(false);
+                package.Save();
                 return (long) currentRow - 1;
             }
             catch (Exception e)

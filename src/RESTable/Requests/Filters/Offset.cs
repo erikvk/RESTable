@@ -9,31 +9,35 @@ namespace RESTable.Requests.Filters
     /// <summary>
     /// Encodes a numeric offset used in requests. Can be implicitly converted from int.    
     /// </summary>
-    public struct Offset : IFilter
+    public readonly struct Offset : IFilter
     {
-        public readonly long Number;
+        public static Offset NoOffset => 0;
+        
+        public readonly int Number;
+
+        public static implicit operator Offset(int nr) => new(nr);
+        public static explicit operator int(Offset limit) => limit.Number;
+
+        public static bool operator ==(Offset o, int i) => o.Number == i;
+        public static bool operator !=(Offset o, int i) => o.Number != i;
+        public static bool operator <(Offset o, int i) => o.Number < i;
+        public static bool operator >(Offset o, int i) => o.Number > i;
+        public static bool operator <=(Offset o, int i) => o.Number <= i;
+        public static bool operator >=(Offset o, int i) => o.Number >= i;
+
+        private Offset(int nr) => Number = nr;
+
         public bool Equals(Offset other) => Number == other.Number;
         public override bool Equals(object obj) => obj is Offset offset && Equals(offset);
         public override int GetHashCode() => Number.GetHashCode();
         public override string ToString() => Number.ToString();
-        public static Offset NoOffset => (Offset) 0;
-        public static explicit operator Offset(int nr) => new Offset(nr);
-        public static explicit operator long(Offset limit) => limit.Number;
-        public static bool operator ==(Offset o, long i) => o.Number == i;
-        public static bool operator !=(Offset o, long i) => o.Number != i;
-        public static bool operator <(Offset o, long i) => o.Number < i;
-        public static bool operator >(Offset o, long i) => o.Number > i;
-        public static bool operator <=(Offset o, long i) => o.Number <= i;
-        public static bool operator >=(Offset o, long i) => o.Number >= i;
-
-        private Offset(long nr) => Number = nr;
 
         /// <summary>
         /// Applies the offset to an IEnumerable of entities
         /// </summary>
         public async IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
         {
-            switch ((int) Number)
+            switch (Number)
             {
                 case int.MaxValue:
                 case int.MinValue:
@@ -46,15 +50,15 @@ namespace RESTable.Requests.Filters
                         yield return item;
                     yield break;
                 }
-                case var positive when positive > 0:
+                case > 0:
                 {
-                    await foreach (var item in entities.Skip(positive).ConfigureAwait(false))
+                    await foreach (var item in entities.Skip(Number).ConfigureAwait(false))
                         yield return item;
                     yield break;
                 }
-                case var negative:
+                case < 0:
                 {
-                    await foreach (var item in NegativeSkip(entities, -negative).ConfigureAwait(false))
+                    await foreach (var item in NegativeSkip(entities, -Number).ConfigureAwait(false))
                         yield return item;
                     yield break;
                 }

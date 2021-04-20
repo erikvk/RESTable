@@ -50,7 +50,7 @@ namespace RESTable
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
             var accessrights = request.Context.Client.AccessRights;
-            yield return Make(MetadataLevel.Full, accessrights, request.GetService<RESTableConfigurator>());
+            yield return Make(MetadataLevel.Full, accessrights, request.GetRequiredService<RESTableConfigurator>());
         }
 
         /// <summary>

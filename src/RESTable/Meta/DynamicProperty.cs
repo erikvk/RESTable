@@ -30,8 +30,7 @@ namespace RESTable.Meta
         /// if no dynamic property can be found in the target entity?</param>
         /// <returns>A dynamic property that represents the runtime property
         /// described by the key string</returns>
-        public static DynamicProperty Parse(string keyString, bool declaredFallback = false) =>
-            new DynamicProperty(keyString, declaredFallback);
+        public static DynamicProperty Parse(string keyString, bool declaredFallback = false) => new(keyString, declaredFallback);
 
         internal void SetName(string name) => Name = name;
 

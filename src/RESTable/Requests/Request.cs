@@ -122,7 +122,7 @@ namespace RESTable.Requests
             resourceSpecifier: Resource.Name,
             viewName: Target is IView ? Target.Name : null,
             conditions: Conditions,
-            metaConditions: MetaConditions.AsConditionList(),
+            metaConditions: MetaConditions.GetEnumerable(),
             protocolProvider: CachedProtocolProvider.ProtocolProvider,
             macro: Parameters.UriComponents.Macro
         );
@@ -242,7 +242,7 @@ namespace RESTable.Requests
                     {
                         if (entity.RequiresAuthentication)
                         {
-                            var authenticator = this.GetService<Authenticator>();
+                            var authenticator = this.GetRequiredService<Authenticator>();
                             await authenticator.RunResourceAuthentication(this, entity).ConfigureAwait(false);
                         }
                         if (MetaConditions.SafePost != null)
@@ -311,8 +311,8 @@ namespace RESTable.Requests
             Target = resource;
             Body = parameters.Body;
             Stopwatch = new Stopwatch();
-            var termFactory = this.GetService<TermFactory>();
-            Configuration = this.GetService<RESTableConfiguration>();
+            var termFactory = this.GetRequiredService<TermFactory>();
+            Configuration = this.GetRequiredService<RESTableConfiguration>();
 
             try
             {
@@ -330,7 +330,7 @@ namespace RESTable.Requests
                 }
                 if (parameters.UriComponents.Conditions.Count > 0)
                 {
-                    var cache = this.GetService<ConditionCache<T>>();
+                    var cache = this.GetRequiredService<ConditionCache<T>>();
                     Conditions = Condition<T>.Parse(parameters.UriComponents.Conditions, Target, termFactory, cache);
                 }
                 if (parameters.Headers.UnsafeOverride)
@@ -473,7 +473,7 @@ namespace RESTable.Requests
 
         public async Task<IRequest> GetCopy(string newProtocol = null)
         {
-            var protocolController = this.GetService<ProtocolProviderManager>();
+            var protocolController = this.GetRequiredService<ProtocolProviderManager>();
             return new Request<T>
             (
                 resource: Resource,

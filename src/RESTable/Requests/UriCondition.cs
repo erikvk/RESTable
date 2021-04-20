@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using RESTable.Internal;
 using static System.StringComparison;
+using static RESTable.Requests.RESTableMetaCondition;
 
 namespace RESTable.Requests
 {
@@ -45,7 +46,7 @@ namespace RESTable.Requests
         /// </summary>
         public UriCondition(RESTableMetaCondition metaCondition, string valueLiteral)
         {
-            if (metaCondition < RESTableMetaCondition.Unsafe || metaCondition > RESTableMetaCondition.Safepost)
+            if (metaCondition is < Unsafe or > Safepost)
                 throw new ArgumentOutOfRangeException(nameof(metaCondition));
             Key = metaCondition.ToString().ToLower();
             Operator = Operator.EQUALS;

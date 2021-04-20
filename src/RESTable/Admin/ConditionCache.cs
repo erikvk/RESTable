@@ -39,7 +39,7 @@ namespace RESTable.Admin
         public IEnumerable<ConditionCache> Select(IRequest<ConditionCache> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var resources = request.GetService<ResourceCollection>();
+            var resources = request.GetRequiredService<ResourceCollection>();
             foreach (var resource in resources)
             {
                 var cache = (IConditionCache) request.GetService(typeof(ConditionCache<>).MakeGenericType(resource.Type));

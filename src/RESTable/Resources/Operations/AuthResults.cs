@@ -3,7 +3,7 @@
     /// <summary>
     /// Contains the results of a call to IsAuthenticated()
     /// </summary>
-    public struct AuthResults
+    public readonly struct AuthResults
     {
         public bool Success { get; }
         public string FailedReason { get; }

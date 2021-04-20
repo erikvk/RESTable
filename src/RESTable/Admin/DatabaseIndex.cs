@@ -104,7 +104,7 @@ namespace RESTable.Admin
         public async IAsyncEnumerable<DatabaseIndex> SelectAsync(IRequest<DatabaseIndex> request)
         {
             var entityResourceProviders = request
-                .GetService<ResourceFactory>()
+                .GetRequiredService<ResourceFactory>()
                 .EntityResourceProviders
                 .Values;
             foreach (var indexer in entityResourceProviders
@@ -122,7 +122,7 @@ namespace RESTable.Admin
             var entities = request.GetInputEntitiesAsync();
             if (entities == null) return 0;
             var entityResourceProviders = request
-                .GetService<ResourceFactory>()
+                .GetRequiredService<ResourceFactory>()
                 .EntityResourceProviders;
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
@@ -140,7 +140,7 @@ namespace RESTable.Admin
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
             var entityResourceProviders = request
-                .GetService<ResourceFactory>()
+                .GetRequiredService<ResourceFactory>()
                 .EntityResourceProviders;
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
@@ -156,7 +156,7 @@ namespace RESTable.Admin
             var count = 0;
             var entities = request.GetInputEntitiesAsync();
             var entityResourceProviders = request
-                .GetService<ResourceFactory>()
+                .GetRequiredService<ResourceFactory>()
                 .EntityResourceProviders;
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {

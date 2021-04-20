@@ -43,7 +43,7 @@ namespace RESTable.Admin
             if (resourceCondition?.Value is not string resourceName)
                 throw new Exception("Invalid syntax in request to RESTable.Schema. Format: " +
                                     "/RESTable.Admin.Schema/resource=<insert_resource_name_here>");
-            var resource = request.GetService<ResourceCollection>().FindResource(resourceName) as IEntityResource;
+            var resource = request.GetRequiredService<ResourceCollection>().FindResource(resourceName) as IEntityResource;
             if (resource?.IsDynamic != false)
                 yield break;
             yield return new Schema

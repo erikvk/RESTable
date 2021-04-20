@@ -74,9 +74,6 @@ namespace RESTable.Requests
         internal bool HasProcessors { get; private set; }
         internal bool CanUseExternalCounter { get; private set; } = true;
 
-        private static string AllMetaConditions =>
-            $"{string.Join(", ", Enum.GetNames(typeof(RESTableMetaCondition)).Except(new[] {"New", "Delete"}))}";
-
         internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource, TermFactory termFactory)
         {
             if (uriMetaConditions?.Any() != true) return null;
@@ -94,8 +91,10 @@ namespace RESTable.Requests
                         throw new InvalidSyntax(InvalidMetaConditionOperator,
                             "Invalid operator for meta-condition. One and only one '=' is allowed");
                     if (!Enum.TryParse(key, true, out RESTableMetaCondition metaCondition))
-                        throw new InvalidSyntax(InvalidMetaConditionKey,
-                            $"Invalid meta-condition '{key}'. Available meta-conditions: {AllMetaConditions}");
+                    {
+                        throw new InvalidSyntax(InvalidMetaConditionKey, $"Invalid meta-condition '{key}'. Available meta-conditions: " +
+                                                                         $"{string.Join(", ", EnumMember<RESTableMetaCondition>.Names)}");
+                    }
 
                     var expectedType = metaCondition.GetExpectedType();
 
@@ -131,10 +130,10 @@ namespace RESTable.Requests
                             metaConditions.Unsafe = (bool) value;
                             break;
                         case RESTableMetaCondition.Limit:
-                            metaConditions.Limit = (Limit) (int) value;
+                            metaConditions.Limit = (int) value;
                             break;
                         case RESTableMetaCondition.Offset:
-                            metaConditions.Offset = (Offset) (int) value;
+                            metaConditions.Offset = (int) value;
                             break;
                         case RESTableMetaCondition.Order_asc:
                         {
@@ -209,7 +208,10 @@ namespace RESTable.Requests
 
             metaConditions.Processors = new IProcessor[] {metaConditions.Add, metaConditions.Rename, metaConditions.Select}.Where(p => p != null).ToArray();
             metaConditions.HasProcessors = metaConditions.Processors.Any();
-            metaConditions.CanUseExternalCounter = metaConditions.Search == null && metaConditions.Distinct == null && metaConditions.Limit.Number == -1 && metaConditions.Offset.Number == 0;
+            metaConditions.CanUseExternalCounter = metaConditions.Search == null
+                                                   && metaConditions.Distinct == null
+                                                   && metaConditions.Limit.Number == -1
+                                                   && metaConditions.Offset.Number == 0;
 
             if (metaConditions.OrderBy != null)
             {
@@ -224,7 +226,7 @@ namespace RESTable.Requests
             if (metaConditions.Select != null && metaConditions.Rename != null)
             {
                 if (metaConditions.Select.Any(pc => metaConditions.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
-                                        !metaConditions.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
+                                                    !metaConditions.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
                     throw new InvalidSyntax(InvalidMetaConditionSyntax,
                         "A 'Select' meta-condition cannot refer to a property x that is " +
                         "to be renamed unless some other property is renamed to x. Use the " +
@@ -234,49 +236,47 @@ namespace RESTable.Requests
             return metaConditions;
         }
 
-        private static string GetTypeString(Type type)
+        private static string GetTypeString(Type type) => type switch
         {
-            if (type == typeof(string)) return "a string";
-            if (type == typeof(int)) return "an integer";
-            if (type == typeof(bool)) return "a boolean";
-            return null;
-        }
+            _ when type == typeof(string) => "a string",
+            _ when type == typeof(int) => "an integer",
+            _ when type == typeof(bool) => "a boolean",
+            _ => null
+        };
 
         /// <summary>
         /// Converts the MetaConditions object into a collection of IUriCondition instances
         /// </summary>
-        public IEnumerable<IUriCondition> AsConditionList()
+        public IEnumerable<IUriCondition> GetEnumerable()
         {
-            var list = new List<IUriCondition>();
             if (Unsafe)
-                list.Add(new UriCondition(RESTableMetaCondition.Unsafe, "true"));
+                yield return new UriCondition(RESTableMetaCondition.Unsafe, "true");
             if (Limit.Number > -1)
-                list.Add(new UriCondition(RESTableMetaCondition.Limit, Limit.Number.ToString()));
+                yield return new UriCondition(RESTableMetaCondition.Limit, Limit.Number.ToString());
             if (Offset.Number == int.MinValue)
-                list.Add(new UriCondition(RESTableMetaCondition.Offset, "-∞"));
+                yield return new UriCondition(RESTableMetaCondition.Offset, "-∞");
             else if (Offset.Number == int.MaxValue)
-                list.Add(new UriCondition(RESTableMetaCondition.Offset, "∞"));
+                yield return new UriCondition(RESTableMetaCondition.Offset, "∞");
             else if (Offset.Number != 0)
-                list.Add(new UriCondition(RESTableMetaCondition.Offset, Offset.Number.ToString()));
+                yield return new UriCondition(RESTableMetaCondition.Offset, Offset.Number.ToString());
             if (OrderBy is OrderByDescending)
-                list.Add(new UriCondition(RESTableMetaCondition.Order_desc, OrderBy.Term.ToString()));
+                yield return new UriCondition(RESTableMetaCondition.Order_desc, OrderBy.Term.ToString());
             else if (OrderBy != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Order_asc, OrderBy.Term.ToString()));
+                yield return new UriCondition(RESTableMetaCondition.Order_asc, OrderBy.Term.ToString());
             if (Select != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Select, string.Join(",", Select)));
+                yield return new UriCondition(RESTableMetaCondition.Select, string.Join(",", Select));
             if (Add != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Add, string.Join(",", Add)));
+                yield return new UriCondition(RESTableMetaCondition.Add, string.Join(",", Add));
             if (Rename != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Rename, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}"))));
+                yield return new UriCondition(RESTableMetaCondition.Rename, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}")));
             if (Distinct != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Distinct, "true"));
+                yield return new UriCondition(RESTableMetaCondition.Distinct, "true");
             if (Search is RegexSearch)
-                list.Add(new UriCondition(RESTableMetaCondition.Search_regex, Search.GetValueLiteral()));
+                yield return new UriCondition(RESTableMetaCondition.Search_regex, Search.GetValueLiteral());
             else if (Search != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Search, Search.GetValueLiteral()));
+                yield return new UriCondition(RESTableMetaCondition.Search, Search.GetValueLiteral());
             if (SafePost != null)
-                list.Add(new UriCondition(RESTableMetaCondition.Safepost, SafePost));
-            return list;
+                yield return new UriCondition(RESTableMetaCondition.Safepost, SafePost);
         }
 
         internal MetaConditions GetCopy()

@@ -203,7 +203,7 @@ namespace RESTable.ProtocolProviders
                 case Binary binary:
                     await binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken).ConfigureAwait(false);
                     return;
-                case IEntities<object> entities when entities is Content content:
+                case IEntities<object> entities and Content content:
                     await SerializeContentDataCollection((dynamic) entities, content, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
                     break;
                 case Report report:

@@ -31,7 +31,7 @@ namespace RESTable.Admin
 
         /// <inheritdoc />
         public IEnumerable<PropertyCache> Select(IRequest<PropertyCache> request) => request
-            .GetService<TypeCache>()
+            .GetRequiredService<TypeCache>()
             .DeclaredPropertyCache
             .Select(item => new PropertyCache
             {

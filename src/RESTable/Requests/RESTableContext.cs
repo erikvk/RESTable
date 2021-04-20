@@ -46,7 +46,7 @@ namespace RESTable.Requests
             get => webSocket;
             set
             {
-                Services.GetService<WebSocketManager>().Add(value);
+                Services.GetRequiredService<WebSocketManager>().Add(value);
                 webSocket = value;
             }
         }
@@ -85,7 +85,7 @@ namespace RESTable.Requests
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
         public virtual IRequest<T> CreateRequest<T>(Method method = GET, string protocolId = "restable", string viewName = null) where T : class
         {
-            var resourceCollection = Services.GetService<ResourceCollection>();
+            var resourceCollection = Services.GetRequiredService<ResourceCollection>();
             var resource = resourceCollection.SafeGetResource<T>() ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
             var parameters = new RequestParameters
             (
@@ -95,6 +95,7 @@ namespace RESTable.Requests
                 protocolIdentifier: protocolId,
                 viewName: viewName
             );
+            parameters.SetBodyObject(null);
             return new Request<T>(resource, parameters);
         }
 
@@ -162,7 +163,7 @@ namespace RESTable.Requests
         /// <returns></returns>
         public bool MethodIsAllowed(Method method, IResource resource, out MethodNotAllowed error)
         {
-            if (method < GET || method > HEAD)
+            if (method is < GET or > HEAD)
                 throw new ArgumentException($"Invalid method value {method} for request");
             if (resource?.AvailableMethods.Contains(method) != true)
             {

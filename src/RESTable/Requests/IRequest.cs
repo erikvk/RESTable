@@ -57,7 +57,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The method used when selecting entities for request input. Set this property to override the default behavior.
         /// This delegate is used in GetInputEntities(). By default RESTable will generate entities by deserializing the request 
-        /// body to an <see cref="IEnumerable{T}"/> using the content type provided in the Content-Type header.
+        /// body to an <see cref="IAsyncEnumerable{T}"/> using the content type provided in the Content-Type header.
         /// </summary>
         Func<IAsyncEnumerable<T>> Selector { set; }
 

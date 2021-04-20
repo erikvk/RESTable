@@ -6,7 +6,7 @@ namespace RESTable.Json
 {
     internal class AggregatorTemplateConverter : CustomCreationConverter<Aggregator>
     {
-        public override Aggregator Create(Type objectType) => new Aggregator();
+        public override Aggregator Create(Type objectType) => new();
 
         public override bool CanConvert(Type objectType) => objectType == typeof(object) || base.CanConvert(objectType);
 

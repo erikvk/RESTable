@@ -161,7 +161,7 @@ namespace RESTable
             set
             {
                 var provider = Services
-                    .GetService<ProtocolProviderManager>()
+                    .GetRequiredService<ProtocolProviderManager>()
                     .ResolveCachedProtocolProvider(value)
                     .ProtocolProvider;
                 _protocol = provider.ProtocolIdentifier;
@@ -202,7 +202,7 @@ namespace RESTable
         /// <inheritdoc />
         protected override async Task Open()
         {
-            JsonProvider = Services.GetService<IJsonProvider>();
+            JsonProvider = Services.GetRequiredService<IJsonProvider>();
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
                 JsonProvider.Populate(config, this);
@@ -333,7 +333,7 @@ namespace RESTable
                             {
                                 var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
                                 if (!valid) break;
-                                var termFactory = Services.GetService<TermFactory>();
+                                var termFactory = Services.GetRequiredService<TermFactory>();
                                 var term = termFactory.MakeConditionTerm(resource, "resource");
                                 var resourceCondition = new Condition<Schema>
                                 (

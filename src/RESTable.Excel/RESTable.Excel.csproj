@@ -11,7 +11,7 @@
         <ProjectReference Include="..\RESTable.Json\RESTable.Json.csproj" />
         <ProjectReference Include="..\RESTable\RESTable.csproj" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
-        <PackageReference Include="Epplus" Version="5.5.3" />
+        <PackageReference Include="Epplus" Version="4.5.3.3" />
     </ItemGroup>
 
 </Project>

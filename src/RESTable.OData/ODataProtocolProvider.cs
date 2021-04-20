@@ -91,7 +91,7 @@ namespace RESTable.OData
             var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
             var options = uriMatch.Groups["options"].Value.TrimStart('?');
             var uri = new ODataUriComponents(this);
-            var resources = context.Services.GetService<ResourceCollection>();
+            var resources = context.Services.GetRequiredService<ResourceCollection>();
             uri.ResourceSpecifier = entitySet switch
             {
                 "" => resources.GetResourceSpecifier<ServiceDocument>(),

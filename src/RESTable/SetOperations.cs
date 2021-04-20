@@ -42,7 +42,7 @@ namespace RESTable
                 errorMessage: "Expected expression tree as request body"
             ).ConfigureAwait(false);
 
-            var jsonSerializer = request.GetService<JsonSerializer>();
+            var jsonSerializer = request.GetRequiredService<JsonSerializer>();
 
             async IAsyncEnumerable<JToken> Recursor(JToken token)
             {

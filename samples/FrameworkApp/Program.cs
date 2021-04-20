@@ -47,9 +47,9 @@ namespace FrameworkApp
                 .AddRESTable()
                 .AddJsonProvider()
                 .BuildServiceProvider();
-            var configurator = services.GetService<RESTableConfigurator>();
+            var configurator = services.GetRequiredService<RESTableConfigurator>();
             configurator.ConfigureRESTable();
-            var rootClient = services.GetService<RootClient>();
+            var rootClient = services.GetRequiredService<RootClient>();
             var context = new RESTableContext(rootClient, services);
 
             // Welcome

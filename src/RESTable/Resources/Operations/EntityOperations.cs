@@ -14,10 +14,12 @@ namespace RESTable.Resources.Operations
 {
     internal static class EntityOperations<T> where T : class
     {
-        private static IAsyncEnumerable<T> SelectFilter(IRequest<T> request)
+        private static IAsyncEnumerable<T> SelectFilter(IEntityRequest<T> request)
         {
-            var entities = request.Target.SelectAsync(request);
-            return entities?
+            IAsyncEnumerable<T> DefaultSelector() => request.Target.SelectAsync(request) ?? AsyncEnumerable.Empty<T>();
+
+            var selector = request.GetSelector() ?? DefaultSelector;
+            return selector()
                 .Where(request.Conditions)
                 .Filter(request.MetaConditions.Distinct)
                 .Filter(request.MetaConditions.Search)
@@ -26,10 +28,12 @@ namespace RESTable.Resources.Operations
                 .Filter(request.MetaConditions.Limit);
         }
 
-        private static IAsyncEnumerable<object> SelectProcessFilter(IRequest<T> request)
+        private static IAsyncEnumerable<object> SelectProcessFilter(IEntityRequest<T> request)
         {
-            var entities = request.Target.SelectAsync(request);
-            return entities?
+            IAsyncEnumerable<T> DefaultSelector() => request.Target.SelectAsync(request) ?? AsyncEnumerable.Empty<T>();
+
+            var selector = request.GetSelector() ?? DefaultSelector;
+            return selector()
                 .Where(request.Conditions)
                 .Process(request.MetaConditions.Processors)
                 .Filter(request.MetaConditions.Distinct)
@@ -140,12 +144,10 @@ namespace RESTable.Resources.Operations
             {
                 IAsyncEnumerable<T> RequestEntitiesProducer()
                 {
-                    IAsyncEnumerable<T> DefaultSelector() => TrySelectFilter(request) ?? AsyncEnumerable.Empty<T>();
                     IAsyncEnumerable<T> DefaultUpdater(IAsyncEnumerable<T> inputEntities) => request.Body.PopulateTo(inputEntities);
 
-                    var selector = request.GetSelector() ?? DefaultSelector;
                     var updater = request.GetUpdater() ?? DefaultUpdater;
-                    var entities = selector()?.UnsafeLimit(!request.MetaConditions.Unsafe);
+                    var entities = TrySelectFilter(request).UnsafeLimit(!request.MetaConditions.Unsafe);
                     return updater(entities)?.Validate(request.EntityResource, request.Context) ?? throw new MissingDataSource(request);
                 }
 
@@ -197,9 +199,7 @@ namespace RESTable.Resources.Operations
             {
                 IAsyncEnumerable<T> RequestEntitiesProducer()
                 {
-                    IAsyncEnumerable<T> DefaultSelector() => TrySelectFilter(request) ?? AsyncEnumerable.Empty<T>();
-                    var selector = request.GetSelector() ?? DefaultSelector;
-                    return selector()?.UnsafeLimit(!request.MetaConditions.Unsafe) ?? AsyncEnumerable.Empty<T>();
+                    return TrySelectFilter(request)?.UnsafeLimit(!request.MetaConditions.Unsafe) ?? AsyncEnumerable.Empty<T>();
                 }
 
                 request.EntitiesProducer = RequestEntitiesProducer;
@@ -287,7 +287,7 @@ namespace RESTable.Resources.Operations
         {
             try
             {
-                var jsonProvider = request.GetService<IJsonProvider>();
+                var jsonProvider = request.GetRequiredService<IJsonProvider>();
                 var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
                 var (toInsert, toUpdate) = await GetSafePostTasks(request, innerRequest).ConfigureAwait(false);
                 var (updatedCount, insertedCount) = (0, 0);
@@ -316,7 +316,7 @@ namespace RESTable.Resources.Operations
         {
             var toInsert = new List<JObject>();
             var toUpdate = new List<(JObject json, T source)>();
-            var termFactory = request.GetService<TermFactory>();
+            var termFactory = request.GetRequiredService<TermFactory>();
             try
             {
                 var body = request.Body;

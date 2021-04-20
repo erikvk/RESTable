@@ -207,8 +207,8 @@ namespace RESTable
                                         resources: recurseResources(allowAccess["Resource"])
                                             .OrderBy(r => r.Name)
                                             .ToList(),
-                                        allowedMethods: allowAccess["Methods"]
-                                            .Value<string>()
+                                        allowedMethods: allowAccess["Methods"]?
+                                            .Value<string>()?
                                             .ToUpper()
                                             .ToMethodsArray()
                                     );

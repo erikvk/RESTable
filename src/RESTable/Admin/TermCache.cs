@@ -36,8 +36,8 @@ namespace RESTable.Admin
         public IEnumerable<TermCache> Select(IRequest<TermCache> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var termCache = request.GetService<Requests.TermCache>();
-            var resources = request.GetService<ResourceCollection>();
+            var termCache = request.GetRequiredService<Requests.TermCache>();
+            var resources = request.GetRequiredService<ResourceCollection>();
             foreach (var resource in resources)
             {
                 yield return new TermCache
@@ -54,7 +54,7 @@ namespace RESTable.Admin
         public int Delete(IRequest<TermCache> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var termCache = request.GetService<Requests.TermCache>();
+            var termCache = request.GetRequiredService<Requests.TermCache>();
             var count = 0;
             foreach (var entity in request.GetInputEntities())
             {

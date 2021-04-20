@@ -38,7 +38,7 @@ namespace RESTable
                 members.Add(property);
             var echo = new Echo(members);
             request.Conditions.Clear();
-            var termCache = request.GetService<TermCache>();
+            var termCache = request.GetRequiredService<TermCache>();
             termCache.ClearTermsFor<Echo>();
             yield return echo;
         }

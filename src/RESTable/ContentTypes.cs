@@ -27,13 +27,13 @@ namespace RESTable
         /// Creates a ContentTypes from a single ContentType instance
         /// </summary>
         /// <param name="contentType"></param>
-        public static implicit operator ContentTypes(ContentType contentType) => new ContentTypes {contentType};
+        public static implicit operator ContentTypes(ContentType contentType) => new() {contentType};
 
         /// <summary>
         /// Creates a ContentTypes from an array of ContentType instances
         /// </summary>
         /// <param name="contentTypes"></param>
-        public static implicit operator ContentTypes(ContentType[] contentTypes) => new ContentTypes(contentTypes);
+        public static implicit operator ContentTypes(ContentType[] contentTypes) => new(contentTypes);
 
         /// <summary>
         /// Converts a header value string to a ContenType

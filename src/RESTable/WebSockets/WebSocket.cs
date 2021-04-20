@@ -107,8 +107,8 @@ namespace RESTable.WebSockets
             Context = context;
             CancellationTokenSource = new CancellationTokenSource();
             OngoingTasks = new HashSet<Task>();
-            JsonProvider = context.Services.GetService<IJsonProvider>();
-            WebSocketManager = context.Services.GetService<WebSocketManager>();
+            JsonProvider = context.Services.GetRequiredService<IJsonProvider>();
+            WebSocketManager = context.Services.GetRequiredService<WebSocketManager>();
         }
 
         public object GetService(Type serviceType) => Context.Services.GetService(serviceType);

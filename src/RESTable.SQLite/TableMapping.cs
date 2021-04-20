@@ -203,7 +203,7 @@ namespace RESTable.SQLite
                         $"  SELECT {columnsSQL} FROM {tempName};" +
                         $"DROP TABLE {tempName};" +
                         "COMMIT;PRAGMA foreign_keys=on;";
-            var rootClient = request.GetService<RootClient>();
+            var rootClient = request.GetRequiredService<RootClient>();
             var rootContext = new RESTableContext(rootClient, request);
             var indexRequest = rootContext
                 .CreateRequest<DatabaseIndex>()
