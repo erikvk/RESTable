@@ -41,7 +41,7 @@ namespace FileSenderSample
     /// This resource lets clients connect and receive files. Available at wss://localhost:5001/restable/filesenderconnection
     /// </summary>
     [RESTable]
-    public class FileSenderConnection : Terminal, IDisposable //, IValidator<FileSenderConnection>
+    public class FileSenderConnection : Terminal, IDisposable
     {
         // We store all active connections here, so we can use them from a separate resource
         internal static TerminalSet<FileSenderConnection> ActiveConnections { get; } = new();

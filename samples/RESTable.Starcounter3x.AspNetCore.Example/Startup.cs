@@ -10,13 +10,10 @@ namespace RESTable.Example
             .AddStarcounter("Database=./database")
             .AddJsonProvider()
             .AddStarcounterProvider()
-            .AddExcelProvider()
             .AddRESTable()
-            .AddHttpContextAccessor()
-            .AddMvc(o => o.EnableEndpointRouting = false);
-
+            .AddHttpContextAccessor();
+        
         public void Configure(IApplicationBuilder app) => app
-            .UseMvcWithDefaultRoute()
             .UseWebSockets()
             .UseRESTableAspNetCore();
     }
