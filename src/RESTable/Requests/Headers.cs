@@ -19,8 +19,6 @@ namespace RESTable.Requests
         private const string _Info = "RESTable-info";
         private const string _Error = "RESTable-error";
         private const string _Elapsed = "RESTable-elapsed-ms";
-        private const string _EntityCount = "RESTable-count";
-        private const string _Pager = "RESTable-pager";
         private const string _Metadata = "RESTable-metadata";
         private const string _Version = "RESTable-version";
         private const string _Vary = "Vary";
@@ -191,7 +189,25 @@ namespace RESTable.Requests
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <inheritdoc />
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => new HeadersEnumerator(this, _dict.GetEnumerator());
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => GetHeaderEnumeration().GetEnumerator(); // new HeadersEnumerator(this, _dict.GetEnumerator());
+
+        private IEnumerable<KeyValuePair<string, string>> GetHeaderEnumeration()
+        {
+            if (Accept != null)
+                yield return new KeyValuePair<string, string>(nameof(Accept), Accept.ToString());
+            if (ContentType != null)
+                yield return new KeyValuePair<string, string>("Content-Type", ContentType.ToString());
+            if (Source != null)
+                yield return new KeyValuePair<string, string>(nameof(Source), Source);
+            if (Destination != null)
+                yield return new KeyValuePair<string, string>(nameof(Destination), Destination);
+            if (Authorization != null)
+                yield return new KeyValuePair<string, string>(nameof(Authorization), "*******");
+            if (Origin != null)
+                yield return new KeyValuePair<string, string>(nameof(Origin), Origin);
+            foreach (var pair in _dict)
+                yield return pair;
+        }
 
         /// <inheritdoc />
         void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> pair) => this._Set(pair.Key, pair.Value);
@@ -220,7 +236,7 @@ namespace RESTable.Requests
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         // ReSharper disable once UseCollectionCountProperty
         // We must use the HeadersEnumerator for this to work properly
-        public int Count => this.Count();
+        public int Count => GetHeaderEnumeration().Count();
 
         /// <inheritdoc />
         public bool IsReadOnly => false;

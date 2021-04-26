@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using RESTable.Meta;
 
-namespace RESTable.Internal.Auth
+namespace RESTable.Auth
 {
     /// <summary>
     /// Describes a set of valid operations for a set of resources

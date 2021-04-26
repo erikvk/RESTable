@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.Internal.Auth;
+using RESTable.Auth;
 using RESTable.Requests;
 using RESTable.Results;
 
@@ -28,7 +28,7 @@ namespace RESTable.AspNetCore
             if (!configurator.IsConfigured)
                 configurator.ConfigureRESTable();
             var config = builder.ApplicationServices.GetRequiredService<RESTableConfiguration>();
-            var authenticator = builder.ApplicationServices.GetRequiredService<Authenticator>();
+            var authenticator = builder.ApplicationServices.GetRequiredService<IRequestAuthenticator>();
 
             RootUri = config.RootUri;
             Template = RootUri + "/{resource?}/{conditions?}/{metaconditions?}";
@@ -54,6 +54,7 @@ namespace RESTable.AspNetCore
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
             var options = context.GetOptions(uri, headers);
             WriteResponse(aspNetCoreContext, options);
+
             var remote = aspNetCoreContext.Response.Body;
 #if NETSTANDARD2_1
             await using (remote)
@@ -65,13 +66,13 @@ namespace RESTable.AspNetCore
             }
         }
 
-        private static async Task HandleRequest(Method method, HttpContext aspNetCoreContext, Authenticator authenticator)
+        private static async Task HandleRequest(Method method, HttpContext aspNetCoreContext, IRequestAuthenticator authenticator)
         {
             var (_, uri) = aspNetCoreContext.Request.Path.Value.TSplit(RootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
             var client = GetClient(aspNetCoreContext);
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
-            if (!authenticator.TryAuthenticate(context, ref uri, out var notAuthorized, headers))
+            if (!authenticator.TryAuthenticate(context, ref uri, headers, out var notAuthorized))
             {
                 WriteResponse(aspNetCoreContext, notAuthorized);
                 return;

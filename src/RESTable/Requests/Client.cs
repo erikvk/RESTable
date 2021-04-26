@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
-using RESTable.Internal.Auth;
+using RESTable.Auth;
 using RESTable.Meta;
 
 namespace RESTable.Requests

@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.Internal.Auth;
+using RESTable.Auth;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;

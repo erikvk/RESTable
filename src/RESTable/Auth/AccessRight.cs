@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using RESTable.Meta;
 
-namespace RESTable.Internal.Auth
+namespace RESTable.Auth
 {
     internal class AccessRight
     {

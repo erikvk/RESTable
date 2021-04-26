@@ -1,7 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using RESTable;
+using RESTable.Auth;
 using RESTable.Internal;
-using RESTable.Internal.Auth;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.ProtocolProviders;
@@ -13,6 +14,24 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
+        public static IServiceCollection AddApiKeyAuthenticator(this IServiceCollection serviceCollection, IConfiguration configuration)
+        {
+            serviceCollection.AddSingleton<IRequestAuthenticator, ApiKeyAuthenticator>();
+            serviceCollection.AddOptions();
+            serviceCollection.Configure<ApiKeys>(configuration.GetSection(nameof(ApiKeys)));
+
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddAllowedOriginsFilter(this IServiceCollection serviceCollection, IConfiguration configuration)
+        {
+            serviceCollection.AddSingleton<IAllowedOriginsFilter, AllowedOriginsFilter>();
+            serviceCollection.AddOptions(); 
+            serviceCollection.Configure<AllowedOrigins>(configuration.GetSection(nameof(AllowedOrigins)));
+
+            return serviceCollection;
+        }
+
         public static IServiceCollection AddRESTable(this IServiceCollection serviceCollection)
         {
             serviceCollection.TryAddSingleton<WebSocketManager>();
@@ -31,7 +50,9 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton<TypeCache>();
             serviceCollection.TryAddSingleton<ResourceValidator>();
             serviceCollection.TryAddSingleton(typeof(ConditionCache<>), typeof(ConditionCache<>));
-            serviceCollection.TryAddSingleton<Authenticator>();
+            serviceCollection.TryAddSingleton<ResourceAuthenticator>();
+            serviceCollection.TryAddSingleton<IRequestAuthenticator, AllowAllAuthenticator>();
+            serviceCollection.TryAddSingleton<IAllowedOriginsFilter, AllOriginsAllowed>();
             serviceCollection.TryAddSingleton<RootAccess>();
             serviceCollection.TryAddSingleton<RootClient>();
 

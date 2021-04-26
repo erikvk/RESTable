@@ -1,5 +1,5 @@
 ﻿using System.Net;
-using RESTable.Internal.Auth;
+using RESTable.Auth;
 
 namespace RESTable.Requests
 {

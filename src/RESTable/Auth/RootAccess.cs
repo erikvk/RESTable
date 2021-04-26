@@ -1,6 +1,6 @@
 ﻿using RESTable.Meta;
 
-namespace RESTable.Internal.Auth
+namespace RESTable.Auth
 {
     /// <summary>
     /// Access rights describing root access, i.e. access to all resources

@@ -4,8 +4,8 @@ using System.Globalization;
 using System.Net;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.Auth;
 using RESTable.ContentTypeProviders;
-using RESTable.Internal.Auth;
 using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -28,11 +28,10 @@ namespace RESTable.Results
             var options = new Options(parameters);
             if (!parameters.IsValid)
                 return options;
-            var configuration = parameters.Context.Services.GetRequiredService<RESTableConfiguration>();
-            var authenticator = parameters.Context.Services.GetRequiredService<Authenticator>();
-            if (configuration.AllowAllOrigins)
+            var allowedOrigins = parameters.Context.Services.GetRequiredService<IAllowedOriginsFilter>();
+            if (allowedOrigins is AllOriginsAllowed)
                 options.Headers.AccessControlAllowOrigin = "*";
-            else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && authenticator.AllowedOrigins.Contains(origin))
+            else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && allowedOrigins.IsAllowed(origin))
             {
                 options.Headers.AccessControlAllowOrigin = origin.ToString();
                 options.Headers.Vary = "Origin";

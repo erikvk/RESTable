@@ -8,12 +8,12 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.Auth;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Resources.Operations;
 using RESTable.Results;
-using RESTable.Internal.Auth;
 using static RESTable.ErrorCodes;
 using static RESTable.Method;
 using Error = RESTable.Results.Error;
@@ -242,8 +242,8 @@ namespace RESTable.Requests
                     {
                         if (entity.RequiresAuthentication)
                         {
-                            var authenticator = this.GetRequiredService<Authenticator>();
-                            await authenticator.RunResourceAuthentication(this, entity).ConfigureAwait(false);
+                            var authenticator = this.GetRequiredService<ResourceAuthenticator>();
+                            await authenticator.ResourceAuthenticate(this, entity).ConfigureAwait(false);
                         }
                         if (MetaConditions.SafePost != null)
                         {
@@ -254,13 +254,13 @@ namespace RESTable.Requests
                         var result = await evaluator(this).ConfigureAwait(false);
                         foreach (var (key, value) in ResponseHeaders)
                             result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
-                        if (Configuration.AllowAllOrigins)
+                        if (this.GetRequiredService<IAllowedOriginsFilter>() is AllOriginsAllowed)
                             result.Headers.AccessControlAllowOrigin = "*";
                         else if (Headers.Origin is string origin)
                             result.Headers.AccessControlAllowOrigin = origin;
                         return result;
                     }
-                    
+
                     case var other: throw new UnknownResource(other.Name);
                 }
             }

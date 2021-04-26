@@ -190,7 +190,7 @@ namespace RESTable.Requests
         /// <param name="headers">The headers of the request</param>
         /// <returns></returns>
         public IResult GetOptions(string uri, Headers headers)
-        {
+        {   
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, uri, headers);
             return Options.Create(parameters);
