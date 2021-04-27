@@ -2,7 +2,7 @@
 
 namespace RESTable.Auth
 {
-    public class AllOriginsAllowed : IAllowedOriginsFilter
+    public class AllCorsOriginsAllowedCors : IAllowedCorsOriginsFilter
     {
         public bool IsAllowed(Uri uri) => true;
     }

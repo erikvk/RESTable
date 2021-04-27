@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration;
 using RESTable.Auth;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
@@ -17,11 +18,10 @@ namespace RESTable
         private ResourceFactory ResourceFactory { get; }
         private ProtocolProviderManager ProtocolProviderManager { get; }
         private RESTableConfiguration Configuration { get; }
-
-        public TypeCache TypeCache { get; }
-        public ResourceCollection ResourceCollection { get; }
-
-        internal RootAccess RootAccess { get; }
+        private RootAccess RootAccess { get; }
+        private TypeCache TypeCache { get; }
+        private ResourceCollection ResourceCollection { get; }
+        private IConfiguration AppConfiguration { get; }
 
         public RESTableConfigurator
         (
@@ -47,29 +47,21 @@ namespace RESTable
 
         public bool IsConfigured { get; private set; }
 
-        public void ConfigureRESTable
-        (
-            string uri = "/restable",
-            ushort nrOfErrorsToKeep = 2000
-        )
+        public void ConfigureRESTable(string rootUri = "/restable")
         {
-            ValidateUri(ref uri);
-            Configuration.Update
-            (
-                rootUri: uri,
-                nrOfErrorsToKeep: nrOfErrorsToKeep
-            );
-            ResourceCollection.SetDependencies(this, TypeCache);
+            ValidateRootUri(ref rootUri);
+            Configuration.Update(rootUri: rootUri);
+            ResourceCollection.SetDependencies(this, TypeCache, RootAccess);
             ResourceFactory.SetConfiguration(this);
             ResourceFactory.MakeResources();
             IsConfigured = true;
-            UpdateConfiguration();
+            RootAccess.Load();
             ResourceFactory.BindControllers();
             ResourceFactory.FinalCheck();
             ProtocolProviderManager.OnInit();
         }
 
-        private static void ValidateUri(ref string uri)
+        private static void ValidateRootUri(ref string uri)
         {
             uri = uri?.Trim() ?? "/rest";
             if (!Regex.IsMatch(uri, RegEx.BaseUri))
@@ -77,11 +69,6 @@ namespace RESTable
                                           "letters, numbers, forward slashes and underscores");
             if (uri[0] != '/') uri = $"/{uri}";
             uri = uri.TrimEnd('/');
-        }
-
-        public void UpdateConfiguration()
-        {
-            RootAccess.Load();
         }
     }
 }

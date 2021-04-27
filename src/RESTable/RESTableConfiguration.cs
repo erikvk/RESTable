@@ -9,7 +9,6 @@ namespace RESTable
         public string Version { get; }
         public string[] ReservedNamespaces { get; }
         public string RootUri { get; private set; }
-        public ushort NrOfErrorsToKeep { get; private set; }
 
         public RESTableConfiguration()
         {
@@ -25,14 +24,9 @@ namespace RESTable
                 .ToArray();
         }
 
-        internal void Update
-        (
-            string rootUri,
-            ushort nrOfErrorsToKeep = 2000
-        )
+        internal void Update(string rootUri)
         {
             RootUri = rootUri;
-            NrOfErrorsToKeep = nrOfErrorsToKeep;
         }
     }
 }

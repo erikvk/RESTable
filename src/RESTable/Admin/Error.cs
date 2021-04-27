@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Linq;
 using RESTable.Meta;
@@ -22,6 +23,7 @@ namespace RESTable.Admin
 
         private const int MaxStringLength = 10000;
         private const int DeleteBatch = 100;
+        public const int DefaultNumberOfErrorsToKeep = 2000;
 
         private static long Counter { get; set; }
 
@@ -110,7 +112,9 @@ namespace RESTable.Admin
             var nl = Environment.NewLine;
             var stackTrace = string.Join($"{nl}§§§ INNER: §§§{nl}", errorStackTrace, innerStackTrace);
             var totalMessage = errorResult.ToString();
-            var errorsToKeep = request.GetRequiredService<RESTableConfiguration>().NrOfErrorsToKeep;
+            var errorsToKeep = request
+                .GetService<IConfiguration>()?
+                .GetValue<int>("NrOfErrorsToKeep") ?? DefaultNumberOfErrorsToKeep;
             if (Counter > errorsToKeep && Counter % DeleteBatch == 0)
             {
                 var cutoffId = Counter - errorsToKeep;

@@ -6,7 +6,6 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
 using RESTable.Requests;
@@ -31,19 +30,10 @@ namespace RESTable.Tutorial
             .UseStartup<Tutorial>()
             .Build()
             .Run();
-        
-        private IConfiguration Configuration { get; }
-
-        public Tutorial(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
 
         public void ConfigureServices(IServiceCollection services) => services
             .AddODataProvider()
             .AddSqliteProvider(dbPath: "./database")
-            .AddApiKeyAuthenticator(Configuration)
-            .AddAllowedOriginsFilter(Configuration)
             .AddExcelProvider()
             .AddJsonProvider()
             .AddRESTable()

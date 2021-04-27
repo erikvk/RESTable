@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.Auth;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -78,13 +79,15 @@ namespace RESTable.OData
         /// <inheritdoc />
         public BinaryResult Select(IRequest<MetadataDocument> request)
         {
-            var configurator = request.GetRequiredService<RESTableConfigurator>();
+            var rootAccess = request.GetRequiredService<RootAccess>();
+            var resourceCollection = request.GetRequiredService<ResourceCollection>();
+            var typeCache = request.GetRequiredService<TypeCache>();
 
             async Task WriteStream(Stream stream, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var metadata = Metadata.Get(MetadataLevel.Full, configurator);
+                var metadata = Metadata.GetMetadata(MetadataLevel.Full, null, rootAccess, resourceCollection, typeCache);
 
                 var swr = new StreamWriter(stream, Encoding.UTF8, 4096, true);
 #if NETSTANDARD2_1

@@ -50,19 +50,14 @@ namespace RESTable
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
             var accessrights = request.Context.Client.AccessRights;
-            yield return Make(MetadataLevel.Full, accessrights, request.GetRequiredService<RESTableConfigurator>());
+            var rootAccess = request.GetRequiredService<RootAccess>();
+            var resourceCollection = request.GetRequiredService<ResourceCollection>();
+            var typeCache = request.GetRequiredService<TypeCache>();
+            yield return GetMetadata(MetadataLevel.Full, accessrights, rootAccess, resourceCollection, typeCache);
         }
 
-        /// <summary>
-        /// Generates metadata according to a given metadata level
-        /// </summary>
-        public static Metadata Get(MetadataLevel level, RESTableConfigurator configurator) => Make(level, null, configurator);
-
-        internal static Metadata Make(MetadataLevel level, AccessRights rights, RESTableConfigurator configurator)
+        public static Metadata GetMetadata(MetadataLevel level, AccessRights rights, RootAccess rootAccess, ResourceCollection resourceCollection, TypeCache typeCache)
         {
-            var resourceCollection = configurator.ResourceCollection;
-            var typeCache = configurator.TypeCache;
-            var rootAccess = configurator.RootAccess;
             var domain = rights?.Keys ?? resourceCollection.AllResources;
             var entityResources = domain
                 .OfType<IEntityResource>()
@@ -132,7 +127,7 @@ namespace RESTable
 
             return new Metadata
             {
-                CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? configurator.RootAccess),
+                CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? rootAccess),
                 EntityResources = entityResources.ToArray(),
                 TerminalResources = terminalResources.ToArray(),
                 EntityResourceTypes = new ReadOnlyDictionary<Type, Member[]>(entityTypes.ToDictionary(t => t, type =>

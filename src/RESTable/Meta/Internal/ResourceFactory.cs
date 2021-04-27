@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTable.Auth;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
@@ -18,7 +19,9 @@ namespace RESTable.Meta.Internal
         private ResourceValidator ResourceValidator { get; }
         private ResourceCollection ResourceCollection { get; }
         private RESTableConfigurator Configurator { get; set; }
+        private RootAccess RootAccess { get; }
         internal IDictionary<string, IEntityResourceProviderInternal> EntityResourceProviders { get; }
+        
 
         public ResourceFactory
         (
@@ -28,7 +31,8 @@ namespace RESTable.Meta.Internal
             VirtualResourceProvider virtualResourceProvider,
             TypeCache typeCache,
             ResourceValidator resourceValidator,
-            ResourceCollection resourceCollection
+            ResourceCollection resourceCollection,
+            RootAccess rootAccess
         )
         {
             TerminalProvider = terminalResourceProvider;
@@ -38,6 +42,7 @@ namespace RESTable.Meta.Internal
             TypeCache = typeCache;
             ResourceValidator = resourceValidator;
             ResourceCollection = resourceCollection;
+            RootAccess = rootAccess;
             EntityResourceProviders = new Dictionary<string, IEntityResourceProviderInternal>();
         }
 
@@ -249,7 +254,7 @@ namespace RESTable.Meta.Internal
         /// </summary>
         internal void FinalCheck()
         {
-            var metadata = Metadata.Get(MetadataLevel.Full, Configurator);
+            var metadata = Metadata.GetMetadata(MetadataLevel.Full, null, RootAccess, ResourceCollection, TypeCache);
             foreach (var enumType in metadata.PeripheralTypes.Keys.Where(t => t.IsEnum))
             {
                 if (Enum.GetNames(enumType).Select(name => name.ToLower()).ContainsDuplicates(out var dupe))

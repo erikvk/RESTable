@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
@@ -17,22 +17,34 @@ namespace RESTable.Auth
     /// <summary>
     /// Handles authorization and authentication of clients using Api keys in either uris or headers
     /// </summary>
-    public class ApiKeyAuthenticator : IRequestAuthenticator
+    public class ApiKeyAuthenticator : IRequestAuthenticator, IDisposable
     {
         private const string AuthHeaderMask = "*******";
 
         private IDictionary<string, AccessRights> ApiKeys { get; }
         private ResourceCollection ResourceCollection { get; }
         private WebSocketManager WebSocketManager { get; }
-        private IOptionsSnapshot<ApiKeys> ApiKeysConfiguration { get; }
+        private IDisposable ReloadToken { get; }
 
-        public ApiKeyAuthenticator(IOptionsSnapshot<ApiKeys> apiKeysConfiguration, ResourceCollection resourceCollection, WebSocketManager webSocketManager)
+        public ApiKeyAuthenticator(IConfiguration configuration, ResourceCollection resourceCollection, WebSocketManager webSocketManager)
         {
-            ApiKeysConfiguration = apiKeysConfiguration;
+            ReloadToken = configuration
+                .GetReloadToken()
+                .RegisterChangeCallback(state => Reload((IConfiguration) state), configuration);
             ResourceCollection = resourceCollection;
             WebSocketManager = webSocketManager;
             ApiKeys = new Dictionary<string, AccessRights>();
-            ReadApiKeys();
+            Reload(configuration);
+        }
+
+        private void Reload(IConfiguration configuration)
+        {
+            var apiKeysConfiguration = configuration.Get<ApiKeys>();
+            if (apiKeysConfiguration?.Count is not > 0)
+                throw new InvalidOperationException($"When using {nameof(ApiKeyAuthenticator)}, the application configuration file is used " +
+                                                    "to read API keys. The config file is missing an 'ApiKeys' aray with at least one " +
+                                                    "'ApiKey' item.");
+            ReadApiKeys(apiKeysConfiguration);
         }
 
         /// <inheritdoc />
@@ -80,9 +92,9 @@ namespace RESTable.Auth
             return ApiKeys.TryGetValue(keyHash, out var _rights) ? _rights : null;
         }
 
-        private void ReadApiKeys()
+        private void ReadApiKeys(ApiKeys apiKeysConfiguration)
         {
-            var currentKeys = ApiKeysConfiguration.Value
+            var currentKeys = apiKeysConfiguration
                 .Select(ReadApiKey)
                 .ToList();
             foreach (var key in ApiKeys.Keys.Except(currentKeys).ToList())
@@ -149,5 +161,7 @@ namespace RESTable.Auth
             else ApiKeys[keyHash] = accessRights;
             return keyHash;
         }
+
+        public void Dispose() => ReloadToken.Dispose();
     }
 }

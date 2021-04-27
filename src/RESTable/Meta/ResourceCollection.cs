@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using RESTable.Auth;
 using RESTable.Linq;
 using RESTable.Resources;
 using RESTable.Results;
@@ -18,15 +19,18 @@ namespace RESTable.Meta
 
         private RESTableConfigurator Configurator { get; set; }
         private TypeCache TypeCache { get; set; }
+        private RootAccess RootAccess { get; set; }
 
         internal void SetDependencies
         (
             RESTableConfigurator configurator,
-            TypeCache typeCache
+            TypeCache typeCache,
+            RootAccess rootAccess
         )
         {
             Configurator = configurator;
             TypeCache = typeCache;
+            RootAccess = rootAccess;
         }
 
         public ResourceCollection()
@@ -65,7 +69,7 @@ namespace RESTable.Meta
             AddToResourceFinder(toAdd);
             TypeCache.GetDeclaredProperties(toAdd.Type);
             if (Configurator.IsConfigured)
-                Configurator.UpdateConfiguration();
+                RootAccess.Load();
         }
 
         internal bool RemoveResource(IResource toRemove)
@@ -73,7 +77,7 @@ namespace RESTable.Meta
             var r = ResourceByName.Remove(toRemove.Name);
             ResourceByType.Remove(toRemove.Type);
             ReloadResourceFinder();
-            Configurator.UpdateConfiguration();
+            RootAccess.Load();
             return r;
         }
 
@@ -122,7 +126,7 @@ namespace RESTable.Meta
         {
             if (searchString == null) throw new UnknownResource("null");
             if (!ResourceFinder.TryGetValue(searchString, out var resource))
-                throw new UnknownResource(searchString);
+               throw new UnknownResource(searchString);
             if (resource == null)
                 throw new AmbiguousResource(searchString);
             if (!kind.HasFlag(resource.ResourceKind))

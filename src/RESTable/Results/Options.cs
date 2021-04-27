@@ -28,8 +28,8 @@ namespace RESTable.Results
             var options = new Options(parameters);
             if (!parameters.IsValid)
                 return options;
-            var allowedOrigins = parameters.Context.Services.GetRequiredService<IAllowedOriginsFilter>();
-            if (allowedOrigins is AllOriginsAllowed)
+            var allowedOrigins = parameters.Context.Services.GetRequiredService<IAllowedCorsOriginsFilter>();
+            if (allowedOrigins is AllCorsOriginsAllowedCors)
                 options.Headers.AccessControlAllowOrigin = "*";
             else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && allowedOrigins.IsAllowed(origin))
             {

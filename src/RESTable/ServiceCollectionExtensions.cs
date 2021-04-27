@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
 using RESTable;
 using RESTable.Auth;
 using RESTable.Internal;
@@ -14,21 +13,15 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddApiKeyAuthenticator(this IServiceCollection serviceCollection, IConfiguration configuration)
+        public static IServiceCollection AddApiKeyAuthenticator(this IServiceCollection serviceCollection)
         {
             serviceCollection.AddSingleton<IRequestAuthenticator, ApiKeyAuthenticator>();
-            serviceCollection.AddOptions();
-            serviceCollection.Configure<ApiKeys>(configuration.GetSection(nameof(ApiKeys)));
-
             return serviceCollection;
         }
 
-        public static IServiceCollection AddAllowedOriginsFilter(this IServiceCollection serviceCollection, IConfiguration configuration)
+        public static IServiceCollection AddAllowedCorsOriginsFilter(this IServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton<IAllowedOriginsFilter, AllowedOriginsFilter>();
-            serviceCollection.AddOptions(); 
-            serviceCollection.Configure<AllowedOrigins>(configuration.GetSection(nameof(AllowedOrigins)));
-
+            serviceCollection.AddSingleton<IAllowedCorsOriginsFilter, AllowedCorsOriginsFilter>();
             return serviceCollection;
         }
 
@@ -52,7 +45,7 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton(typeof(ConditionCache<>), typeof(ConditionCache<>));
             serviceCollection.TryAddSingleton<ResourceAuthenticator>();
             serviceCollection.TryAddSingleton<IRequestAuthenticator, AllowAllAuthenticator>();
-            serviceCollection.TryAddSingleton<IAllowedOriginsFilter, AllOriginsAllowed>();
+            serviceCollection.TryAddSingleton<IAllowedCorsOriginsFilter, AllCorsOriginsAllowedCors>();
             serviceCollection.TryAddSingleton<RootAccess>();
             serviceCollection.TryAddSingleton<RootClient>();
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Requests;
 using Xunit;
@@ -18,7 +19,9 @@ namespace RESTable.Tests.OperationsTests
 
         public OperationsTestBase(RESTableFixture fixture)
         {
-            Resource = fixture.Configurator.ResourceCollection.GetResource<TResourceType>() as IEntityResource<TResourceType>;
+            Resource = fixture.ServiceProvider
+                .GetRequiredService<ResourceCollection>()
+                .GetResource<TResourceType>() as IEntityResource<TResourceType>;
             OperationsTestsFlags = fixture.OperationsTestsFlags;
             OperationsTestsFlags.Reset();
             Request = fixture.Context.CreateRequest<TResourceType>();

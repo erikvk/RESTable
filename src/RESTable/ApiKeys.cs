@@ -2,7 +2,7 @@
 
 namespace RESTable
 {
-    public class AllowedOrigins : List<string> { }
+    public class AllowedCorsOrigins : List<string> { }
 
     public class ApiKeys : List<ApiKeyItem> { }
 
