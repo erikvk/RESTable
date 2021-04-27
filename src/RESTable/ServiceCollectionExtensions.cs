@@ -13,15 +13,17 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddApiKeyAuthenticator(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection)
         {
             serviceCollection.AddSingleton<IRequestAuthenticator, ApiKeyAuthenticator>();
+            serviceCollection.AddSingleton<IStartupActivator, StartupActivator<IRequestAuthenticator>>();
             return serviceCollection;
         }
 
         public static IServiceCollection AddAllowedCorsOriginsFilter(this IServiceCollection serviceCollection)
         {
             serviceCollection.AddSingleton<IAllowedCorsOriginsFilter, AllowedCorsOriginsFilter>();
+            serviceCollection.AddSingleton<IStartupActivator, StartupActivator<IAllowedCorsOriginsFilter>>();
             return serviceCollection;
         }
 
@@ -45,7 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton(typeof(ConditionCache<>), typeof(ConditionCache<>));
             serviceCollection.TryAddSingleton<ResourceAuthenticator>();
             serviceCollection.TryAddSingleton<IRequestAuthenticator, AllowAllAuthenticator>();
-            serviceCollection.TryAddSingleton<IAllowedCorsOriginsFilter, AllCorsOriginsAllowedCors>();
+            serviceCollection.TryAddSingleton<IAllowedCorsOriginsFilter, AllCorsOriginsAllowed>();
             serviceCollection.TryAddSingleton<RootAccess>();
             serviceCollection.TryAddSingleton<RootClient>();
 

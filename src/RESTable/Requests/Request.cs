@@ -254,7 +254,7 @@ namespace RESTable.Requests
                         var result = await evaluator(this).ConfigureAwait(false);
                         foreach (var (key, value) in ResponseHeaders)
                             result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
-                        if (this.GetRequiredService<IAllowedCorsOriginsFilter>() is AllCorsOriginsAllowedCors)
+                        if (this.GetRequiredService<IAllowedCorsOriginsFilter>() is AllCorsOriginsAllowed)
                             result.Headers.AccessControlAllowOrigin = "*";
                         else if (Headers.Origin is string origin)
                             result.Headers.AccessControlAllowOrigin = origin;

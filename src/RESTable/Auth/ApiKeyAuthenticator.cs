@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
@@ -24,22 +25,22 @@ namespace RESTable.Auth
         private IDictionary<string, AccessRights> ApiKeys { get; }
         private ResourceCollection ResourceCollection { get; }
         private WebSocketManager WebSocketManager { get; }
+        private IConfiguration Configuration { get; }
         private IDisposable ReloadToken { get; }
 
         public ApiKeyAuthenticator(IConfiguration configuration, ResourceCollection resourceCollection, WebSocketManager webSocketManager)
         {
-            ReloadToken = configuration
-                .GetReloadToken()
-                .RegisterChangeCallback(state => Reload((IConfiguration) state), configuration);
             ResourceCollection = resourceCollection;
             WebSocketManager = webSocketManager;
             ApiKeys = new Dictionary<string, AccessRights>();
-            Reload(configuration);
+            Configuration = configuration;
+            Reload();
+            ReloadToken = ChangeToken.OnChange(Configuration.GetReloadToken, Reload);
         }
 
-        private void Reload(IConfiguration configuration)
+        private void Reload()
         {
-            var apiKeysConfiguration = configuration.Get<ApiKeys>();
+            var apiKeysConfiguration = Configuration.GetSection(nameof(RESTable.ApiKeys)).Get<ApiKeys>();
             if (apiKeysConfiguration?.Count is not > 0)
                 throw new InvalidOperationException($"When using {nameof(ApiKeyAuthenticator)}, the application configuration file is used " +
                                                     "to read API keys. The config file is missing an 'ApiKeys' aray with at least one " +
@@ -123,14 +124,14 @@ namespace RESTable.Auth
             }
         }
 
-        private string ReadApiKey(ApiKeyItem key)
+        private string ReadApiKey(ApiKeyItem apiKeyItem)
         {
-            var apiKey = key.ApiKey;
+            var apiKey = apiKeyItem.ApiKey;
             if (apiKey == null || Regex.IsMatch(apiKey, @"[\(\)]") || !Regex.IsMatch(apiKey, RegEx.ApiKey))
                 throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                     "whitespace or parentheses, and only containing ASCII characters 33 through 126");
             var keyHash = apiKey.SHA256();
-            var accessRightsEnumeration = key.AllowAccess.Select(item => new AccessRight
+            var accessRightsEnumeration = apiKeyItem.AllowAccess.Select(item => new AccessRight
             (
                 resources: item.Resources
                     .Select(resource => ResourceCollection.SafeFindResources(resource))

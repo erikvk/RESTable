@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Configuration;
 using RESTable.Auth;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
@@ -21,7 +22,7 @@ namespace RESTable
         private RootAccess RootAccess { get; }
         private TypeCache TypeCache { get; }
         private ResourceCollection ResourceCollection { get; }
-        private IConfiguration AppConfiguration { get; }
+
 
         public RESTableConfigurator
         (
@@ -31,7 +32,8 @@ namespace RESTable
             ProtocolProviderManager protocolProviderManager,
             RESTableConfiguration configuration,
             IJsonProvider jsonProvider,
-            RootAccess rootAccess
+            RootAccess rootAccess,
+            IEnumerable<IStartupActivator> startupActivators
         )
         {
             TypeCache = typeCache;
@@ -40,6 +42,7 @@ namespace RESTable
             ProtocolProviderManager = protocolProviderManager;
             Configuration = configuration;
             RootAccess = rootAccess;
+            _ = startupActivators.ToList();
             ApplicationServicesAccessor.JsonProvider = jsonProvider;
             ApplicationServicesAccessor.ResourceCollection = resourceCollection;
             ApplicationServicesAccessor.TypeCache = typeCache;
