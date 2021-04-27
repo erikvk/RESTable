@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.Net;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,7 +62,7 @@ namespace RESTable.Results
             var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
             ContentTypeProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), serializedResult.Body, null, cancellationToken);
             serializedResult.Body.TryRewind();
-            Headers.Elapsed = stopwatch.Elapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+            Headers.Elapsed = stopwatch.Elapsed;
             return serializedResult;
         }
     }

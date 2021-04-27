@@ -18,7 +18,6 @@ namespace RESTable.Requests
 
         private const string _Info = "RESTable-info";
         private const string _Error = "RESTable-error";
-        private const string _Elapsed = "RESTable-elapsed-ms";
         private const string _Metadata = "RESTable-metadata";
         private const string _Version = "RESTable-version";
         private const string _Vary = "Vary";
@@ -40,12 +39,6 @@ namespace RESTable.Requests
         {
             get => this[_Error];
             set => this[_Error] = value;
-        }
-
-        public string Elapsed
-        {
-            get => this[_Elapsed];
-            set => this[_Elapsed] = value;
         }
 
         public string Metadata
@@ -110,6 +103,9 @@ namespace RESTable.Requests
         /// <inheritdoc />
         public string Destination { get; set; }
 
+        /// <inheritdoc />
+        public TimeSpan? Elapsed { get; set; }
+
         /// <summary>
         /// The Authorization header
         /// </summary>
@@ -169,6 +165,7 @@ namespace RESTable.Requests
             Destination = other.Destination;
             Authorization = other.Authorization;
             Origin = other.Origin;
+            Elapsed = other.Elapsed;
             foreach (var (key, value) in other.GetCustomHeaders())
                 SetCustomHeader(key, value);
         }
@@ -205,6 +202,8 @@ namespace RESTable.Requests
                 yield return new KeyValuePair<string, string>(nameof(Authorization), "*******");
             if (Origin != null)
                 yield return new KeyValuePair<string, string>(nameof(Origin), Origin);
+            if (Elapsed != null)
+                yield return new KeyValuePair<string, string>("RESTable-elapsed-ms", Elapsed?.ToStringRESTable());
             foreach (var pair in _dict)
                 yield return pair;
         }
@@ -221,6 +220,7 @@ namespace RESTable.Requests
             Destination = null;
             Authorization = null;
             Origin = null;
+            Elapsed = null;
             _dict.Clear();
         }
 

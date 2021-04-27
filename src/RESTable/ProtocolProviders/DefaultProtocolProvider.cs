@@ -266,7 +266,8 @@ namespace RESTable.ProtocolProviders
                     await jwr.WriteValueAsync(ToUriString(uriComponents), cancellationToken).ConfigureAwait(false);
                 }
                 await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
-                await jwr.WriteValueAsync(error.TimeElapsed.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
+                var milliseconds = toSerialize.TimeElapsed.GetRESTableElapsedMs();
+                await jwr.WriteValueAsync(milliseconds, cancellationToken).ConfigureAwait(false);
                 await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
                 toSerialize.EntityCount = 0;
             }
@@ -317,7 +318,7 @@ namespace RESTable.ProtocolProviders
                     }
                 }
                 await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
-                var milliseconds = Math.Round(toSerialize.TimeElapsed.TotalMilliseconds, 4);
+                var milliseconds = toSerialize.TimeElapsed.GetRESTableElapsedMs();
                 await jwr.WriteValueAsync(milliseconds, cancellationToken).ConfigureAwait(false);
                 await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
                 if (entityCount == 0)

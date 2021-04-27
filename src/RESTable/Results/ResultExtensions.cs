@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +28,7 @@ namespace RESTable.Results
             }
             finally
             {
-                result.Headers.Elapsed = result.TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                result.Headers.Elapsed = result.TimeElapsed;
             }
         }
     }

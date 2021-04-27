@@ -55,7 +55,7 @@ namespace RESTable.Admin
         {
             JsonProvider ??= request.GetRequiredService<IJsonProvider>();
             var result = serializedResult.Result;
-            var milliseconds = result.TimeElapsed.TotalMilliseconds;
+            var milliseconds = result.TimeElapsed.GetRESTableElapsedMs();
             if (result is WebSocketUpgradeSuccessful) return;
             foreach (var group in Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
             {

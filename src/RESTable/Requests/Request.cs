@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -194,12 +193,13 @@ namespace RESTable.Requests
 
             result = await destinationDelegate(result).ConfigureAwait(false);
 
-            result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+            if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
+                throw loop;
+
             if (Headers.Metadata == "full" && result.Metadata is string metadata)
                 result.Headers.Metadata = metadata;
             result.Headers.Version = Configuration.Version;
-            if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
-                throw loop;
+            result.Headers.Elapsed = result.TimeElapsed;
             return result;
         }
 

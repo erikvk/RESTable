@@ -843,6 +843,16 @@ namespace RESTable
 
         #region Conversion
 
+        internal static double GetRESTableElapsedMs(this TimeSpan timeSpan)
+        {
+            return Math.Round(timeSpan.TotalMilliseconds, 4);
+        }
+
+        internal static string ToStringRESTable(this TimeSpan timeSpan)
+        {
+            return timeSpan.GetRESTableElapsedMs().ToString(CultureInfo.InvariantCulture);
+        }
+
         internal static string SHA256(this string input)
         {
             using var hasher = System.Security.Cryptography.SHA256.Create();
