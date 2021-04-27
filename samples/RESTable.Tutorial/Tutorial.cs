@@ -34,7 +34,6 @@ namespace RESTable.Tutorial
         public void ConfigureServices(IServiceCollection services) => services
             .AddODataProvider()
             .AddSqliteProvider(dbPath: "./database")
-            .AddApiKeys()
             .AddAllowedCorsOriginsFilter()
             .AddExcelProvider()
             .AddJsonProvider()
