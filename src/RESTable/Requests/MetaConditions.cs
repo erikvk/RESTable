@@ -175,7 +175,7 @@ namespace RESTable.Requests
                             var renameKeys = (string) value;
                             var terms = renameKeys.Split(',').Select(keyString =>
                             {
-                                var (termKey, newName) = keyString.TSplit(renameKeys.Contains("->") ? "->" : "-%3E");
+                                var (termKey, newName) = keyString.TupleSplit(renameKeys.Contains("->") ? "->" : "-%3E");
                                 return
                                 (
                                     termFactory.MakeOutputTerm(resource, termKey.ToLowerInvariant(), null),

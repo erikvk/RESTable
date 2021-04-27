@@ -528,7 +528,7 @@ namespace RESTable.WebSockets
 
         internal async Task HandleStreamingTextInput(string textInput)
         {
-            var (command, arg) = textInput.TSplit(' ');
+            var (command, arg) = textInput.TupleSplit(' ');
             switch (command.ToUpperInvariant())
             {
                 case "OPTIONS":

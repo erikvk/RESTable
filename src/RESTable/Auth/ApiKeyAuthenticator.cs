@@ -78,7 +78,7 @@ namespace RESTable.Auth
                 authorizationHeader = header;
             else return null;
             headers.Authorization = AuthHeaderMask;
-            var (method, key) = authorizationHeader.TSplit(' ');
+            var (method, key) = authorizationHeader.TupleSplit(' ');
             if (key == null) return null;
             switch (method)
             {

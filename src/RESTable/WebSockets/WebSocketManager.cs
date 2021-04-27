@@ -43,7 +43,7 @@ namespace RESTable.WebSockets
 
             if (textInput.ElementAtOrDefault(0) == '#')
             {
-                var (command, tail) = textInput.Trim().TSplit(' ');
+                var (command, tail) = textInput.Trim().TupleSplit(' ');
                 switch (command.ToUpperInvariant())
                 {
                     case "#TERMINAL" when tail is string json:

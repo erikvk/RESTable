@@ -25,7 +25,6 @@ using RESTable.Results;
 using RESTable.Linq;
 using RESTable.ProtocolProviders;
 using static System.Globalization.DateTimeStyles;
-using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTable.ErrorCodes;
 using static RESTable.Requests.Operators;
@@ -111,12 +110,6 @@ namespace RESTable
                 yield return currentBaseType;
                 currentBaseType = currentBaseType.BaseType;
             }
-        }
-
-        internal static Type[] GetGenericTypeParameters(this Type type, Type typeDef = null)
-        {
-            var toMatch = typeDef == null ? type : type?.GetBaseTypes().FirstOrDefault(t => t.GetGenericTypeDefinition() == typeDef);
-            return toMatch?.IsGenericType != true ? null : toMatch.GenericTypeArguments;
         }
 
         /// <summary>
@@ -212,18 +205,6 @@ namespace RESTable
         internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, OrdinalIgnoreCase);
         internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
-        internal static object GetDefault(this Type type)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            return DEFAULT_METHOD.MakeGenericMethod(type).Invoke(null, null);
-        }
-
-        private static readonly MethodInfo DEFAULT_METHOD = typeof(ExtensionMethods)
-            .GetMethod(nameof(DEFAULT), NonPublic | Static);
-
-        private static object DEFAULT<T>() => default(T);
-
         public static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 
         /// <summary>
@@ -235,25 +216,11 @@ namespace RESTable
             return baseType != null;
         }
 
-        internal static (T, T) Deconstruct<T>(this ICollection<T> collection)
-        {
-            if (collection.Count > 2) throw new InvalidOperationException("Collection contained more than two elements");
-            return (collection.ElementAtOrDefault(0), collection.ElementAtOrDefault(1));
-        }
-
-        /// <summary>
-        /// Splits a string by a separator string
-        /// </summary>
-        public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
-        {
-            return str.Split(new[] {separator}, options);
-        }
-
         /// <summary>
         /// Splits a string into two parts by a separator char, and returns a 2-tuple 
         /// holding the parts.
         /// </summary>
-        public static (string, string) TSplit(this string str, char separator, bool trim = false)
+        public static (string, string) TupleSplit(this string str, char separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.RemoveEmptyEntries);
             return trim switch
@@ -277,7 +244,7 @@ namespace RESTable
         /// Splits a string into two parts by a separator string, and returns a 2-tuple 
         /// holding the parts.
         /// </summary>
-        public static (string, string) TSplit(this string str, string separator, bool trim = false)
+        public static (string, string) TupleSplit(this string str, string separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
             return trim switch
@@ -414,6 +381,13 @@ namespace RESTable
         {
             return new(enumerable, equalityComparer);
         }
+        /// <summary>
+        /// Splits a string by a separator string
+        /// </summary>
+        public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
+        {
+            return str.Split(new[] {separator}, options);
+        }
 #endif
 
         #endregion
@@ -430,27 +404,11 @@ namespace RESTable
         }
 
         /// <summary>
-        /// Adds the tuple to the IDictionary
-        /// </summary>
-        public static void TAdd<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
-        {
-            dict.Add(pair.key, pair.value);
-        }
-
-        /// <summary>
         /// Puts the tuple into the IDictionary
         /// </summary>
-        public static void TPut<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
+        public static void TuplePut<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
         {
             dict[pair.key] = pair.value;
-        }
-
-        /// <summary>
-        /// Puts the KeyValuePair into the IDictionary
-        /// </summary>
-        public static void Put<TKey, TValue>(this IDictionary<TKey, TValue> dict, KeyValuePair<TKey, TValue> pair)
-        {
-            dict[pair.Key] = pair.Value;
         }
 
         internal static Dictionary<TKey, T> SafeToDictionary<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector,
@@ -523,13 +481,9 @@ namespace RESTable
             }
         }
 
-        private static IEnumerable<DictionaryEntry> Cast(this IDictionary dict) => dict.Cast<DictionaryEntry>();
-
         #endregion
 
         #region Requests
-
-        private static readonly CultureInfo en_US = new("en-US");
 
         internal static string GetFriendlyTypeName(this Type type) => Type.GetTypeCode(type) switch
         {
@@ -817,28 +771,6 @@ namespace RESTable
             return valueLiteral;
         }
 
-        /// <summary>
-        /// Returns true if and only if the request contains a condition with the given key and 
-        /// operator (case insensitive). If true, the out Condition parameter will contain a reference to the found
-        /// condition.
-        /// </summary>
-        public static bool TryGetCondition<T>(this IRequest<T> request, string key, Operators op, out Condition<T> condition) where T : class
-        {
-            condition = request.Conditions?.Get(key, op);
-            return condition != null;
-        }
-
-        /// <summary>
-        /// Returns true if and only if the request contains at least one condition with the given key (case insensitive). 
-        /// If true, the out Conditions parameter will contain all the matching conditions
-        /// </summary>
-        /// <returns></returns>
-        public static bool TryGetConditions<T>(this IRequest<T> request, string key, out ICollection<Condition<T>> conditions) where T : class
-        {
-            conditions = request.Conditions.Get(key).ToList();
-            return !conditions.Any() != true;
-        }
-
         #endregion
 
         #region Conversion
@@ -949,17 +881,6 @@ namespace RESTable
 
             replaced = true;
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
-        }
-
-        internal static Method[] ToMethodsArray(this string methodsString)
-        {
-            if (methodsString == null) return null;
-            if (methodsString.Trim() == "*")
-                return EnumMember<Method>.Values;
-            return methodsString.Split(',')
-                .Where(s => s != "")
-                .Select(s => (Method) Enum.Parse(typeof(Method), s))
-                .ToArray();
         }
 
         #endregion

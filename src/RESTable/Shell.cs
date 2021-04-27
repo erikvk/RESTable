@@ -33,7 +33,6 @@ namespace RESTable
 
         private const int MaxStreamBufferSize = 16_000_000;
         private const int MinStreamBufferSize = 512;
-        private const int ResultStreamThreshold = 16_000_000;
         private const int MaxInputSize = 16_000_000;
 
         private string query;
@@ -280,10 +279,10 @@ namespace RESTable
                         await SendBadRequest().ConfigureAwait(false);
                         break;
                     default:
-                        var (command, tail) = input.TSplit(' ');
+                        var (command, tail) = input.TupleSplit(' ');
                         if (tail != null)
                         {
-                            var (path, tail2) = tail.TSplit(' ');
+                            var (path, tail2) = tail.TupleSplit(' ');
                             if (path.StartsWith("/"))
                             {
                                 await Navigate(path).ConfigureAwait(false);
@@ -355,7 +354,7 @@ namespace RESTable
                                     await SendHeaders().ConfigureAwait(false);
                                     break;
                                 }
-                                var (key, value) = tail.TSplit('=', true);
+                                var (key, value) = tail.TupleSplit('=', true);
                                 if (value == null)
                                 {
                                     await SendHeaders().ConfigureAwait(false);
@@ -384,7 +383,7 @@ namespace RESTable
                                     await WebSocket.SendJson(this).ConfigureAwait(false);
                                     break;
                                 }
-                                var (property, valueString) = tail.TSplit('=', true);
+                                var (property, valueString) = tail.TupleSplit('=', true);
                                 if (property == null || valueString == null)
                                 {
                                     await WebSocket
@@ -774,9 +773,6 @@ namespace RESTable
             WebSocket.SendText(initialInfo + ConfirmationText);
 
         private Task SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
-
-        private Task SendInvalidCommandArgument(string command, string arg) =>
-            WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
 
         private Task SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
 

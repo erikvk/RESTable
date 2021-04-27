@@ -197,6 +197,9 @@ namespace RESTable.ProtocolProviders
         {
             switch (toSerialize.Result)
             {
+                case Options options:
+                    await SerializeOptions(options, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
+                    break;
                 case Head head:
                     head.Headers["EntityCount"] = head.EntityCount.ToString();
                     return;
@@ -213,6 +216,34 @@ namespace RESTable.ProtocolProviders
                     await SerializeError(error, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
                     break;
                 default: return;
+            }
+        }
+
+        private async Task SerializeOptions(Options options, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        {
+            if (contentTypeProvider is not IJsonProvider jsonProvider)
+                return;
+            if (options.Resource is not IResource resource)
+                return;
+            var optionsBody = new OptionsBody(resource.Name, resource.ResourceKind, resource.AvailableMethods);
+
+            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
+#if NETSTANDARD2_1
+            await using (swr)
+#else
+            using (swr)
+#endif
+            {
+                using var jwr = JsonProvider.GetJsonWriter(swr);
+                await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
+                var entityCount = await jsonProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), jwr, cancellationToken).ConfigureAwait(false);
+                toSerialize.EntityCount = entityCount;
+                await jwr.WritePropertyNameAsync("DataCount", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(entityCount, cancellationToken).ConfigureAwait(false);
+                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 

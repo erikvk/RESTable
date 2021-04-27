@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Net;
-using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Auth;
-using RESTable.ContentTypeProviders;
-using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
 
@@ -17,10 +13,9 @@ namespace RESTable.Results
     /// </summary>
     internal class Options : Success
     {
-        private IResource Resource { get; }
-        private bool HasResource => Resource != null;
-        private IContentTypeProvider ContentTypeProvider { get; }
-        public sealed override IRequest Request { get; }
+        public IResource Resource { get; }
+
+        public sealed override IRequest Request => null;
 
         internal static Options Create(RequestParameters parameters)
         {
@@ -36,7 +31,7 @@ namespace RESTable.Results
                 options.Headers.Vary = "Origin";
             }
             else return options;
-            if (options.HasResource)
+            if (options.Resource != null)
                 options.Headers.AccessControlAllowMethods = string.Join(", ", options.Resource.AvailableMethods);
             options.Headers.AccessControlMaxAge = "120";
             options.Headers.AccessControlAllowCredentials = "true";
@@ -46,24 +41,9 @@ namespace RESTable.Results
 
         private Options(RequestParameters parameters) : base(parameters)
         {
-            Request = null;
             StatusCode = HttpStatusCode.OK;
             StatusDescription = "OK";
             Resource = parameters.iresource;
-            ContentTypeProvider = parameters.GetOutputContentTypeProvider();
-        }
-
-        public ISerializedResult Serialize(CancellationToken cancellationToken = new())
-        {
-            if (!HasResource)
-                return new SerializedResult(this);
-            var serializedResult = new SerializedResult(this);
-            var stopwatch = Stopwatch.StartNew();
-            var optionsBody = new OptionsBody(Resource.Name, Resource.ResourceKind, Resource.AvailableMethods);
-            ContentTypeProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), serializedResult.Body, null, cancellationToken);
-            serializedResult.Body.TryRewind();
-            Headers.Elapsed = stopwatch.Elapsed;
-            return serializedResult;
         }
     }
 }

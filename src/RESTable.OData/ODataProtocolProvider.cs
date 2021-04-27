@@ -114,7 +114,7 @@ namespace RESTable.OData
 
         private static void PopulateFromOptions(ODataUriComponents args, string options)
         {
-            foreach (var (optionKey, optionValue) in options.Split('&').Select(option => option.TSplit('=')))
+            foreach (var (optionKey, optionValue) in options.Split('&').Select(option => option.TupleSplit('=')))
             {
                 if (string.IsNullOrWhiteSpace(optionKey))
                     throw new InvalidODataSyntax(InvalidConditionSyntax, "An OData query option key was null or whitespace");
@@ -147,7 +147,7 @@ namespace RESTable.OData
                             case orderby:
                                 if (decodedValue.Contains(","))
                                     throw new FeatureNotImplemented("Multiple expressions not implemented for $orderby");
-                                var (term, order) = decodedValue.TSplit(' ');
+                                var (term, order) = decodedValue.TupleSplit(' ');
                                 switch (order)
                                 {
                                     case null:

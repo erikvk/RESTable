@@ -25,7 +25,7 @@ namespace RESTable.Resources.Templates
 
         public override async Task HandleTextInput(string input)
         {
-            var (command, args) = input.TSplit(" ");
+            var (command, args) = input.TupleSplit(" ");
             switch (command.Trim())
             {
                 case var cancel when cancel.EqualsNoCase("cancel"):

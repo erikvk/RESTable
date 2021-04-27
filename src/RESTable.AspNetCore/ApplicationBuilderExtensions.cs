@@ -48,7 +48,7 @@ namespace RESTable.AspNetCore
 
         private static async Task HandleOptionsRequest(HttpContext aspNetCoreContext)
         {
-            var (_, uri) = aspNetCoreContext.Request.Path.Value.TSplit(RootUri);
+            var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(RootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
             var client = GetClient(aspNetCoreContext);
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
@@ -68,7 +68,7 @@ namespace RESTable.AspNetCore
 
         private static async Task HandleRequest(Method method, HttpContext aspNetCoreContext, IRequestAuthenticator authenticator)
         {
-            var (_, uri) = aspNetCoreContext.Request.Path.Value.TSplit(RootUri);
+            var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(RootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
             var client = GetClient(aspNetCoreContext);
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
