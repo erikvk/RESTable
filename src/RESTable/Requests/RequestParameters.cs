@@ -75,7 +75,7 @@ namespace RESTable.Requests
         internal IResource IResource => iresource ??= Context.Services.GetRequiredService<ResourceCollection>().FindResource(Uri.ResourceSpecifier);
         internal Exception Error { get; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
-        bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true} e;
+        bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true};
         public MessageType MessageType { get; } = MessageType.HttpInput;
 
         public CachedProtocolProvider CachedProtocolProvider { get; set; }

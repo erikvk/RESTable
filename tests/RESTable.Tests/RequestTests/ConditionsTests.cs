@@ -8,8 +8,10 @@ namespace RESTable.Tests.RequestTests
 {
     public class ConditionsTests : RequestTestBase
     {
+        #region Declared members
+
         [Fact]
-        public async Task NoConditionsNoFiltering()
+        public async Task NoConditionsNoFilteringDeclared()
         {
             // Base case, a request for 20 things should return 20 things
             await using var request = Context.CreateRequest<TestResource>();
@@ -20,7 +22,7 @@ namespace RESTable.Tests.RequestTests
         }
 
         [Fact]
-        public async Task OneConditionFilters()
+        public async Task OneConditionFiltersDeclared()
         {
             // One condition should filter the results
             await using var request = Context.CreateRequest<TestResource>()
@@ -32,7 +34,7 @@ namespace RESTable.Tests.RequestTests
         }
 
         [Fact]
-        public async Task OneParsedConditionFilters()
+        public async Task OneParsedConditionFiltersDeclared()
         {
             // The same as above, but from a parsed URI
             await using var request = (IRequest<TestResource>) Context.CreateRequest(uri: "/TestResource/id>10");
@@ -43,7 +45,7 @@ namespace RESTable.Tests.RequestTests
         }
 
         [Fact]
-        public async Task TwoConditionsFilter()
+        public async Task TwoConditionsFilterDeclared()
         {
             // Two conditions should filter the results
             await using var request = Context.CreateRequest<TestResource>()
@@ -56,7 +58,7 @@ namespace RESTable.Tests.RequestTests
         }
 
         [Fact]
-        public async Task TwoParsedConditionsFilter()
+        public async Task TwoParsedConditionsFilterDeclared()
         {
             // The same as above, but from a parsed URI
             await using var request = (IRequest<TestResource>) Context.CreateRequest(uri: "/TestResource/id>10&name.1=a");
@@ -65,6 +67,70 @@ namespace RESTable.Tests.RequestTests
             await using var serialized = await result.Serialize();
             Assert.Equal(5, serialized.EntityCount);
         }
+
+        #endregion
+
+        #region Dynamic members
+
+        [Fact]
+        public async Task NoConditionsNoFilteringDynamic()
+        {
+            // Base case, a request for 20 things should return 20 things
+            await using var request = Context.CreateRequest<TestResourceDynamic>();
+            request.Selector = () => TestResourceDynamic.Generate(20);
+            await using var result = await request.GetResult();
+            await using var serialized = await result.Serialize();
+            Assert.Equal(20, serialized.EntityCount);
+        }
+
+        [Fact]
+        public async Task OneConditionFiltersDynamic()
+        {
+            // One condition should filter the results
+            await using var request = Context.CreateRequest<TestResourceDynamic>()
+                .WithCondition("Id", Operators.GREATER_THAN, 10);
+            request.Selector = () => TestResourceDynamic.Generate(20);
+            await using var result = await request.GetResult();
+            await using var serialized = await result.Serialize();
+            Assert.Equal(10, serialized.EntityCount);
+        }
+
+        [Fact]
+        public async Task OneParsedConditionFiltersDynamic()
+        {
+            // The same as above, but from a parsed URI
+            await using var request = (IRequest<TestResourceDynamic>) Context.CreateRequest(uri: "/TestResourceDynamic/id>10");
+            request.Selector = () => TestResourceDynamic.Generate(20);
+            await using var result = await request.GetResult();
+            await using var serialized = await result.Serialize();
+            Assert.Equal(10, serialized.EntityCount);
+        }
+
+        [Fact]
+        public async Task TwoConditionsFilterDynamic()
+        {
+            // Two conditions should filter the results
+            await using var request = Context.CreateRequest<TestResourceDynamic>()
+                .WithCondition("Id", Operators.GREATER_THAN, 10)
+                .WithCondition("Name" + ".1", Operators.EQUALS, 'a'); // second letter in name is 'a'
+            request.Selector = () => TestResourceDynamic.Generate(20);
+            await using var result = await request.GetResult();
+            await using var serialized = await result.Serialize();
+            Assert.Equal(5, serialized.EntityCount);
+        }
+
+        [Fact]
+        public async Task TwoParsedConditionsFilterDynamic()
+        {
+            // The same as above, but from a parsed URI
+            await using var request = (IRequest<TestResourceDynamic>) Context.CreateRequest(uri: "/TestResourceDynamic/id>10&name.1=a");
+            request.Selector = () => TestResourceDynamic.Generate(20);
+            await using var result = await request.GetResult();
+            await using var serialized = await result.Serialize();
+            Assert.Equal(5, serialized.EntityCount);
+        }
+
+        #endregion
 
         public ConditionsTests(RESTableFixture fixture) : base(fixture) { }
     }

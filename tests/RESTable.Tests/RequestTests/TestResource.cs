@@ -18,7 +18,7 @@ namespace RESTable.Tests.RequestTests
         public TestResource(int id, string name)
         {
             Id = id;
-            Name = name + Id;
+            Name = name + id;
         }
 
         public static async IAsyncEnumerable<TestResource> Generate(int number)

@@ -1,13 +1,10 @@
-﻿namespace RESTable.Client
+﻿using System;
+using RESTable.Requests;
+
+namespace RESTable.Client
 {
-    public interface IRESTableClient
+    public class RESTableClient : RESTableContext
     {
-        
-    }
-    
-    
-    internal class RESTableClient
-    {
-        
+        public RESTableClient(Requests.Client client, IServiceProvider services) : base(client, services) { }
     }
 }

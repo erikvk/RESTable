@@ -39,7 +39,7 @@ namespace RESTable.AspNetCore
 
                 foreach (var method in config.Methods)
                 {
-                    router.MapVerb(method.ToString(), Template, aspNetCoreContext => HandleRequest(method, aspNetCoreContext, authenticator));
+                    router.MapVerb(method.ToString(), Template, hc => HandleRequest(method, hc, authenticator));
                 }
             });
 

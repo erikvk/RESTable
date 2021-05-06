@@ -70,7 +70,7 @@ namespace RESTable.Requests
 
         public Operator ParsedOperator => Operator;
 
-        internal Type Type => Term.IsDeclared ? Term.LastAs<DeclaredProperty>()?.Type : null;
+        public Type Type => Term.IsDeclared ? Term.LastAs<DeclaredProperty>()?.Type : null;
 
         public bool IsOfType<T1>() => Type == typeof(T1);
 
@@ -92,7 +92,18 @@ namespace RESTable.Requests
             };
         }
 
-        private static int Compare(object other, object value) => Comparer.DefaultInvariant.Compare(other, value);
+        private int Compare(object other, object value)
+        {
+            try
+            {
+                return Comparer.DefaultInvariant.Compare(other, value);
+            }
+            catch (ArgumentException) when (Term.IsDynamic && value is not null)
+            {
+                var convertedOther = Convert.ChangeType(other, value.GetType());
+                return Comparer.DefaultInvariant.Compare(convertedOther, value);
+            }
+        }
 
         private bool EqualsPredicate(object other)
         {

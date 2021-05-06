@@ -50,7 +50,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the first property reference of the term, or null of the term is empty
         /// </summary>
-        public Property First => Store.Any() ? Store[0] : null;
+        public Property First => Store.Count > 0 ? Store[0] : null;
 
         /// <summary>
         /// Gets the last property reference of the term, and safe casts it to T
@@ -60,7 +60,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the last property reference of the term, or null of the term is empty
         /// </summary>
-        public Property Last => Store.LastOrDefault();
+        public Property Last => Store.Count > 0 ? Store[Store.Count - 1] : null;
 
         /// <summary>
         /// A cache with values for whether some flag (key) is present on all
@@ -98,8 +98,16 @@ namespace RESTable.Meta
 
         internal void SetCommonProperties()
         {
-            IsDeclared = Store.All(p => p is DeclaredProperty);
-            ConditionSkip = Store.Any(p => p is DeclaredProperty {SkipConditions: true} s);
+            var isDeclared = true;
+            var conditionSkip = false;
+            foreach (var property in Store)
+            {
+                isDeclared = isDeclared && property is DeclaredProperty;
+                if (property is DeclaredProperty {SkipConditions: true})
+                    conditionSkip = true;
+            }
+            IsDeclared = isDeclared;
+            ConditionSkip = conditionSkip;
             Key = GetKey();
             ActualNamesKey = GetActualNameKey();
         }
@@ -121,12 +129,12 @@ namespace RESTable.Meta
         {
             if (term.IsDynamic) return term;
             var newTerm = new Term(term.ComponentSeparator);
-            newTerm.Store.AddRange(term.Store.Select(prop => prop switch
+            foreach (var prop in term.Store)
             {
-                DynamicProperty _ => prop,
-                DeclaredProperty _ => DynamicProperty.Parse(prop.Name),
-                _ => throw new ArgumentOutOfRangeException()
-            }));
+                if (prop.IsDynamic)
+                    newTerm.Store.Add(prop);
+                else newTerm.Store.Add(DynamicProperty.Parse(prop.Name));
+            }
             newTerm.IsDeclared = false;
             newTerm.Key = newTerm.GetKey();
             return newTerm;
@@ -163,7 +171,7 @@ namespace RESTable.Meta
                     actualKey = jproperty.Name;
                     parent = jobj;
                     property = DynamicProperty.Parse(term.Key);
-                    return jproperty.Value.ToObject<dynamic>();
+                    return jproperty.Value.ToObject<object>();
                 }
                 term = MakeDynamic(term);
             }
@@ -179,7 +187,7 @@ namespace RESTable.Meta
             }
 
             // If the term is dynamic, we do not know the actual key beforehand. We instead
-            // set names for dynamic properties when getting their values, and concatenate the
+            // set names inside the dynamic properties when getting their values, and concatenate the
             // property names here.
             if (term.IsDynamic)
                 term.Key = term.GetKey();
@@ -236,9 +244,9 @@ namespace RESTable.Meta
             return Join(term, property);
         }
 
-        private static Term Join(Term term1, Property singleProperty)
+        private static Term Join(Term term1, params Property[] properties)
         {
-            return Join(term1, new[] {singleProperty});
+            return Join(term1, (IEnumerable<Property>) properties);
         }
 
         private static Term Join(Term term1, IEnumerable<Property> properties)
