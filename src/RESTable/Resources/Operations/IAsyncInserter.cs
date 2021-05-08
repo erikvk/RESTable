@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
@@ -13,6 +14,6 @@ namespace RESTable.Resources.Operations
         /// The insert method for this IInserter instance. Defines the Insert
         /// operation for a given resource.
         /// </summary>
-        ValueTask<int> InsertAsync(IRequest<T> request);
+        IAsyncEnumerable<T> InsertAsync(IRequest<T> request);
     }
 }

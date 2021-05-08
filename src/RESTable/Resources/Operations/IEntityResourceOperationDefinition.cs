@@ -14,8 +14,8 @@ namespace RESTable.Resources.Operations
         bool CanCount { get; }
 
         IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request);
-        ValueTask<int> InsertAsync(IRequest<TResource> request);
-        ValueTask<int> UpdateAsync(IRequest<TResource> request);
+        IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request);
+        IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request);
         ValueTask<int> DeleteAsync(IRequest<TResource> request);
         ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request);
         ValueTask<long> CountAsync(IRequest<TResource> request);

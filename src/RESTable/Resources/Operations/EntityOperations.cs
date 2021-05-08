@@ -114,7 +114,7 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static async Task<int> Insert(IEntityRequest<T> request, bool limit = false)
+        private static IAsyncEnumerable<T> Insert(IEntityRequest<T> request, bool limit = false)
         {
             try
             {
@@ -126,7 +126,7 @@ namespace RESTable.Resources.Operations
                 }
 
                 request.EntitiesProducer = RequestEntitiesProducer;
-                return await request.EntityResource.InsertAsync(request).ConfigureAwait(false);
+                return request.EntityResource.InsertAsync(request);
             }
             catch (InvalidInputEntity)
             {
@@ -138,7 +138,7 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static async Task<int> Update(IEntityRequest<T> request)
+        private static IAsyncEnumerable<T> Update(IEntityRequest<T> request)
         {
             try
             {
@@ -152,7 +152,7 @@ namespace RESTable.Resources.Operations
                 }
 
                 request.EntitiesProducer = RequestEntitiesProducer;
-                return await request.EntityResource.UpdateAsync(request).ConfigureAwait(false);
+                return request.EntityResource.UpdateAsync(request);
             }
             catch (InvalidInputEntity)
             {
@@ -164,7 +164,7 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static async Task<int> SafePostUpdate(IEntityRequest<T> request, IJsonProvider jsonProvider, ICollection<(JObject json, T source)> items)
+        private static IAsyncEnumerable<T> SafePostUpdate(IEntityRequest<T> request, IJsonProvider jsonProvider, ICollection<(JObject json, T source)> items)
         {
             try
             {
@@ -181,7 +181,7 @@ namespace RESTable.Resources.Operations
                     .Validate(request.EntityResource, request.Context);
 
                 request.EntitiesProducer = RequestEntitiesProducer;
-                return await request.EntityResource.UpdateAsync(request).ConfigureAwait(false);
+                return request.EntityResource.UpdateAsync(request);
             }
             catch (InvalidInputEntity)
             {

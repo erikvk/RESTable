@@ -35,8 +35,8 @@ namespace RESTable.Resources.Operations
         public bool CanCount => AsyncCounter != null;
 
         public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request) => AsyncSelector(request);
-        public ValueTask<int> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);
-        public ValueTask<int> UpdateAsync(IRequest<TResource> request) => AsyncUpdater(request);
+        public IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);
+        public IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request) => AsyncUpdater(request);
         public ValueTask<int> DeleteAsync(IRequest<TResource> request) => AsyncDeleter(request);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request) => AsyncAuthenticator(request);
         public ValueTask<long> CountAsync(IRequest<TResource> request) => AsyncCounter(request);
@@ -52,7 +52,7 @@ namespace RESTable.Resources.Operations
             }
 
             var index = -1L;
-     
+
             await foreach (var entity in entities.ConfigureAwait(false))
             {
                 index += 1;
@@ -84,9 +84,9 @@ namespace RESTable.Resources.Operations
             if (AsyncSelector == null && SyncSelector is Selector<TResource> selector)
                 AsyncSelector = request => CallAsync(selector(request));
             if (AsyncInserter == null && SyncInserter is Inserter<TResource> inserter)
-                AsyncInserter = request => new ValueTask<int>(inserter(request));
+                AsyncInserter = request => inserter(request).ToAsyncEnumerable();
             if (AsyncUpdater == null && SyncUpdater is Updater<TResource> updater)
-                AsyncUpdater = request => new ValueTask<int>(updater(request));
+                AsyncUpdater = request => updater(request).ToAsyncEnumerable();
             if (AsyncDeleter == null && SyncDeleter is Deleter<TResource> deleter)
                 AsyncDeleter = request => new ValueTask<int>(deleter(request));
             if (AsyncAuthenticator == null && SyncAuthenticator is Authenticator<TResource> authenticator)

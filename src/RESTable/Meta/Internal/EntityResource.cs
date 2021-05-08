@@ -58,8 +58,8 @@ namespace RESTable.Meta.Internal
         public bool CanDelete => Delegates.CanDelete;
         public bool CanCount => Delegates.CanCount;
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => Delegates.SelectAsync(request);
-        public ValueTask<int> InsertAsync(IRequest<T> request) => Delegates.InsertAsync(request);
-        public ValueTask<int> UpdateAsync(IRequest<T> request) => Delegates.UpdateAsync(request);
+        public IAsyncEnumerable<T> InsertAsync(IRequest<T> request) => Delegates.InsertAsync(request);
+        public IAsyncEnumerable<T> UpdateAsync(IRequest<T> request) => Delegates.UpdateAsync(request);
         public ValueTask<int> DeleteAsync(IRequest<T> request) => Delegates.DeleteAsync(request);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<T> request) => Delegates.AuthenticateAsync(request);
         public ValueTask<long> CountAsync(IRequest<T> request) => Delegates.CountAsync(request);
