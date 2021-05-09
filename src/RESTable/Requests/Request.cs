@@ -229,26 +229,26 @@ namespace RESTable.Requests
                         return await SwitchTerminal(terminalResource).ConfigureAwait(false);
                     }
 
-                    case IBinaryResource<T> binary:
+                    case IBinaryResource<T> binaryResource:
                     {
-                        var binaryResult = binary.SelectBinary(this);
+                        var binaryResult = binaryResource.SelectBinary(this);
                         if (!this.Accepts(binaryResult.ContentType, out var acceptHeader))
                             throw new NotAcceptable(acceptHeader, binaryResult.ContentType.ToString());
                         var binaryContent = new Binary(this, binaryResult);
                         return binaryContent;
                     }
 
-                    case IEntityResource<T> entity:
+                    case IEntityResource<T> entityResource:
                     {
-                        if (entity.RequiresAuthentication)
+                        if (entityResource.RequiresAuthentication)
                         {
                             var authenticator = this.GetRequiredService<ResourceAuthenticator>();
-                            await authenticator.ResourceAuthenticate(this, entity).ConfigureAwait(false);
+                            await authenticator.ResourceAuthenticate(this, entityResource).ConfigureAwait(false);
                         }
                         if (MetaConditions.SafePost != null)
                         {
-                            if (!entity.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
-                            if (!entity.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
+                            if (!entityResource.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
+                            if (!entityResource.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
                         }
                         var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
                         var result = await evaluator(this).ConfigureAwait(false);
