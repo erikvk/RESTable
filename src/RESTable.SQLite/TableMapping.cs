@@ -12,7 +12,6 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Resources.Templates;
-using RESTable.Results;
 using RESTable.SQLite.Meta;
 
 namespace RESTable.SQLite

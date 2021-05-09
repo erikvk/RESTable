@@ -6,7 +6,7 @@ namespace RESTable.Results
     /// <summary>
     /// Returned to the client on successful safe post insertion/updating
     /// </summary>
-    public class SafePostedEntities : Change
+    public class SafePostedEntities<T> : Change<T> where T : class
     {
         /// <summary>
         /// The number of updated entities
@@ -18,7 +18,7 @@ namespace RESTable.Results
         /// </summary>
         public int InsertedCount { get; }
 
-        public SafePostedEntities(IRequest request, int updatedEntities, int insertedEntities, object[] entities) : base(request, updatedEntities + insertedEntities, entities)
+        public SafePostedEntities(IRequest request, int updatedEntities, int insertedEntities, T[] entities) : base(request, updatedEntities + insertedEntities, entities)
         {
             UpdatedCount = updatedEntities;
             InsertedCount = insertedEntities;
@@ -26,6 +26,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(SafePostedEntities)};{Request.Resource};{UpdatedCount},{InsertedCount}";
+        public override string Metadata => $"{nameof(SafePostedEntities<T>)};{Request.Resource};{UpdatedCount},{InsertedCount}";
     }
 }

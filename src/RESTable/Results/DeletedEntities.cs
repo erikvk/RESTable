@@ -6,20 +6,20 @@ namespace RESTable.Results
     /// <summary>
     /// Returned to the client on successful deletion of entities
     /// </summary>
-    public class DeletedEntities : Change
+    public class DeletedEntities<T> : Change<T> where T : class
     {
         /// <summary>
         /// The number of entities deleted
         /// </summary>
         public int DeletedCount { get; }
 
-        public DeletedEntities(IRequest request, int count) : base(request, count, new object[0])
+        public DeletedEntities(IRequest request, int count) : base(request, count, new T[0])
         {
             DeletedCount = count;
             Headers.Info = $"{count} entities deleted from '{request.Resource}'";
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(DeletedEntities)};{Request.Resource};{DeletedCount}";
+        public override string Metadata => $"{nameof(DeletedEntities<T>)};{Request.Resource};{DeletedCount}";
     }
 }

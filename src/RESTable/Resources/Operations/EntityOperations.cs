@@ -231,7 +231,7 @@ namespace RESTable.Resources.Operations
                     return await SafePost(request).ConfigureAwait(false);
                 var insertedEntities = Insert(request);
                 var (count, entities) = await ChangeCount(insertedEntities).ConfigureAwait(false);
-                return new InsertedEntities(request, count, entities);
+                return new InsertedEntities<T>(request, count, entities);
             }
 
             async Task<RequestSuccess> PutEvaluator(IEntityRequest<T> request)
@@ -245,18 +245,18 @@ namespace RESTable.Resources.Operations
                     {
                         var insertedEntities = Insert(request);
                         var (count, entities) = await ChangeCount(insertedEntities).ConfigureAwait(false);
-                        return new InsertedEntities(request, count, entities);
+                        return new InsertedEntities<T>(request, count, entities);
                     }
                     case 1 when request.GetUpdater() is null && !request.Body.CanRead:
                     {
-                        return new UpdatedEntities(request, 0, null);
+                        return new UpdatedEntities<T>(request, 0, null);
                     }
                     default:
                     {
                         request.Selector = () => source.ToAsyncEnumerable();
                         var updatedEntities = Update(request);
                         var (count, entities) = await ChangeCount(updatedEntities).ConfigureAwait(false);
-                        return new UpdatedEntities(request, count, entities);
+                        return new UpdatedEntities<T>(request, count, entities);
                     }
                 }
             }
@@ -271,10 +271,10 @@ namespace RESTable.Resources.Operations
             {
                 var updatedEntities = Update(request);
                 var (count, entities) = await ChangeCount(updatedEntities).ConfigureAwait(false);
-                return new UpdatedEntities(request, count, entities);
+                return new UpdatedEntities<T>(request, count, entities);
             }
 
-            async Task<RequestSuccess> DeleteEvaluator(IEntityRequest<T> request) => new DeletedEntities(request, await Delete(request).ConfigureAwait(false));
+            async Task<RequestSuccess> DeleteEvaluator(IEntityRequest<T> request) => new DeletedEntities<T>(request, await Delete(request).ConfigureAwait(false));
             async Task<RequestSuccess> ReportEvaluator(IEntityRequest<T> request) => new Report(request, await TryCount(request).ConfigureAwait(false));
             Task<RequestSuccess> ImATeapotEvaluator(IEntityRequest<T> request) => Task.FromResult<RequestSuccess>(new ImATeapot(request));
 
@@ -292,13 +292,13 @@ namespace RESTable.Resources.Operations
         }
 
 
-        private static async Task<(int count, object[] changedEntities)> ChangeCount
+        private static async Task<(int count, T[] changedEntities)> ChangeCount
         (
             IAsyncEnumerable<T> changedEntities,
             int maxNumberOfChangedEntities = Change.MaxNumberOfEntitiesInChangeResults
         )
         {
-            var buffer = new List<object>();
+            var buffer = new List<T>();
             var count = 0;
             await foreach (var item in changedEntities.ConfigureAwait(false))
             {
@@ -306,20 +306,20 @@ namespace RESTable.Resources.Operations
                     buffer.Add(item);
                 count += 1;
             }
-            var changedEntitiesArray = count <= maxNumberOfChangedEntities ? buffer.ToArray() : new object[0];
+            var changedEntitiesArray = count <= maxNumberOfChangedEntities ? buffer.ToArray() : new T[0];
             return (count, changedEntitiesArray);
         }
 
         private const int MaxNumberOfEntitiesInSafePostResults = Change.MaxNumberOfEntitiesInChangeResults / 2;
 
-        private static async Task<(int updatedCount, int insertedCount, object[] changedEntities)> SafePostCount
+        private static async Task<(int updatedCount, int insertedCount, T[] changedEntities)> SafePostCount
         (
             IAsyncEnumerable<T> updatedEntities,
             IAsyncEnumerable<T> insertedEntities,
             int maxNumberOfChangedEntities = MaxNumberOfEntitiesInSafePostResults
         )
         {
-            var buffer = new List<object>();
+            var buffer = new List<T>();
             var (updatedCount, insertedCount, totalCount) = (0, 0, 0);
             await foreach (var item in updatedEntities.ConfigureAwait(false))
             {
@@ -335,7 +335,7 @@ namespace RESTable.Resources.Operations
                 insertedCount += 1;
                 totalCount += 1;
             }
-            var changedEntitiesArray = totalCount <= maxNumberOfChangedEntities ? buffer.ToArray() : new object[0];
+            var changedEntitiesArray = totalCount <= maxNumberOfChangedEntities ? buffer.ToArray() : new T[0];
             return (updatedCount, insertedCount, changedEntitiesArray);
         }
 
@@ -370,7 +370,7 @@ namespace RESTable.Resources.Operations
                     insertedEntities = Insert(innerRequest);
                 }
                 var (updatedCount, insertedCount, changedEntities) = await SafePostCount(updatedEntities, insertedEntities).ConfigureAwait(false);
-                return new SafePostedEntities(request, updatedCount, insertedCount, changedEntities);
+                return new SafePostedEntities<T>(request, updatedCount, insertedCount, changedEntities);
             }
             catch (Exception e)
             {

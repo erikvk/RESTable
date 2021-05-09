@@ -22,7 +22,6 @@ using RESTable.Requests.Filters;
 using RESTable.Requests.Processors;
 using RESTable.Resources;
 using RESTable.Results;
-using RESTable.Linq;
 using RESTable.ProtocolProviders;
 using static System.Globalization.DateTimeStyles;
 using static System.StringComparison;

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Net;
+﻿using System.Net;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -8,9 +7,9 @@ namespace RESTable.Results
     /// <summary>
     /// Returned to the client on successful insertion of entities
     /// </summary>
-    public class InsertedEntities : Change
+    public class InsertedEntities<T> : Change<T> where T : class
     {
-        public InsertedEntities(IRequest request, int count, object[] entities) : base(request, count, entities)
+        public InsertedEntities(IRequest request, int count, T[] entities) : base(request, count, entities)
         {
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;
             StatusDescription = StatusCode.ToString();
@@ -18,6 +17,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(InsertedEntities)};{Request.Resource};{Count}";
+        public override string Metadata => $"{nameof(InsertedEntities<T>)};{Request.Resource};{Count}";
     }
 }

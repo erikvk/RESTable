@@ -206,7 +206,7 @@ namespace RESTable.ProtocolProviders
                     head.Headers["EntityCount"] = head.EntityCount.ToString();
                     return;
                 case Change change:
-                    await SerializeChange(change, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
+                    await SerializeChange((dynamic) change, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
                     return;
                 case Binary binary:
                     await binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken).ConfigureAwait(false);
@@ -362,7 +362,8 @@ namespace RESTable.ProtocolProviders
             }
         }
 
-        private async Task SerializeChange(Change change, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        private async Task SerializeChange<T>(Change<T> change, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+            where T : class
         {
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return;
@@ -391,25 +392,25 @@ namespace RESTable.ProtocolProviders
 
                 switch (change)
                 {
-                    case UpdatedEntities:
+                    case UpdatedEntities<T>:
                     {
                         await jwr.WritePropertyNameAsync("UpdatedCount", cancellationToken).ConfigureAwait(false);
                         await jwr.WriteValueAsync(change.Count, cancellationToken).ConfigureAwait(false);
                         break;
                     }
-                    case InsertedEntities:
+                    case InsertedEntities<T>:
                     {
                         await jwr.WritePropertyNameAsync("InsertedCount", cancellationToken).ConfigureAwait(false);
                         await jwr.WriteValueAsync(change.Count, cancellationToken).ConfigureAwait(false);
                         break;
                     }
-                    case DeletedEntities:
+                    case DeletedEntities<T>:
                     {
                         await jwr.WritePropertyNameAsync("DeletedCount", cancellationToken).ConfigureAwait(false);
                         await jwr.WriteValueAsync(change.Count, cancellationToken).ConfigureAwait(false);
                         break;
                     }
-                    case SafePostedEntities spe:
+                    case SafePostedEntities<T> spe:
                     {
                         await jwr.WritePropertyNameAsync("UpdatedCount", cancellationToken).ConfigureAwait(false);
                         await jwr.WriteValueAsync(spe.UpdatedCount, cancellationToken).ConfigureAwait(false);
@@ -418,7 +419,7 @@ namespace RESTable.ProtocolProviders
                         break;
                     }
                 }
-                
+
                 await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
                 var milliseconds = toSerialize.TimeElapsed.GetRESTableElapsedMs();
                 await jwr.WriteValueAsync(milliseconds, cancellationToken).ConfigureAwait(false);

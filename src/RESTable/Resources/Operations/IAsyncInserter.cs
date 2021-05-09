@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
