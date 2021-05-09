@@ -32,7 +32,7 @@ namespace RESTable.WebSockets
         internal WebSocketConnection(WebSocket webSocket, Terminal terminal, ITerminalResource resource)
         {
             Context = webSocket.Context;
-            if (webSocket == null || webSocket.Status == WebSocketStatus.Closed)
+            if (webSocket is null || webSocket.Status == WebSocketStatus.Closed)
                 throw new WebSocketNotConnectedException();
             WebSocket = webSocket;
             Resource = resource;

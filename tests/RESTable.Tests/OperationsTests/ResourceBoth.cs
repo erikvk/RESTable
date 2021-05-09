@@ -31,16 +31,16 @@ namespace RESTable.Tests.OperationsTests
             yield break;
         }
 
-        public async ValueTask<int> InsertAsync(IRequest<ResourceBoth> request)
+        public async IAsyncEnumerable<ResourceBoth> InsertAsync(IRequest<ResourceBoth> request)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncInserterWasCalled = true;
-            return 0;
+            yield break;
         }
 
-        public async ValueTask<int> UpdateAsync(IRequest<ResourceBoth> request)
+        public async IAsyncEnumerable<ResourceBoth> UpdateAsync(IRequest<ResourceBoth> request)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncUpdaterWasCalled = true;
-            return 0;
+            yield break;
         }
 
         public async ValueTask<int> DeleteAsync(IRequest<ResourceBoth> request)
@@ -67,16 +67,16 @@ namespace RESTable.Tests.OperationsTests
             yield break;
         }
 
-        public int Insert(IRequest<ResourceBoth> request)
+        public IEnumerable<ResourceBoth> Insert(IRequest<ResourceBoth> request)
         {
             request.GetRequiredService<OperationsTestsFlags>().InserterWasCalled = true;
-            return 0;
+            yield break;
         }
 
-        public int Update(IRequest<ResourceBoth> request)
+        public IEnumerable<ResourceBoth> Update(IRequest<ResourceBoth> request)
         {
             request.GetRequiredService<OperationsTestsFlags>().UpdaterWasCalled = true;
-            return 0;
+            yield break;
         }
 
         public int Delete(IRequest<ResourceBoth> request)

@@ -85,7 +85,7 @@ namespace RESTable.WebSockets
         {
             var messageStream = await GetMessageStream(true).ConfigureAwait(false);
 #if NETSTANDARD2_1
-            await using (messageStream)
+            await using (messageStream.ConfigureAwait(false))
 #else
             using (messageStream)
 #endif
@@ -98,7 +98,7 @@ namespace RESTable.WebSockets
         {
             var messageStream = await GetMessageStream(false).ConfigureAwait(false);
 #if NETSTANDARD2_1
-            await using (messageStream)
+            await using (messageStream.ConfigureAwait(false))
 #else
             using (messageStream)
 #endif

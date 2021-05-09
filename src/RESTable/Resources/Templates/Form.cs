@@ -33,9 +33,6 @@ namespace RESTable.Resources.Templates
             yield return form;
         }
 
-        int IUpdater<T>.Update(IRequest<T> request)
-        {
-            return request.GetInputEntities().Count();
-        }
+        IEnumerable<T> IUpdater<T>.Update(IRequest<T> request) => request.GetInputEntities();
     }
 }

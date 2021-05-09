@@ -52,7 +52,7 @@ namespace RESTable.Auth
         public bool TryAuthenticate(RESTableContext context, ref string uri, Headers headers, out Unauthorized error)
         {
             var accessRights = GetAccessRights(ref uri, headers);
-            if (accessRights == null)
+            if (accessRights is null)
             {
                 error = new Unauthorized();
                 error.SetContext(context);
@@ -79,13 +79,13 @@ namespace RESTable.Auth
             else return null;
             headers.Authorization = AuthHeaderMask;
             var (method, key) = authorizationHeader.TupleSplit(' ');
-            if (key == null) return null;
+            if (key is null) return null;
             switch (method)
             {
                 case var apikey when apikey.EqualsNoCase("apikey"): break;
                 case var basic when basic.EqualsNoCase("basic"):
                     key = Encoding.UTF8.GetString(Convert.FromBase64String(key)).Split(":").ElementAtOrDefault(1);
-                    if (key == null) return null;
+                    if (key is null) return null;
                     break;
                 default: return null;
             }
@@ -127,7 +127,7 @@ namespace RESTable.Auth
         private string ReadApiKey(ApiKeyItem apiKeyItem)
         {
             var apiKey = apiKeyItem.ApiKey;
-            if (apiKey == null || Regex.IsMatch(apiKey, @"[\(\)]") || !Regex.IsMatch(apiKey, RegEx.ApiKey))
+            if (apiKey is null || Regex.IsMatch(apiKey, @"[\(\)]") || !Regex.IsMatch(apiKey, RegEx.ApiKey))
                 throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                     "whitespace or parentheses, and only containing ASCII characters 33 through 126");
             var keyHash = apiKey.SHA256();

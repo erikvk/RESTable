@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Data.SQLite;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.SQLite.Meta;
@@ -10,11 +12,13 @@ namespace RESTable.SQLite
     internal class EntityEnumerator<T> : IAsyncEnumerator<T> where T : SQLiteTable
     {
         private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
-        private SQLiteDataReader Reader { get; set; }
-        private SQLiteConnection Connection { get; }
-        private SQLiteCommand Command { get; set; }
-        private bool OnlyRowId { get; }
 
+        private SQLiteConnection Connection { get; set; }
+        private SQLiteCommand Command { get; set; }
+        private DbDataReader Reader { get; set; }
+        private string Sql { get; }
+        private bool OnlyRowId { get; }
+        private CancellationToken CancellationToken { get; }
         private long CurrentRowId { get; set; }
 
         public async ValueTask DisposeAsync()
@@ -26,18 +30,24 @@ namespace RESTable.SQLite
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            if (!await Reader.ReadAsync().ConfigureAwait(false)) return false;
-            CurrentRowId = await Reader.GetFieldValueAsync<long>(0).ConfigureAwait(false);
+            CancellationToken.ThrowIfCancellationRequested();
+            if (Reader == null)
+            {
+                Connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+                Command = new SQLiteCommand(Sql, Connection);
+                Reader ??= await Command.ExecuteReaderAsync(CancellationToken).ConfigureAwait(false);
+            }
+            var read = await Reader.ReadAsync(CancellationToken).ConfigureAwait(false);
+            if (!read) return false;
+            CurrentRowId = await Reader.GetFieldValueAsync<long>(0, CancellationToken).ConfigureAwait(false);
             return true;
         }
 
-        internal EntityEnumerator(string sql, bool onlyRowId)
+        internal EntityEnumerator(string sql, bool onlyRowId, CancellationToken cancellationToken)
         {
+            CancellationToken = cancellationToken;
+            Sql = sql;
             OnlyRowId = onlyRowId;
-            Connection = new SQLiteConnection(Settings.ConnectionString);
-            Connection.Open();
-            Command = new SQLiteCommand(sql, Connection);
-            Reader = Command.ExecuteReader();
         }
 
         public T Current => MakeEntity();

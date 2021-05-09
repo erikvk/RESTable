@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -9,20 +10,14 @@ namespace RESTable.Results
     /// </summary>
     public class InsertedEntities : Change
     {
-        /// <summary>
-        /// The number of inserted entities
-        /// </summary>
-        public int InsertedCount { get; }
-
-        public InsertedEntities(IRequest request, int count) : base(request)
+        public InsertedEntities(IRequest request, int count, object[] entities) : base(request, count, entities)
         {
-            InsertedCount = count;
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;
             StatusDescription = StatusCode.ToString();
             Headers.Info = $"{count} entities inserted into '{request.Resource}'";
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(InsertedEntities)};{Request.Resource};{InsertedCount}";
+        public override string Metadata => $"{nameof(InsertedEntities)};{Request.Resource};{Count}";
     }
 }

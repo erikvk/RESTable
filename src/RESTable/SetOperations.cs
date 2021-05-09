@@ -170,7 +170,7 @@ namespace RESTable
 
         private static async IAsyncEnumerable<JToken> Map(IAsyncEnumerable<JToken> set, string mapper, IRequest request)
         {
-            if (set == null) throw new ArgumentException(nameof(set));
+            if (set is null) throw new ArgumentException(nameof(set));
             if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
 
             var mapped = new HashSet<JToken>(EqualityComparer);
@@ -231,7 +231,7 @@ namespace RESTable
 
         private static IAsyncEnumerable<JToken>[] Checked(IAsyncEnumerable<JToken>[] arrays)
         {
-            if (arrays == null || arrays.Length < 2 || arrays.Any(a => a == null))
+            if (arrays is null || arrays.Length < 2 || arrays.Any(a => a is null))
                 throw new ArgumentException(nameof(arrays));
             return arrays;
         }

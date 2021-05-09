@@ -1,4 +1,5 @@
-﻿using RESTable.Requests;
+﻿using System.Collections.Generic;
+using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
 {
@@ -12,6 +13,6 @@ namespace RESTable.Resources.Operations
         /// The insert method for this IInserter instance. Defines the Insert
         /// operation for a given resource.
         /// </summary>
-        int Insert(IRequest<T> request);
+        IEnumerable<T> Insert(IRequest<T> request);
     }
 }

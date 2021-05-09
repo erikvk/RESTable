@@ -124,10 +124,10 @@ namespace RESTable.Meta
         /// </summary>
         public IResource FindResource(string searchString, ResourceKind kind = ResourceKind.All)
         {
-            if (searchString == null) throw new UnknownResource("null");
+            if (searchString is null) throw new UnknownResource("null");
             if (!ResourceFinder.TryGetValue(searchString, out var resource))
                throw new UnknownResource(searchString);
-            if (resource == null)
+            if (resource is null)
                 throw new AmbiguousResource(searchString);
             if (!kind.HasFlag(resource.ResourceKind))
                 throw new WrongResourceKind(searchString, kind, resource.ResourceKind);
@@ -150,7 +150,7 @@ namespace RESTable.Meta
                 error = new UnknownResource(searchString);
                 return false;
             }
-            if (resource == null)
+            if (resource is null)
             {
                 error = new AmbiguousResource(searchString);
                 return false;

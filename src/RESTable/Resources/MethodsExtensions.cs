@@ -10,7 +10,7 @@ namespace RESTable.Resources
         internal static IReadOnlyList<Method> ResolveMethodRestrictions(this IEnumerable<Method> methods)
         {
             var methodsSet = methods?.ToHashSet();
-            if (methodsSet == null || methodsSet.Count == 0)
+            if (methodsSet is null || methodsSet.Count == 0)
                 methodsSet = EnumMember<Method>.Values.ToHashSet();
             if (methodsSet.Contains(Method.GET))
             {

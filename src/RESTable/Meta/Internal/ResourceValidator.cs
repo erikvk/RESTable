@@ -32,7 +32,7 @@ namespace RESTable.Meta.Internal
             if (fullName != null)
                 name = fullName;
             else name = type.GetRESTableTypeName();
-            if (name == null)
+            if (name is null)
                 throw new InvalidResourceDeclarationException(
                     "Encountered an unknown type. No further information is available.");
             if (ResourceCollection.ResourceByType.ContainsKey(type))
@@ -42,7 +42,7 @@ namespace RESTable.Meta.Internal
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same name has already been added to RESTable");
             attribute ??= type.GetCustomAttribute<RESTableAttribute>();
-            if (attribute == null)
+            if (attribute is null)
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. The type was not decorated with the RESTableAttribute attribute, and " +
                     "no additional attribute instance was included in the insertion.");
@@ -76,7 +76,7 @@ namespace RESTable.Meta.Internal
             {
                 #region Check general stuff
 
-                if (type.FullName == null)
+                if (type.FullName is null)
                     throw new InvalidResourceDeclarationException(
                         "Encountered an unknown type. No further information is available.");
 
@@ -93,7 +93,7 @@ namespace RESTable.Meta.Internal
                         $"Invalid resource type '{type.GetRESTableTypeName()}'. Resource types cannot be " +
                         "decorated with the 'RESTableViewAttribute'");
 
-                if (type.Namespace == null)
+                if (type.Namespace is null)
                     throw new InvalidResourceDeclarationException($"Invalid type '{type.GetRESTableTypeName()}'. Unknown namespace");
 
                 if (Configuration.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
@@ -134,7 +134,7 @@ namespace RESTable.Meta.Internal
                         else if (method.IsPrivate && method.Name.StartsWith($"{interfaceName}.set_") || method.Name.StartsWith("set_"))
                             propertyType = method.GetParameters()[0].ParameterType;
 
-                        if (propertyType == null)
+                        if (propertyType is null)
                             throw new InvalidResourceDeclarationException(
                                 $"Invalid implementation of interface '{interfaceType.GetRESTableTypeName()}' assigned to resource '{type.GetRESTableTypeName()}'. " +
                                 $"Unable to determine the type for interface property '{interfaceProperty.Name}'");
@@ -160,7 +160,7 @@ namespace RESTable.Meta.Internal
                         }
                         else continue;
 
-                        if (projectedProperty == null)
+                        if (projectedProperty is null)
                             throw new InvalidResourceDeclarationException(
                                 $"Invalid implementation of interface '{interfaceType.GetRESTableTypeName()}' assigned to resource '{type.GetRESTableTypeName()}'. " +
                                 $"RESTable was unable to determine which property of '{type.GetRESTableTypeName()}' that is exposed by interface " +

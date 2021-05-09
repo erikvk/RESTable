@@ -53,7 +53,7 @@ namespace RESTable.Resources.Operations
             var method = target.GetInterfaceMap(i).TargetMethods.First();
             if (method.DeclaringType != target)
             {
-                if (target.GetConstructor(Type.EmptyTypes) == null)
+                if (target.GetConstructor(Type.EmptyTypes) is null)
                     throw new InvalidResourceDeclarationException($"Invalid resource declaration for type '{target}'. Any resource " +
                                                                   "type inheriting operation implementations from a generic base " +
                                                                   "class must define a public parameterless constructor, due to " +

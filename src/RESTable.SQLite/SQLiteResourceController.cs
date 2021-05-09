@@ -33,7 +33,8 @@ namespace RESTable.SQLite
         /// <summary>
         /// The table definition for this procedural SQLite resource
         /// </summary>
-        [RESTableMember(order: 100)] public TableDefinition Definition { get; private set; }
+        [RESTableMember(order: 100)]
+        public TableDefinition Definition { get; private set; }
 
         /// <inheritdoc />
         public override IEnumerable<TController> Select(IRequest<TController> request) => base
@@ -46,16 +47,14 @@ namespace RESTable.SQLite
             });
 
         /// <inheritdoc />
-        public override async ValueTask<int> UpdateAsync(IRequest<TController> request)
+        public override async IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request)
         {
-            var i = 0;
             foreach (var resource in await request.GetInputEntitiesAsync().ToListAsync().ConfigureAwait(false))
             {
                 resource.Update();
                 await resource.Definition.Update(request).ConfigureAwait(false);
-                i += 1;
+                yield return resource;
             }
-            return i;
         }
 
         /// <inheritdoc />

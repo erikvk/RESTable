@@ -29,7 +29,7 @@ namespace RESTable.Admin
         /// <inheritdoc />
         public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
             return EnumMember<ErrorCodes>
                 .GetMembers()
                 .Select(m => new ErrorCode {Name = m.Value, Code = m.NumericValue});

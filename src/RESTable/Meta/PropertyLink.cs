@@ -29,7 +29,7 @@ namespace RESTable.Meta
 
         private void OnPropertyChanged(DeclaredProperty declaredProperty, object target, dynamic value, dynamic newValue)
         {
-            if (target == null) return;
+            if (target is null) return;
             MonitoringTree.HandleObservedChange
             (
                 termRelativeRoot: TermFromRoot,

@@ -59,7 +59,7 @@ namespace RESTable.Meta
             {
                 return type switch
                 {
-                    _ when type.GetConstructor(Type.EmptyTypes) == null => null,
+                    _ when type.GetConstructor(Type.EmptyTypes) is null => null,
                     _ => Expression.Lambda<Constructor>(Expression.New(type)).Compile()
                 };
             }
@@ -78,7 +78,7 @@ namespace RESTable.Meta
             {
                 return type switch
                 {
-                    _ when type.GetConstructor(Type.EmptyTypes) == null => null,
+                    _ when type.GetConstructor(Type.EmptyTypes) is null => null,
                     _ => Expression.Lambda<Constructor<T>>(Expression.New(type)).Compile()
                 };
             }

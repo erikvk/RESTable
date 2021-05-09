@@ -25,7 +25,7 @@ namespace RESTable.SQLite
                 var groups = Regex.Match(sql, syntax, RegexOptions.IgnoreCase).Groups;
                 var tableName = groups["table"].Value;
                 var mapping = TableMapping.All.FirstOrDefault(m => m.TableName.EqualsNoCase(tableName));
-                if (mapping == null) throw new Exception($"Unknown SQLite table '{tableName}'");
+                if (mapping is null) throw new Exception($"Unknown SQLite table '{tableName}'");
                 return new DatabaseIndex
                 {
                     ResourceName = mapping.Resource.Name,
@@ -41,27 +41,24 @@ namespace RESTable.SQLite
                 yield return item;
         }
 
-        public async ValueTask<int> InsertAsync(IRequest<DatabaseIndex> request)
+        public async IAsyncEnumerable<DatabaseIndex> InsertAsync(IRequest<DatabaseIndex> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
+            if (request is null) throw new ArgumentNullException(nameof(request));
             await foreach (var index in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 var tableMapping = TableMapping.GetTableMapping(index.Resource.Type);
-                if (index.Resource == null)
+                if (index.Resource is null)
                     throw new Exception("Found no resource to register index on");
                 var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "ASC")}"))})";
                 await Database.QueryAsync(sql).ConfigureAwait(false);
-                count += 1;
+                yield return index;
             }
-            return count;
         }
 
-        public async ValueTask<int> UpdateAsync(IRequest<DatabaseIndex> request)
+        public async IAsyncEnumerable<DatabaseIndex> UpdateAsync(IRequest<DatabaseIndex> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
+            if (request is null) throw new ArgumentNullException(nameof(request));
             await foreach (var index in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 var tableMapping = TableMapping.GetTableMapping(index.Resource.Type);
@@ -69,14 +66,13 @@ namespace RESTable.SQLite
                 var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})";
                 await Database.QueryAsync(sql).ConfigureAwait(false);
-                count += 1;
+                yield return index;
             }
-            return count;
         }
 
         public async ValueTask<int> DeleteAsync(IRequest<DatabaseIndex> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
             var count = 0;
             await foreach (var index in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {

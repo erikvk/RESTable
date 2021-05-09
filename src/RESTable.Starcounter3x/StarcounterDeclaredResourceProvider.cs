@@ -22,8 +22,8 @@ namespace RESTable.Starcounter3x
         }
 
         protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => StarcounterOperations<T>.Select(request);
-        protected override int DefaultInsert<T>(IRequest<T> request) => StarcounterOperations<T>.Insert(request);
-        protected override int DefaultUpdate<T>(IRequest<T> request) => StarcounterOperations<T>.Update(request);
+        protected override IEnumerable<T> DefaultInsert<T>(IRequest<T> request) => StarcounterOperations<T>.Insert(request);
+        protected override IEnumerable<T> DefaultUpdate<T>(IRequest<T> request) => StarcounterOperations<T>.Update(request);
         protected override int DefaultDelete<T>(IRequest<T> request) => StarcounterOperations<T>.Delete(request);
 
         protected override bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason) => StarcounterOperations<object>.IsValid(resource, typeCache, out reason);

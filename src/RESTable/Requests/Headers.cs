@@ -132,7 +132,7 @@ namespace RESTable.Requests
             get => this._Get(key);
             set
             {
-                if (value == null) Remove(key);
+                if (value is null) Remove(key);
                 this._Set(key, value);
             }
         }
@@ -144,14 +144,14 @@ namespace RESTable.Requests
         /// <inheritdoc />
         public Headers(Dictionary<string, string> dictToUse) : this()
         {
-            if (dictToUse == null) return;
+            if (dictToUse is null) return;
             foreach (var (key, value) in dictToUse)
                 this[key] = value;
         }
 
         public Headers(IDictionary<string, StringValues> dictToUse) : this()
         {
-            if (dictToUse == null) return;
+            if (dictToUse is null) return;
             foreach (var (key, value) in dictToUse)
                 this[key] = value;
         }

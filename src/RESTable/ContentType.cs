@@ -114,7 +114,7 @@ namespace RESTable
                 data ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 data.TuplePut(pair);
             }
-            if (data == null)
+            if (data is null)
             {
                 Data = null;
                 return;

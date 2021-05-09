@@ -36,7 +36,7 @@ namespace RESTable.Meta.IL
     {
         internal static IList<Instruction> GetInstructions(this MethodBase self)
         {
-            if (self == null)
+            if (self is null)
                 throw new ArgumentNullException(nameof(self));
             return MethodBodyReader.GetInstructions(self).AsReadOnly();
         }

@@ -121,10 +121,10 @@ namespace RESTable.SQLite
         protected override IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.SelectAsync(request);
 
         /// <inheritdoc />
-        protected override ValueTask<int> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.InsertAsync(request);
+        protected override IAsyncEnumerable<T> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.InsertAsync(request);
 
         /// <inheritdoc />
-        protected override ValueTask<int> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.UpdateAsync(request);
+        protected override IAsyncEnumerable<T> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.UpdateAsync(request);
 
         /// <inheritdoc />
         protected override ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request) => SQLiteOperations<T>.DeleteAsync(request);
@@ -140,7 +140,7 @@ namespace RESTable.SQLite
                 var type = resource.Type;
                 if (type != null)
                 {
-                    if (TableMapping.GetTableMapping(type) == null)
+                    if (TableMapping.GetTableMapping(type) is null)
                         TableMapping.CreateMapping(type).Wait();
                     yield return resource;
                 }
@@ -158,12 +158,12 @@ namespace RESTable.SQLite
                 BaseTypeName = data.BaseTypeName ?? throw new SQLiteException("No BaseTypeName defined in 'Data' in resource controller")
             };
             var resourceType = resource.Type;
-            if (resourceType == null)
+            if (resourceType is null)
                 throw new SQLiteException(
                     $"Could not locate basetype '{resource.BaseTypeName}' when building procedural resource '{resource.Name}'. " +
                     "Was the assembly modified between builds?");
             TableMapping.CreateMapping(resourceType).Wait();
-            SQLite<ProceduralResource>.Insert(resource).Wait();
+            SQLite<ProceduralResource>.Insert(resource).CountAsync().AsTask().Wait();
             return resource;
         }
 
@@ -172,7 +172,7 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Methods = methods;
-            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).Wait();
+            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).CountAsync().AsTask().Wait();
         }
 
         /// <inheritdoc />
@@ -180,7 +180,7 @@ namespace RESTable.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Description = newDescription;
-            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).Wait();
+            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).CountAsync().AsTask().Wait();
         }
 
         /// <inheritdoc />

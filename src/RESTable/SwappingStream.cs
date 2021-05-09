@@ -72,14 +72,17 @@ namespace RESTable
         {
             Position = 0;
             var fileStream = MakeTempFile();
+            var memoryStream = (MemoryStream) Stream;
 #if NETSTANDARD2_1
-            await using var memoryStream = (MemoryStream) Stream;
+            await using (memoryStream.ConfigureAwait(false))
 #else
-            using var memoryStream = (MemoryStream) Stream;
+            using (memoryStream)
 #endif
-            await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
-            Stream = fileStream;
-            Swapped = true;
+            {
+                await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
+                Stream = fileStream;
+                Swapped = true;
+            }
         }
 
         private FileStream MakeTempFile() => File.Create
@@ -188,7 +191,7 @@ namespace RESTable
                 Swap().Wait();
             Stream.Write(buffer);
         }
-        
+
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new()) => Stream.ReadAsync(buffer, cancellationToken);
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())

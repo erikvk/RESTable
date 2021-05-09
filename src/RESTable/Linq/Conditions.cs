@@ -16,7 +16,7 @@ namespace RESTable.Linq
         public static IAsyncEnumerable<T> Where<T>(this IAsyncEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
             where T : class
         {
-            if (conditions == null) return entities;
+            if (conditions is null) return entities;
             return entities?.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
         }
 
@@ -25,7 +25,7 @@ namespace RESTable.Linq
         /// </summary>
         public static bool AllHoldFor<T>(this IEnumerable<Condition<T>> conditions, T subject) where T : class
         {
-            if (conditions == null) return true;
+            if (conditions is null) return true;
             return conditions.All(condition => condition.HoldsFor(subject));
         }
 

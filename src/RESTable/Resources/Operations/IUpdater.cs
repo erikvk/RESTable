@@ -1,4 +1,5 @@
-﻿using RESTable.Requests;
+﻿using System.Collections.Generic;
+using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
 {
@@ -12,6 +13,6 @@ namespace RESTable.Resources.Operations
         /// The update method for this IUpdater instance. Defines the Update
         /// operation for a given resource.
         /// </summary>
-        int Update(IRequest<T> request);
+        IEnumerable<T> Update(IRequest<T> request);
     }
 }

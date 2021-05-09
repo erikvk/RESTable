@@ -28,7 +28,7 @@ namespace RESTable
         /// <inheritdoc />
         public async IAsyncEnumerable<Echo> SelectAsync(IRequest<Echo> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
             var members = request.Conditions
                 .Select(c => new JProperty(c.Key, c.Value))
                 .ToHashSet(EqualityComparer);

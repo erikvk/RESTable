@@ -23,16 +23,16 @@ namespace RESTable.Tests.OperationsTests
             return Entities;
         }
 
-        public int Insert(IRequest<ResourceSync> request)
+        public IEnumerable<ResourceSync> Insert(IRequest<ResourceSync> request)
         {
             request.GetRequiredService<OperationsTestsFlags>().InserterWasCalled = true;
-            return 0;
+            yield break;
         }
 
-        public int Update(IRequest<ResourceSync> request)
+        public IEnumerable<ResourceSync> Update(IRequest<ResourceSync> request)
         {
             request.GetRequiredService<OperationsTestsFlags>().UpdaterWasCalled = true;
-            return 0;
+            yield break;
         }
 
         public int Delete(IRequest<ResourceSync> request)

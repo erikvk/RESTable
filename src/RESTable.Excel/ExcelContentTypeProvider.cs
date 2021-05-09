@@ -53,7 +53,7 @@ namespace RESTable.Excel
         public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken)
             where T : class
         {
-            if (collection == null) return 0;
+            if (collection is null) return 0;
             try
             {
                 using var package = new ExcelPackage(stream);
@@ -199,7 +199,7 @@ namespace RESTable.Excel
             {
                 var swr = new StreamWriter(jsonStream, ExcelSettings.Encoding, 4096, true);
 #if NETSTANDARD2_1
-                await using (swr)
+                await using (swr.ConfigureAwait(false))
 #else
                 using (swr)
 #endif

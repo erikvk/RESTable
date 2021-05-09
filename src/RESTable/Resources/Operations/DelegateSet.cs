@@ -35,16 +35,16 @@ namespace RESTable.Resources.Operations
         public bool CanCount => AsyncCounter != null;
 
         public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request) => AsyncSelector(request);
-        public ValueTask<int> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);
-        public ValueTask<int> UpdateAsync(IRequest<TResource> request) => AsyncUpdater(request);
+        public IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);
+        public IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request) => AsyncUpdater(request);
         public ValueTask<int> DeleteAsync(IRequest<TResource> request) => AsyncDeleter(request);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request) => AsyncAuthenticator(request);
         public ValueTask<long> CountAsync(IRequest<TResource> request) => AsyncCounter(request);
 
         public async IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context)
         {
-            if (entities == null) yield break;
-            if (Validator == null)
+            if (entities is null) yield break;
+            if (Validator is null)
             {
                 await foreach (var entity in entities.ConfigureAwait(false))
                     yield return entity;
@@ -52,7 +52,7 @@ namespace RESTable.Resources.Operations
             }
 
             var index = -1L;
-     
+
             await foreach (var entity in entities.ConfigureAwait(false))
             {
                 index += 1;
@@ -67,7 +67,7 @@ namespace RESTable.Resources.Operations
 
         private static async IAsyncEnumerable<TResource> CallAsync(IEnumerable<TResource> entities)
         {
-            if (entities == null) yield break;
+            if (entities is null) yield break;
             foreach (var item in entities)
             {
                 yield return item;
@@ -81,17 +81,17 @@ namespace RESTable.Resources.Operations
         /// </summary>
         internal DelegateSet<TResource> SetAsyncDelegatesToSyncWhereNull()
         {
-            if (AsyncSelector == null && SyncSelector is Selector<TResource> selector)
+            if (AsyncSelector is null && SyncSelector is Selector<TResource> selector)
                 AsyncSelector = request => CallAsync(selector(request));
-            if (AsyncInserter == null && SyncInserter is Inserter<TResource> inserter)
-                AsyncInserter = request => new ValueTask<int>(inserter(request));
-            if (AsyncUpdater == null && SyncUpdater is Updater<TResource> updater)
-                AsyncUpdater = request => new ValueTask<int>(updater(request));
-            if (AsyncDeleter == null && SyncDeleter is Deleter<TResource> deleter)
+            if (AsyncInserter is null && SyncInserter is Inserter<TResource> inserter)
+                AsyncInserter = request => inserter(request).ToAsyncEnumerable();
+            if (AsyncUpdater is null && SyncUpdater is Updater<TResource> updater)
+                AsyncUpdater = request => updater(request).ToAsyncEnumerable();
+            if (AsyncDeleter is null && SyncDeleter is Deleter<TResource> deleter)
                 AsyncDeleter = request => new ValueTask<int>(deleter(request));
-            if (AsyncAuthenticator == null && SyncAuthenticator is Authenticator<TResource> authenticator)
+            if (AsyncAuthenticator is null && SyncAuthenticator is Authenticator<TResource> authenticator)
                 AsyncAuthenticator = request => new ValueTask<AuthResults>(authenticator(request));
-            if (AsyncCounter == null && SyncCounter is Counter<TResource> counter)
+            if (AsyncCounter is null && SyncCounter is Counter<TResource> counter)
                 AsyncCounter = request => new ValueTask<long>(counter(request));
             return this;
         }

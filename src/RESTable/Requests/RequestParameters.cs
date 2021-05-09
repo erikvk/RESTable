@@ -61,7 +61,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Are these request parameters valid?
         /// </summary>
-        public bool IsValid => Error == null;
+        public bool IsValid => Error is null;
 
         /// <summary>
         /// Has the client requested a WebSocket upgrade for this request?
@@ -238,7 +238,7 @@ namespace RESTable.Requests
             {
                 Error = e.AsError();
             }
-            if (Error == null && Uri?.HasError == true)
+            if (Error is null && Uri?.HasError == true)
                 Error = Uri.Error;
         }
     }

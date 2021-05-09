@@ -75,7 +75,7 @@ namespace RESTable.Json
             {
                 case PropertyInfo propertyInfo:
                     var property = TypeCache.GetDeclaredProperty(propertyInfo);
-                    if (property == null || property.Hidden)
+                    if (property is null || property.Hidden)
                         return null;
                     var p = base.CreateProperty(propertyInfo, memberSerialization);
                     if (property.IsDateTime)

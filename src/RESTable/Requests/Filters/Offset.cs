@@ -70,7 +70,7 @@ namespace RESTable.Requests.Filters
         /// </summary>
         private static async IAsyncEnumerable<T> NegativeSkip<T>(IAsyncEnumerable<T> source, int count)
         {
-            if (source == null)
+            if (source is null)
                 throw new ArgumentNullException(nameof(source));
             var queue = new Queue<T>(count);
             await foreach (var element in source.ConfigureAwait(false))

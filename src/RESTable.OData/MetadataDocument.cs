@@ -91,7 +91,7 @@ namespace RESTable.OData
 
                 var swr = new StreamWriter(stream, Encoding.UTF8, 4096, true);
 #if NETSTANDARD2_1
-                await using (swr)
+                await using (swr.ConfigureAwait(false))
 #else
                 using (swr)
 #endif
@@ -153,7 +153,7 @@ namespace RESTable.OData
                         await swr.WriteAsync(InsertableAnnotation(methods.Contains(Method.POST))).ConfigureAwait(false);
                         await swr.WriteAsync(UpdatableAnnotation(methods.Contains(Method.PATCH))).ConfigureAwait(false);
                         await swr.WriteAsync(DeletableAnnotation(methods.Contains(Method.DELETE))).ConfigureAwait(false);
-                        await swr.WriteAsync("</EntitySet>");
+                        await swr.WriteAsync("</EntitySet>").ConfigureAwait(false);
                     }
                     await swr.WriteAsync("</EntityContainer>").ConfigureAwait(false);
                     await swr.WriteAsync($"<Annotations Target=\"global.{EntityContainerName}\">").ConfigureAwait(false);

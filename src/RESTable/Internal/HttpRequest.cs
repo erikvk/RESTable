@@ -40,7 +40,7 @@ namespace RESTable.Internal
                 {
                     var requestStream = await request.GetRequestStreamAsync().ConfigureAwait(false);
 #if NETSTANDARD2_1
-                    await using (requestStream)
+                    await using (requestStream.ConfigureAwait(false))
 #else
                     using (requestStream)
 #endif

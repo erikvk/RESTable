@@ -23,21 +23,21 @@ namespace RESTable.Resources
         /// <inheritdoc />
         public void Add(T item)
         {
-            if (item == null) throw new ArgumentNullException(nameof(item));
+            if (item is null) throw new ArgumentNullException(nameof(item));
             terminals[item] = byte.MinValue;
         }
 
         /// <inheritdoc />
         public bool Contains(T item)
         {
-            if (item == null) throw new ArgumentNullException(nameof(item));
+            if (item is null) throw new ArgumentNullException(nameof(item));
             return terminals.ContainsKey(item);
         }
 
         /// <inheritdoc />
         public bool Remove(T item)
         {
-            if (item == null) throw new ArgumentNullException(nameof(item));
+            if (item is null) throw new ArgumentNullException(nameof(item));
             return terminals.Remove(item);
         }
 

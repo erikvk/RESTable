@@ -223,7 +223,7 @@ namespace RESTable.OData
 
         private string GetServiceRoot(IEntities entities)
         {
-            if (entities == null) throw new ArgumentNullException(nameof(entities));
+            if (entities is null) throw new ArgumentNullException(nameof(entities));
             var origin = entities.Request.Context.Client;
             var hostAndPath = $"{origin.Host}{Configuration.RootUri}-odata";
             return origin.Https ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
@@ -262,7 +262,7 @@ namespace RESTable.OData
             }
             var swr = new StreamWriter(toSerialize.Body, Encoding.Default, 4096, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif

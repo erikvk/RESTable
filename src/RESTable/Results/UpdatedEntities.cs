@@ -8,18 +8,12 @@ namespace RESTable.Results
     /// </summary>
     public class UpdatedEntities : Change
     {
-        /// <summary>
-        /// The number of entities updated
-        /// </summary>
-        public int UpdatedCount { get; }
-
-        public UpdatedEntities(IRequest request, int count) : base(request)
+        public UpdatedEntities(IRequest request, int count, object[] entities) : base(request, count, entities)
         {
-            UpdatedCount = count;
             Headers.Info = $"{count} entities updated in '{request.Resource}'";
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(UpdatedEntities)};{Request.Resource};{UpdatedCount}";
+        public override string Metadata => $"{nameof(UpdatedEntities)};{Request.Resource};{Count}";
     }
 }

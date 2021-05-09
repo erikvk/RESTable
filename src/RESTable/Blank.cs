@@ -18,13 +18,22 @@ namespace RESTable
         private const string description = "A test and debug entity resource that is just an empty set of entities with no properties";
 
         /// <inheritdoc />
-        public IEnumerable<Blank> Select(IRequest<Blank> request) => null;
+        public IEnumerable<Blank> Select(IRequest<Blank> request)
+        {
+            yield break;
+        }
 
         /// <inheritdoc />
-        public int Insert(IRequest<Blank> request) => 0;
+        public IEnumerable<Blank> Insert(IRequest<Blank> request)
+        {
+            yield break;
+        }
 
         /// <inheritdoc />
-        public int Update(IRequest<Blank> request) => 0;
+        public IEnumerable<Blank> Update(IRequest<Blank> request)
+        {
+            yield break;
+        }
 
         /// <inheritdoc />
         public int Delete(IRequest<Blank> request) => 0;

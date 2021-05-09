@@ -12,9 +12,9 @@ namespace RESTable.Results
         /// <summary>
         /// The number of entities contained in this result
         /// </summary>
-        public ulong EntityCount { get; }
+        public long EntityCount { get; }
 
-        public Head(IRequest request, ulong count) : base(request)
+        public Head(IRequest request, long count) : base(request)
         {
             EntityCount = count;
             if (count > 0) return;

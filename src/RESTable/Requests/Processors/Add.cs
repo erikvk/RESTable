@@ -28,7 +28,7 @@ namespace RESTable.Requests.Processors
             {
                 if (jobj[term.Key] != null) continue;
                 var termValue = term.GetValue(entity, out var actualKey);
-                jobj[actualKey] = termValue == null ? null : JToken.FromObject(termValue, serializer);
+                jobj[actualKey] = termValue is null ? null : JToken.FromObject(termValue, serializer);
             }
             return jobj;
         });

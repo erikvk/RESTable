@@ -27,8 +27,9 @@ namespace RESTable.ContentTypeProviders
         Task WriteStartObjectAsync(CancellationToken cancellationToken);
         Task WritePropertyNameAsync(string status, CancellationToken cancellationToken);
         Task WriteEndObjectAsync(CancellationToken cancellationToken);
-        Task WriteValueAsync(long invalidEntityIndex, CancellationToken cancellationToken);
-        Task WriteValueAsync(double invalidEntityIndex, CancellationToken cancellationToken);
-        Task WriteValueAsync(string fail, CancellationToken cancellationToken);
+        Task WriteValueAsync(long value, CancellationToken cancellationToken);
+        Task WriteValueAsync(double value, CancellationToken cancellationToken);
+        Task WriteValueAsync(string value, CancellationToken cancellationToken);
+        Task WriteValueAsync(bool value, CancellationToken cancellationToken);
     }
 }

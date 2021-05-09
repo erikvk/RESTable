@@ -24,6 +24,8 @@ namespace RESTable.ProtocolProviders
     /// </summary>
     internal sealed class DefaultProtocolProvider : IProtocolProvider
     {
+        private const int StreamWriterBufferSize = 4096;
+
         /// <inheritdoc />
         public string ProtocolName => "RESTable";
 
@@ -133,7 +135,7 @@ namespace RESTable.ProtocolProviders
         private static string ToUriString(IUriComponents components)
         {
             var view = components.ViewName != null ? $"-{components.ViewName}" : null;
-            var resource = components.Macro == null ? $"/{components.ResourceSpecifier}{view}" : $"/${components.Macro.Name}";
+            var resource = components.Macro is null ? $"/{components.ResourceSpecifier}{view}" : $"/${components.Macro.Name}";
             var str = new StringBuilder(resource);
             if (components.Conditions.Count > 0)
             {
@@ -153,7 +155,7 @@ namespace RESTable.ProtocolProviders
 
         internal static string ToUriString(IEnumerable<IUriCondition> conditions)
         {
-            if (conditions == null) return "_";
+            if (conditions is null) return "_";
             var uriString = string.Join("&", conditions.Select(ToUriString));
             if (uriString.Length == 0) return "_";
             return uriString;
@@ -161,7 +163,7 @@ namespace RESTable.ProtocolProviders
 
         private static string ToUriString(IUriCondition condition)
         {
-            if (condition == null) return "";
+            if (condition is null) return "";
             var op = ((Operator) condition.Operator).Common;
             var value = ToUriValueString(condition);
             return $"{condition.Key.UriEncode()}{op}{value}";
@@ -203,6 +205,9 @@ namespace RESTable.ProtocolProviders
                 case Head head:
                     head.Headers["EntityCount"] = head.EntityCount.ToString();
                     return;
+                case Change change:
+                    await SerializeChange(change, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
+                    return;
                 case Binary binary:
                     await binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken).ConfigureAwait(false);
                     return;
@@ -210,7 +215,7 @@ namespace RESTable.ProtocolProviders
                     await SerializeContentDataCollection((dynamic) entities, content, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
                     break;
                 case Report report:
-                    await SerializeContentDataCollection((dynamic) report.ToAsyncSingleton(), report, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
+                    await SerializeReport(report, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
                     break;
                 case Error error:
                     await SerializeError(error, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
@@ -227,9 +232,9 @@ namespace RESTable.ProtocolProviders
                 return;
             var optionsBody = new OptionsBody(resource.Name, resource.ResourceKind, resource.AvailableMethods);
 
-            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
+            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif
@@ -252,9 +257,9 @@ namespace RESTable.ProtocolProviders
             if (contentTypeProvider is not IJsonProvider)
                 return;
 
-            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
+            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif
@@ -315,9 +320,9 @@ namespace RESTable.ProtocolProviders
                 return;
             }
 
-            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, 4096, true);
+            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif
@@ -356,6 +361,98 @@ namespace RESTable.ProtocolProviders
                     content.MakeNoContent();
             }
         }
+
+        private async Task SerializeChange(Change change, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        {
+            if (contentTypeProvider is not IJsonProvider jsonProvider)
+                return;
+
+            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
+#if NETSTANDARD2_1
+            await using (swr.ConfigureAwait(false))
+#else
+            using (swr)
+#endif
+            {
+                using var jwr = JsonProvider.GetJsonWriter(swr);
+                await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
+                var entityCount = await jsonProvider.SerializeCollection(change.Entities.ToAsyncEnumerable(), jwr, cancellationToken).ConfigureAwait(false);
+                toSerialize.EntityCount = entityCount;
+                await jwr.WritePropertyNameAsync("DataCount", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(entityCount, cancellationToken).ConfigureAwait(false);
+                if (change.TooManyEntities)
+                {
+                    await jwr.WritePropertyNameAsync("TooManyEntitiesToIncludeInBody", cancellationToken).ConfigureAwait(false);
+                    await jwr.WriteValueAsync(true, cancellationToken).ConfigureAwait(false);
+                }
+
+                switch (change)
+                {
+                    case UpdatedEntities:
+                    {
+                        await jwr.WritePropertyNameAsync("UpdatedCount", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(change.Count, cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                    case InsertedEntities:
+                    {
+                        await jwr.WritePropertyNameAsync("InsertedCount", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(change.Count, cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                    case DeletedEntities:
+                    {
+                        await jwr.WritePropertyNameAsync("DeletedCount", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(change.Count, cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                    case SafePostedEntities spe:
+                    {
+                        await jwr.WritePropertyNameAsync("UpdatedCount", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(spe.UpdatedCount, cancellationToken).ConfigureAwait(false);
+                        await jwr.WritePropertyNameAsync("InsertedCount", cancellationToken).ConfigureAwait(false);
+                        await jwr.WriteValueAsync(spe.InsertedCount, cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                }
+                
+                await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
+                var milliseconds = toSerialize.TimeElapsed.GetRESTableElapsedMs();
+                await jwr.WriteValueAsync(milliseconds, cancellationToken).ConfigureAwait(false);
+                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private async Task SerializeReport(Report report, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        {
+            if (contentTypeProvider is not IJsonProvider jsonProvider)
+                return;
+
+            var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
+#if NETSTANDARD2_1
+            await using (swr.ConfigureAwait(false))
+#else
+            using (swr)
+#endif
+            {
+                using var jwr = JsonProvider.GetJsonWriter(swr);
+                await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("ResourceType", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(report.ResourceType.FullName, cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("Count", cancellationToken).ConfigureAwait(false);
+                await jwr.WriteValueAsync(report.Count, cancellationToken).ConfigureAwait(false);
+                await jwr.WritePropertyNameAsync("TimeElapsedMs", cancellationToken).ConfigureAwait(false);
+                var milliseconds = toSerialize.TimeElapsed.GetRESTableElapsedMs();
+                await jwr.WriteValueAsync(milliseconds, cancellationToken).ConfigureAwait(false);
+                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
 
         public bool IsCompliant(IRequest request, out string invalidReason)
         {

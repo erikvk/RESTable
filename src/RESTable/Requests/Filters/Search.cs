@@ -72,7 +72,7 @@ namespace RESTable.Requests.Filters
         {
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
             var comparison = IgnoreCase ? OrdinalIgnoreCase : Ordinal;
-            if (Selector == null)
+            if (Selector is null)
             {
                 var jsonProvider = ApplicationServicesAccessor.JsonProvider;
                 return entities.Where(e => jsonProvider.Serialize(e).IndexOf(Pattern, comparison) >= 0);

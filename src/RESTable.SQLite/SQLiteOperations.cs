@@ -19,14 +19,14 @@ namespace RESTable.SQLite
             );
         }
 
-        public static async ValueTask<int> InsertAsync(IRequest<T> request)
+        public static IAsyncEnumerable<T> InsertAsync(IRequest<T> request)
         {
-            return await SQLite<T>.Insert(request.GetInputEntitiesAsync()).ConfigureAwait(false);
+            return SQLite<T>.Insert(request.GetInputEntitiesAsync());
         }
 
-        public static async ValueTask<int> UpdateAsync(IRequest<T> request)
+        public static IAsyncEnumerable<T> UpdateAsync(IRequest<T> request)
         {
-            return await SQLite<T>.Update(request.GetInputEntitiesAsync()).ConfigureAwait(false);
+            return SQLite<T>.Update(request.GetInputEntitiesAsync());
         }
 
         public static async ValueTask<int> DeleteAsync(IRequest<T> request)
@@ -42,7 +42,8 @@ namespace RESTable.SQLite
                 return await SQLite<T>
                     .Select(sql.ToSQLiteWhereClause())
                     .Where(post)
-                    .CountAsync().ConfigureAwait(false);
+                    .CountAsync()
+                    .ConfigureAwait(false);
             }
             return await SQLite<T>.Count(sql.ToSQLiteWhereClause()).ConfigureAwait(false);
         }

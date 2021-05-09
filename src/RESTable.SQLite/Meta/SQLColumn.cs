@@ -48,7 +48,7 @@ namespace RESTable.SQLite.Meta
 
         internal async Task Push()
         {
-            if (Mapping == null)
+            if (Mapping is null)
                 throw new InvalidOperationException($"Cannot push the unmapped SQL column '{Name}' to the database");
             foreach (var column in await Mapping.TableMapping.GetSqlColumns().ConfigureAwait(false))
             {

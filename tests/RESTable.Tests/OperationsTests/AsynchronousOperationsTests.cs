@@ -18,7 +18,7 @@ namespace RESTable.Tests.OperationsTests
         public async Task InsertCallsAsyncInserter()
         {
             Assert.False(OperationsTestsFlags.AsyncInserterWasCalled);
-            _ = await Resource.InsertAsync(Request);
+            _ = await Resource.InsertAsync(Request).CountAsync();
             Assert.True(OperationsTestsFlags.AsyncInserterWasCalled);
         }
 
@@ -26,7 +26,7 @@ namespace RESTable.Tests.OperationsTests
         public async Task UpdatetCallsAsyncUpdater()
         {
             Assert.False(OperationsTestsFlags.AsyncUpdaterWasCalled);
-            _ = await Resource.UpdateAsync(Request);
+            _ = await Resource.UpdateAsync(Request).CountAsync();
             Assert.True(OperationsTestsFlags.AsyncUpdaterWasCalled);
         }
 

@@ -58,7 +58,7 @@ namespace RESTable
         /// <inheritdoc />
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
             return request.Context.Client.AccessRights.Keys?
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.Name)
@@ -84,7 +84,7 @@ namespace RESTable
                 if (@namespace != null)
                     if (!@namespace.EndsWith("."))
                         @namespace += ".";
-                if (@namespace == null)
+                if (@namespace is null)
                     return request.Context.Client.AccessRights.Keys?
                         .Where(r => r.IsGlobal && !r.IsInnerResource)
                         .OrderBy(r => r.Name)

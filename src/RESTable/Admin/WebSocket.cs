@@ -63,7 +63,7 @@ namespace RESTable.Admin
                     IsThis = socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
                     TerminalType = socket.TerminalResource?.Name,
                     Client = JObject.FromObject(socket.GetAppProfile(), jsonSerializer),
-                    Terminal = socket.Terminal == null ? null : JObject.FromObject(socket.Terminal, jsonSerializer),
+                    Terminal = socket.Terminal is null ? null : JObject.FromObject(socket.Terminal, jsonSerializer),
                     UnderlyingSocket = socket
                 });
         }

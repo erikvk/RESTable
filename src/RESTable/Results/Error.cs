@@ -81,7 +81,7 @@ namespace RESTable.Results
         internal Error(ErrorCodes code, string message, Exception ie) : base(code, message, ie)
         {
             ExcludeHeaders = false;
-            if (message == null)
+            if (message is null)
                 Headers.Info = ie?.Message;
             else Headers.Info = message;
             IsSuccess = false;
@@ -106,7 +106,7 @@ namespace RESTable.Results
         public async ValueTask DisposeAsync()
         {
             if (Request?.Body is Body body)
-                await body.DisposeAsync();
+                await body.DisposeAsync().ConfigureAwait(false);
         }
 
         private readonly string _logContent = null;

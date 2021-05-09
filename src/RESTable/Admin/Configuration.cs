@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
+using RESTable.Results;
 using static RESTable.Method;
 
 namespace RESTable.Admin
@@ -17,6 +18,10 @@ namespace RESTable.Admin
     {
         private const string description = "The Configuration resource contains the current " +
                                            "configuration for the RESTable instance.";
+
+        private RESTableConfiguration RESTableConfiguration { get; }
+        private IConfiguration AppConfiguration { get; }
+
 
         /// <summary>
         /// The root URI of the RESTable REST API
@@ -34,13 +39,16 @@ namespace RESTable.Admin
         public string RESTableVersion => RESTableConfiguration.Version;
 
         /// <summary>
+        /// The maximum number of entitites that can be contained in change results, for example
+        /// when inserting or updating entities 
+        /// </summary>
+        public int MaxNumberOfEntitiesInChangeResults => Change.MaxNumberOfEntitiesInChangeResults;
+
+        /// <summary>
         /// The path where temporary files are created
         /// </summary>
         [RESTableMember(hide: true)]
         public string TempFilePath => Path.GetTempPath();
-
-        private RESTableConfiguration RESTableConfiguration { get; }
-        private IConfiguration AppConfiguration { get; }
 
         public Configuration(RESTableConfiguration configuration, IConfiguration appConfiguration)
         {
