@@ -21,7 +21,7 @@ namespace RESTable.Internal
             foreach (var provider in contentTypeProvidersList)
             {
                 ValidateContentTypeProvider(provider);
-                if (provider.MatchStrings == null)
+                if (provider.MatchStrings is null)
                     continue;
                 if (provider.CanRead)
                 {
@@ -42,7 +42,7 @@ namespace RESTable.Internal
 
         private void ValidateContentTypeProvider(IContentTypeProvider provider)
         {
-            if (provider == null)
+            if (provider is null)
                 throw new InvalidContentTypeProviderException("External content type provider cannot be null");
             if (!provider.CanRead && !provider.CanWrite)
                 throw new InvalidContentTypeProviderException($"Content type provider '{provider.GetType().GetRESTableTypeName()}' can't read nor write. A content type provider " +

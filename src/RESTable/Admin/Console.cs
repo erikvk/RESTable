@@ -163,7 +163,7 @@ namespace RESTable.Admin
             if (IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
             {
                 builder.Append(headers);
-                if (hh.HeadersStringCache == null)
+                if (hh.HeadersStringCache is null)
                     hh.HeadersStringCache = string.Join(", ", hh.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
                 builder.Append(hh.HeadersStringCache);
             }
@@ -189,14 +189,14 @@ namespace RESTable.Admin
                 if (logable1 is IHeaderHolder {ExcludeHeaders: false} hh1)
                 {
                     builder1.Append(headers);
-                    if (hh1.HeadersStringCache == null)
+                    if (hh1.HeadersStringCache is null)
                         hh1.HeadersStringCache = string.Join(", ", hh1.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
                     builder1.Append(hh1.HeadersStringCache);
                 }
                 if (logable2 is IHeaderHolder {ExcludeHeaders: false} hh2)
                 {
                     builder2.Append(headers);
-                    if (hh2.HeadersStringCache == null)
+                    if (hh2.HeadersStringCache is null)
                         hh2.HeadersStringCache = string.Join(", ", hh2.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
                     builder2.Append(hh2.HeadersStringCache);
                 }

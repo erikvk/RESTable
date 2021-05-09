@@ -44,10 +44,9 @@ namespace RESTable.SQLite
         public virtual IAsyncEnumerable<TController> SelectAsync(IRequest<TController> request) => Select().ToAsyncEnumerable();
 
         /// <inheritdoc />
-        public virtual async ValueTask<int> UpdateAsync(IRequest<TController> request) => await request
+        public virtual IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request) => request
             .GetInputEntitiesAsync()
-            .WhereAwait(async entity => await entity.Update(request).ConfigureAwait(false))
-            .CountAsync().ConfigureAwait(false);
+            .WhereAwait(async entity => await entity.Update(request).ConfigureAwait(false));
 
         protected ElasticSQLiteTableController() { }
 
@@ -79,7 +78,7 @@ namespace RESTable.SQLite
                 .Select(columnName =>
                 {
                     var mapping = TableMapping.ColumnMappings.Values.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
-                    if (mapping == null) return null;
+                    if (mapping is null) return null;
                     if (mapping.IsRowId || mapping.CLRProperty.IsDeclared)
                         throw new SQLiteException($"Cannot drop column '{mapping.SQLColumn.Name}' from table '{TableMapping.TableName}'. " +
                                                   "Column is not editable.");

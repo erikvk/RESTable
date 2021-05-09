@@ -128,7 +128,7 @@ namespace RESTable.Meta.Internal
 
         private static IReadOnlyList<Method> GetAvailableMethods(Type resource)
         {
-            if (resource == null)
+            if (resource is null)
                 return null;
             return resource.GetCustomAttribute<RESTableAttribute>()?.AvailableMethods;
         }

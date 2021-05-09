@@ -735,7 +735,7 @@ namespace RESTarTester
 
             Debug.Assert(byObjectNo is Resource1);
             Debug.Assert(byObjectID is Resource1);
-            Debug.Assert(byObjectIDThatDoesntExist == null);
+            Debug.Assert(byObjectIDThatDoesntExist is null);
 
             #endregion
 
@@ -793,7 +793,7 @@ namespace RESTarTester
 
             Events.Custom<ENotification>.Raise += (s, o) =>
             {
-                Debug.Assert(s == null);
+                Debug.Assert(s is null);
                 Debug.Assert(o.Payload.Message?.Length == "Some message 1".Length);
                 customraised = true;
             };

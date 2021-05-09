@@ -82,8 +82,8 @@ namespace RESTable.Requests
         {
             public bool Equals(IUriCondition x, IUriCondition y)
             {
-                if (x == null && y == null) return true;
-                if (x == null || y == null) return false;
+                if (x is null && y is null) return true;
+                if (x is null || y is null) return false;
                 return string.Equals(x.Key, y.Key, OrdinalIgnoreCase)
                        && x.Operator == y.Operator
                        && x.ValueLiteral == y.ValueLiteral

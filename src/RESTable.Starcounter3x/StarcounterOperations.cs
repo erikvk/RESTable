@@ -61,21 +61,17 @@ namespace RESTable.Starcounter3x
         /// <summary>
         /// Inserts entities into a Starcounter table. Since 
         /// </summary>
-        public static int Insert(IRequest<T> request)
+        public static IEnumerable<T> Insert(IRequest<T> request)
         {
-            var count = 0;
-            Transaction.Run(_ => count = request.GetInputEntities().Count());
-            return count;
+            return Transaction.Run(_ => request.GetInputEntities().ToList());
         }
 
         /// <summary>
         /// Updates entities in a Starcounter table. 
         /// </summary>
-        public static int Update(IRequest<T> request)
+        public static IEnumerable<T> Update(IRequest<T> request)
         {
-            var count = 0;
-            Transaction.Run(_ => count = request.GetInputEntities().Count());
-            return count;
+            return Transaction.Run(_ => request.GetInputEntities().ToList());
         }
 
         /// <summary>

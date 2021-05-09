@@ -38,7 +38,7 @@ namespace RESTable.Admin
         /// <inheritdoc />
         public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
             var resourceCondition = request.Conditions.Pop(nameof(Resource), EQUALS);
             if (resourceCondition?.Value is not string resourceName)
                 throw new Exception("Invalid syntax in request to RESTable.Schema. Format: " +

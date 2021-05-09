@@ -25,7 +25,7 @@ namespace RESTable.SQLite
             var existing = AssemblyBuilder.GetType(resource.Name);
             if (existing != null) return existing;
             var baseType = Type.GetType(resource.BaseTypeName);
-            if (baseType == null) return null;
+            if (baseType is null) return null;
             return MakeType(resource.Name, baseType);
         }
 

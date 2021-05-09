@@ -14,7 +14,7 @@ namespace RESTable.Requests.Filters
         /// </summary>
         public IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
         {
-            if (entities == null) return null;
+            if (entities is null) return null;
             return DistinctIterator(entities);
         }
 

@@ -271,7 +271,7 @@ namespace RESTable.WebSockets
             if (Status != WebSocketStatus.Open)
                 throw new InvalidOperationException(
                     $"Unable to send WebSocket with status '{Status}' to terminal '{resource.Name}'");
-            if (resource == null)
+            if (resource is null)
                 throw new ArgumentNullException(nameof(resource));
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(Context, assignments);
@@ -284,7 +284,7 @@ namespace RESTable.WebSockets
         internal async Task HandleTextInputInternal(string textData, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (TerminalConnection == null) return;
+            if (TerminalConnection is null) return;
             if (!TerminalConnection.Terminal.SupportsTextInputInternal)
             {
                 await SendResult(
@@ -311,7 +311,7 @@ namespace RESTable.WebSockets
         internal async Task HandleBinaryInputInternal(byte[] binaryData, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (TerminalConnection == null) return;
+            if (TerminalConnection is null) return;
             if (!TerminalConnection.Terminal.SupportsBinaryInputInternal)
             {
                 await SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support binary input")).ConfigureAwait(false);
@@ -510,7 +510,7 @@ namespace RESTable.WebSockets
         /// <inheritdoc />
         public async Task SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)
         {
-            if (item == null) throw new ArgumentNullException(nameof(item));
+            if (item is null) throw new ArgumentNullException(nameof(item));
             var message = await GetMessageStream(false).ConfigureAwait(false);
 #if NETSTANDARD2_1
             await using (message)
@@ -561,10 +561,10 @@ namespace RESTable.WebSockets
             TimeSpan? timeElapsed = null, bool writeHeaders = false,
             bool disposeResult = true)
         {
-            if (serializedResult == null) throw new ArgumentNullException(nameof(serializedResult));
+            if (serializedResult is null) throw new ArgumentNullException(nameof(serializedResult));
             var content = serializedResult.Result as Content;
 
-            if (content == null || !(serializedResult.Body?.Length > 0))
+            if (content is null || !(serializedResult.Body?.Length > 0))
             {
                 await SendSerializedResult(serializedResult, serializedResult.TimeElapsed, writeHeaders, disposeResult)
                     .ConfigureAwait(false);

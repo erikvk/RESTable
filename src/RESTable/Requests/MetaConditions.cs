@@ -208,8 +208,8 @@ namespace RESTable.Requests
 
             metaConditions.Processors = new IProcessor[] {metaConditions.Add, metaConditions.Rename, metaConditions.Select}.Where(p => p != null).ToArray();
             metaConditions.HasProcessors = metaConditions.Processors.Any();
-            metaConditions.CanUseExternalCounter = metaConditions.Search == null
-                                                   && metaConditions.Distinct == null
+            metaConditions.CanUseExternalCounter = metaConditions.Search is null
+                                                   && metaConditions.Distinct is null
                                                    && metaConditions.Limit.Number == -1
                                                    && metaConditions.Offset.Number == 0;
 
@@ -297,7 +297,7 @@ namespace RESTable.Requests
             };
             copy.Processors = new IProcessor[] {copy.Add, copy.Rename, copy.Select}.Where(p => p != null).ToArray();
             copy.HasProcessors = copy.Processors.Any();
-            copy.CanUseExternalCounter = copy.Search == null && copy.Distinct == null && copy.Limit.Number == -1 && copy.Offset.Number == 0;
+            copy.CanUseExternalCounter = copy.Search is null && copy.Distinct is null && copy.Limit.Number == -1 && copy.Offset.Number == 0;
             return copy;
         }
     }

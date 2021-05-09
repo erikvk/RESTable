@@ -355,7 +355,7 @@ namespace RESTable
                                     break;
                                 }
                                 var (key, value) = tail.TupleSplit('=', true);
-                                if (value == null)
+                                if (value is null)
                                 {
                                     await SendHeaders().ConfigureAwait(false);
                                     break;
@@ -384,7 +384,7 @@ namespace RESTable
                                     break;
                                 }
                                 var (property, valueString) = tail.TupleSplit('=', true);
-                                if (property == null || valueString == null)
+                                if (property is null || valueString is null)
                                 {
                                     await WebSocket
                                         .SendText(
@@ -536,10 +536,10 @@ namespace RESTable
 
         private async Task EnsurePreviousEntities()
         {
-            if (PreviousEntities == null)
+            if (PreviousEntities is null)
             {
                 await WsGetPreliminary().ConfigureAwait(false);
-                if (PreviousEntities == null)
+                if (PreviousEntities is null)
                 {
                     await SendResult(new ShellNoContent(WebSocket)).ConfigureAwait(false);
                 }
@@ -655,7 +655,7 @@ namespace RESTable
                 await SafeOperation(method, body).ConfigureAwait(false);
             }
 
-            if (PreviousEntities == null)
+            if (PreviousEntities is null)
             {
                 await using var result = await GetResult(GET, null).ConfigureAwait(false);
                 if (result is not IEntities)
@@ -668,7 +668,7 @@ namespace RESTable
             switch (await PreviousEntities.CountAsync())
             {
                 case 0:
-                    await SendBadRequest($". No entities for to run {method} on").ConfigureAwait(false);
+                    await SendBadRequest($". No entities to run {method} on").ConfigureAwait(false);
                     break;
                 case 1:
                     await runOperation().ConfigureAwait(false);

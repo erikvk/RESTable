@@ -52,7 +52,7 @@ namespace RESTable.Meta.IL
             instruction.Append(':');
             instruction.Append(' ');
             instruction.Append(OpCode.Name);
-            if (Operand == null)
+            if (Operand is null)
                 return instruction.ToString();
             instruction.Append(' ');
             switch (OpCode.OperandType)

@@ -25,7 +25,7 @@ namespace RESTable.Example
             get => SQLite<Job>.Select($"WHERE RowId={JobRowId}").FirstOrDefaultAsync().Result;
             set
             {
-                SQLite<Job>.Insert(value).Wait();
+                SQLite<Job>.Insert(value).CountAsync().AsTask().Wait();
                 JobRowId = value.RowId;
             }
         }

@@ -31,10 +31,10 @@ namespace RESTable.Requests.Processors
             {
                 var (key, newName) = pair;
                 var value = entity.GetValue(key.Key, StringComparison.OrdinalIgnoreCase);
-                if (value == null)
+                if (value is null)
                 {
                     var termValue = key.GetValue(entity, out _);
-                    entity[newName] = termValue == null ? null : JToken.FromObject(termValue, serializer);
+                    entity[newName] = termValue is null ? null : JToken.FromObject(termValue, serializer);
                     continue;
                 }
                 var property = (JProperty) value.Parent;

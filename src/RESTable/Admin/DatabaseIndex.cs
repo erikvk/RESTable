@@ -37,7 +37,7 @@ namespace RESTable.Admin
             get => _name;
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(Name));
                 if (!Regex.IsMatch(value, RegEx.LettersNumsAndUs))
                     throw new FormatException("Index name contained invalid characters. Can only contain " +
@@ -82,7 +82,7 @@ namespace RESTable.Admin
         /// The columns on which this index is registered
         /// </summary>
         public ColumnInfo[] Columns { get; set; }
-        
+
         /// <inheritdoc />
         public IEnumerable<InvalidMember> Validate(DatabaseIndex entity, RESTableContext context)
         {
@@ -116,11 +116,10 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public async ValueTask<int> InsertAsync(IRequest<DatabaseIndex> request)
+        public async IAsyncEnumerable<DatabaseIndex> InsertAsync(IRequest<DatabaseIndex> request)
         {
-            var count = 0;
             var entities = request.GetInputEntitiesAsync();
-            if (entities == null) return 0;
+            if (entities is null) yield break;
             var entityResourceProviders = request
                 .GetRequiredService<ResourceFactory>()
                 .EntityResourceProviders;
@@ -129,25 +128,25 @@ namespace RESTable.Admin
                 if (!entityResourceProviders.TryGetValue(@group.Key, out var provider) || provider.DatabaseIndexer is not IDatabaseIndexer indexer)
                     throw new Exception($"Unable to register index. Resource '{(await group.FirstAsync().ConfigureAwait(false)).Resource.Name}' is not a database resource.");
                 request.Selector = () => group;
-                count += await indexer.InsertAsync(request).ConfigureAwait(false);
+                await foreach (var index in indexer.InsertAsync(request))
+                    yield return index;
             }
-            return count;
         }
 
         /// <inheritdoc />
-        public async ValueTask<int> UpdateAsync(IRequest<DatabaseIndex> request)
+        public async IAsyncEnumerable<DatabaseIndex> UpdateAsync(IRequest<DatabaseIndex> request)
         {
-            var count = 0;
             var entities = request.GetInputEntitiesAsync();
+            if (entities is null) yield break;
             var entityResourceProviders = request
                 .GetRequiredService<ResourceFactory>()
                 .EntityResourceProviders;
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
                 request.Updater = _ => group;
-                count += await entityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request).ConfigureAwait(false);
+                await foreach (var index in entityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request))
+                    yield return index;
             }
-            return count;
         }
 
         /// <inheritdoc />

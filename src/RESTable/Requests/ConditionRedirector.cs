@@ -65,7 +65,7 @@ namespace RESTable.Requests
         {
             var props = TypeCache.GetDeclaredProperties(typeof(T));
             var newKeyNamesDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (newKeyNames == null)
+            if (newKeyNames is null)
                 throw new ArgumentNullException(nameof(newKeyNames));
             foreach (var (direct, to) in newKeyNames)
                 newKeyNamesDict[direct ?? throw new ArgumentNullException()] = to ?? throw new ArgumentNullException();

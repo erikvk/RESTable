@@ -60,7 +60,7 @@ namespace RESTable.Requests
                     headers.Origin = value;
                     break;
                 case var _ when key.EqualsNoCase("RESTable-elapsed-ms"):
-                    if (value == null)
+                    if (value is null)
                         headers.Elapsed = null;
                     else
                     {
@@ -77,8 +77,8 @@ namespace RESTable.Requests
 
         internal static bool _Contains(this IHeadersInternal headers, KeyValuePair<string, string> item) => item.Key switch
         {
-            _ when item.Key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept?.ToString().EqualsNoCase(item.Value) ?? item.Value == null,
-            _ when item.Key.EqualsNoCase("Content-Type") => headers.ContentType?.ToString().EqualsNoCase(item.Value) ?? item.Value == null,
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept?.ToString().EqualsNoCase(item.Value) ?? item.Value is null,
+            _ when item.Key.EqualsNoCase("Content-Type") => headers.ContentType?.ToString().EqualsNoCase(item.Value) ?? item.Value is null,
             _ when item.Key.EqualsNoCase(nameof(IHeaders.Source)) => headers.Source.EqualsNoCase(item.Value),
             _ when item.Key.EqualsNoCase(nameof(IHeaders.Destination)) => headers.Destination.EqualsNoCase(item.Value),
             _ when item.Key.EqualsNoCase(nameof(IHeaders.Authorization)) => headers.Authorization.EqualsNoCase(item.Value),

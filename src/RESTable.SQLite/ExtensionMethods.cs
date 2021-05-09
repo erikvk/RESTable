@@ -21,14 +21,14 @@ namespace RESTable.SQLite
                 {
                     var getter = property.GetGetMethod();
                     var setter = property.GetSetMethod();
-                    if (getter == null && setter == null) return false;
+                    if (getter is null && setter is null) return false;
                     if (!(getter ?? setter).HasAttribute<CompilerGeneratedAttribute>(out _))
                         return false;
-                    if (getter == null)
+                    if (getter is null)
                         throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a non-defined or non-public get accessor. This property cannot be used with SQLite. To ignore this " +
                                                   "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
-                    if (setter == null && property.Name != nameof(SQLiteTable.RowId))
+                    if (setter is null && property.Name != nameof(SQLiteTable.RowId))
                         throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a non-public set accessor. This property cannot be used with SQLite. To ignore this " +
                                                   "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
@@ -66,7 +66,7 @@ namespace RESTable.SQLite
 
         internal static Method[] ToMethodsArray(this string methodsString)
         {
-            if (methodsString == null) return null;
+            if (methodsString is null) return null;
             if (methodsString.Trim() == "*")
                 return new[] {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
             return methodsString.Split(',')

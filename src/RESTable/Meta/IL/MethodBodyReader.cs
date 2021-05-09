@@ -73,11 +73,11 @@ namespace RESTable.Meta.IL
             this.method = method;
 
             var body = method.GetMethodBody();
-            if (body == null)
+            if (body is null)
                 throw new ArgumentException("Method has no body");
 
             var bytes = body.GetILAsByteArray();
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentException("Can not get the body of the method");
 
             if (method is not ConstructorInfo)

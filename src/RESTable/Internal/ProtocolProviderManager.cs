@@ -43,7 +43,7 @@ namespace RESTable.Internal
                 throw new InvalidOperationException("Expected at least one protocol provider available from the service provider given to RESTableConfig");
         }
 
-        internal CachedProtocolProvider ResolveCachedProtocolProvider(string protocolIdentifier) => protocolIdentifier == null
+        internal CachedProtocolProvider ResolveCachedProtocolProvider(string protocolIdentifier) => protocolIdentifier is null
             ? DefaultProtocolProvider
             : CachedProtocolProviders.SafeGet(protocolIdentifier) ?? throw new UnknownProtocol(protocolIdentifier);
 
@@ -90,7 +90,7 @@ namespace RESTable.Internal
 
         private void ValidateProtocolProvider(IProtocolProvider provider)
         {
-            if (provider == null)
+            if (provider is null)
                 throw new InvalidProtocolProviderException("External protocol provider cannot be null");
             if (string.IsNullOrWhiteSpace(provider.ProtocolIdentifier))
                 throw new InvalidProtocolProviderException($"Invalid protocol provider '{provider.GetType().GetRESTableTypeName()}'. " +

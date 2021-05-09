@@ -151,15 +151,15 @@ namespace RESTable.SQLite
 
         private static void Validate(Type type)
         {
-            if (type.FullName == null)
+            if (type.FullName is null)
                 throw new SQLiteException($"RESTable.SQLite encountered an unknown type: '{type.GUID}'");
-            if (type.Namespace == null)
+            if (type.Namespace is null)
                 throw new SQLiteException($"RESTable.SQLite encountered a type '{type}' with no specified namespace.");
             if (type.IsGenericType)
                 throw new SQLiteException($"Invalid SQLite table mapping for CLR class '{type}'. Cannot map a " +
                                           "generic CLR class.");
 
-            if (type.GetConstructor(Type.EmptyTypes) == null)
+            if (type.GetConstructor(Type.EmptyTypes) is null)
                 throw new SQLiteException($"Expected parameterless constructor for SQLite type '{type}'.");
             var columnProperties = type.GetDeclaredColumnProperties();
             if (columnProperties.Values.All(p => p.Name == "RowId"))

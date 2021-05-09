@@ -71,7 +71,7 @@ namespace RESTable
         {
             if (IsClosed)
                 throw new ObjectDisposedException(nameof(Stream));
-            if (source == null) return null;
+            if (source is null) return null;
             try
             {
                 return ContentTypeProvider.Populate(source, Stream.GetBytes());
@@ -133,7 +133,7 @@ namespace RESTable
 
         public async Task Initialize(CancellationToken cancellationToken)
         {
-            if (UninitializedBodyObject == null)
+            if (UninitializedBodyObject is null)
                 return;
             var contentTypeProvider = ProtocolHolder.GetInputContentTypeProvider();
             var content = UninitializedBodyObject;

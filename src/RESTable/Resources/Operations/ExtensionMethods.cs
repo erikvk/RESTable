@@ -39,7 +39,7 @@ namespace RESTable.Resources.Operations
         public static void NotifyState<T>(this T target, object oldValue, [CallerMemberName] string propertyName = null)
             where T : class, IPropertyChangeNotifier
         {
-            if (propertyName == null)
+            if (propertyName is null)
                 throw new ArgumentNullException(nameof(propertyName), "The name of the changed property could not be established. Check the " +
                                                                       "context of the call to NotifyChange, and consider providing an explicit " +
                                                                       "'propertyName' parameter.");

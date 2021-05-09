@@ -138,7 +138,7 @@ namespace RESTable
                 .FirstOrDefault(i => i.Name == interfaceType.Name &&
                                      i.Namespace == interfaceType.Namespace &&
                                      i.Assembly == interfaceType.Assembly);
-            if (match == null &&
+            if (match is null &&
                 type.Name == interfaceType.Name &&
                 type.Namespace == interfaceType.Namespace &&
                 type.Assembly == interfaceType.Assembly)
@@ -149,7 +149,7 @@ namespace RESTable
 
         internal static long ByteCount(this PropertyInfo property, object target)
         {
-            if (target == null) throw new NullReferenceException(nameof(target));
+            if (target is null) throw new NullReferenceException(nameof(target));
             return property.GetValue(target) switch
             {
                 null => 0,
@@ -192,13 +192,13 @@ namespace RESTable
 
         internal static string UriEncode(this string str)
         {
-            if (str == null) return null;
+            if (str is null) return null;
             return Uri.EscapeDataString(str);
         }
 
         internal static string UriDecode(this string str)
         {
-            if (str == null) return null;
+            if (str is null) return null;
             return Uri.UnescapeDataString(str);
         }
 
@@ -315,7 +315,7 @@ namespace RESTable
                 case IDictionary idict:
                     var _jobj = new JObject();
                     foreach (DictionaryEntry pair in idict)
-                        _jobj[pair.Key.ToString()] = pair.Value == null
+                        _jobj[pair.Key.ToString()] = pair.Value is null
                             ? null
                             : JToken.FromObject(pair.Value, jsonProvider.GetSerializer());
                     return _jobj;
@@ -326,7 +326,7 @@ namespace RESTable
             foreach (var property in typeCache.GetDeclaredProperties(entity.GetType()).Values.Where(p => !p.Hidden))
             {
                 var propertyValue = property.GetValue(entity);
-                jobj[property.Name] = propertyValue == null ? null : JToken.FromObject(propertyValue, jsonProvider.GetSerializer());
+                jobj[property.Name] = propertyValue is null ? null : JToken.FromObject(propertyValue, jsonProvider.GetSerializer());
             }
             return jobj;
         }
@@ -334,7 +334,7 @@ namespace RESTable
         internal static string GetEntityResourceProviderId(this Type providerType)
         {
             var typeName = providerType.Name;
-            if (typeName == null) throw new ArgumentNullException();
+            if (typeName is null) throw new ArgumentNullException();
             if (typeName.EndsWith("resourceprovider", InvariantCultureIgnoreCase))
                 typeName = typeName.Substring(0, typeName.Length - 16);
             else if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
@@ -520,7 +520,7 @@ namespace RESTable
         public static Error AsResultOf(this Exception exception, IRequest request)
         {
             var error = exception.AsError();
-            if (request == null) return error;
+            if (request is null) return error;
             error.SetContext(request.Context);
             error.Request = request;
             if (error is not Forbidden && request.Method >= 0)

@@ -15,14 +15,14 @@ namespace RESTable.Results
             var serializedResult = new SerializedResult(result, customOutputStream);
             try
             {
-                if (serializedResult.Body == null)
+                if (serializedResult.Body is null)
                     return serializedResult;
                 await serializedResult.Body.Serialize(serializedResult, cancellationToken).ConfigureAwait(false);
                 return serializedResult;
             }
             catch (Exception exception)
             {
-                if (customOutputStream == null)
+                if (customOutputStream is null)
                     await serializedResult.DisposeAsync().ConfigureAwait(false);
                 return await exception.AsResultOf(result.Request).Serialize(customOutputStream, cancellationToken).ConfigureAwait(false);
             }

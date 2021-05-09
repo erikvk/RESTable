@@ -79,8 +79,8 @@ namespace RESTable.Meta
             customDateTimeFormat: customDateTimeFormat,
             allowedConditionOperators: allowedConditionOperators,
             owner: typeof(TOwner),
-            getter: getter == null ? default(Getter) : o => getter((TOwner) o),
-            setter: setter == null ? default(Setter) : (o, v) => setter((TOwner) o, (TPropertyType) v),
+            getter: getter is null ? default(Getter) : o => getter((TOwner) o),
+            setter: setter is null ? default(Setter) : (o, v) => setter((TOwner) o, (TPropertyType) v),
             mergeOntoOwner: mergeOntoOwner,
             readOnly: readOnly
         ) { }

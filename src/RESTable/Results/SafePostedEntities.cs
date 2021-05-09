@@ -18,7 +18,7 @@ namespace RESTable.Results
         /// </summary>
         public int InsertedCount { get; }
 
-        public SafePostedEntities(IRequest request, int updatedEntities, int insertedEntities) : base(request)
+        public SafePostedEntities(IRequest request, int updatedEntities, int insertedEntities, object[] entities) : base(request, updatedEntities + insertedEntities, entities)
         {
             UpdatedCount = updatedEntities;
             InsertedCount = insertedEntities;

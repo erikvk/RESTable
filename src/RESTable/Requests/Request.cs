@@ -50,7 +50,7 @@ namespace RESTable.Requests
 
         public Cookies Cookies => Context.Client.Cookies;
         public bool HasConditions => !(_conditions?.Count > 0);
-        public bool IsValid => Error == null;
+        public bool IsValid => Error is null;
         public string ProtocolIdentifier => Parameters.ProtocolIdentifier;
         public TimeSpan TimeElapsed => Stopwatch.Elapsed;
         private Stopwatch Stopwatch { get; }
@@ -68,7 +68,7 @@ namespace RESTable.Requests
 
         public async IAsyncEnumerable<T> GetInputEntitiesAsync()
         {
-            if (EntitiesProducer == null) yield break;
+            if (EntitiesProducer is null) yield break;
             await foreach (var item in EntitiesProducer().ConfigureAwait(false))
                 yield return item;
         }
@@ -163,7 +163,7 @@ namespace RESTable.Requests
             var destinationDelegate = GetDestinationDelegate();
             var result = GetQuickErrorResult();
 
-            if (result == null)
+            if (result is null)
             {
                 Body = await sourceDelegate(Body).ConfigureAwait(false);
                 await Body.Initialize(cancellationToken).ConfigureAwait(false);
@@ -447,7 +447,7 @@ namespace RESTable.Requests
                 parameters.Headers.Accept ??= ContentType.JSON;
                 var request = new HttpRequest(this, parameters, null);
                 var response = await request.GetResponseAsync().ConfigureAwait(false);
-                if (response == null)
+                if (response is null)
                     throw new InvalidExternalSource(parameters.URI, "No response");
                 if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(parameters.URI, response.LogMessage);
 

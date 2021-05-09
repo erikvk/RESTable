@@ -24,7 +24,7 @@ namespace RESTable.Results
         /// </summary>
         public void SetContentDisposition(string extension)
         {
-            if (extension == null) return;
+            if (extension is null) return;
             Headers["Content-Disposition"] = $"attachment;filename={Request.Resource}_{DateTime.UtcNow:yyMMddHHmmssfff}{extension}";
         }
 

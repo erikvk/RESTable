@@ -87,7 +87,7 @@ namespace RESTable.Admin
 
         internal static T Make<T>(IResource iresource) where T : Resource, new()
         {
-            if (iresource == null) return null;
+            if (iresource is null) return null;
             var entityResource = iresource as IEntityResource;
             return new T
             {
@@ -111,7 +111,7 @@ namespace RESTable.Admin
         /// <inheritdoc />
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
             return request
                 .GetRequiredService<ResourceCollection>()
                 .Where(r => r.IsGlobal)

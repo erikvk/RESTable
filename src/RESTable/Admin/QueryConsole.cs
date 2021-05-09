@@ -29,7 +29,7 @@ namespace RESTable.Admin
         public static async Task Publish(string query, object[] args)
         {
             if (Consoles.Count == 0) return;
-            var argsString = args == null ? null : $"{NewLine}Args: {string.Join(", ", args)}";
+            var argsString = args is null ? null : $"{NewLine}Args: {string.Join(", ", args)}";
             var message = $"{DateTime.UtcNow:O}: {query}{argsString}{NewLine}";
             await Consoles.CombinedWebSocket.SendText(message);
         }

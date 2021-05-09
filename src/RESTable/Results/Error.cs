@@ -81,7 +81,7 @@ namespace RESTable.Results
         internal Error(ErrorCodes code, string message, Exception ie) : base(code, message, ie)
         {
             ExcludeHeaders = false;
-            if (message == null)
+            if (message is null)
                 Headers.Info = ie?.Message;
             else Headers.Info = message;
             IsSuccess = false;

@@ -118,7 +118,7 @@ namespace RESTable.Resources
         {
             var procedural = ResourceProviderInternal.SelectProceduralResources()
                 ?.FirstOrDefault(item => item.Name == Name);
-            if (procedural == null) return;
+            if (procedural is null) return;
             var type = procedural.Type;
             if (ResourceProviderInternal.DeleteProceduralResource(procedural))
                 ResourceProviderInternal.RemoveProceduralResource(type);
@@ -129,26 +129,22 @@ namespace RESTable.Resources
         /// <inheritdoc />
         public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select();
 
-        public virtual async ValueTask<int> InsertAsync(IRequest<TController> request)
+        public virtual async IAsyncEnumerable<TController> InsertAsync(IRequest<TController> request)
         {
-            var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 resource.Insert(request);
-                i += 1;
+                yield return resource;
             }
-            return i;
         }
 
-        public virtual async ValueTask<int> UpdateAsync(IRequest<TController> request)
+        public virtual async IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request)
         {
-            var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
                 resource.Update();
-                i += 1;
+                yield return resource;
             }
-            return i;
         }
 
         public virtual async ValueTask<int> DeleteAsync(IRequest<TController> request)

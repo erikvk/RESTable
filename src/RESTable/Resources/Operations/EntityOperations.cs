@@ -89,20 +89,20 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static async Task<ulong> TryCount(IEntityRequest<T> request)
+        private static async Task<long> TryCount(IEntityRequest<T> request)
         {
             try
             {
                 request.EntitiesProducer = AsyncEnumerable.Empty<T>;
                 if (request.EntityResource.CanCount &&
                     request.MetaConditions.CanUseExternalCounter)
-                    return (ulong) await request.EntityResource.CountAsync(request).ConfigureAwait(false);
+                    return await request.EntityResource.CountAsync(request).ConfigureAwait(false);
                 var entities = request.MetaConditions.HasProcessors
                     ? SelectProcessFilter(request)
                     : SelectFilter(request);
-                if (entities == null)
-                    return 0UL;
-                return (ulong) await entities.LongCountAsync().ConfigureAwait(false);
+                if (entities is null)
+                    return 0L;
+                return await entities.LongCountAsync().ConfigureAwait(false);
             }
             catch (InfiniteLoop)
             {
@@ -172,7 +172,7 @@ namespace RESTable.Resources.Operations
                     .Select(item =>
                     {
                         var (json, source) = item;
-                        if (json == null || source == null) return source;
+                        if (json is null || source is null) return source;
                         using var sr = json.CreateReader();
                         jsonProvider.GetSerializer().Populate(sr, source);
                         return source;
@@ -219,7 +219,7 @@ namespace RESTable.Resources.Operations
             {
                 var entities = TrySelectProcessFilter(request);
                 RequestSuccess result;
-                if (entities == null)
+                if (entities is null)
                     result = MakeEntities(request, default(IAsyncEnumerable<T>));
                 else result = MakeEntities(request, (dynamic) entities);
                 return Task.FromResult(result);
@@ -229,23 +229,35 @@ namespace RESTable.Resources.Operations
             {
                 if (request.MetaConditions.SafePost != null)
                     return await SafePost(request).ConfigureAwait(false);
-                return new InsertedEntities(request, await Insert(request).ConfigureAwait(false));
+                var insertedEntities = Insert(request);
+                var (count, entities) = await ChangeCount(insertedEntities).ConfigureAwait(false);
+                return new InsertedEntities(request, count, entities);
             }
 
             async Task<RequestSuccess> PutEvaluator(IEntityRequest<T> request)
             {
-                var task = TrySelectFilter(request)?.InputLimit()?.ToListAsync();
-                var source = !task.HasValue ? null : await task.Value.ConfigureAwait(false);
+                var selectAsListTask = TrySelectFilter(request)?.InputLimit()?.ToListAsync();
+                var source = !selectAsListTask.HasValue ? null : await selectAsListTask.Value.ConfigureAwait(false);
                 switch (source?.Count)
                 {
                     case null:
                     case 0:
-                        return new InsertedEntities(request, await Insert(request).ConfigureAwait(false));
-                    case 1 when request.GetUpdater() == null && !request.Body.CanRead:
-                        return new UpdatedEntities(request, 0);
+                    {
+                        var insertedEntities = Insert(request);
+                        var (count, entities) = await ChangeCount(insertedEntities).ConfigureAwait(false);
+                        return new InsertedEntities(request, count, entities);
+                    }
+                    case 1 when request.GetUpdater() is null && !request.Body.CanRead:
+                    {
+                        return new UpdatedEntities(request, 0, null);
+                    }
                     default:
+                    {
                         request.Selector = () => source.ToAsyncEnumerable();
-                        return new UpdatedEntities(request, await Update(request).ConfigureAwait(false));
+                        var updatedEntities = Update(request);
+                        var (count, entities) = await ChangeCount(updatedEntities).ConfigureAwait(false);
+                        return new UpdatedEntities(request, count, entities);
+                    }
                 }
             }
 
@@ -255,7 +267,13 @@ namespace RESTable.Resources.Operations
                 return new Head(request, count);
             }
 
-            async Task<RequestSuccess> PatchEvaluator(IEntityRequest<T> request) => new UpdatedEntities(request, await Update(request).ConfigureAwait(false));
+            async Task<RequestSuccess> PatchEvaluator(IEntityRequest<T> request)
+            {
+                var updatedEntities = Update(request);
+                var (count, entities) = await ChangeCount(updatedEntities).ConfigureAwait(false);
+                return new UpdatedEntities(request, count, entities);
+            }
+
             async Task<RequestSuccess> DeleteEvaluator(IEntityRequest<T> request) => new DeletedEntities(request, await Delete(request).ConfigureAwait(false));
             async Task<RequestSuccess> ReportEvaluator(IEntityRequest<T> request) => new Report(request, await TryCount(request).ConfigureAwait(false));
             Task<RequestSuccess> ImATeapotEvaluator(IEntityRequest<T> request) => Task.FromResult<RequestSuccess>(new ImATeapot(request));
@@ -272,6 +290,55 @@ namespace RESTable.Resources.Operations
                 _ => ImATeapotEvaluator
             };
         }
+
+
+        private static async Task<(int count, object[] changedEntities)> ChangeCount
+        (
+            IAsyncEnumerable<T> changedEntities,
+            int maxNumberOfChangedEntities = Change.MaxNumberOfEntitiesInChangeResults
+        )
+        {
+            var buffer = new List<object>();
+            var count = 0;
+            await foreach (var item in changedEntities)
+            {
+                if (count < maxNumberOfChangedEntities)
+                    buffer.Add(item);
+                count += 1;
+            }
+            var changedEntitiesArray = count <= maxNumberOfChangedEntities ? buffer.ToArray() : new object[0];
+            return (count, changedEntitiesArray);
+        }
+
+        private const int MaxNumberOfEntitiesInSafePostResults = Change.MaxNumberOfEntitiesInChangeResults / 2;
+
+        private static async Task<(int updatedCount, int insertedCount, object[] changedEntities)> SafePostCount
+        (
+            IAsyncEnumerable<T> updatedEntities,
+            IAsyncEnumerable<T> insertedEntities,
+            int maxNumberOfChangedEntities = MaxNumberOfEntitiesInSafePostResults
+        )
+        {
+            var buffer = new List<object>();
+            var (updatedCount, insertedCount, totalCount) = (0, 0, 0);
+            await foreach (var item in updatedEntities)
+            {
+                if (totalCount < maxNumberOfChangedEntities)
+                    buffer.Add(item);
+                updatedCount += 1;
+                totalCount += 1;
+            }
+            await foreach (var item in insertedEntities)
+            {
+                if (totalCount < maxNumberOfChangedEntities)
+                    buffer.Add(item);
+                insertedCount += 1;
+                totalCount += 1;
+            }
+            var changedEntitiesArray = totalCount <= maxNumberOfChangedEntities ? buffer.ToArray() : new object[0];
+            return (updatedCount, insertedCount, changedEntitiesArray);
+        }
+
 
         /// <summary>
         /// Needed since some <see cref="Entities{T}"/> instances are created using dynamic binding, which requires
@@ -290,17 +357,20 @@ namespace RESTable.Resources.Operations
                 var jsonProvider = request.GetRequiredService<IJsonProvider>();
                 var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
                 var (toInsert, toUpdate) = await GetSafePostTasks(request, innerRequest).ConfigureAwait(false);
-                var (updatedCount, insertedCount) = (0, 0);
+                var (insertedEntities, updatedEntities) = (default(IAsyncEnumerable<T>), default(IAsyncEnumerable<T>));
                 if (toUpdate.Any())
-                    updatedCount = await SafePostUpdate(innerRequest, jsonProvider, toUpdate).ConfigureAwait(false);
+                {
+                    updatedEntities = SafePostUpdate(innerRequest, jsonProvider, toUpdate);
+                }
                 if (toInsert.Any())
                 {
                     innerRequest.Selector = () => toInsert
                         .Select(item => item.ToObject<T>(jsonProvider.GetSerializer()))
                         .ToAsyncEnumerable();
-                    insertedCount = await Insert(innerRequest).ConfigureAwait(false);
+                    insertedEntities = Insert(innerRequest);
                 }
-                return new SafePostedEntities(request, updatedCount, insertedCount);
+                var (updatedCount, insertedCount, changedEntities) = await SafePostCount(updatedEntities, insertedEntities).ConfigureAwait(false);
+                return new SafePostedEntities(request, updatedCount, insertedCount, changedEntities);
             }
             catch (Exception e)
             {

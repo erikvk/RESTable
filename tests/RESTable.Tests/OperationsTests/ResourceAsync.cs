@@ -25,16 +25,16 @@ namespace RESTable.Tests.OperationsTests
             yield break;
         }
 
-        public async ValueTask<int> InsertAsync(IRequest<ResourceAsync> request)
+        public async IAsyncEnumerable<ResourceAsync> InsertAsync(IRequest<ResourceAsync> request)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncInserterWasCalled = true;
-            return 0;
+            yield break;
         }
 
-        public async ValueTask<int> UpdateAsync(IRequest<ResourceAsync> request)
+        public async IAsyncEnumerable<ResourceAsync> UpdateAsync(IRequest<ResourceAsync> request)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncUpdaterWasCalled = true;
-            return 0;
+            yield break;
         }
 
         public async ValueTask<int> DeleteAsync(IRequest<ResourceAsync> request)

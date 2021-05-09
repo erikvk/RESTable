@@ -36,12 +36,12 @@ namespace RESTable.Tests.RequestTests
             throw new System.NotImplementedException();
         }
 
-        public int Insert(IRequest<TestResourceDynamic> request)
+        public IEnumerable<TestResourceDynamic> Insert(IRequest<TestResourceDynamic> request)
         {
             throw new System.NotImplementedException();
         }
 
-        public int Update(IRequest<TestResourceDynamic> request)
+        public IEnumerable<TestResourceDynamic> Update(IRequest<TestResourceDynamic> request)
         {
             throw new System.NotImplementedException();
         }

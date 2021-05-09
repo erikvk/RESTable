@@ -179,7 +179,7 @@ namespace RESTable.Meta
         /// </summary>
         internal DeclaredProperty(PropertyInfo p, bool flagName = false) : base(p?.DeclaringType)
         {
-            if (p == null) return;
+            if (p is null) return;
 
             MetadataToken = p.MetadataToken;
             Name = p.RESTableMemberName(flagName);
@@ -208,7 +208,7 @@ namespace RESTable.Meta
 
         private static dynamic MakeExcelReducer(string methodName, PropertyInfo p)
         {
-            if (p.DeclaringType == null) throw new Exception("Type error, cannot cache property " + p);
+            if (p.DeclaringType is null) throw new Exception("Type error, cannot cache property " + p);
             try
             {
                 var method = p.DeclaringType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance) ?? throw new Exception();
@@ -224,7 +224,7 @@ namespace RESTable.Meta
 
         internal long ByteCount(object target)
         {
-            if (target == null) throw new NullReferenceException(nameof(target));
+            if (target is null) throw new NullReferenceException(nameof(target));
             return GetValue(target) switch
             {
                 null => 0,

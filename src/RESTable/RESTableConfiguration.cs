@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using RESTable.Meta;
+using RESTable.Results;
 
 namespace RESTable
 {
@@ -9,7 +10,7 @@ namespace RESTable
         public string Version { get; }
         public string[] ReservedNamespaces { get; }
         public string RootUri { get; private set; }
-
+        
         public RESTableConfiguration()
         {
             Methods = EnumMember<Method>.Values;

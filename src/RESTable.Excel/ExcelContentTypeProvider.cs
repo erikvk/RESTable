@@ -53,7 +53,7 @@ namespace RESTable.Excel
         public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken)
             where T : class
         {
-            if (collection == null) return 0;
+            if (collection is null) return 0;
             try
             {
                 using var package = new ExcelPackage(stream);

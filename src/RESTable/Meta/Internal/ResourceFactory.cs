@@ -101,7 +101,7 @@ namespace RESTable.Meta.Internal
 
         private void ValidateEntityResourceProviders()
         {
-            if (ExternalResourceProviders == null) return;
+            if (ExternalResourceProviders is null) return;
 
             var entityResourceProviders = ExternalResourceProviders
                 .Select(p => p as IEntityResourceProviderInternal ??
@@ -111,7 +111,7 @@ namespace RESTable.Meta.Internal
 
             foreach (var provider in entityResourceProviders)
             {
-                if (provider == null)
+                if (provider is null)
                     throw new ArgumentNullException(nameof(entityResourceProviders), "Found null value in entity resource providers collection");
                 provider.Validate();
             }
@@ -170,7 +170,7 @@ namespace RESTable.Meta.Internal
                 foreach (var viewType in _viewTypes)
                 {
                     var resource = viewType.DeclaringType;
-                    if (!viewType.IsClass || !viewType.IsNestedPublic || resource == null)
+                    if (!viewType.IsClass || !viewType.IsNestedPublic || resource is null)
                         throw new InvalidResourceViewDeclarationException(viewType,
                             "Resource view types must be declared as public classes nested within the the " +
                             "resource type they are views for");
@@ -207,7 +207,7 @@ namespace RESTable.Meta.Internal
             foreach (var group in resourceGroups)
             {
                 var parentResource = (IResourceInternal) ResourceCollection.SafeGetResource(group.Key);
-                if (parentResource == null)
+                if (parentResource is null)
                     throw new InvalidResourceDeclarationException(
                         $"Resource type(s) {string.Join(", ", group.Select(item => $"'{item.Name}'"))} is/are declared " +
                         $"within the scope of another class '{group.Key}', that is not a RESTable resource. Inner " +
@@ -236,7 +236,7 @@ namespace RESTable.Meta.Internal
                 var resourceProvider = EntityResourceProviders.Values
                     .Where(_provider => _provider is IProceduralEntityResourceProvider)
                     .FirstOrDefault(_provider => _provider.GetType() == provider);
-                if (resourceProvider == null)
+                if (resourceProvider is null)
                     throw new InvalidResourceControllerException($"Invalid resource controller '{controller}'. A binding was made to " +
                                                                  $"an EntityResourceProvider of type '{provider}'. No such provider has " +
                                                                  "been included in the call to RESTableConfig.Init().");

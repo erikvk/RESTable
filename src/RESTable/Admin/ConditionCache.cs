@@ -38,7 +38,7 @@ namespace RESTable.Admin
 
         public IEnumerable<ConditionCache> Select(IRequest<ConditionCache> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
             var resources = request.GetRequiredService<ResourceCollection>();
             foreach (var resource in resources)
             {
@@ -56,7 +56,7 @@ namespace RESTable.Admin
 
         public int Delete(IRequest<ConditionCache> request)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
             var count = 0;
             foreach (var resource in request.GetInputEntities())
             {

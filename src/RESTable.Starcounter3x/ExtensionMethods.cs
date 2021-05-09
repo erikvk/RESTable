@@ -58,7 +58,7 @@ namespace RESTable.Starcounter3x
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
                 var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.ParsedOperator.SQL, c.Value);
-                if (value == null)
+                if (value is null)
                 {
                     op = c.Operator switch
                     {
@@ -91,7 +91,7 @@ namespace RESTable.Starcounter3x
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
                 var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.ParsedOperator.SQL, c.Value);
-                if (value == null)
+                if (value is null)
                 {
                     op = c.Operator switch
                     {

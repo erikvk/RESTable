@@ -9,9 +9,9 @@ namespace RESTable.Results
     /// </summary>
     public class Report : Content
     {
-        public ulong Count { get; }
+        public long Count { get; }
 
-        public Report(IRequest request, ulong count) : base(request)
+        public Report(IRequest request, long count) : base(request)
         {
             Count = count;
         }

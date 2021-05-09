@@ -189,7 +189,7 @@ namespace RESTable.Json
         public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (collection == null) return 0;
+            if (collection is null) return 0;
             var swr = new StreamWriter
             (
                 stream: stream,
@@ -218,7 +218,7 @@ namespace RESTable.Json
             where T : class
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (collectionObject == null) return Task.FromResult<long>(0);
+            if (collectionObject is null) return Task.FromResult<long>(0);
             textWriter.StartCountObjectsWritten();
             Serializer.Serialize((NewtonsoftJsonWriter) textWriter, collectionObject.ToEnumerable());
             var objectsWritten = textWriter.StopCountObjectsWritten();

@@ -29,28 +29,5 @@ namespace RESTable.SQLite
             while (await reader.ReadAsync().ConfigureAwait(false))
                 await rowTask(reader).ConfigureAwait(false);
         }
-
-        internal static async Task<int> TransactAsync(Func<SQLiteCommand, Task<int>> callback)
-        {
-            return await TransactAsync((_, command) => callback(command)).ConfigureAwait(false);
-        }
-
-        internal static async Task<int> TransactAsync(Func<SQLiteConnection, SQLiteCommand, Task<int>> callback)
-        {
-            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
-            await using var command = connection.CreateCommand();
-            await using var transaction = await connection.BeginTransactionAsync().ConfigureAwait(false);
-            try
-            {
-                var result = await callback(connection, command).ConfigureAwait(false);
-                await transaction.CommitAsync().ConfigureAwait(false);
-                return result;
-            }
-            catch
-            {
-                await transaction.RollbackAsync().ConfigureAwait(false);
-                throw;
-            }
-        }
     }
 }

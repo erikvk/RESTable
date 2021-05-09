@@ -42,7 +42,7 @@ namespace RESTable.Resources
         private bool RemoveProceduralResource(Type resourceType)
         {
             var iresource = ResourceCollection.SafeGetResource(resourceType);
-            if (iresource == null) return true;
+            if (iresource is null) return true;
             return RemoveResource(iresource);
         }
 
@@ -152,7 +152,7 @@ namespace RESTable.Resources
 
         protected virtual void Validate()
         {
-            if (AttributeType == null)
+            if (AttributeType is null)
                 throw new InvalidEntityResourceProviderException(GetType(), "AttributeType cannot be null");
             if (!AttributeType.IsSubclassOf(typeof(Attribute)))
                 throw new InvalidEntityResourceProviderException(GetType(), "Provided AttributeType is not an attribute type");
@@ -255,7 +255,7 @@ namespace RESTable.Resources
         /// </summary>
         ///  <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual int DefaultInsert<T>(IRequest<T> request) where T : class, TBase
+        protected virtual IEnumerable<T> DefaultInsert<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -265,7 +265,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual int DefaultUpdate<T>(IRequest<T> request) where T : class, TBase
+        protected virtual IEnumerable<T> DefaultUpdate<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -305,7 +305,7 @@ namespace RESTable.Resources
         /// </summary>
         ///  <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual ValueTask<int> DefaultInsertAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual IAsyncEnumerable<T> DefaultInsertAsync<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -315,7 +315,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual ValueTask<int> DefaultUpdateAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual IAsyncEnumerable<T> DefaultUpdateAsync<T>(IRequest<T> request) where T : class, TBase
         {
             throw new NotImplementedException();
         }

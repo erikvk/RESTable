@@ -25,7 +25,7 @@ namespace RESTable.Requests.Filters
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             var options = IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
-            if (Selector == null)
+            if (Selector is null)
                 return entities.Where(e => Regex.IsMatch(jsonProvider.Serialize(e), Pattern, options));
             return entities.Where(e => e?.ToJObject().GetValue(Selector, OrdinalIgnoreCase)?.ToString() is string s && Regex.IsMatch(s, Pattern, options));
         }
