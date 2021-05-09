@@ -198,7 +198,7 @@ namespace RESTable.Json
                 leaveOpen: true
             );
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif

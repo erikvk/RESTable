@@ -342,7 +342,7 @@ namespace RESTable
                                 );
                                 var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
                                 await using var schemaResult = await schemaRequest.GetResultEntities().ConfigureAwait(false);
-                                await SerializeAndSendResult(schemaResult);
+                                await SerializeAndSendResult(schemaResult).ConfigureAwait(false);
                                 break;
                             }
 
@@ -665,7 +665,7 @@ namespace RESTable
                 }
             }
 
-            switch (await PreviousEntities.CountAsync())
+            switch (await PreviousEntities.CountAsync().ConfigureAwait(false))
             {
                 case 0:
                     await SendBadRequest($". No entities to run {method} on").ConfigureAwait(false);
@@ -706,7 +706,7 @@ namespace RESTable
             await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
             var message = await WebSocket.GetMessageStream(false).ConfigureAwait(false);
 #if NETSTANDARD2_1
-            await using (message)
+            await using (message.ConfigureAwait(false))
 #else
             using (message)
 #endif

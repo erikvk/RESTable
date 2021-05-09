@@ -300,7 +300,7 @@ namespace RESTable.Resources.Operations
         {
             var buffer = new List<object>();
             var count = 0;
-            await foreach (var item in changedEntities)
+            await foreach (var item in changedEntities.ConfigureAwait(false))
             {
                 if (count < maxNumberOfChangedEntities)
                     buffer.Add(item);
@@ -321,14 +321,14 @@ namespace RESTable.Resources.Operations
         {
             var buffer = new List<object>();
             var (updatedCount, insertedCount, totalCount) = (0, 0, 0);
-            await foreach (var item in updatedEntities)
+            await foreach (var item in updatedEntities.ConfigureAwait(false))
             {
                 if (totalCount < maxNumberOfChangedEntities)
                     buffer.Add(item);
                 updatedCount += 1;
                 totalCount += 1;
             }
-            await foreach (var item in insertedEntities)
+            await foreach (var item in insertedEntities.ConfigureAwait(false))
             {
                 if (totalCount < maxNumberOfChangedEntities)
                     buffer.Add(item);

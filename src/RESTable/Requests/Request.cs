@@ -172,15 +172,16 @@ namespace RESTable.Requests
 
             if (IsWebSocketUpgrade && result is not WebSocketUpgradeSuccessful)
             {
-                await using (var webSocket = Context.WebSocket)
+                var webSocket = Context.WebSocket;
+                await using (webSocket.ConfigureAwait(false))
                 {
                     if (result is Forbidden forbidden)
                         return new WebSocketUpgradeFailed(forbidden);
                     await Context.WebSocket.Open(this, false).ConfigureAwait(false);
-                    await webSocket.SendResult(result);
+                    await webSocket.SendResult(result).ConfigureAwait(false);
                     var message = await webSocket.GetMessageStream(false).ConfigureAwait(false);
 #if NETSTANDARD2_1
-                    await using (message)
+                    await using (message.ConfigureAwait(false))
 #else
                     using (message)
 #endif
@@ -390,7 +391,7 @@ namespace RESTable.Requests
                         body: serializedResult.Body,
                         headers: parameters.Headers
                     );
-                    return await internalRequest.GetResult();
+                    return await internalRequest.GetResult().ConfigureAwait(false);
                 };
             }
             return async result =>
@@ -439,7 +440,7 @@ namespace RESTable.Requests
                     var result = await internalRequest.GetResult().ConfigureAwait(false);
                     if (result is not IEntities)
                         throw new InvalidExternalSource(parameters.URI, await result.GetLogMessage().ConfigureAwait(false));
-                    var serialized = await result.Serialize();
+                    var serialized = await result.Serialize().ConfigureAwait(false);
                     if (serialized.Result is Error error) throw error;
                     if (serialized.EntityCount == 0) throw new InvalidExternalSource(parameters.URI, "Response was empty");
                     return serialized.Body;

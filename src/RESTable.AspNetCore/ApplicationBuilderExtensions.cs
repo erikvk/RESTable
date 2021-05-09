@@ -57,7 +57,7 @@ namespace RESTable.AspNetCore
 
             var remote = aspNetCoreContext.Response.Body;
 #if NETSTANDARD2_1
-            await using (remote)
+            await using (remote.ConfigureAwait(false))
 #else
             using (remote)
 #endif
@@ -86,8 +86,9 @@ namespace RESTable.AspNetCore
                     return;
                 case WebSocketUpgradeSuccessful ws:
                 {
-                    await using var webSocket = ws.WebSocket;
-                    await webSocket.LifetimeTask.ConfigureAwait(false);
+                    var webSocket = ws.WebSocket;
+                    await using (webSocket.ConfigureAwait(false))
+                        await webSocket.LifetimeTask.ConfigureAwait(false);
                     break;
                 }
                 default:
@@ -96,7 +97,7 @@ namespace RESTable.AspNetCore
                     var remote = aspNetCoreContext.Response.Body;
 
 #if NETSTANDARD2_1
-                    await using (remote)
+                    await using (remote.ConfigureAwait(false))
 #else
                     using (remote)
 #endif

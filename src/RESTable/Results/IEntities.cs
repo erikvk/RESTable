@@ -37,7 +37,7 @@ namespace RESTable.Results
     /// A generic interface for a collection of result entities from a RESTable request
     /// </summary>
     /// <typeparam name="T">The entity type contained in the entity collection</typeparam>
-    public interface IEntities<out T> : IEntities, IAsyncEnumerable<T> where T : class
+    public interface IEntities<out T> : IEntities, IAsyncDisposable, IAsyncEnumerable<T> where T : class
     {
         /// <summary>
         /// Marks this result as 204 NoContent

@@ -106,7 +106,7 @@ namespace RESTable.Results
         public async ValueTask DisposeAsync()
         {
             if (Request?.Body is Body body)
-                await body.DisposeAsync();
+                await body.DisposeAsync().ConfigureAwait(false);
         }
 
         private readonly string _logContent = null;

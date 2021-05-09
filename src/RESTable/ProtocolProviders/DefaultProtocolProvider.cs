@@ -234,7 +234,7 @@ namespace RESTable.ProtocolProviders
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif
@@ -259,7 +259,7 @@ namespace RESTable.ProtocolProviders
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif
@@ -322,7 +322,7 @@ namespace RESTable.ProtocolProviders
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif
@@ -369,7 +369,7 @@ namespace RESTable.ProtocolProviders
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif
@@ -433,7 +433,7 @@ namespace RESTable.ProtocolProviders
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif

@@ -12,6 +12,7 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Resources.Templates;
+using RESTable.Results;
 using RESTable.SQLite.Meta;
 
 namespace RESTable.SQLite
@@ -212,17 +213,24 @@ namespace RESTable.SQLite
                     op: Operators.EQUALS,
                     value: Resource.Name
                 );
-            await using var entities = await indexRequest.GetResultEntities().ConfigureAwait(false);
-            var tableIndexesToKeep = await entities
-                .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
-                .ToListAsync()
-                .ConfigureAwait(false);
-            await Database.QueryAsync(query).ConfigureAwait(false);
-            indexRequest.Method = Method.POST;
-            indexRequest.Selector = () => tableIndexesToKeep.ToAsyncEnumerable();
-            await using var result = await indexRequest.GetResult().ConfigureAwait(false);
-            result.ThrowIfError();
-            await Update().ConfigureAwait(false);
+            var entities = await indexRequest.GetResultEntities().ConfigureAwait(false);
+            var disposableEntities = (IAsyncDisposable) entities;
+            await using (disposableEntities.ConfigureAwait(false))
+            {
+                var tableIndexesToKeep = await entities
+                    .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
+                    .ToListAsync()
+                    .ConfigureAwait(false);
+                await Database.QueryAsync(query).ConfigureAwait(false);
+                indexRequest.Method = Method.POST;
+                indexRequest.Selector = () => tableIndexesToKeep.ToAsyncEnumerable();
+                var result = await indexRequest.GetResult().ConfigureAwait(false);
+                await using (result.ConfigureAwait(false)) ;
+                {
+                    result.ThrowIfError();
+                    await Update().ConfigureAwait(false);
+                }
+            }
         }
 
         /// <summary>

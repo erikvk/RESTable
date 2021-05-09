@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using RESTable.Requests;
+using static System.Net.WebSockets.WebSocketMessageType;
 using WebSocket = System.Net.WebSockets.WebSocket;
 
 namespace RESTable.AspNetCore
@@ -25,20 +26,18 @@ namespace RESTable.AspNetCore
         {
             var buffer = Encoding.UTF8.GetBytes(text);
             var segment = new ArraySegment<byte>(buffer);
-            await WebSocket.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken)
-                .ConfigureAwait(false);
+            await WebSocket.SendAsync(segment, Text, true, cancellationToken).ConfigureAwait(false);
         }
 
         protected override async Task Send(ArraySegment<byte> data, bool asText, CancellationToken cancellationToken)
         {
-            await WebSocket.SendAsync(data, asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true,
-                cancellationToken).ConfigureAwait(false);
+            await WebSocket.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
         }
 
         protected override async Task<long> Send(Stream data, bool asText, CancellationToken token)
         {
             var buffer = new byte[4096];
-            var messageType = asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary;
+            var messageType = asText ? Text : Binary;
             long bytesSent = 0;
             bool lastFrame;
             do
@@ -100,14 +99,13 @@ namespace RESTable.AspNetCore
 
             return (
                 data: await ms.GetBytesAsync().ConfigureAwait(false),
-                isText: result.MessageType == WebSocketMessageType.Binary
+                isText: result.MessageType == Binary
             );
         }
 
         protected override async Task Close()
         {
-            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None)
-                .ConfigureAwait(false);
+            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

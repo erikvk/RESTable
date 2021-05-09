@@ -262,7 +262,7 @@ namespace RESTable.OData
             }
             var swr = new StreamWriter(toSerialize.Body, Encoding.Default, 4096, true);
 #if NETSTANDARD2_1
-            await using (swr)
+            await using (swr.ConfigureAwait(false))
 #else
             using (swr)
 #endif

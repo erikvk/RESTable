@@ -37,7 +37,7 @@ namespace RESTable.Results
 
         public async ValueTask DisposeAsync()
         {
-            await Result.DisposeAsync();
+            await Result.DisposeAsync().ConfigureAwait(false);
             if (Body is null) return;
             await Body.DisposeAsync().ConfigureAwait(false);
         }

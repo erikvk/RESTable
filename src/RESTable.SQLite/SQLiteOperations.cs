@@ -42,7 +42,8 @@ namespace RESTable.SQLite
                 return await SQLite<T>
                     .Select(sql.ToSQLiteWhereClause())
                     .Where(post)
-                    .CountAsync().ConfigureAwait(false);
+                    .CountAsync()
+                    .ConfigureAwait(false);
             }
             return await SQLite<T>.Count(sql.ToSQLiteWhereClause()).ConfigureAwait(false);
         }

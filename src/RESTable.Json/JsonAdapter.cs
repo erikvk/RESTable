@@ -57,26 +57,32 @@ namespace RESTable.Json
         /// <inheritdoc />
         public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream)
         {
-            await using var jsonStream = new SwappingStream();
-            await ProduceJsonArray(stream, jsonStream).ConfigureAwait(false);
-            await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()).ConfigureAwait(false))
-                yield return item;
+            var jsonStream = new SwappingStream();
+            await using (jsonStream.ConfigureAwait(false))
+            {
+                await ProduceJsonArray(stream, jsonStream).ConfigureAwait(false);
+                await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()).ConfigureAwait(false))
+                    yield return item;
+            }
         }
 
         /// <inheritdoc />
         public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body)
         {
-            await using var jsonStream = new SwappingStream();
-            var populateStream = new MemoryStream(body);
-#if NETSTANDARD2_1
-            await using (populateStream)
-#else
-            using (populateStream)
-#endif
+            var jsonStream = new SwappingStream();
+            await using (jsonStream.ConfigureAwait(false))
             {
-                await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);
-                await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
-                    yield return item;
+                var populateStream = new MemoryStream(body);
+#if NETSTANDARD2_1
+                await using (populateStream.ConfigureAwait(false))
+#else
+                using (populateStream)
+#endif
+                {
+                    await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);
+                    await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
+                        yield return item;
+                }
             }
         }
     }

@@ -46,30 +46,34 @@ namespace RESTable.SQLite
         {
             if (entities is null) yield break;
 
-            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
-            await using var command = connection.CreateCommand();
-            await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-
-            var (name, columns, param, mappings) = TableMapping<T>.InsertSpec;
-            for (var i = 0; i < mappings.Length; i++)
-                command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
-            command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
-
-            await foreach (var entity in entities.ConfigureAwait(false))
+            var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+            var command = connection.CreateCommand();
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (connection.ConfigureAwait(false))
+            await using (command.ConfigureAwait(false))
+            await using (transaction.ConfigureAwait(false))
             {
-                await entity._OnInsert().ConfigureAwait(false);
+                var (name, columns, param, mappings) = TableMapping<T>.InsertSpec;
                 for (var i = 0; i < mappings.Length; i++)
-                {
-                    var propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
-                    command.Parameters[param[i]].Value = propertyValue;
-                }
-                var insertedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                entity.RowId = connection.LastInsertRowId;
-                if (insertedCount == 1)
-                    yield return entity;
-            }
+                    command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
+                command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
 
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                await foreach (var entity in entities.ConfigureAwait(false))
+                {
+                    await entity._OnInsert().ConfigureAwait(false);
+                    for (var i = 0; i < mappings.Length; i++)
+                    {
+                        var propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
+                        command.Parameters[param[i]].Value = propertyValue;
+                    }
+                    var insertedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    entity.RowId = connection.LastInsertRowId;
+                    if (insertedCount == 1)
+                        yield return entity;
+                }
+
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -80,31 +84,36 @@ namespace RESTable.SQLite
         {
             if (updatedEntities is null) yield break;
 
-            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
-            await using var command = connection.CreateCommand();
-            await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+            var command = connection.CreateCommand();
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
-            var (name, set, param, mappings) = TableMapping<T>.UpdateSpec;
-            for (var i = 0; i < mappings.Length; i++)
-                command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
-            command.Parameters.Add(RowIdParameter, DbType.Int64);
-            command.CommandText = $"UPDATE {name} SET {set} WHERE RowId = {RowIdParameter}";
-
-            await foreach (var entity in updatedEntities.ConfigureAwait(false))
+            await using (connection.ConfigureAwait(false))
+            await using (command.ConfigureAwait(false))
+            await using (transaction.ConfigureAwait(false))
             {
-                await entity._OnUpdate().ConfigureAwait(false);
-                command.Parameters[RowIdParameter].Value = entity.RowId;
+                var (name, set, param, mappings) = TableMapping<T>.UpdateSpec;
                 for (var i = 0; i < mappings.Length; i++)
-                {
-                    var propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
-                    command.Parameters[param[i]].Value = propertyValue;
-                }
-                var updatedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                if (updatedCount == 1)
-                    yield return entity;
-            }
+                    command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
+                command.Parameters.Add(RowIdParameter, DbType.Int64);
+                command.CommandText = $"UPDATE {name} SET {set} WHERE RowId = {RowIdParameter}";
 
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                await foreach (var entity in updatedEntities.ConfigureAwait(false))
+                {
+                    await entity._OnUpdate().ConfigureAwait(false);
+                    command.Parameters[RowIdParameter].Value = entity.RowId;
+                    for (var i = 0; i < mappings.Length; i++)
+                    {
+                        var propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
+                        command.Parameters[param[i]].Value = propertyValue;
+                    }
+                    var updatedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    if (updatedCount == 1)
+                        yield return entity;
+                }
+
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -112,28 +121,34 @@ namespace RESTable.SQLite
         /// of entities, and returns the number of database rows affected.
         /// </summary>
         /// <param name="entities"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public static async Task<int> Delete(IAsyncEnumerable<T> entities, CancellationToken cancellationToken = new())
         {
             if (entities is null) return 0;
 
-            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
-            await using var command = connection.CreateCommand();
-            await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+            var command = connection.CreateCommand();
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
-            command.CommandText = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId = {RowIdParameter}";
-            command.Parameters.Add(RowIdParameter, DbType.Int64);
-
-            var count = 0;
-            await foreach (var entity in entities.ConfigureAwait(false))
+            await using (connection.ConfigureAwait(false))
+            await using (command.ConfigureAwait(false))
+            await using (transaction.ConfigureAwait(false))
             {
-                await entity._OnDelete().ConfigureAwait(false);
-                command.Parameters[RowIdParameter].Value = entity.RowId;
-                count += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            }
+                command.CommandText = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId = {RowIdParameter}";
+                command.Parameters.Add(RowIdParameter, DbType.Int64);
 
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-            return count;
+                var count = 0;
+                await foreach (var entity in entities.ConfigureAwait(false))
+                {
+                    await entity._OnDelete().ConfigureAwait(false);
+                    command.Parameters[RowIdParameter].Value = entity.RowId;
+                    count += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return count;
+            }
         }
 
         /// <summary>
@@ -145,9 +160,15 @@ namespace RESTable.SQLite
         public static async Task<long> Count(string where = null)
         {
             var sql = $"SELECT COUNT(RowId) FROM {TableMapping<T>.TableName} {where}";
-            await using var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
-            await using var command = new SQLiteCommand(sql, connection);
-            return (long) (await command.ExecuteScalarAsync().ConfigureAwait(false) ?? 0L);
+            var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+            var command = new SQLiteCommand(sql, connection);
+
+            await using (connection.ConfigureAwait(false))
+            await using (command.ConfigureAwait(false))
+            {
+                var result = (long?) await command.ExecuteScalarAsync().ConfigureAwait(false);
+                return result.GetValueOrDefault();
+            }
         }
     }
 }

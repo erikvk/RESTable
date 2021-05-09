@@ -83,7 +83,7 @@ namespace RESTable.Results
         public async ValueTask DisposeAsync()
         {
             if (Request?.Body is Body body)
-                await body.DisposeAsync();
+                await body.DisposeAsync().ConfigureAwait(false);
         }
 
         protected Success(IProtocolHolder protocolHolder, Headers headers = null)

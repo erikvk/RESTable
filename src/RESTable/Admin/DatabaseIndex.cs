@@ -128,7 +128,7 @@ namespace RESTable.Admin
                 if (!entityResourceProviders.TryGetValue(@group.Key, out var provider) || provider.DatabaseIndexer is not IDatabaseIndexer indexer)
                     throw new Exception($"Unable to register index. Resource '{(await group.FirstAsync().ConfigureAwait(false)).Resource.Name}' is not a database resource.");
                 request.Selector = () => group;
-                await foreach (var index in indexer.InsertAsync(request))
+                await foreach (var index in indexer.InsertAsync(request).ConfigureAwait(false))
                     yield return index;
             }
         }
@@ -144,7 +144,7 @@ namespace RESTable.Admin
             await foreach (var group in entities.GroupBy(index => index.Resource.Provider).ConfigureAwait(false))
             {
                 request.Updater = _ => group;
-                await foreach (var index in entityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request))
+                await foreach (var index in entityResourceProviders[@group.Key].DatabaseIndexer.UpdateAsync(request).ConfigureAwait(false))
                     yield return index;
             }
         }

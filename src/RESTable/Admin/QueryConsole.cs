@@ -31,7 +31,7 @@ namespace RESTable.Admin
             if (Consoles.Count == 0) return;
             var argsString = args is null ? null : $"{NewLine}Args: {string.Join(", ", args)}";
             var message = $"{DateTime.UtcNow:O}: {query}{argsString}{NewLine}";
-            await Consoles.CombinedWebSocket.SendText(message);
+            await Consoles.CombinedWebSocket.SendText(message).ConfigureAwait(false);
         }
     }
 }
