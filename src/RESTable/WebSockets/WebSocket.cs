@@ -113,10 +113,10 @@ namespace RESTable.WebSockets
 
         public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
 
-        internal async Task ConnectTo(Terminal terminal, ITerminalResource resource)
+        internal async Task ConnectTo(Terminal terminal)
         {
             await ReleaseTerminal().ConfigureAwait(false);
-            TerminalConnection = new WebSocketConnection(this, terminal, resource);
+            TerminalConnection = new WebSocketConnection(this, terminal);
         }
 
         private async Task ReleaseTerminal()
@@ -275,7 +275,7 @@ namespace RESTable.WebSockets
                 throw new ArgumentNullException(nameof(resource));
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(Context, assignments);
-            await Context.WebSocket.ConnectTo(newTerminal, _resource).ConfigureAwait(false);
+            await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
         }
 

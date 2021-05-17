@@ -157,7 +157,7 @@ namespace RESTable.Requests
         }
 
         /// <inheritdoc />
-        internal Headers(IHeadersInternal other) : this()
+        private Headers(IHeadersInternal other) : this()
         {
             Accept = other.Accept;
             ContentType = other.ContentType;

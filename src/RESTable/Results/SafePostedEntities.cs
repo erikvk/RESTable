@@ -18,11 +18,11 @@ namespace RESTable.Results
         /// </summary>
         public int InsertedCount { get; }
 
-        public SafePostedEntities(IRequest request, int updatedEntities, int insertedEntities, T[] entities) : base(request, updatedEntities + insertedEntities, entities)
+        public SafePostedEntities(IRequest request, int updatedCount, int insertedCount, T[] entities) : base(request, updatedCount + insertedCount, entities)
         {
-            UpdatedCount = updatedEntities;
-            InsertedCount = insertedEntities;
-            Headers.Info = $"Updated {updatedEntities} and then inserted {insertedEntities} entities in resource '{request.Resource}'";
+            UpdatedCount = updatedCount;
+            InsertedCount = insertedCount;
+            Headers.Info = $"Updated {updatedCount} and then inserted {insertedCount} entities in resource '{request.Resource}'";
         }
 
         /// <inheritdoc />

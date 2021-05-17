@@ -19,7 +19,7 @@ namespace RESTable.Internal
         internal HttpRequest(ITraceable trace, HeaderRequestParameters parameters, Func<Stream, Task> writeBody)
         {
             Context = trace.Context;
-            URI = parameters.URI;
+            URI = parameters.Uri;
             WriteBody = writeBody;
             Headers = parameters.Headers;
             Method = parameters.Method;

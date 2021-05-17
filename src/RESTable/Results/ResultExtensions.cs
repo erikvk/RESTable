@@ -15,8 +15,6 @@ namespace RESTable.Results
             var serializedResult = new SerializedResult(result, customOutputStream);
             try
             {
-                if (serializedResult.Body is null)
-                    return serializedResult;
                 await serializedResult.Body.Serialize(serializedResult, cancellationToken).ConfigureAwait(false);
                 return serializedResult;
             }

@@ -257,8 +257,6 @@ namespace RESTable.Meta.Internal
                         throw new InvalidResourceWrapperException(_types, "cannot wrap types that are declared within the scope of some other class.");
                     if (wrapped.HasAttribute<RESTableAttribute>())
                         throw new InvalidResourceWrapperException(_types, "cannot wrap types already decorated with the 'RESTableAttribute' attribute");
-                    if (wrapper.Assembly == typeof(RESTableConfigurator).Assembly)
-                        throw new InvalidResourceWrapperException(_types, "cannot wrap RESTable types");
                 }
             }
 

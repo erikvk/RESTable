@@ -69,6 +69,7 @@ namespace RESTable.Meta.Internal
                     throw new InvalidInputEntity(invalidEntity);
                 }
             }
+            newTerminal?.SetTerminalResource(this);
             return newTerminal;
         }
 

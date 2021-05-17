@@ -9,6 +9,8 @@ namespace RESTable.Results
     /// </summary>
     public class InsertedEntities<T> : Change<T> where T : class
     {
+        
+        
         public InsertedEntities(IRequest request, int count, T[] entities) : base(request, count, entities)
         {
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;

@@ -26,7 +26,16 @@ namespace RESTable.Results
         public SerializedResult(IResult result, Stream customOutputStream = null)
         {
             Result = result ?? throw new ArgumentNullException(nameof(result));
-            Body = result.ProtocolHolder != null ? Body.CreateOutputBody(result.ProtocolHolder, customOutputStream) : null;
+            if (result.ProtocolHolder is null)
+            {
+                throw new ArgumentNullException
+                (
+                    paramName: nameof(IResult.ProtocolHolder),
+                    message: $"Could not serialize a result of type '{result.GetType().GetRESTableTypeName()}' that " +
+                             $"did not belong to a request, and hence had no information about content types"
+                );
+            }
+            Body = Body.CreateOutputBody(result.ProtocolHolder, customOutputStream);
         }
 
         public void Dispose()

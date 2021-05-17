@@ -255,5 +255,11 @@ namespace RESTable.Requests
             }
             return list;
         }
+
+        public void Deconstruct(out string key, out object value)
+        {
+            key = Key;
+            value = Value;
+        }
     }
 }

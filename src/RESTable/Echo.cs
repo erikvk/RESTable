@@ -17,30 +17,77 @@ namespace RESTable
     /// The Echo resource is a test and utility resource that returns the 
     /// request conditions as an object.
     /// </summary>
-    [RESTable(GET, AllowDynamicConditions = true, Description = description)]
-    public class Echo : JObject, IAsyncSelector<Echo>
+    [RESTable(GET, POST, PATCH, PUT, REPORT, HEAD, AllowDynamicConditions = true, Description = description)]
+    public class Echo : ResourceWrapper<JObject>, IAsyncSelector<JObject>, IAsyncInserter<JObject>, IAsyncUpdater<JObject>
     {
         private const string description = "The Echo resource is a test and utility entity resource that " +
                                            "returns the request conditions as an entity.";
 
-        private Echo(object thing) : base(thing) { }
-
         /// <inheritdoc />
-        public async IAsyncEnumerable<Echo> SelectAsync(IRequest<Echo> request)
+        public async IAsyncEnumerable<JObject> SelectAsync(IRequest<JObject> request)
         {
-            if (request is null) throw new ArgumentNullException(nameof(request));
-            var members = request.Conditions
-                .Select(c => new JProperty(c.Key, c.Value))
-                .ToHashSet(EqualityComparer);
-            var body = request.Body.Deserialize<JObject>();
-            await foreach (var item in body.ConfigureAwait(false))
-            foreach (var property in item.Properties())
-                members.Add(property);
-            var echo = new Echo(members);
-            request.Conditions.Clear();
-            var termCache = request.GetRequiredService<TermCache>();
-            termCache.ClearTermsFor<Echo>();
-            yield return echo;
+            if (request is null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (request.Conditions.Any())
+            {
+                var conditionEcho = new JObject();
+                foreach (var (key, value) in request.Conditions)
+                    conditionEcho[key] = new JValue(value);
+                request.Conditions.Clear();
+                yield return conditionEcho;
+            }
+
+            await foreach (var bodyObject in request.Body.Deserialize<JObject>().ConfigureAwait(false))
+            {
+                var bodyEcho = new JObject();
+                foreach (var property in bodyObject.Properties())
+                    bodyEcho[property.Name] = property.Value;
+                yield return bodyEcho;
+            }
         }
+
+        public IAsyncEnumerable<JObject> InsertAsync(IRequest<JObject> request) => request.GetInputEntitiesAsync();
+        public IAsyncEnumerable<JObject> UpdateAsync(IRequest<JObject> request) => request.GetInputEntitiesAsync();
     }
+
+//    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+//    /// <inheritdoc cref="JObject" />
+//    /// <summary>
+//    /// The Echo resource is a test and utility resource that returns the 
+//    /// request conditions as an object.
+//    /// </summary>
+//    [RESTable(GET, POST, PATCH, PUT, REPORT, HEAD, AllowDynamicConditions = true, Description = description)]
+//    public class Echo : JObject, IAsyncSelector<Echo>, IAsyncInserter<Echo>, IAsyncUpdater<Echo>
+//    {
+//        private const string description = "The Echo resource is a test and utility entity resource that " +
+//                                           "returns the request conditions as an entity.";
+//
+//        /// <inheritdoc />
+//        public async IAsyncEnumerable<Echo> SelectAsync(IRequest<Echo> request)
+//        {
+//            if (request is null)
+//                throw new ArgumentNullException(nameof(request));
+//
+//            var conditionEcho = new Echo();
+//            foreach (var (key, value) in request.Conditions)
+//                conditionEcho[key] = new JValue(value);
+//
+//            request.Conditions.Clear();
+//            var termCache = request.GetRequiredService<TermCache>();
+//            termCache.ClearTermsFor<Echo>();
+//
+//            yield return conditionEcho;
+//            await foreach (var bodyObject in request.Body.Deserialize<JObject>().ConfigureAwait(false))
+//            {
+//                var bodyEcho = new Echo();
+//                foreach (var property in bodyObject.Properties())
+//                    bodyEcho[property.Name] = property.Value;
+//                yield return bodyEcho;
+//            }
+//        }
+//
+//        public IAsyncEnumerable<Echo> InsertAsync(IRequest<Echo> request) => request.GetInputEntitiesAsync();
+//        public IAsyncEnumerable<Echo> UpdateAsync(IRequest<Echo> request) => request.GetInputEntitiesAsync();
+//    }
 }

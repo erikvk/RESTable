@@ -167,7 +167,7 @@ namespace RESTable.Requests
             {
                 Body = await sourceDelegate(Body).ConfigureAwait(false);
                 await Body.Initialize(cancellationToken).ConfigureAwait(false);
-                result = await EvaluateAndGetResult(cancellationToken).ConfigureAwait(false);
+                result = await Execute(cancellationToken).ConfigureAwait(false);
             }
 
             if (IsWebSocketUpgrade && result is not WebSocketUpgradeSuccessful)
@@ -204,7 +204,7 @@ namespace RESTable.Requests
             return result;
         }
 
-        private async Task<IResult> EvaluateAndGetResult(CancellationToken cancellationToken)
+        private async Task<IResult> Execute(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
@@ -223,7 +223,7 @@ namespace RESTable.Requests
                             var terminalResourceInternal = (TerminalResource<T>) terminalResource;
                             var terminal = terminalResourceInternal.MakeTerminal(Context, Conditions);
                             await Context.WebSocket.Open(this).ConfigureAwait(false);
-                            await Context.WebSocket.ConnectTo(terminal, terminalResourceInternal).ConfigureAwait(false);
+                            await Context.WebSocket.ConnectTo(terminal).ConfigureAwait(false);
                             await terminal.OpenTerminal().ConfigureAwait(false);
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
@@ -281,8 +281,12 @@ namespace RESTable.Requests
 
         private IResult GetQuickErrorResult()
         {
-            if (!IsValid) return Error.AsResultOf(this);
-            if (!Context.MethodIsAllowed(Method, Resource, out var error)) return error.AsResultOf(this);
+            if (IsEvaluating)
+                throw new InfiniteLoop();
+            if (!IsValid)
+                return Error.AsResultOf(this);
+            if (!Context.MethodIsAllowed(Method, Resource, out var error))
+                return error.AsResultOf(this);
             if (IsWebSocketUpgrade)
             {
                 try
@@ -292,7 +296,6 @@ namespace RESTable.Requests
                 }
                 catch (NotImplementedException) { }
             }
-            if (IsEvaluating) throw new InfiniteLoop();
             return null;
         }
 
@@ -300,7 +303,7 @@ namespace RESTable.Requests
         {
             var _resource = (TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(Context, Conditions);
-            await Context.WebSocket.ConnectTo(newTerminal, resource).ConfigureAwait(false);
+            await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
             return new SwitchedTerminal(this);
         }
@@ -373,7 +376,7 @@ namespace RESTable.Requests
 
         private Func<IResult, Task<IResult>> SendToDestinationDelegate(string destinationHeader)
         {
-            if (!HeaderRequestParameters.TryParse(destinationHeader, out var parameters, out var parseError))
+            if (!HeaderRequestParameters.TryParse(this, nameof(Headers.Destination), destinationHeader, out var parameters, out var parseError))
             {
                 Error = parseError;
                 return Task.FromResult;
@@ -387,7 +390,7 @@ namespace RESTable.Requests
                     var internalRequest = serializedResult.Context.CreateRequest
                     (
                         method: parameters.Method,
-                        uri: parameters.URI,
+                        uri: parameters.Uri,
                         body: serializedResult.Body,
                         headers: parameters.Headers
                     );
@@ -413,7 +416,7 @@ namespace RESTable.Requests
 
         private Func<Body, Task<Body>> GetBodyFromSourceDelegate(string sourceHeader)
         {
-            if (!HeaderRequestParameters.TryParse(sourceHeader, out var parameters, out var parseError))
+            if (!HeaderRequestParameters.TryParse(this, nameof(Headers.Source), sourceHeader, out var parameters, out var parseError))
             {
                 Error = parseError;
                 return Task.FromResult;
@@ -433,27 +436,27 @@ namespace RESTable.Requests
                     var internalRequest = Context.CreateRequest
                     (
                         method: parameters.Method,
-                        uri: parameters.URI,
+                        uri: parameters.Uri,
                         body: null,
                         headers: parameters.Headers
                     );
                     var result = await internalRequest.GetResult().ConfigureAwait(false);
                     if (result is not IEntities)
-                        throw new InvalidExternalSource(parameters.URI, await result.GetLogMessage().ConfigureAwait(false));
+                        throw new InvalidExternalSource(parameters.Uri, await result.GetLogMessage().ConfigureAwait(false));
                     var serialized = await result.Serialize().ConfigureAwait(false);
                     if (serialized.Result is Error error) throw error;
-                    if (serialized.EntityCount == 0) throw new InvalidExternalSource(parameters.URI, "Response was empty");
+                    if (serialized.EntityCount == 0) throw new InvalidExternalSource(parameters.Uri, "Response was empty");
                     return serialized.Body;
                 }
                 parameters.Headers.Accept ??= ContentType.JSON;
                 var request = new HttpRequest(this, parameters, null);
                 var response = await request.GetResponseAsync().ConfigureAwait(false);
                 if (response is null)
-                    throw new InvalidExternalSource(parameters.URI, "No response");
-                if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(parameters.URI, response.LogMessage);
+                    throw new InvalidExternalSource(parameters.Uri, "No response");
+                if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(parameters.Uri, response.LogMessage);
 
                 if (response.Body.CanSeek && response.Body.Length == 0)
-                    throw new InvalidExternalSource(parameters.URI, "Response was empty");
+                    throw new InvalidExternalSource(parameters.Uri, "Response was empty");
                 return new Body(this, response.Body);
             };
         }

@@ -93,6 +93,11 @@ namespace RESTable
         /// /// </summary>
         public long ContentLength => Stream.Length;
 
+        /// <summary>
+        /// Creates a body object to be used in a RESTable request
+        /// </summary>
+        /// <param name="protocolHolder">The protocol holder, for example a request</param>
+        /// <param name="bodyObject">The object to initialize this body from</param>
         public Body(IProtocolHolder protocolHolder, object bodyObject = null)
         {
             ProtocolHolder = protocolHolder;

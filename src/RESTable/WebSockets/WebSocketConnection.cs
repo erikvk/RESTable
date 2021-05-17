@@ -22,20 +22,20 @@ namespace RESTable.WebSockets
             private set => _webSocket = value;
         }
 
-        internal ITerminalResource Resource { get; private set; }
+        internal ITerminalResource Resource { get; }
         internal Terminal Terminal { get; private set; }
         public RESTableContext Context { get; private set; }
         private TaskCompletionSource<byte> SuspendTaskSource { get; set; }
         private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
         public CancellationToken CancellationToken => WebSocket.CancellationToken;
 
-        internal WebSocketConnection(WebSocket webSocket, Terminal terminal, ITerminalResource resource)
+        internal WebSocketConnection(WebSocket webSocket, Terminal terminal)
         {
             Context = webSocket.Context;
             if (webSocket is null || webSocket.Status == WebSocketStatus.Closed)
                 throw new WebSocketNotConnectedException();
             WebSocket = webSocket;
-            Resource = resource;
+            Resource = terminal.TerminalResource;
             Terminal = terminal;
             Terminal.SetWebSocket(this);
             SuspendTaskSource = new TaskCompletionSource<byte>();
@@ -72,7 +72,6 @@ namespace RESTable.WebSockets
                     break;
             }
             WebSocket = null;
-            Resource = null;
             Terminal = null;
             Context = null;
         }

@@ -31,7 +31,8 @@ namespace RESTable.SQLite.Meta
         /// <summary>
         /// Does this instance represent the RowId SQLite column?
         /// </summary>
-        [RESTableMember(ignore: true)] public bool IsRowId { get; }
+        [RESTableMember(ignore: true)]
+        public bool IsRowId { get; }
 
         /// <summary>
         /// Creates a new SQLColumn instance
@@ -50,14 +51,15 @@ namespace RESTable.SQLite.Meta
         {
             if (Mapping is null)
                 throw new InvalidOperationException($"Cannot push the unmapped SQL column '{Name}' to the database");
-            foreach (var column in await Mapping.TableMapping.GetSqlColumns().ConfigureAwait(false))
+            await foreach (var column in Mapping.TableMapping.GetSqlColumns().ConfigureAwait(false))
             {
                 if (column.Equals(this)) return;
                 if (string.Equals(Name, column.Name, OrdinalIgnoreCase))
                     throw new SQLiteException($"Cannot push column '{Name}' to SQLite table '{Mapping.TableMapping.TableName}'. " +
                                               $"The table already contained a column definition '({column.ToSql()})'.");
             }
-            await Database.QueryAsync($"BEGIN TRANSACTION;ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSql()};COMMIT;").ConfigureAwait(false);
+            var pushQuery = new Query($"BEGIN TRANSACTION;ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSql()};COMMIT;");
+            await pushQuery.Execute().ConfigureAwait(false);
         }
 
         internal string ToSql() => $"{Name.Fnuttify()} {Type}";

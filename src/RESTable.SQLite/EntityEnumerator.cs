@@ -34,7 +34,8 @@ namespace RESTable.SQLite
             if (Reader == null)
             {
                 Connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
-                Command = new SQLiteCommand(Sql, Connection);
+                Command = Connection.CreateCommand();;
+                Command.CommandText = Sql;
                 Reader ??= await Command.ExecuteReaderAsync(CancellationToken).ConfigureAwait(false);
             }
             var read = await Reader.ReadAsync(CancellationToken).ConfigureAwait(false);
