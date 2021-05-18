@@ -9,7 +9,7 @@ namespace RESTable.Results
     /// </summary>
     public class Unauthorized : Error
     {
-        internal Unauthorized() : base(ErrorCodes.NotAuthorized, "Not authorized")
+        public Unauthorized() : base(ErrorCodes.NotAuthorized, "Not authorized")
         {
             StatusCode = HttpStatusCode.Unauthorized;
             StatusDescription = "Unauthorized";

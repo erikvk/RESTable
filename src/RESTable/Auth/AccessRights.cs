@@ -22,9 +22,11 @@ namespace RESTable.Auth
             var ar = new AccessRights(apiKeyHash);
             foreach (var right in accessRights)
             foreach (var resource in right.Resources)
+            {
                 ar[resource] = ar.ContainsKey(resource)
                     ? ar[resource].Union(right.AllowedMethods).ToArray()
                     : right.AllowedMethods;
+            }
             return ar;
         }
 

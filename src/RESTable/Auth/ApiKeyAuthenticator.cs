@@ -16,7 +16,8 @@ using static RESTable.Method;
 namespace RESTable.Auth
 {
     /// <summary>
-    /// Handles authorization and authentication of clients using Api keys in either uris or headers
+    /// Handles authorization and authentication of clients using Api keys in either uris or headers, and
+    /// reads these api kets from an app configuration.
     /// </summary>
     public class ApiKeyAuthenticator : IRequestAuthenticator, IDisposable
     {
