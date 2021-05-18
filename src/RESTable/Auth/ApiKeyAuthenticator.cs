@@ -44,6 +44,7 @@ namespace RESTable.Auth
             if (apiKeysConfiguration?.Count is not > 0)
                 throw new InvalidOperationException($"When using {nameof(ApiKeyAuthenticator)}, the application configuration file is used " +
                                                     "to read API keys. The config file is missing an 'ApiKeys' aray with at least one " +
+                                                    "to read API keys. The config file is missing an 'ApiKeys' array with at least one " +
                                                     "'ApiKey' item.");
             ReadApiKeys(apiKeysConfiguration);
         }
