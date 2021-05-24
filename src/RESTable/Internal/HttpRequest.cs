@@ -34,9 +34,9 @@ namespace RESTable.Internal
                 request.Method = method;
                 foreach (var (key, value) in headers.Where(pair => pair.Key != "Content-Type" && pair.Key != "Accept"))
                     request.Headers[key] = value;
-                if (headers.ContentType != null) request.ContentType = headers.ContentType.ToString();
-                if (headers.Accept != null) request.Accept = headers.Accept.ToString();
-                if (writeBody != null)
+                if (headers.ContentType is not null) request.ContentType = headers.ContentType.ToString();
+                if (headers.Accept is not null) request.Accept = headers.Accept.ToString();
+                if (writeBody is not null)
                 {
                     var requestStream = await request.GetRequestStreamAsync().ConfigureAwait(false);
 #if NETSTANDARD2_1
@@ -50,7 +50,7 @@ namespace RESTable.Internal
                 }
                 var webResponse = (HttpWebResponse) await request.GetResponseAsync().ConfigureAwait(false);
                 var respLoc = webResponse.Headers["Location"];
-                if (webResponse.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
+                if (webResponse.StatusCode == HttpStatusCode.MovedPermanently && respLoc is not null)
                     return await MakeExternalRequestAsync(trace, method, new Uri(respLoc), writeBody, headers).ConfigureAwait(false);
                 return new HttpResponse(trace, webResponse);
             }

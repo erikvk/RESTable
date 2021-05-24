@@ -102,7 +102,7 @@ namespace RESTable.Meta
                                     return m.Name.Split("set_")[1];
                                 return null;
                             })
-                            .Where(group => @group.Key != null)
+                            .Where(group => @group.Key is not null)
                             .ToDictionary(m => m.Key, m => (
                                 getter: m.FirstOrDefault(p => p.GetParameters().Length == 0),
                                 setter: m.FirstOrDefault(p => p.GetParameters().Length == 1)
@@ -117,7 +117,7 @@ namespace RESTable.Meta
                                         ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                             .FirstOrDefault(prop => prop.GetGetMethod() == calledMethod)
                                         : null)
-                                    .LastOrDefault(prop => prop != null)?
+                                    .LastOrDefault(prop => prop is not null)?
                                     .Name;
                             }
                             else if (p.IsWritable)
@@ -127,7 +127,7 @@ namespace RESTable.Meta
                                         ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                             .FirstOrDefault(prop => prop.GetSetMethod() == calledMethod)
                                         : null)
-                                    .LastOrDefault(prop => prop != null)?
+                                    .LastOrDefault(prop => prop is not null)?
                                     .Name;
                             }
                             return p;

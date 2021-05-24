@@ -100,18 +100,18 @@ namespace RESTable.Meta
         /// Returns true if and only if this resource property has been decorated with the given 
         /// attribute type.
         /// </summary>
-        public bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
+        public bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() is not null;
 
         /// <summary>
         /// Returns true if and only if this resource property has been decorated with the given 
         /// attribute type.
         /// </summary>
-        public bool HasAttribute<TAttribute>(out TAttribute attribute) where TAttribute : Attribute => (attribute = GetAttribute<TAttribute>()) != null;
+        public bool HasAttribute<TAttribute>(out TAttribute attribute) where TAttribute : Attribute => (attribute = GetAttribute<TAttribute>()) is not null;
 
         /// <inheritdoc />
         public override void SetValue(object target, object value)
         {
-            if (PropertyChanged != null)
+            if (PropertyChanged is not null)
             {
                 var oldValue = GetValue(target);
                 base.SetValue(target, value);
@@ -199,7 +199,7 @@ namespace RESTable.Meta
             IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base.IsEnum;
             IsDateTime = p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(DateTime?);
-            if (memberAttribute?.ExcelReducerName != null)
+            if (memberAttribute?.ExcelReducerName is not null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
             Getter = p.MakeDynamicGetter();
             Setter = p.MakeDynamicSetter();

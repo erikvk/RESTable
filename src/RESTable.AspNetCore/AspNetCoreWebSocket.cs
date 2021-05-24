@@ -91,7 +91,7 @@ namespace RESTable.AspNetCore
             {
                 ct.ThrowIfCancellationRequested();
                 result = await WebSocket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
-                if (buffer.Array != null)
+                if (buffer.Array is not null)
                     await ms.WriteAsync(buffer.Array, buffer.Offset, result.Count, ct).ConfigureAwait(false);
             } while (!result.EndOfMessage);
 

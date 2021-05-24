@@ -29,7 +29,7 @@ namespace RESTable.Meta.Internal
         public void ValidateRuntimeInsertion(Type type, string fullName, RESTableAttribute attribute)
         {
             string name;
-            if (fullName != null)
+            if (fullName is not null)
                 name = fullName;
             else name = type.GetRESTableTypeName();
             if (name is null)
@@ -147,7 +147,7 @@ namespace RESTable.Meta.Internal
                                     ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                         .FirstOrDefault(p => p.GetGetMethod() == calledMethod)
                                     : null)
-                                .LastOrDefault(p => p != null);
+                                .LastOrDefault(p => p is not null);
                         }
                         else if (method.Name.StartsWith($"{interfaceName}.set_"))
                         {
@@ -156,7 +156,7 @@ namespace RESTable.Meta.Internal
                                     ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                         .FirstOrDefault(p => p.GetSetMethod() == calledMethod)
                                     : null)
-                                .LastOrDefault(p => p != null);
+                                .LastOrDefault(p => p is not null);
                         }
                         else continue;
 

@@ -129,7 +129,7 @@ namespace RESTable
         /// </summary>
         public override string ToString()
         {
-            var dataString = Data != null ? string.Join(";", Data.Select(d => $"{d.Key}={d.Value}")) : null;
+            var dataString = Data is not null ? string.Join(";", Data.Select(d => $"{d.Key}={d.Value}")) : null;
             return $"{MediaType}{(dataString?.Length > 0 ? ";" + dataString : "")}";
         }
 
@@ -174,8 +174,8 @@ namespace RESTable
         {
             unchecked
             {
-                var hashCode = MediaType != null ? MediaType.GetHashCode() : 0;
-                hashCode = (hashCode * 397) ^ (Data != null ? Data.GetHashCode() : 0);
+                var hashCode = MediaType is not null ? MediaType.GetHashCode() : 0;
+                hashCode = (hashCode * 397) ^ (Data is not null ? Data.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ Q.GetHashCode();
                 return hashCode;
             }

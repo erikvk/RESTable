@@ -51,7 +51,7 @@ namespace RESTable.Internal
         {
             var cProvider = new CachedProtocolProvider(provider);
             var contentTypeProviders = provider.GetCustomContentTypeProviders()?.ToList() ?? new List<IContentTypeProvider>();
-            foreach (var contentTypeProvider in contentTypeProviders.Where(p => p.MatchStrings != null))
+            foreach (var contentTypeProvider in contentTypeProviders.Where(p => p.MatchStrings is not null))
             {
                 if (contentTypeProvider.CanRead)
                 {

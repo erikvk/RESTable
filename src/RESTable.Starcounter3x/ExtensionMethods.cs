@@ -134,7 +134,7 @@ namespace RESTable.Starcounter3x
         internal static bool HasPost<T>(this IEnumerable<Condition<T>> conds, out List<Condition<T>> post)
             where T : class
         {
-            post = conds.Where(c => !c.IsStarcounterQueryable() || c.IsOfType<string>() && c.Value != null).ToList();
+            post = conds.Where(c => !c.IsStarcounterQueryable() || c.IsOfType<string>() && c.Value is not null).ToList();
             return post.Count > 0;
         }
     }

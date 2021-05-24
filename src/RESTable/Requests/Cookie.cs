@@ -223,7 +223,7 @@ namespace RESTable.Requests
                 writer.Append("; Expires=");
                 writer.Append(Expires.Value.ToString("R"));
             }
-            if (Domain != null)
+            if (Domain is not null)
             {
                 writer.Append("; Domain= ");
                 writer.Append(Domain);
@@ -236,7 +236,7 @@ namespace RESTable.Requests
             {
                 writer.Append("; Secure");
             }
-            if (Path != null)
+            if (Path is not null)
             {
                 writer.Append("; Path=");
                 writer.Append(Path);

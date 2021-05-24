@@ -39,7 +39,7 @@ namespace RESTable.Requests.Processors
                 }
                 var property = (JProperty) value.Parent;
                 var actualKey = property?.Name;
-                if (actualKey != null)
+                if (actualKey is not null)
                     entity.Remove(actualKey);
                 entity[newName] = value;
             }

@@ -81,7 +81,7 @@ namespace RESTable
             public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
             {
                 var @namespace = request.Conditions.Pop(nameof(Namespace), Operators.EQUALS).Value as string;
-                if (@namespace != null)
+                if (@namespace is not null)
                     if (!@namespace.EndsWith("."))
                         @namespace += ".";
                 if (@namespace is null)

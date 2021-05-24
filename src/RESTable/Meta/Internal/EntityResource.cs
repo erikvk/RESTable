@@ -112,7 +112,7 @@ namespace RESTable.Meta.Internal
             Members = typeCache.GetDeclaredProperties(typeof(T));
             Delegates = delegates;
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
-            if (views != null)
+            if (views is not null)
             {
                 foreach (var view in views)
                 {

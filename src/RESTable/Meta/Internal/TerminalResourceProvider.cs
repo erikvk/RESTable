@@ -30,7 +30,7 @@ namespace RESTable.Meta.Internal
                 var resource = (IResource) BuildTerminalMethod.MakeGenericMethod(type).Invoke(this, null);
                 ResourceCollection.AddResource(resource);
             }
-            Shell.TerminalResource = ResourceCollection.GetTerminalResource<Shell>();
+            Shell.ShellTerminalResource = ResourceCollection.GetTerminalResource<Shell>();
         }
 
         private IResource MakeTerminalResource<T>() where T : Terminal => new TerminalResource<T>(TypeCache);

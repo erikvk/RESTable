@@ -121,7 +121,7 @@ namespace RESTable.WebSockets
 
         private async Task ReleaseTerminal()
         {
-            if (TerminalConnection != null)
+            if (TerminalConnection is not null)
                 await TerminalConnection.DisposeAsync().ConfigureAwait(false);
             TerminalConnection = null;
         }
@@ -190,7 +190,7 @@ namespace RESTable.WebSockets
             await Task.WhenAll(OngoingTasks).ConfigureAwait(false);
             WebSocketManager.RemoveWebSocket(Id);
             Status = WebSocketStatus.PendingClose;
-            if (StreamManifest != null)
+            if (StreamManifest is not null)
                 await StreamManifest.DisposeAsync().ConfigureAwait(false);
             StreamManifest = null;
             var terminalName = TerminalConnection?.Resource?.Name;
@@ -263,7 +263,7 @@ namespace RESTable.WebSockets
         #region IWebSocket
 
         /// <inheritdoc />
-        public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => DirectTo(Shell.TerminalResource);
+        public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => DirectTo(Shell.ShellTerminalResource);
 
         /// <inheritdoc />
         public async Task DirectTo<T>(ITerminalResource<T> resource, ICollection<Condition<T>> assignments = null) where T : Terminal
@@ -461,12 +461,12 @@ namespace RESTable.WebSockets
             var info = result.Headers.Info;
             var errorInfo = result.Headers.Error;
             var timeInfo = "";
-            if (timeElapsed != null)
+            if (timeElapsed is not null)
                 timeInfo = $" ({timeElapsed.Value.TotalMilliseconds} ms)";
             var tail = "";
-            if (info != null)
+            if (info is not null)
                 tail += $". {info}";
-            if (errorInfo != null)
+            if (errorInfo is not null)
                 tail += $" (see {errorInfo})";
             await _SendString($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}")
                 .ConfigureAwait(false);
@@ -550,7 +550,7 @@ namespace RESTable.WebSockets
             }
         }
 
-        internal bool IsStreaming => StreamManifest != null;
+        internal bool IsStreaming => StreamManifest is not null;
         private StreamManifest StreamManifest { get; set; }
 
         private const int MaxStreamBufferSize = 16_000_000;
@@ -575,13 +575,13 @@ namespace RESTable.WebSockets
                     "Unable to stream a result that is already assigned to a different streaming " +
                     "job. A result can only be streamed once.");
             content.IsLocked = true;
-            if (TerminalConnection != null)
+            if (TerminalConnection is not null)
                 await TerminalConnection.Suspend().ConfigureAwait(false);
             if (messageSize < MinStreamBufferSize)
                 messageSize = MinStreamBufferSize;
             else if (MaxStreamBufferSize < messageSize)
                 messageSize = MaxStreamBufferSize;
-            if (StreamManifest != null)
+            if (StreamManifest is not null)
                 await StreamManifest.DisposeAsync().ConfigureAwait(false);
             StreamManifest = new StreamManifest(serializedResult, messageSize);
             await SendJson(StreamManifest).ConfigureAwait(false);

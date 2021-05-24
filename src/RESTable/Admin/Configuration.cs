@@ -22,6 +22,10 @@ namespace RESTable.Admin
         private RESTableConfiguration RESTableConfiguration { get; }
         private IConfiguration AppConfiguration { get; }
 
+        /// <summary>
+        /// The path and name of the currently running executable
+        /// </summary>
+        public string RunningExecutable => System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? "Unknown";
 
         /// <summary>
         /// The root URI of the RESTable REST API

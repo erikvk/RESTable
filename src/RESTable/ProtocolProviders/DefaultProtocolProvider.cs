@@ -134,7 +134,7 @@ namespace RESTable.ProtocolProviders
 
         private static string ToUriString(IUriComponents components)
         {
-            var view = components.ViewName != null ? $"-{components.ViewName}" : null;
+            var view = components.ViewName is not null ? $"-{components.ViewName}" : null;
             var resource = components.Macro is null ? $"/{components.ResourceSpecifier}{view}" : $"/${components.Macro.Name}";
             var str = new StringBuilder(resource);
             if (components.Conditions.Count > 0)

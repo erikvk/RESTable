@@ -179,7 +179,7 @@ namespace RESTable.Meta
             // Walk over the properties in the term, and if null is encountered, simply
             // keep the null. Else continue evaluating the next property as a property of the
             // previous property value.
-            for (var i = 0; target != null && i < term.Store.Count; i++)
+            for (var i = 0; target is not null && i < term.Store.Count; i++)
             {
                 parent = target;
                 property = term.Store[i];
@@ -280,7 +280,7 @@ namespace RESTable.Meta
         {
             unchecked
             {
-                return ((Key != null ? Key.GetHashCode() : 0) * 397) ^ IsDeclared.GetHashCode();
+                return ((Key is not null ? Key.GetHashCode() : 0) * 397) ^ IsDeclared.GetHashCode();
             }
         }
     }

@@ -27,12 +27,12 @@ namespace RESTable.Resources.Operations
 
         private Validator<TResource> Validator { get; set; }
 
-        public bool RequiresAuthentication => AsyncAuthenticator != null;
-        public bool CanSelect => AsyncSelector != null;
-        public bool CanInsert => AsyncInserter != null;
-        public bool CanUpdate => AsyncUpdater != null;
-        public bool CanDelete => AsyncDeleter != null;
-        public bool CanCount => AsyncCounter != null;
+        public bool RequiresAuthentication => AsyncAuthenticator is not null;
+        public bool CanSelect => AsyncSelector is not null;
+        public bool CanInsert => AsyncInserter is not null;
+        public bool CanUpdate => AsyncUpdater is not null;
+        public bool CanDelete => AsyncDeleter is not null;
+        public bool CanCount => AsyncCounter is not null;
 
         public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request) => AsyncSelector(request);
         public IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);

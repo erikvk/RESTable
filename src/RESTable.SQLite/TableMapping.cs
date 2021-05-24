@@ -218,7 +218,7 @@ namespace RESTable.SQLite
                 indexRequest.Method = Method.POST;
                 indexRequest.Selector = () => tableIndexesToKeep.ToAsyncEnumerable();
                 var result = await indexRequest.GetResult().ConfigureAwait(false);
-                await using (result.ConfigureAwait(false)) ;
+                await using (result.ConfigureAwait(false))
                 {
                     result.ThrowIfError();
                     await Update().ConfigureAwait(false);

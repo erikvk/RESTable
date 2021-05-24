@@ -38,7 +38,7 @@ namespace RESTable.Resources.Templates
         private string GetWelcomeText()
         {
             var welcomeBody = WelcomeBody;
-            if (welcomeBody != null)
+            if (welcomeBody is not null)
                 welcomeBody = welcomeBody + "\n\n";
             return $"### {WelcomeHeader ?? GetType().GetRESTableTypeName()} ###\n\n{welcomeBody}> Status: {Status}\n\n" +
                    (IsOpen ? "" : "> To open the feed, type OPEN\n") +

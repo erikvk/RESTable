@@ -83,7 +83,7 @@ namespace RESTable.Meta.IL
             if (method is not ConstructorInfo)
                 method_arguments = method.GetGenericArguments();
 
-            if (method.DeclaringType != null)
+            if (method.DeclaringType is not null)
                 type_arguments = method.DeclaringType.GetGenericArguments();
 
             if (!method.IsStatic)
@@ -105,7 +105,7 @@ namespace RESTable.Meta.IL
 
                 ReadOperand(instruction);
 
-                if (previous != null)
+                if (previous is not null)
                 {
                     instruction.Previous = previous;
                     previous.Next = instruction;
@@ -237,7 +237,7 @@ namespace RESTable.Meta.IL
 
         private static bool TargetsLocalVariable(OpCode opcode)
         {
-            return opcode.Name != null && opcode.Name.Contains("loc");
+            return opcode.Name is not null && opcode.Name.Contains("loc");
         }
 
         private LocalVariableInfo GetLocalVariable(int index)

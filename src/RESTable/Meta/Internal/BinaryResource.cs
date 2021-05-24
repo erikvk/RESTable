@@ -57,7 +57,7 @@ namespace RESTable.Meta.Internal
             InterfaceType = typeof(T).GetRESTableInterfaceType();
             ResourceKind = ResourceKind.BinaryResource;
             (_, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
-            if (attribute != null)
+            if (attribute is not null)
             {
                 Description = attribute.Description;
                 BinarySelector = binarySelector;

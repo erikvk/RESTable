@@ -45,10 +45,10 @@ namespace RESTable.Meta
         public bool ReadOnly { get; set; }
 
         /// <inheritdoc />
-        public override bool IsReadable => Getter != null;
+        public override bool IsReadable => Getter is not null;
 
         /// <inheritdoc />
-        public override bool IsWritable => !ReadOnly && Setter != null;
+        public override bool IsWritable => !ReadOnly && Setter is not null;
 
         protected Property(Type owner) : base(owner) { }
     }

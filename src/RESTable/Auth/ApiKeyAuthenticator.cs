@@ -39,16 +39,6 @@ namespace RESTable.Auth
             ReloadToken = ChangeToken.OnChange(Configuration.GetReloadToken, Reload);
         }
 
-        private void Reload()
-        {
-            var apiKeysConfiguration = Configuration.GetSection(nameof(RESTable.ApiKeys)).Get<ApiKeys>();
-            if (apiKeysConfiguration?.Count is not > 0)
-                throw new InvalidOperationException($"When using {nameof(ApiKeyAuthenticator)}, the application configuration file is used " +
-                                                    "to read API keys. The config file is missing an 'ApiKeys' array with at least one " +
-                                                    "'ApiKey' item.");
-            ReadApiKeys(apiKeysConfiguration);
-        }
-
         /// <inheritdoc />
         public bool TryAuthenticate(RESTableContext context, ref string uri, Headers headers, out Unauthorized error)
         {
@@ -69,7 +59,7 @@ namespace RESTable.Auth
         private AccessRights GetAccessRights(ref string uri, IHeaders headers)
         {
             string authorizationHeader;
-            if (uri != null && Regex.Match(uri, RegEx.UriKey) is Match {Success: true} keyMatch)
+            if (uri is not null && Regex.Match(uri, RegEx.UriKey) is {Success: true} keyMatch)
             {
                 var keyGroup = keyMatch.Groups["key"];
                 uri = uri.Remove(keyGroup.Index, keyGroup.Length);
@@ -85,13 +75,26 @@ namespace RESTable.Auth
             {
                 case var apikey when apikey.EqualsNoCase("apikey"): break;
                 case var basic when basic.EqualsNoCase("basic"):
-                    key = Encoding.UTF8.GetString(Convert.FromBase64String(key)).Split(":").ElementAtOrDefault(1);
+                {
+                    var keyString = Convert.FromBase64String(key);
+                    key = Encoding.UTF8.GetString(keyString).Split(":").ElementAtOrDefault(1);
                     if (key is null) return null;
                     break;
+                }
                 default: return null;
             }
             var keyHash = key.SHA256();
             return ApiKeys.TryGetValue(keyHash, out var _rights) ? _rights : null;
+        }
+
+        private void Reload()
+        {
+            var apiKeysConfiguration = Configuration.GetSection(nameof(RESTable.ApiKeys)).Get<ApiKeys>();
+            if (apiKeysConfiguration?.Count is not > 0)
+                throw new InvalidOperationException($"When using {nameof(ApiKeyAuthenticator)}, the application configuration file is used " +
+                                                    "to read API keys. The config file is missing an 'ApiKeys' array with at least one " +
+                                                    "'ApiKey' item.");
+            ReadApiKeys(apiKeysConfiguration);
         }
 
         private void ReadApiKeys(ApiKeys apiKeysConfiguration)
@@ -110,19 +113,18 @@ namespace RESTable.Auth
             }
         }
 
-        private IEnumerable<Method> GetMethods(IEnumerable<string> methodsArray)
+        private static IEnumerable<Method> GetDistinctMethods(IEnumerable<string> methodsArray)
         {
-            foreach (var method in methodsArray)
+            var methodSet = new HashSet<Method>();
+            foreach (var methodItem in methodsArray)
             {
-                var trimmed = method.Trim();
-                if (trimmed == "*")
-                {
-                    foreach (var item in EnumMember<Method>.Values)
-                        yield return item;
-                    yield break;
-                }
-                yield return (Method) Enum.Parse(typeof(Method), method.ToUpperInvariant());
+                var method = methodItem.Trim();
+                if (method == "*")
+                    return EnumMember<Method>.Values;
+                var parsedMethod = (Method) Enum.Parse(typeof(Method), method, ignoreCase: true);
+                methodSet.Add(parsedMethod);
             }
+            return methodSet;
         }
 
         private string ReadApiKey(ApiKeyItem apiKeyItem)
@@ -132,17 +134,17 @@ namespace RESTable.Auth
                 throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                     "whitespace or parentheses, and only containing ASCII characters 33 through 126");
             var keyHash = apiKey.SHA256();
-            var accessRightsEnumeration = apiKeyItem.AllowAccess.Select(item => new AccessRight
+            var accessRightsEnumeration = apiKeyItem.AllowAccess.Select(allowAccess => new AccessRight
             (
-                resources: item.Resources
+                resources: allowAccess.Resources
                     .Select(resource => ResourceCollection.SafeFindResources(resource))
-                    .SelectMany(iresources => iresources.Union(iresources.Cast<IResourceInternal>()
-                        .Where(r => r.InnerResources != null)
+                    .SelectMany(iresources => iresources.Union(iresources
+                        .Cast<IResourceInternal>()
+                        .Where(r => r.InnerResources is not null)
                         .SelectMany(r => r.InnerResources)))
                     .OrderBy(r => r.Name)
                     .ToList(),
-                allowedMethods: GetMethods(item.Methods)
-                    .Distinct()
+                allowedMethods: GetDistinctMethods(allowAccess.Methods)
                     .OrderBy(i => i, MethodComparer.Instance)
                     .ToArray()
             ));

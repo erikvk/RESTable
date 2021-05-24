@@ -7,7 +7,7 @@ namespace RESTable.SQLite.Meta
     {
         public static ColumnMappings ToColumnMappings(this IEnumerable<ColumnMapping> mappings)
         {
-            return new(mappings.Where(mapping => mapping != null));
+            return new(mappings.Where(mapping => mapping is not null));
         }
     }
 }

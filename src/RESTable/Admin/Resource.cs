@@ -97,7 +97,7 @@ namespace RESTable.Admin
                 IsInternal = iresource.IsInternal,
                 IsDeclared = entityResource?.IsDeclared ?? true,
                 Type = iresource.Type,
-                Views = entityResource != null
+                Views = entityResource is not null
                     ? entityResource.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
                       ?? new ViewInfo[0]
                     : null,

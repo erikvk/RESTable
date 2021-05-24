@@ -227,7 +227,7 @@ namespace RESTable.Resources.Operations
 
             async Task<RequestSuccess> PostEvaluator(IEntityRequest<T> request)
             {
-                if (request.MetaConditions.SafePost != null)
+                if (request.MetaConditions.SafePost is not null)
                     return await SafePost(request).ConfigureAwait(false);
                 var insertedEntities = Insert(request);
                 var (count, entities) = await ChangeCount(insertedEntities).ConfigureAwait(false);

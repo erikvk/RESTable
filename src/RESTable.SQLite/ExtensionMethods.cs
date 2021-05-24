@@ -54,7 +54,7 @@ namespace RESTable.SQLite
         }
 
 
-        private static bool IsNullable(this Type type, out Type baseType) => (baseType = Nullable.GetUnderlyingType(type)) != null;
+        private static bool IsNullable(this Type type, out Type baseType) => (baseType = Nullable.GetUnderlyingType(type)) is not null;
 
         internal static (string, string) TSplit(this string str, char splitCharacter)
         {
@@ -81,7 +81,7 @@ namespace RESTable.SQLite
             where TAttribute : Attribute
         {
             attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
-            return attribute != null;
+            return attribute is not null;
         }
 
         internal static IEnumerable<Type> GetConcreteSubclasses(this Type baseType) => AppDomain

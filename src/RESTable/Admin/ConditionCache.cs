@@ -61,7 +61,7 @@ namespace RESTable.Admin
             foreach (var resource in request.GetInputEntities())
             {
                 var cache = (IConditionCache) request.GetService(typeof(ConditionCache<>).MakeGenericType(resource.Type));
-                if (cache != null)
+                if (cache is not null)
                 {
                     cache.Clear();
                     count += 1;

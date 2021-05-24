@@ -23,7 +23,7 @@ namespace RESTable.SQLite
         internal static Type GetType(ProceduralResource resource)
         {
             var existing = AssemblyBuilder.GetType(resource.Name);
-            if (existing != null) return existing;
+            if (existing is not null) return existing;
             var baseType = Type.GetType(resource.BaseTypeName);
             if (baseType is null) return null;
             return MakeType(resource.Name, baseType);

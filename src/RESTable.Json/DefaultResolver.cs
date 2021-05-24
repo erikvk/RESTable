@@ -62,7 +62,7 @@ namespace RESTable.Json
                 _ when objectType.ImplementsGenericInterface(typeof(IAsyncEnumerable<>)) => AsyncEnumerableConverter,
                 _ => contract.Converter
             };
-            if (entityTypeContract.CustomCreator != null)
+            if (entityTypeContract.CustomCreator is not null)
                 contract.DefaultCreator = () => entityTypeContract.CustomCreator();
             return contract;
         }

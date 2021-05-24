@@ -166,8 +166,8 @@ namespace RESTable.Requests
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
-            var hasMacro = Uri?.Macro != null;
-            if (hasMacro && Uri.Macro.Headers != null)
+            var hasMacro = Uri?.Macro is not null;
+            if (hasMacro && Uri.Macro.Headers is not null)
             {
                 if (Uri.Macro.OverwriteHeaders)
                 {
@@ -210,8 +210,8 @@ namespace RESTable.Requests
             Headers = headers ?? new Headers();
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
-            var hasMacro = Uri?.Macro != null;
-            if (hasMacro && Uri.Macro.Headers != null)
+            var hasMacro = Uri?.Macro is not null;
+            if (hasMacro && Uri.Macro.Headers is not null)
             {
                 if (Uri.Macro.OverwriteHeaders)
                 {

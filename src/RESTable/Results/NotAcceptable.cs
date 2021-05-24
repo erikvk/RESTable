@@ -12,7 +12,7 @@ namespace RESTable.Results
         public NotAcceptable(string headerValue, string expected = null) : base
         (
             code: ErrorCodes.NotAcceptable,
-            message: $"No supported media types were found in the Accept header. Found '{headerValue}'{(expected != null ? $", expected {expected}" : null)}"
+            message: $"No supported media types were found in the Accept header. Found '{headerValue}'{(expected is not null ? $", expected {expected}" : null)}"
         )
         {
             StatusCode = HttpStatusCode.NotAcceptable;

@@ -48,7 +48,7 @@ namespace RESTable.Meta.Internal
         {
             var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
             Type = viewType;
-            if (viewAttribute != null)
+            if (viewAttribute is not null)
             {
                 Name = viewAttribute.CustomName ?? viewType.Name;
                 ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);

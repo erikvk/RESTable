@@ -135,7 +135,7 @@ namespace RESTable.OData
                         var isOpenType = type.IsDynamic() || dynamicMembers.Any();
                         await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
                         var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
-                        if (key != null) await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
+                        if (key is not null) await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
                         await WriteMembers(swr, declaredMembers.Where(p => p is not DeclaredProperty {Hidden: true} d || d.Equals(key))).ConfigureAwait(false);
                         await swr.WriteAsync("</EntityType>").ConfigureAwait(false);
                     }

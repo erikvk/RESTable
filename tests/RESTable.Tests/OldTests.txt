@@ -53,10 +53,10 @@ namespace RESTarTester
                 Dictionary<string, string> headers = null)
             {
                 var message = new HttpRequestMessage(new HttpMethod(method), uri);
-                if (body != null)
+                if (body is not null)
                     message.Content =
                         new ByteArrayContent(body) {Headers = {ContentType = MediaTypeHeaderValue.Parse(contentType ?? "application/json")}};
-                if (headers != null)
+                if (headers is not null)
                 {
                     foreach (var header in headers) message.Headers.Add(header.Key, header.Value);
                 }
@@ -170,7 +170,7 @@ namespace RESTarTester
             {
                 foreach (var item in inp)
                 {
-                    Debug.Assert(item != null);
+                    Debug.Assert(item is not null);
                     yield return item;
                 }
             }

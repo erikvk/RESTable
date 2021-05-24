@@ -203,7 +203,7 @@ namespace RESTable.Meta.Internal
         {
             var resourceGroups = ResourceCollection
                 .GroupBy(r => r.ParentResourceName)
-                .Where(group => group.Key != null);
+                .Where(group => group.Key is not null);
             foreach (var group in resourceGroups)
             {
                 var parentResource = (IResourceInternal) ResourceCollection.SafeGetResource(group.Key);
@@ -231,7 +231,7 @@ namespace RESTable.Meta.Internal
                     }
                     return default;
                 })
-                .Where(t => t.provider != null))
+                .Where(t => t.provider is not null))
             {
                 var resourceProvider = EntityResourceProviders.Values
                     .Where(_provider => _provider is IProceduralEntityResourceProvider)

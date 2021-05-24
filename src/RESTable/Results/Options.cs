@@ -31,7 +31,7 @@ namespace RESTable.Results
                 options.Headers.Vary = "Origin";
             }
             else return options;
-            if (options.Resource != null)
+            if (options.Resource is not null)
                 options.Headers.AccessControlAllowMethods = string.Join(", ", options.Resource.AvailableMethods);
             options.Headers.AccessControlMaxAge = "120";
             options.Headers.AccessControlAllowCredentials = "true";

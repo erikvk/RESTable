@@ -26,7 +26,7 @@ namespace RESTable.Requests.Processors
             var jobj = entity.ToJObject();
             foreach (var term in this)
             {
-                if (jobj[term.Key] != null) continue;
+                if (jobj[term.Key] is not null) continue;
                 var termValue = term.GetValue(entity, out var actualKey);
                 jobj[actualKey] = termValue is null ? null : JToken.FromObject(termValue, serializer);
             }

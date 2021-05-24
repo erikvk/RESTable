@@ -44,7 +44,7 @@ namespace RESTable.WebSockets
 
         internal async Task Suspend()
         {
-            if (_duringSuspend != null)
+            if (_duringSuspend is not null)
                 await _duringSuspend.DisposeAsync().ConfigureAwait(false);
             _duringSuspend = WebSocket;
             SuspendTaskSource = new TaskCompletionSource<byte>();

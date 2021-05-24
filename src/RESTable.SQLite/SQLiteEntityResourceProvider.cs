@@ -138,7 +138,7 @@ namespace RESTable.SQLite
             foreach (var resource in SQLite<ProceduralResource>.Select().ToEnumerable())
             {
                 var type = resource.Type;
-                if (type != null)
+                if (type is not null)
                 {
                     if (TableMapping.GetTableMapping(type) is null)
                         TableMapping.CreateMapping(type).Wait();

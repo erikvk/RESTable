@@ -246,7 +246,7 @@ namespace RESTable.Requests
                             var authenticator = this.GetRequiredService<ResourceAuthenticator>();
                             await authenticator.ResourceAuthenticate(this, entityResource).ConfigureAwait(false);
                         }
-                        if (MetaConditions.SafePost != null)
+                        if (MetaConditions.SafePost is not null)
                         {
                             if (!entityResource.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
                             if (!entityResource.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
@@ -325,7 +325,7 @@ namespace RESTable.Requests
                 if (Resource is IEntityResource<T> entityResource)
                 {
                     MetaConditions = MetaConditions.Parse(parameters.UriComponents.MetaConditions, entityResource, termFactory);
-                    if (parameters.UriComponents.ViewName != null)
+                    if (parameters.UriComponents.ViewName is not null)
                     {
                         if (!entityResource.ViewDictionary.TryGetValue(parameters.UriComponents.ViewName, out var view))
                             throw new UnknownView(parameters.UriComponents.ViewName, entityResource);
@@ -429,7 +429,7 @@ namespace RESTable.Requests
 
             return async body =>
             {
-                if (body != null)
+                if (body is not null)
                     await body.DisposeAsync().ConfigureAwait(false);
                 if (parameters.IsInternal)
                 {
@@ -482,7 +482,7 @@ namespace RESTable.Requests
             (
                 resource: Resource,
                 target: Target,
-                cachedProtocolProvider: newProtocol != null
+                cachedProtocolProvider: newProtocol is not null
                     ? protocolController.ResolveCachedProtocolProvider(newProtocol)
                     : CachedProtocolProvider,
                 parameters: Parameters,

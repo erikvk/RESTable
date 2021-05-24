@@ -88,7 +88,7 @@ namespace RESTable.Resources
 
             var inserted =
                 ResourceProviderInternal.InsertProceduralResource(name, description, methodsArray, (object) Data);
-            if (inserted != null)
+            if (inserted is not null)
                 ResourceProviderInternal.InsertProcedural(inserted);
         }
 

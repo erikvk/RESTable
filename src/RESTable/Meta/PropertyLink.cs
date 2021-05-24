@@ -71,7 +71,7 @@ namespace RESTable.Meta
             {
                 stack.Push(currentLink.Property);
                 currentLink = currentLink.Rootward;
-            } while (currentLink != null);
+            } while (currentLink is not null);
             return Term.Create(stack, componentSeparator);
         }
     }

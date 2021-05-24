@@ -68,7 +68,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Does this context have a WebSocket connected?
         /// </summary>
-        public bool HasWebSocket => WebSocket != null;
+        public bool HasWebSocket => WebSocket is not null;
 
         /// <summary>
         /// The client of the context
@@ -132,7 +132,7 @@ namespace RESTable.Requests
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, (Method) (-1), uri, null);
             uriComponents = null;
-            if (parameters.Error != null)
+            if (parameters.Error is not null)
             {
                 var invalidParametersRequest = new InvalidParametersRequest(parameters);
                 error = parameters.Error.AsResultOf(invalidParametersRequest);

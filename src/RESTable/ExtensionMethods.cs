@@ -40,7 +40,7 @@ namespace RESTable
         public static string RESTableMemberName(this MemberInfo m, bool flagged = false)
         {
             string name;
-            if (m.HasAttribute<RESTableMemberAttribute>(out var attribute) && attribute.Name != null)
+            if (m.HasAttribute<RESTableMemberAttribute>(out var attribute) && attribute.Name is not null)
                 name = attribute.Name;
             else name = m.Name;
             return flagged ? $"${name}" : name;
@@ -92,19 +92,19 @@ namespace RESTable
 
         public static bool HasAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
         {
-            return type?.GetCustomAttribute<TAttribute>() != null;
+            return type?.GetCustomAttribute<TAttribute>() is not null;
         }
 
         public static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute) where TAttribute : Attribute
         {
             attribute = type?.GetCustomAttribute<TAttribute>();
-            return attribute != null;
+            return attribute is not null;
         }
 
         internal static IEnumerable<Type> GetBaseTypes(this Type type)
         {
             var currentBaseType = type.BaseType;
-            while (currentBaseType != null)
+            while (currentBaseType is not null)
             {
                 yield return currentBaseType;
                 currentBaseType = currentBaseType.BaseType;
@@ -143,7 +143,7 @@ namespace RESTable
                 type.Assembly == interfaceType.Assembly)
                 match = type;
             genericParameters = match?.GetGenericArguments();
-            return match != null;
+            return match is not null;
         }
 
         internal static long ByteCount(this PropertyInfo property, object target)
@@ -212,7 +212,7 @@ namespace RESTable
         public static bool IsNullable(this Type type, out Type baseType)
         {
             baseType = Nullable.GetUnderlyingType(type);
-            return baseType != null;
+            return baseType is not null;
         }
 
         /// <summary>
@@ -357,7 +357,7 @@ namespace RESTable
         internal static IAsyncEnumerable<JObject> Process<T>(this IAsyncEnumerable<T> entities, params IProcessor[] processors)
             where T : class
         {
-            return processors.Aggregate(default(IAsyncEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
+            return processors.Aggregate(default(IAsyncEnumerable<JObject>), (e, p) => e is not null ? p.Apply(e) : p.Apply(entities));
         }
 
         #endregion
@@ -731,7 +731,7 @@ namespace RESTable
                     }
                     break;
             }
-            if (property != null)
+            if (property is not null)
             {
                 try
                 {
@@ -792,7 +792,7 @@ namespace RESTable
 
         internal static byte[] ToBytes(this string str)
         {
-            return str != null ? Encoding.UTF8.GetBytes(str) : null;
+            return str is not null ? Encoding.UTF8.GetBytes(str) : null;
         }
 
         internal static byte[] ToByteArray(this Stream stream)

@@ -89,13 +89,13 @@ namespace RESTable.Requests
 
         internal static bool _ContainsKey(this IHeadersInternal headers, string key) => key switch
         {
-            _ when key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept != null,
-            _ when key.EqualsNoCase("Content-Type") => headers.ContentType != null,
-            _ when key.EqualsNoCase(nameof(IHeaders.Source)) => headers.Source != null,
-            _ when key.EqualsNoCase(nameof(IHeaders.Destination)) => headers.Destination != null,
-            _ when key.EqualsNoCase(nameof(IHeaders.Authorization)) => headers.Authorization != null,
-            _ when key.EqualsNoCase(nameof(IHeaders.Origin)) => headers.Origin != null,
-            _ when key.EqualsNoCase("RESTable-elapsed-ms") => headers.Elapsed != null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept is not null,
+            _ when key.EqualsNoCase("Content-Type") => headers.ContentType is not null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Source)) => headers.Source is not null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Destination)) => headers.Destination is not null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Authorization)) => headers.Authorization is not null,
+            _ when key.EqualsNoCase(nameof(IHeaders.Origin)) => headers.Origin is not null,
+            _ when key.EqualsNoCase("RESTable-elapsed-ms") => headers.Elapsed is not null,
             _ => headers.ContainsCustomHeaderName(key)
         };
 
@@ -163,25 +163,25 @@ namespace RESTable.Requests
             {
                 case var _ when key.EqualsNoCase(nameof(IHeaders.Accept)):
                     value = headers.Accept?.ToString();
-                    return value != null;
+                    return value is not null;
                 case var _ when key.EqualsNoCase("Content-Type"):
                     value = headers.ContentType?.ToString();
-                    return value != null;
+                    return value is not null;
                 case var _ when key.EqualsNoCase(nameof(IHeaders.Source)):
                     value = headers.Source;
-                    return value != null;
+                    return value is not null;
                 case var _ when key.EqualsNoCase(nameof(IHeaders.Destination)):
                     value = headers.Destination;
-                    return value != null;
+                    return value is not null;
                 case var _ when key.EqualsNoCase(nameof(IHeaders.Authorization)):
                     value = headers.Authorization;
-                    return value != null;
+                    return value is not null;
                 case var _ when key.EqualsNoCase(nameof(IHeaders.Origin)):
                     value = headers.Origin;
-                    return value != null;
+                    return value is not null;
                 case var _ when key.EqualsNoCase("RESTable-elapsed-ms"):
                     value = headers.Elapsed?.ToStringRESTable();
-                    return value != null;
+                    return value is not null;
                 default: return headers.TryGetCustomHeader(key, out value);
             }
         }

@@ -206,14 +206,14 @@ namespace RESTable.Requests
             make(renames);
             make(others);
 
-            metaConditions.Processors = new IProcessor[] {metaConditions.Add, metaConditions.Rename, metaConditions.Select}.Where(p => p != null).ToArray();
+            metaConditions.Processors = new IProcessor[] {metaConditions.Add, metaConditions.Rename, metaConditions.Select}.Where(p => p is not null).ToArray();
             metaConditions.HasProcessors = metaConditions.Processors.Any();
             metaConditions.CanUseExternalCounter = metaConditions.Search is null
                                                    && metaConditions.Distinct is null
                                                    && metaConditions.Limit.Number == -1
                                                    && metaConditions.Offset.Number == 0;
 
-            if (metaConditions.OrderBy != null)
+            if (metaConditions.OrderBy is not null)
             {
                 if (metaConditions.Rename?.Any(p => p.Key.Key.EqualsNoCase(metaConditions.OrderBy.Key)) == true
                     && !metaConditions.Rename.Any(p => p.Value.EqualsNoCase(metaConditions.OrderBy.Key)))
@@ -223,7 +223,7 @@ namespace RESTable.Requests
                         "unless some other property is renamed to x");
             }
 
-            if (metaConditions.Select != null && metaConditions.Rename != null)
+            if (metaConditions.Select is not null && metaConditions.Rename is not null)
             {
                 if (metaConditions.Select.Any(pc => metaConditions.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
                                                     !metaConditions.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
@@ -261,21 +261,21 @@ namespace RESTable.Requests
                 yield return new UriCondition(RESTableMetaCondition.Offset, Offset.Number.ToString());
             if (OrderBy is OrderByDescending)
                 yield return new UriCondition(RESTableMetaCondition.Order_desc, OrderBy.Term.ToString());
-            else if (OrderBy != null)
+            else if (OrderBy is not null)
                 yield return new UriCondition(RESTableMetaCondition.Order_asc, OrderBy.Term.ToString());
-            if (Select != null)
+            if (Select is not null)
                 yield return new UriCondition(RESTableMetaCondition.Select, string.Join(",", Select));
-            if (Add != null)
+            if (Add is not null)
                 yield return new UriCondition(RESTableMetaCondition.Add, string.Join(",", Add));
-            if (Rename != null)
+            if (Rename is not null)
                 yield return new UriCondition(RESTableMetaCondition.Rename, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}")));
-            if (Distinct != null)
+            if (Distinct is not null)
                 yield return new UriCondition(RESTableMetaCondition.Distinct, "true");
             if (Search is RegexSearch)
                 yield return new UriCondition(RESTableMetaCondition.Search_regex, Search.GetValueLiteral());
-            else if (Search != null)
+            else if (Search is not null)
                 yield return new UriCondition(RESTableMetaCondition.Search, Search.GetValueLiteral());
-            if (SafePost != null)
+            if (SafePost is not null)
                 yield return new UriCondition(RESTableMetaCondition.Safepost, SafePost);
         }
 
@@ -295,7 +295,7 @@ namespace RESTable.Requests
                 SafePost = SafePost,
                 Empty = Empty
             };
-            copy.Processors = new IProcessor[] {copy.Add, copy.Rename, copy.Select}.Where(p => p != null).ToArray();
+            copy.Processors = new IProcessor[] {copy.Add, copy.Rename, copy.Select}.Where(p => p is not null).ToArray();
             copy.HasProcessors = copy.Processors.Any();
             copy.CanUseExternalCounter = copy.Search is null && copy.Distinct is null && copy.Limit.Number == -1 && copy.Offset.Number == 0;
             return copy;

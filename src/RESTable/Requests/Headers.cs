@@ -190,19 +190,19 @@ namespace RESTable.Requests
 
         private IEnumerable<KeyValuePair<string, string>> GetHeaderEnumeration()
         {
-            if (Accept != null)
+            if (Accept is not null)
                 yield return new KeyValuePair<string, string>(nameof(Accept), Accept.ToString());
-            if (ContentType != null)
+            if (ContentType is not null)
                 yield return new KeyValuePair<string, string>("Content-Type", ContentType.ToString());
-            if (Source != null)
+            if (Source is not null)
                 yield return new KeyValuePair<string, string>(nameof(Source), Source);
-            if (Destination != null)
+            if (Destination is not null)
                 yield return new KeyValuePair<string, string>(nameof(Destination), Destination);
-            if (Authorization != null)
+            if (Authorization is not null)
                 yield return new KeyValuePair<string, string>(nameof(Authorization), "*******");
-            if (Origin != null)
+            if (Origin is not null)
                 yield return new KeyValuePair<string, string>(nameof(Origin), Origin);
-            if (Elapsed != null)
+            if (Elapsed is not null)
                 yield return new KeyValuePair<string, string>("RESTable-elapsed-ms", Elapsed?.ToStringRESTable());
             foreach (var pair in _dict)
                 yield return pair;

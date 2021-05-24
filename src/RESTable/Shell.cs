@@ -49,7 +49,7 @@ namespace RESTable
         /// </summary>
         private bool queryChangedPreEval;
 
-        internal static ITerminalResource<Shell> TerminalResource { get; set; }
+        internal static ITerminalResource<Shell> ShellTerminalResource { get; set; }
 
         private void Reset()
         {
@@ -215,7 +215,7 @@ namespace RESTable
 
         private async Task Navigate(string input = null, bool sendQuery = true)
         {
-            if (input != null)
+            if (input is not null)
                 Query = input;
             var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
             if (!valid) return;
@@ -280,7 +280,7 @@ namespace RESTable
                         break;
                     default:
                         var (command, tail) = input.TupleSplit(' ');
-                        if (tail != null)
+                        if (tail is not null)
                         {
                             var (path, tail2) = tail.TupleSplit(' ');
                             if (path.StartsWith("/"))
@@ -394,7 +394,7 @@ namespace RESTable
                                 }
                                 if (valueString.EqualsNoCase("null"))
                                     valueString = null;
-                                if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
+                                if (!ShellTerminalResource.Members.TryGetValue(property, out var declaredProperty))
                                 {
                                     await WebSocket
                                         .SendText($"Unknown shell property '{property}'. To list properties, type VAR")

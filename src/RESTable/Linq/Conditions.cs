@@ -52,7 +52,7 @@ namespace RESTable.Linq
         public static Condition<T> Pop<T>(this ICollection<Condition<T>> conds, string key, Operators op) where T : class
         {
             var match = conds.Get(key, op);
-            if (match != null)
+            if (match is not null)
                 conds.Remove(match);
             return match;
         }

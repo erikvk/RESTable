@@ -93,7 +93,7 @@ namespace RESTable.Starcounter3x
 
         internal static bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
         {
-            if (resource.InterfaceType != null)
+            if (resource.InterfaceType is not null)
             {
                 var interfaceName = resource.InterfaceType.GetRESTableTypeName();
                 var members = typeCache.GetDeclaredProperties(resource.InterfaceType);

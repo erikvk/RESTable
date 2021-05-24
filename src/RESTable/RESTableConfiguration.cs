@@ -19,7 +19,7 @@ namespace RESTable
             ReservedNamespaces = typeof(RESTableConfigurator).Assembly
                 .GetTypes()
                 .Select(type => type.Namespace?.ToLower())
-                .Where(ns => ns != null)
+                .Where(ns => ns is not null)
                 .Distinct()
                 .ToArray();
         }

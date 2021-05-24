@@ -140,7 +140,7 @@ namespace RESTable.Excel
 
         private static object GetCellValue(DeclaredProperty prop, object target) => prop switch
         {
-            _ when prop.ExcelReducer != null => prop.ExcelReducer((dynamic) target),
+            _ when prop.ExcelReducer is not null => prop.ExcelReducer((dynamic) target),
             _ when prop.Type.IsEnum => prop.GetValue(target)?.ToString(),
             _ => prop.GetValue(target)
         };
@@ -210,7 +210,7 @@ namespace RESTable.Excel
                     await jwr.WriteStartArrayAsync().ConfigureAwait(false);
 
                     var worksheet = package.Workbook?.Worksheets?.FirstOrDefault();
-                    if (worksheet?.Dimension != null)
+                    if (worksheet?.Dimension is not null)
                     {
                         var (rows, columns) = (worksheet.Dimension.Rows, worksheet.Dimension.Columns);
                         if (rows > 1)

@@ -84,7 +84,7 @@ namespace RESTable.SQLite
                                                   "Column is not editable.");
                     return mapping;
                 })
-                .Where(mapping => mapping != null)
+                .Where(mapping => mapping is not null)
                 .ToList();
             if (!toDrop.Any()) return false;
             await TableMapping.DropColumns(request, toDrop).ConfigureAwait(false);

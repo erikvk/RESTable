@@ -109,7 +109,7 @@ namespace RESTable.Admin
                 .Values;
             foreach (var indexer in entityResourceProviders
                 .Select(p => p.DatabaseIndexer)
-                .Where(indexer => indexer != null)
+                .Where(indexer => indexer is not null)
                 .Distinct())
             await foreach (var index in indexer.SelectAsync(request).ConfigureAwait(false))
                 yield return index;

@@ -182,7 +182,7 @@ namespace FileSenderSample
                 case "DEACTIVATE":
                 {
                     var connection = ActiveConnections.FirstOrDefault(c => c.Id == id);
-                    if (connection != null)
+                    if (connection is not null)
                     {
                         connection.Deactivated = true;
                         await WebSocket.SendText("Done!");
@@ -194,7 +194,7 @@ namespace FileSenderSample
                 case "ACTIVATE":
                 {
                     var connection = ActiveConnections.FirstOrDefault(c => c.Id == id);
-                    if (connection != null)
+                    if (connection is not null)
                     {
                         connection.Deactivated = false;
                         await WebSocket.SendText("Done!");

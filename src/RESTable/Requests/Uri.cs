@@ -31,7 +31,7 @@ namespace RESTable.Requests
         public IMacro Macro { get; private set; }
 
         internal Exception Error { get; private set; }
-        internal bool HasError => Error != null;
+        internal bool HasError => Error is not null;
 
         public IProtocolProvider ProtocolProvider { get; set; }
 

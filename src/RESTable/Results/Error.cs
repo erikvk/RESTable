@@ -50,9 +50,9 @@ namespace RESTable.Results
             var info = Headers.Info;
             var errorInfo = Headers.Error;
             var tail = "";
-            if (info != null)
+            if (info is not null)
                 tail += $". {info}";
-            if (errorInfo != null)
+            if (errorInfo is not null)
                 tail += $" (see {errorInfo})";
             return new ValueTask<string>($"{StatusCode.ToCode()}: {StatusDescription}{tail}");
         }

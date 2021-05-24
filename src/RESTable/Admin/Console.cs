@@ -236,7 +236,7 @@ namespace RESTable.Admin
             builder.Append(dateTimeString);
             builder.Append($"[{logable.Context.TraceId}] ");
             builder.Append(logable.GetLogMessage());
-            if (milliseconds != null)
+            if (milliseconds is not null)
                 builder.Append($" ({milliseconds} ms)");
             return builder.ToString();
         }
