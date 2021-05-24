@@ -9,7 +9,7 @@ namespace RESTable.WebSockets
         /// Creates a combined WebSocket interface for the WebSockets of a set of terminals, so that
         /// streams can be sent more efficiently.
         /// </summary>
-        public static ICombinedTerminal<T> CombineTerminals<T>(this IEnumerable<T> terminals) where T : Terminal
+        public static ICombinedTerminal<T> Combine<T>(this IEnumerable<T> terminals) where T : Terminal
         {
             return new CombinedTerminal<T>(terminals);
         }

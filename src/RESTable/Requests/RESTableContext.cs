@@ -14,13 +14,14 @@ namespace RESTable.Requests
     /// and define the root for each ITraceable tree. They also hold WebSocket connections
     /// and Client access rights.
     /// </summary>
-    public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable
+    public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable, IServiceProvider
     {
         public string TraceId { get; }
         private const int MaximumStackDepth = 500;
         private int StackDepth;
         internal bool IsBottomOfStack => StackDepth < 1;
-        public IServiceProvider Services { get; }
+        private IServiceProvider Services { get; }
+        public object GetService(Type serviceType) => Services.GetService(serviceType);
 
         public RESTableContext Context => this;
 
@@ -190,7 +191,7 @@ namespace RESTable.Requests
         /// <param name="headers">The headers of the request</param>
         /// <returns></returns>
         public IResult GetOptions(string uri, Headers headers)
-        {   
+        {
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, uri, headers);
             return Options.Create(parameters);

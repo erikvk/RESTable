@@ -30,7 +30,7 @@ namespace RESTable.Starcounter3x
             {
                 case 0:
                     var sql = $"{select}";
-                    QueryConsole.Publish(sql, null);
+                    QueryConsole.Publish(request.Context, sql, null);
                     foreach (var item in Transaction.Run(db => db.Sql<T>(sql)))
                         yield return item;
                     yield break;
@@ -38,7 +38,7 @@ namespace RESTable.Starcounter3x
                     if (string.Equals(ObjectNo, only.Key, StringComparison.OrdinalIgnoreCase))
                     {
                         var objectNo = only.SafeSelect(_ => (ulong) only.Value);
-                        QueryConsole.Publish($"FROMID {objectNo}", null);
+                        QueryConsole.Publish(request.Context, $"FROMID {objectNo}", null);
                         if (objectNo == 0)
                             yield break;
                         yield return Transaction.Run(db => db.Get<T>(objectNo));
@@ -49,7 +49,7 @@ namespace RESTable.Starcounter3x
                     string orderBy = null;
                     var (where, values) = request.Conditions.GetSQL().MakeWhereClause(null, out var useOrderBy);
                     sql = useOrderBy ? $"{select}{where}{orderBy}" : $"{select}{where}";
-                    QueryConsole.Publish(sql, values);
+                    QueryConsole.Publish(request.Context, sql, values);
                     if (request.Conditions.HasPost(out var post))
                         request.Conditions = post;
                     foreach (var item in Transaction.Run(db => db.Sql<T>(sql, values)))

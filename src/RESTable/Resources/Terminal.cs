@@ -15,9 +15,10 @@ namespace RESTable.Resources
     {
         protected IWebSocket WebSocket { get; private set; }
 
+        [RESTableMember(hide: true)] 
         public ITerminalResource TerminalResource { get; private set; }
 
-        protected IServiceProvider Services => WebSocket?.Context.Services;
+        protected IServiceProvider Services => WebSocket?.Context;
 
         internal IWebSocket GetWebSocket() => WebSocket;
 

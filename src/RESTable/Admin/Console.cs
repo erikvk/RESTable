@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,21 +15,18 @@ using RESTable.WebSockets;
 namespace RESTable.Admin
 {
     [RESTable(Description = description)]
-    internal sealed class Console : FeedTerminal, IDisposable
+    internal sealed class Console : FeedTerminal
     {
         private const string description = "The Console is a terminal resource that allows a WebSocket client to receive " +
                                            "pushed updates when the REST API receives requests and WebSocket events.";
 
         internal const string TypeName = "RESTable.Admin.Console";
 
-        private static readonly TerminalSet<Console> Consoles;
-        static Console() => Consoles = new TerminalSet<Console>();
-
         public ConsoleFormat Format { get; set; }
         public bool IncludeClient { get; set; } = true;
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
-        
+
         private IWebSocketInternal ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
 
         /// <inheritdoc />
@@ -42,13 +40,10 @@ namespace RESTable.Admin
         protected override async Task Open()
         {
             await base.Open().ConfigureAwait(false);
-            Consoles.Add(this);
         }
 
-        public void Dispose() => Consoles.Remove(this);
-
         #region Console
-        
+
         private static IJsonProvider JsonProvider { get; set; }
 
         internal static async Task Log(IRequest request, ISerializedResult serializedResult)
@@ -57,7 +52,8 @@ namespace RESTable.Admin
             var result = serializedResult.Result;
             var milliseconds = result.TimeElapsed.GetRESTableElapsedMs();
             if (result is WebSocketUpgradeSuccessful) return;
-            foreach (var group in Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
+            var consoles = request.GetRequiredService<ITerminalCollection<Console>>();
+            foreach (var group in consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
             {
                 switch (group.Key)
                 {
@@ -109,9 +105,10 @@ namespace RESTable.Admin
             }
         }
 
-        internal static async Task Log(ILogable logable)
+        internal static async Task Log(IServiceProvider services, ILogable logable)
         {
-            foreach (var group in Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
+            var consoles = services.GetRequiredService<ITerminalCollection<Console>>();
+            foreach (var group in consoles.Where(c => c.IsOpen).GroupBy(c => c.Format))
             {
                 switch (@group.Key)
                 {

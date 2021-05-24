@@ -5,8 +5,8 @@ namespace RESTable.SQLite
 {
     internal class EntityEnumerable<T> : IAsyncEnumerable<T> where T : SQLiteTable
     {
-        private string Sql { get; }
-        private bool OnlyRowId { get; }
+        internal string Sql { get; }
+        internal bool OnlyRowId { get; }
 
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = new())
         {

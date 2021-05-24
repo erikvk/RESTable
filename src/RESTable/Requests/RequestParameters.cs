@@ -72,7 +72,7 @@ namespace RESTable.Requests
 
         private string UnparsedUri { get; }
         internal IResource iresource;
-        internal IResource IResource => iresource ??= Context.Services.GetRequiredService<ResourceCollection>().FindResource(Uri.ResourceSpecifier);
+        internal IResource IResource => iresource ??= Context.GetRequiredService<ResourceCollection>().FindResource(Uri.ResourceSpecifier);
         internal Exception Error { get; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
         bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true};
@@ -150,7 +150,7 @@ namespace RESTable.Requests
             iresource = resource;
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = new URI(resourceSpecifier: resource.Name, viewName: viewName);
-            var protocolController = context.Services.GetRequiredService<ProtocolProviderManager>();
+            var protocolController = context.GetRequiredService<ProtocolProviderManager>();
             ProtocolIdentifier = protocolIdentifier?.ToLower() ?? protocolController.DefaultProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             CachedProtocolProvider = protocolController.ResolveCachedProtocolProvider(protocolIdentifier);
         }

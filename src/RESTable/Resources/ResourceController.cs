@@ -68,15 +68,15 @@ namespace RESTable.Resources
         /// <summary>
         /// Selects the instances that have been inserted by this controller
         /// </summary>
-        protected static IEnumerable<TController> Select() => ResourceProviderInternal
-            .SelectProceduralResources()
+        protected static IEnumerable<TController> Select(RESTableContext context) => ResourceProviderInternal
+            .SelectProceduralResources(context)
             .OrderBy(r => r.Name)
             .Select(r => Make<TController>(ResourceProviderInternal.ResourceCollection.SafeGetResource(r.Name)));
 
         /// <summary>
         /// Inserts the current instance as a new procedural resource
         /// </summary>
-        protected void Insert(IRequest request)
+        protected void Insert(RESTableContext context)
         {
             var name = Name;
             var methods = EnabledMethods;
@@ -87,53 +87,53 @@ namespace RESTable.Resources
             var methodsArray = methods.ResolveMethodRestrictions().ToArray();
 
             var inserted =
-                ResourceProviderInternal.InsertProceduralResource(name, description, methodsArray, (object) Data);
+                ResourceProviderInternal.InsertProceduralResource(context, name, description, methodsArray, (object) Data);
             if (inserted is not null)
-                ResourceProviderInternal.InsertProcedural(inserted);
+                ResourceProviderInternal.InsertProcedural(context, inserted);
         }
 
         /// <summary>
         /// Updates the state of the current instance to the corresponding procedural resource
         /// </summary>
-        protected void Update()
+        protected void Update(RESTableContext context)
         {
-            var procedural = ResourceProviderInternal.SelectProceduralResources()
+            var procedural = ResourceProviderInternal.SelectProceduralResources(context)
                                  ?.FirstOrDefault(item => item.Name == Name) ??
                              throw new InvalidOperationException(
                                  $"Cannot update resource '{Name}'. Resource has not been inserted.");
             var resource = (IResourceInternal) ResourceProviderInternal.ResourceCollection.SafeGetResource(procedural.Type) ??
                            throw new InvalidOperationException(
                                $"Cannot update resource '{Name}'. Resource has not been inserted.");
-            ResourceProviderInternal.SetProceduralResourceDescription(procedural, Description);
+            ResourceProviderInternal.SetProceduralResourceDescription(context, procedural, Description);
             resource.Description = Description;
             var methods = EnabledMethods.ResolveMethodRestrictions().ToArray();
-            ResourceProviderInternal.SetProceduralResourceMethods(procedural, methods);
+            ResourceProviderInternal.SetProceduralResourceMethods(context, procedural, methods);
             resource.AvailableMethods = methods;
         }
 
         /// <summary>
         /// Deletes the corresponding procedural resource
         /// </summary>
-        protected void Delete()
+        protected void Delete(RESTableContext context)
         {
-            var procedural = ResourceProviderInternal.SelectProceduralResources()
+            var procedural = ResourceProviderInternal.SelectProceduralResources(context)
                 ?.FirstOrDefault(item => item.Name == Name);
             if (procedural is null) return;
             var type = procedural.Type;
-            if (ResourceProviderInternal.DeleteProceduralResource(procedural))
+            if (ResourceProviderInternal.DeleteProceduralResource(context, procedural))
                 ResourceProviderInternal.RemoveProceduralResource(type);
         }
 
         #region RESTable resource methods
 
         /// <inheritdoc />
-        public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select();
+        public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select(request.Context);
 
         public virtual async IAsyncEnumerable<TController> InsertAsync(IRequest<TController> request)
         {
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
-                resource.Insert(request);
+                resource.Insert(request.Context);
                 yield return resource;
             }
         }
@@ -142,7 +142,7 @@ namespace RESTable.Resources
         {
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
-                resource.Update();
+                resource.Update(request.Context);
                 yield return resource;
             }
         }
@@ -152,7 +152,7 @@ namespace RESTable.Resources
             var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
-                resource.Delete();
+                resource.Delete(request.Context);
                 i += 1;
             }
             return i;

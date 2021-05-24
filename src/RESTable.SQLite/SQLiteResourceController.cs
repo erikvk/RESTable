@@ -50,7 +50,7 @@ namespace RESTable.SQLite
         {
             foreach (var resource in await request.GetInputEntitiesAsync().ToListAsync().ConfigureAwait(false))
             {
-                resource.Update();
+                resource.Update(request.Context);
                 await resource.Definition.Update(request).ConfigureAwait(false);
                 yield return resource;
             }

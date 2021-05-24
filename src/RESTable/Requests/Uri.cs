@@ -51,7 +51,7 @@ namespace RESTable.Requests
                 protocolString = protocolString.Substring(1);
             var tail = groups["tail"].Value;
             uri.ProtocolIdentifier = protocolString.ToLowerInvariant();
-            var protocolProviders = context.Services.GetRequiredService<ProtocolProviderManager>().CachedProtocolProviders;
+            var protocolProviders = context.GetRequiredService<ProtocolProviderManager>().CachedProtocolProviders;
             if (!protocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {
                 uri.Error = new UnknownProtocol(protocolString);

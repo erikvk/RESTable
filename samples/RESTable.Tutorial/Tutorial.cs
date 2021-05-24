@@ -12,6 +12,7 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.SQLite;
+using RESTable.WebSockets;
 using static System.StringComparison;
 using static RESTable.Method;
 using static RESTable.Tutorial.Gender;
@@ -165,7 +166,7 @@ namespace RESTable.Tutorial
         /// <summary>
         /// This collection holds all ChatRoom instances
         /// </summary>
-        private static readonly TerminalSet<ChatRoom> Terminals = new();
+        private IEnumerable<ChatRoom> Terminals => Services.GetRequiredService<ITerminalCollection<ChatRoom>>();
 
         private string _name;
 
@@ -193,7 +194,7 @@ namespace RESTable.Tutorial
         /// <summary>
         /// The number of connected participants.
         /// </summary>
-        public int NumberOfMembers => Terminals.Count;
+        public int NumberOfMembers => Terminals.Count();
 
         /// <summary>
         /// Used internally to track if the participant is initiated. Invisible in the API.
@@ -204,7 +205,6 @@ namespace RESTable.Tutorial
         {
             Name = GetUniqueName(Name);
             await SendToAll($"# {Name} has joined the chat room.");
-            Terminals.Add(this);
             await WebSocket.SendText(
                 $"# Welcome to the chat room! Your name is \"{Name}\" (type QUIT to return to the shell)");
             Initiated = true;
@@ -214,7 +214,7 @@ namespace RESTable.Tutorial
         /// Creates a unique name for a participant, or deal with edge cases like a participant naming
         /// themselves nothing or "Chatbot".
         /// </summary>
-        private static string GetUniqueName(string Name)
+        private string GetUniqueName(string Name)
         {
             if (string.IsNullOrWhiteSpace(Name) || string.Equals(Name, "chatbot", OrdinalIgnoreCase))
                 Name = "Chatter";
@@ -229,7 +229,6 @@ namespace RESTable.Tutorial
 
         public async ValueTask DisposeAsync()
         {
-            Terminals.Remove(this);
             await SendToAll($"# {Name} left the chat room.");
         }
 
@@ -241,7 +240,8 @@ namespace RESTable.Tutorial
                 await WebSocket.DirectToShell();
         }
 
-        private static async Task SendToAll(string message) => await Terminals
+        private async Task SendToAll(string message) => await Terminals
+            .Combine()
             .CombinedWebSocket
             .SendText(message);
 

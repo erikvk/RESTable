@@ -80,36 +80,36 @@ namespace RESTable.Resources
 
         #endregion
 
-        IEnumerable<IProceduralEntityResource> IEntityResourceProviderInternal.SelectProceduralResources() => SelectProceduralResources();
-        bool IEntityResourceProviderInternal.DeleteProceduralResource(IProceduralEntityResource resource) => DeleteProceduralResource(resource);
+        IEnumerable<IProceduralEntityResource> IEntityResourceProviderInternal.SelectProceduralResources(RESTableContext context) => SelectProceduralResources(context);
+        bool IEntityResourceProviderInternal.DeleteProceduralResource(RESTableContext context, IProceduralEntityResource resource) => DeleteProceduralResource(context, resource);
         IDatabaseIndexer IEntityResourceProviderInternal.DatabaseIndexer => DatabaseIndexer;
         void IEntityResourceProviderInternal.ReceiveClaimed(ICollection<IEntityResource> claimedResources) => ReceiveClaimed(claimedResources);
         void IEntityResourceProviderInternal.ModifyResourceAttribute(Type type, RESTableAttribute attribute) => ModifyResourceAttribute(type, attribute);
         bool IEntityResourceProviderInternal.RemoveProceduralResource(Type resourceType) => RemoveProceduralResource(resourceType);
-        void IEntityResourceProviderInternal.InsertProcedural(IProceduralEntityResource resource) => InsertProcedural(resource, ResourceValidator);
+        void IEntityResourceProviderInternal.InsertProcedural(RESTableContext context, IProceduralEntityResource resource) => InsertProcedural(resource, ResourceValidator);
         bool IEntityResourceProviderInternal.Include(Type type) => Include(type);
 
         void IEntityResourceProviderInternal.MakeClaimProcedural()
         {
-            foreach (var resource in SelectProceduralResources())
+            foreach (var resource in SelectProceduralResources(context: null))
                 InsertProcedural(resource, ResourceValidator);
         }
 
         void IEntityResourceProviderInternal.Validate() => Validate();
 
-        IProceduralEntityResource IEntityResourceProviderInternal.InsertProceduralResource(string n, string d, Method[] m, dynamic data)
+        IProceduralEntityResource IEntityResourceProviderInternal.InsertProceduralResource(RESTableContext context, string n, string d, Method[] m, dynamic data)
         {
-            return InsertProceduralResource(n, d, m, data);
+            return InsertProceduralResource(context, n, d, m, data);
         }
 
-        void IEntityResourceProviderInternal.SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods)
+        void IEntityResourceProviderInternal.SetProceduralResourceMethods(RESTableContext context, IProceduralEntityResource resource, Method[] methods)
         {
-            SetProceduralResourceMethods(resource, methods);
+            SetProceduralResourceMethods(context, resource, methods);
         }
 
-        void IEntityResourceProviderInternal.SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription)
+        void IEntityResourceProviderInternal.SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string newDescription)
         {
-            SetProceduralResourceDescription(resource, newDescription);
+            SetProceduralResourceDescription(context, resource, newDescription);
         }
 
         void IEntityResourceProviderInternal.MakeClaimRegular(IEnumerable<Type> types)
@@ -203,7 +203,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Returns all procedural entity resources from the provider. Used by RESTable internally. Don't call this method.
         /// </summary>
-        protected virtual IEnumerable<IProceduralEntityResource> SelectProceduralResources()
+        protected virtual IEnumerable<IProceduralEntityResource> SelectProceduralResources(RESTableContext context)
         {
             throw new NotImplementedException();
         }
@@ -211,7 +211,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Creates a new procedural entity resource object with the given name, description and methods. Used by RESTable internally. Don't call this method.
         /// </summary>
-        protected virtual IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data)
+        protected virtual IProceduralEntityResource InsertProceduralResource(RESTableContext context, string name, string description, Method[] methods, dynamic data)
         {
             throw new NotImplementedException();
         }
@@ -219,7 +219,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Runs a given update operation. Used by RESTable internally. Don't call this method.
         /// </summary>
-        protected virtual void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods)
+        protected virtual void SetProceduralResourceMethods(RESTableContext context, IProceduralEntityResource resource, Method[] methods)
         {
             throw new NotImplementedException();
         }
@@ -227,7 +227,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Runs a given update operation. Used by RESTable internally. Don't call this method.
         /// </summary>
-        protected virtual void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription)
+        protected virtual void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string newDescription)
         {
             throw new NotImplementedException();
         }
@@ -235,7 +235,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Deletes a dynamic entity resource entity. Used by RESTable internally. Don't call this method.
         /// </summary>
-        protected virtual bool DeleteProceduralResource(IProceduralEntityResource resource)
+        protected virtual bool DeleteProceduralResource(RESTableContext context, IProceduralEntityResource resource)
         {
             throw new NotImplementedException();
         }

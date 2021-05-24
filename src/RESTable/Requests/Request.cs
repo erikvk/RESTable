@@ -493,7 +493,7 @@ namespace RESTable.Requests
             );
         }
 
-        public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
+        public object GetService(Type serviceType) => Context.GetService(serviceType);
 
         public void Dispose() => Body.Dispose();
 

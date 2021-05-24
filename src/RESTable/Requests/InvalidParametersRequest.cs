@@ -46,7 +46,7 @@ namespace RESTable.Requests
         public Headers Headers => Parameters.Headers;
         public IResource Resource { get; }
         public TimeSpan TimeElapsed => default;
-        public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
+        public object GetService(Type serviceType) => Context.GetService(serviceType);
 
         #endregion
 

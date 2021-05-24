@@ -43,7 +43,7 @@ namespace RESTable.Tests.OperationsTests
 
         public IEnumerable<InvalidMember> Validate(ResourceSync entity, RESTableContext context)
         {
-            context.Services.GetRequiredService<OperationsTestsFlags>().ValidatorWasCalled = true;
+            context.GetRequiredService<OperationsTestsFlags>().ValidatorWasCalled = true;
             if (entity.Id == 99)
                 yield return this.Invalidate(p => p.Id, "Cannot be 99");
         }
@@ -58,7 +58,6 @@ namespace RESTable.Tests.OperationsTests
         {
             request.GetRequiredService<OperationsTestsFlags>().AuthenticatorWasCalled = true;
             return request.Headers["FailMe"] != "yes";
-            
         }
     }
 }

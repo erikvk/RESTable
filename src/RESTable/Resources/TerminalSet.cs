@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.WebSockets;
 
 namespace RESTable.Resources
@@ -16,10 +17,10 @@ namespace RESTable.Resources
         private readonly IDictionary<T, byte> terminals;
 
         /// <summary>
-        /// Creats a new <see cref="TerminalSet{T}"/>
+        /// Creates a new <see cref="TerminalSet{T}"/>
         /// </summary>
         public TerminalSet() => terminals = new ConcurrentDictionary<T, byte>();
-
+        
         /// <inheritdoc />
         public void Add(T item)
         {

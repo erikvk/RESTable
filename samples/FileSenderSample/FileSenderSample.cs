@@ -41,11 +41,8 @@ namespace FileSenderSample
     /// This resource lets clients connect and receive files. Available at wss://localhost:5001/restable/filesenderconnection
     /// </summary>
     [RESTable]
-    public class FileSenderConnection : Terminal, IDisposable
+    public class FileSenderConnection : Terminal
     {
-        // We store all active connections here, so we can use them from a separate resource
-        internal static TerminalSet<FileSenderConnection> ActiveConnections { get; } = new();
-
         // Public properties are visible for the client:
         public string Status { get; private set; } = "Stopped";
 
@@ -82,15 +79,16 @@ namespace FileSenderSample
         protected override async Task Open()
         {
             OpenedAt = DateTime.Now;
-            ActiveConnections.Add(this);
             await WebSocket.SendText($"Hi, I'm a connection named {Id}!");
         }
 
         public async Task FileSent(string fileName, long fileLength)
         {
             SentFilesCount += 1;
-            foreach (var manager in FileSenderManager.Managers)
+            foreach (var manager in Services.GetRequiredService<ITerminalCollection<FileSenderManager>>())
+            {
                 await manager.Notify(fileName, fileLength, this);
+            }
         }
 
         public override async Task HandleTextInput(string input)
@@ -135,28 +133,17 @@ namespace FileSenderSample
         }
 
         protected override bool SupportsTextInput => true;
-
-        public void Dispose() => ActiveConnections.Remove(this);
     }
 
     /// <summary>
     /// This resource gives an administrator an overview over opened file sender connections. Available at wss://localhost:5001/restable/filesendermanager
     /// </summary>
     [RESTable]
-    public class FileSenderManager : Terminal, IAsyncDisposable
+    public class FileSenderManager : Terminal
     {
-        internal static TerminalSet<FileSenderManager> Managers { get; } = new();
-
         protected override async Task Open()
         {
-            Managers.Add(this);
             await WebSocket.SendText("I'm a manager!");
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            Managers.Remove(this);
-            return default;
         }
 
         public async Task Notify(string fileName, long fileLength, FileSenderConnection connection)
@@ -165,23 +152,23 @@ namespace FileSenderSample
             await WebSocket.SendJson(connection);
         }
 
-        public IEnumerable<FileSenderConnection> ActiveConnections => FileSenderConnection.ActiveConnections;
-
         public override async Task HandleTextInput(string input)
         {
             var commandArg = input.Split(" ");
             var command = commandArg[0].ToUpper();
             var id = commandArg.ElementAtOrDefault(1);
 
+            var activeConnections = Services.GetRequiredService<ITerminalCollection<FileSenderConnection>>();
+
             switch (command)
             {
                 case "INFO":
-                    await WebSocket.SendJson(ActiveConnections);
+                    await WebSocket.SendJson(activeConnections);
                     break;
 
                 case "DEACTIVATE":
                 {
-                    var connection = ActiveConnections.FirstOrDefault(c => c.Id == id);
+                    var connection = activeConnections.FirstOrDefault(c => c.Id == id);
                     if (connection is not null)
                     {
                         connection.Deactivated = true;
@@ -193,7 +180,7 @@ namespace FileSenderSample
                 }
                 case "ACTIVATE":
                 {
-                    var connection = ActiveConnections.FirstOrDefault(c => c.Id == id);
+                    var connection = activeConnections.FirstOrDefault(c => c.Id == id);
                     if (connection is not null)
                     {
                         connection.Deactivated = false;
@@ -237,10 +224,10 @@ namespace FileSenderSample
                 await WebSocket.SendText($"Nope, {path} is not a valid path");
                 return;
             }
-            var combinedTerminals = FileSenderConnection
-                .ActiveConnections
+            var combinedTerminals = Services
+                .GetRequiredService<ITerminalCollection<FileSenderConnection>>()
                 .Where(c => !c.Deactivated && c.Status == "Started")
-                .CombineTerminals();
+                .Combine();
 
             if (combinedTerminals.Count == 0)
             {

@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Templates;
+using RESTable.WebSockets;
 using static System.Environment;
 
 namespace RESTable.Admin
@@ -12,26 +15,15 @@ namespace RESTable.Admin
     /// Sends feed messages representing generated queries in e.g. SQL
     /// </summary>
     [RESTable]
-    public class QueryConsole : FeedTerminal, IDisposable
+    public class QueryConsole : FeedTerminal
     {
-        private static TerminalSet<QueryConsole> Consoles { get; }
-        static QueryConsole() => Consoles = new TerminalSet<QueryConsole>();
-
-        /// <inheritdoc />
-        protected override async Task Open()
+        public static async Task Publish(RESTableContext context, string query, object[] args)
         {
-            await base.Open().ConfigureAwait(false);
-            Consoles.Add(this);
-        }
-
-        public void Dispose() => Consoles.Remove(this);
-
-        public static async Task Publish(string query, object[] args)
-        {
-            if (Consoles.Count == 0) return;
+            var consoles = context.GetRequiredService<ICombinedTerminal<QueryConsole>>();
+            if (consoles.Count == 0) return;
             var argsString = args is null ? null : $"{NewLine}Args: {string.Join(", ", args)}";
             var message = $"{DateTime.UtcNow:O}: {query}{argsString}{NewLine}";
-            await Consoles.CombinedWebSocket.SendText(message).ConfigureAwait(false);
+            await consoles.CombinedWebSocket.SendText(message).ConfigureAwait(false);
         }
     }
 }

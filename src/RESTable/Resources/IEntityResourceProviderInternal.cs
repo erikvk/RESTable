@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
+using RESTable.Requests;
 
 namespace RESTable.Resources
 {
@@ -40,7 +41,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Inserts the given resource as a new resource claimed by this entity resource provider
         /// </summary>
-        void InsertProcedural(IProceduralEntityResource resource);
+        void InsertProcedural(RESTableContext context, IProceduralEntityResource resource);
 
         /// <summary>
         /// Validates the entity resource provider
@@ -50,27 +51,27 @@ namespace RESTable.Resources
         /// <summary>
         /// Returns all procedural entity resources from the provider. Used by RESTable internally. Don't call this method.
         /// </summary>
-        IEnumerable<IProceduralEntityResource> SelectProceduralResources();
+        IEnumerable<IProceduralEntityResource> SelectProceduralResources(RESTableContext context);
 
         /// <summary>
         /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTable internally. Don't call this method.
         /// </summary>
-        IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data);
+        IProceduralEntityResource InsertProceduralResource(RESTableContext context, string name, string description, Method[] methods, dynamic data);
 
         /// <summary>
         /// Runs a given update operation. Used by RESTable internally. Don't call this method.
         /// </summary>
-        void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods);
+        void SetProceduralResourceMethods(RESTableContext context, IProceduralEntityResource resource, Method[] methods);
 
         /// <summary>
         /// Runs a given update operation. Used by RESTable internally. Don't call this method.
         /// </summary>
-        void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription);
+        void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string newDescription);
 
         /// <summary>
         /// Deletes a dynamic entity resource entity. Used by RESTable internally. Don't call this method.
         /// </summary>
-        bool DeleteProceduralResource(IProceduralEntityResource resource);
+        bool DeleteProceduralResource(RESTableContext context, IProceduralEntityResource resource);
 
         /// <summary>
         /// The ReceiveClaimed method is called by RESTable once one or more resources provided

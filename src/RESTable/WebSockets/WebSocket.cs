@@ -107,11 +107,11 @@ namespace RESTable.WebSockets
             Context = context;
             CancellationTokenSource = new CancellationTokenSource();
             OngoingTasks = new HashSet<Task>();
-            JsonProvider = context.Services.GetRequiredService<IJsonProvider>();
-            WebSocketManager = context.Services.GetRequiredService<WebSocketManager>();
+            JsonProvider = context.GetRequiredService<IJsonProvider>();
+            WebSocketManager = context.GetRequiredService<WebSocketManager>();
         }
 
-        public object GetService(Type serviceType) => Context.Services.GetService(serviceType);
+        public object GetService(Type serviceType) => Context.GetService(serviceType);
 
         internal async Task ConnectTo(Terminal terminal)
         {
@@ -144,8 +144,9 @@ namespace RESTable.WebSockets
                     Status = WebSocketStatus.Open;
                     OpenedAt = DateTime.Now;
                     if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
-                        await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketOpen, this))
-                            .ConfigureAwait(false);
+                    {
+                        await Admin.Console.Log(Context, new WebSocketEvent(MessageType.WebSocketOpen, this)).ConfigureAwait(false);
+                    }
                     break;
                 default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");
             }
@@ -200,7 +201,9 @@ namespace RESTable.WebSockets
             Status = WebSocketStatus.Closed;
             ClosedAt = DateTime.Now;
             if (terminalName != Admin.Console.TypeName)
-                await Admin.Console.Log(new WebSocketEvent(MessageType.WebSocketClose, this)).ConfigureAwait(false);
+            {
+                await Admin.Console.Log(Context, new WebSocketEvent(MessageType.WebSocketClose, this)).ConfigureAwait(false);
+            }
             _disposed = true;
         }
 
@@ -302,7 +305,7 @@ namespace RESTable.WebSockets
                     content: textData,
                     length: Encoding.UTF8.GetByteCount(textData)
                 );
-                await Admin.Console.Log(wsEvent).ConfigureAwait(false);
+                await Admin.Console.Log(Context, wsEvent).ConfigureAwait(false);
             }
             await TerminalConnection.Terminal.HandleTextInput(textData).ConfigureAwait(false);
             BytesReceived += Encoding.UTF8.GetByteCount(textData);
@@ -326,7 +329,7 @@ namespace RESTable.WebSockets
                     content: Encoding.UTF8.GetString(binaryData),
                     length: binaryData.LongLength
                 );
-                await Admin.Console.Log(wsEvent).ConfigureAwait(false);
+                await Admin.Console.Log(Context, wsEvent).ConfigureAwait(false);
             }
             await TerminalConnection.Terminal.HandleBinaryInput(binaryData).ConfigureAwait(false);
             TotalSentBytesCount += binaryData.Length;
@@ -357,7 +360,7 @@ namespace RESTable.WebSockets
                             content: textData,
                             length: Encoding.UTF8.GetByteCount(textData)
                         );
-                        await Admin.Console.Log(logEvent).ConfigureAwait(false);
+                        await Admin.Console.Log(Context, logEvent).ConfigureAwait(false);
                     }
                     break;
                 }
@@ -383,7 +386,7 @@ namespace RESTable.WebSockets
                             content: Encoding.UTF8.GetString(binaryData.Array ?? Array.Empty<byte>()),
                             length: binaryData.Count
                         );
-                        await Admin.Console.Log(logEvent).ConfigureAwait(false);
+                        await Admin.Console.Log(Context, logEvent).ConfigureAwait(false);
                     }
                     break;
                 }
@@ -409,7 +412,7 @@ namespace RESTable.WebSockets
                             content: null,
                             length: sentBytes
                         );
-                        await Admin.Console.Log(logEvent).ConfigureAwait(false);
+                        await Admin.Console.Log(Context, logEvent).ConfigureAwait(false);
                     }
                     break;
                 }

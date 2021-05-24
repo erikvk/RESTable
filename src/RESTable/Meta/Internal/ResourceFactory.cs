@@ -5,6 +5,7 @@ using RESTable.Auth;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
+using RESTable.Requests;
 using static System.Reflection.BindingFlags;
 
 namespace RESTable.Meta.Internal

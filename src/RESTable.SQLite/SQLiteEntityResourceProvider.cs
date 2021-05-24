@@ -133,9 +133,9 @@ namespace RESTable.SQLite
         protected override ValueTask<long> DefaultCountAsync<T>(IRequest<T> request) => SQLiteOperations<T>.CountAsync(request);
 
         /// <inheritdoc />
-        protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()
+        protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources(RESTableContext context)
         {
-            foreach (var resource in SQLite<ProceduralResource>.Select().ToEnumerable())
+            foreach (var resource in SQLite<ProceduralResource>.Select(context).ToEnumerable())
             {
                 var type = resource.Type;
                 if (type is not null)
@@ -148,7 +148,7 @@ namespace RESTable.SQLite
         }
 
         /// <inheritdoc />
-        protected override IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data)
+        protected override IProceduralEntityResource InsertProceduralResource(RESTableContext context, string name, string description, Method[] methods, dynamic data)
         {
             var resource = new ProceduralResource
             {
@@ -163,32 +163,32 @@ namespace RESTable.SQLite
                     $"Could not locate basetype '{resource.BaseTypeName}' when building procedural resource '{resource.Name}'. " +
                     "Was the assembly modified between builds?");
             TableMapping.CreateMapping(resourceType).Wait();
-            SQLite<ProceduralResource>.Insert(resource).CountAsync().AsTask().Wait();
+            SQLite<ProceduralResource>.Insert(context, resource.ToAsyncSingleton()).CountAsync().AsTask().Wait();
             return resource;
         }
 
         /// <inheritdoc />
-        protected override void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods)
+        protected override void SetProceduralResourceMethods(RESTableContext context, IProceduralEntityResource resource, Method[] methods)
         {
             var _resource = (ProceduralResource) resource;
             _resource.Methods = methods;
-            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).CountAsync().AsTask().Wait();
+            SQLite<ProceduralResource>.Update(context, _resource.ToAsyncSingleton()).CountAsync().AsTask().Wait();
         }
 
         /// <inheritdoc />
-        protected override void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription)
+        protected override void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string newDescription)
         {
             var _resource = (ProceduralResource) resource;
             _resource.Description = newDescription;
-            SQLite<ProceduralResource>.Update(_resource.ToAsyncSingleton()).CountAsync().AsTask().Wait();
+            SQLite<ProceduralResource>.Update(context, _resource.ToAsyncSingleton()).CountAsync().AsTask().Wait();
         }
 
         /// <inheritdoc />
-        protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
+        protected override bool DeleteProceduralResource(RESTableContext context, IProceduralEntityResource resource)
         {
             var _resource = (ProceduralResource) resource;
             TableMapping.Drop(_resource.Type).Wait();
-            SQLite<ProceduralResource>.Delete(_resource.ToAsyncSingleton()).Wait();
+            SQLite<ProceduralResource>.Delete(context, _resource.ToAsyncSingleton()).Wait();
             return true;
         }
     }

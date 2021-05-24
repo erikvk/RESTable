@@ -50,10 +50,10 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton<IAllowedCorsOriginsFilter, AllCorsOriginsAllowed>();
             serviceCollection.TryAddSingleton<RootAccess>();
             serviceCollection.TryAddSingleton<RootClient>();
-
             serviceCollection.AddSingleton<IEntityResourceProvider, InMemoryEntityResourceProvider>();
             serviceCollection.AddSingleton<IProtocolProvider, DefaultProtocolProvider>();
-
+            serviceCollection.AddTransient(typeof(ICombinedTerminal<>), typeof(CombinedTerminal<>));
+            serviceCollection.AddTransient(typeof(ITerminalCollection<>), typeof(TerminalCollection<>));
             return serviceCollection;
         }
     }
