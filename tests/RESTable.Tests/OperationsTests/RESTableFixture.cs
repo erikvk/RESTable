@@ -4,26 +4,40 @@ using RESTable.Requests;
 
 namespace RESTable.Tests.OperationsTests
 {
-    public class RESTableFixture
+    public class RESTableFixture : ServiceCollection, IServiceProvider
     {
-        public RESTableConfigurator Configurator { get; }
-        public IServiceProvider ServiceProvider { get; }
-        public OperationsTestsFlags OperationsTestsFlags { get; }
-        public RESTableContext Context { get; }
-        
+        private IServiceProvider _serviceProvider;
+        public OperationsTestsFlags OperationsTestsFlags => this.GetRequiredService<OperationsTestsFlags>();
+
+        public RESTableContext Context
+        {
+            get
+            {
+                var client = ServiceProvider.GetRequiredService<RootClient>();
+                return new RESTableContext(client, ServiceProvider);
+            }
+        }
+
+        private IServiceProvider ServiceProvider
+        {
+            get => _serviceProvider ?? throw new Exception("Not configured!");
+            set => _serviceProvider = value;
+        }
+
+        public void Configure()
+        {
+            ServiceProvider = this.BuildServiceProvider();
+            var configurator = ServiceProvider.GetRequiredService<RESTableConfigurator>();
+            configurator.ConfigureRESTable();
+        }
+
+        public object GetService(Type serviceType) => ServiceProvider.GetService(serviceType);
+
         public RESTableFixture()
         {
-            OperationsTestsFlags = new OperationsTestsFlags();
-            ServiceProvider = new ServiceCollection()
-                .AddRESTable()
-                .AddJsonProvider()
-                .AddSingleton(OperationsTestsFlags)
-                .BuildServiceProvider();
-            Configurator = ServiceProvider
-                .GetRequiredService<RESTableConfigurator>();
-            var client = ServiceProvider.GetRequiredService<RootClient>();
-            Context = new RESTableContext(client, ServiceProvider);
-            Configurator.ConfigureRESTable();
+            this.AddRESTable();
+            this.AddJsonProvider();
+            this.AddSingleton<OperationsTestsFlags>();
         }
     }
 }

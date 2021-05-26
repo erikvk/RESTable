@@ -19,7 +19,8 @@ namespace RESTable.Tests.OperationsTests
 
         public OperationsTestBase(RESTableFixture fixture)
         {
-            Resource = fixture.ServiceProvider
+            fixture.Configure();
+            Resource = fixture
                 .GetRequiredService<ResourceCollection>()
                 .GetResource<TResourceType>() as IEntityResource<TResourceType>;
             OperationsTestsFlags = fixture.OperationsTestsFlags;

@@ -3,10 +3,10 @@ using RESTable.Meta;
 
 namespace RESTable.Auth
 {
-    internal class AccessRight
+    public class AccessRight
     {
-        internal ICollection<IResource> Resources { get; }
-        internal Method[] AllowedMethods { get; }
+        public ICollection<IResource> Resources { get; }
+        public Method[] AllowedMethods { get; }
 
         public AccessRight(ICollection<IResource> resources, Method[] allowedMethods)
         {

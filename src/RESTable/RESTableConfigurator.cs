@@ -16,13 +16,13 @@ namespace RESTable
     /// </summary>
     public class RESTableConfigurator
     {
+        private TypeCache TypeCache { get; }
+        private ResourceCollection ResourceCollection { get; }
         private ResourceFactory ResourceFactory { get; }
         private ProtocolProviderManager ProtocolProviderManager { get; }
         private RESTableConfiguration Configuration { get; }
         private RootAccess RootAccess { get; }
-        private TypeCache TypeCache { get; }
-        private ResourceCollection ResourceCollection { get; }
-
+        private IEnumerable<IStartupActivator> StartupActivators { get; }
 
         public RESTableConfigurator
         (
@@ -42,7 +42,7 @@ namespace RESTable
             ProtocolProviderManager = protocolProviderManager;
             Configuration = configuration;
             RootAccess = rootAccess;
-            _ = startupActivators.ToList();
+            StartupActivators = startupActivators;
             ApplicationServicesAccessor.JsonProvider = jsonProvider;
             ApplicationServicesAccessor.ResourceCollection = resourceCollection;
             ApplicationServicesAccessor.TypeCache = typeCache;
@@ -58,6 +58,8 @@ namespace RESTable
             ResourceFactory.SetConfiguration(this);
             ResourceFactory.MakeResources();
             IsConfigured = true;
+            foreach (var startupActivator in StartupActivators)
+                startupActivator.Activate();
             RootAccess.Load();
             ResourceFactory.BindControllers();
             ResourceFactory.FinalCheck();

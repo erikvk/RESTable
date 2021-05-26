@@ -14,6 +14,7 @@ namespace RESTable.Tests.RequestTests
 
         public RequestTestBase(RESTableFixture fixture)
         {
+            fixture.Configure();
             Fixture = fixture;
             Context = fixture.Context;
         }

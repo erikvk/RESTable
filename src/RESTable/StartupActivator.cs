@@ -1,10 +1,16 @@
-﻿namespace RESTable
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace RESTable
 {
     /// <summary>
     /// Used to register service types that should be loaded immediately on startup, to
     /// not delay error reporting to when they are activated.
     /// </summary>
-    public interface IStartupActivator { }
+    public interface IStartupActivator
+    {
+        void Activate();
+    }
 
     /// <summary>
     /// Used to register service types that should be loaded immediately on startup, to
@@ -12,11 +18,16 @@
     /// </summary>
     public class StartupActivator<TService> : IStartupActivator where TService : class
     {
-        private TService Dependency { get; }
+        private IServiceProvider ServiceProvider { get; }
 
-        public StartupActivator(TService dependency)
+        public StartupActivator(IServiceProvider serviceProvider)
         {
-            Dependency = dependency;
+            ServiceProvider = serviceProvider;
+        }
+
+        public void Activate()
+        {
+            ServiceProvider.GetRequiredService<TService>();
         }
     }
 }

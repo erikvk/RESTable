@@ -784,12 +784,6 @@ namespace RESTable
             return timeSpan.GetRESTableElapsedMs().ToString(CultureInfo.InvariantCulture);
         }
 
-        internal static string SHA256(this string input)
-        {
-            using var hasher = System.Security.Cryptography.SHA256.Create();
-            return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
-        }
-
         internal static byte[] ToBytes(this string str)
         {
             return str is not null ? Encoding.UTF8.GetBytes(str) : null;

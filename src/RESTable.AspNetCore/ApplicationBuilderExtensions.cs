@@ -50,7 +50,7 @@ namespace RESTable.AspNetCore
         {
             var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(RootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
-            var client = GetClient(aspNetCoreContext);
+            var client = GetClient(aspNetCoreContext, null);
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
             var options = context.GetOptions(uri, headers);
             WriteResponse(aspNetCoreContext, options);
@@ -70,13 +70,14 @@ namespace RESTable.AspNetCore
         {
             var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(RootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
-            var client = GetClient(aspNetCoreContext);
-            var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
-            if (!authenticator.TryAuthenticate(context, ref uri, headers, out var notAuthorized))
+            if (!authenticator.TryAuthenticate(ref uri, headers, out var accessRights, out var notAuthorized))
             {
                 WriteResponse(aspNetCoreContext, notAuthorized);
                 return;
             }
+            var client = GetClient(aspNetCoreContext, accessRights);
+            var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
+            
             var body = aspNetCoreContext.Request.Body;
             var request = context.CreateRequest(method, uri, body, headers);
             await using var result = await request.GetResult().ConfigureAwait(false);
@@ -120,7 +121,7 @@ namespace RESTable.AspNetCore
                 context.Response.ContentType = result.Headers.ContentType.ToString();
         }
 
-        private static Client GetClient(HttpContext context)
+        private static Client GetClient(HttpContext context, AccessRights accessRights)
         {
             var clientIp = context.Connection.RemoteIpAddress;
             var proxyIp = default(IPAddress);
@@ -138,7 +139,8 @@ namespace RESTable.AspNetCore
                 userAgent: userAgent,
                 host: host,
                 https: context.Request.IsHttps,
-                cookies: new Cookies(context.Request.Cookies)
+                cookies: new Cookies(context.Request.Cookies),
+                accessRights: accessRights
             );
         }
     }

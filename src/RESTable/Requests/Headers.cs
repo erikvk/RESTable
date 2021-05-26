@@ -109,13 +109,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The Authorization header
         /// </summary>
-        public string Authorization { internal get; set; }
-
-        string IHeaders.Authorization
-        {
-            get => Authorization;
-            set => Authorization = value;
-        }
+        public string Authorization { get; set; }
 
         /// <inheritdoc />
         public string Origin { get; set; }

@@ -24,7 +24,7 @@ namespace RESTable.WebSockets
         internal async Task RevokeAllWithKey(string key)
         {
             var tasks = ConnectedWebSockets.Values
-                .Where(webSocket => webSocket.Client.AccessRights.ApiKey == key)
+                .Where(webSocket => webSocket.Client.AccessRights.Token == key)
                 .Select(webSocket => webSocket.DisposeAsync().AsTask());
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }

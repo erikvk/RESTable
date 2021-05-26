@@ -16,14 +16,20 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection)
         {
             serviceCollection.AddSingleton<IRequestAuthenticator, ApiKeyAuthenticator>();
-            serviceCollection.AddTransient<IStartupActivator, StartupActivator<IRequestAuthenticator>>();
+            serviceCollection.AddStartupActivator<IAllowedCorsOriginsFilter>();
             return serviceCollection;
         }
 
         public static IServiceCollection AddAllowedCorsOriginsFilter(this IServiceCollection serviceCollection)
         {
             serviceCollection.AddSingleton<IAllowedCorsOriginsFilter, AllowedCorsOriginsFilter>();
-            serviceCollection.AddTransient<IStartupActivator, StartupActivator<IAllowedCorsOriginsFilter>>();
+            serviceCollection.AddStartupActivator<IAllowedCorsOriginsFilter>();
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddStartupActivator<TService>(this IServiceCollection serviceCollection) where TService : class
+        {
+            serviceCollection.AddTransient<IStartupActivator>(pr => new StartupActivator<TService>(pr));
             return serviceCollection;
         }
 

@@ -16,10 +16,8 @@ namespace RESTable.Requests
             proxyIp: null,
             userAgent: null,
             https: false,
-            cookies: new Cookies()
-        )
-        {
-            AccessRights = rootAccess;
-        }
+            cookies: new Cookies(),
+            accessRights: rootAccess
+        ) { }
     }
 }

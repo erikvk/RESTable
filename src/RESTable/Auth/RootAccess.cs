@@ -1,4 +1,5 @@
-﻿using RESTable.Meta;
+﻿using System.Collections.Generic;
+using RESTable.Meta;
 
 namespace RESTable.Auth
 {
@@ -9,7 +10,7 @@ namespace RESTable.Auth
     {
         private ResourceCollection ResourceCollection { get; }
 
-        public RootAccess(ResourceCollection resourceCollection) : base(null)
+        public RootAccess(ResourceCollection resourceCollection) : base(null, new Dictionary<IResource, Method[]>())
         {
             ResourceCollection = resourceCollection;
             Load();

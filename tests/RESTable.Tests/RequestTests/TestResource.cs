@@ -33,7 +33,7 @@ namespace RESTable.Tests.RequestTests
         public IEnumerable<TestResource> Select(IRequest<TestResource> request)
         {
             // We use the request's Selector delegates instead of this
-            throw new System.NotImplementedException();
+            yield break;
         }
 
         public IEnumerable<TestResource> Insert(IRequest<TestResource> request)

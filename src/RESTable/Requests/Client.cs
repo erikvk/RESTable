@@ -49,7 +49,11 @@ namespace RESTable.Requests
         /// </summary>
         public Cookies Cookies { get; }
 
-        internal AccessRights AccessRights { get; set; }
+        /// <summary>
+        /// The API access rights of this client
+        /// </summary>
+        public AccessRights AccessRights { get; }
+
         internal IDictionary<IResource, byte> ResourceAuthMappings { get; }
         internal IDictionary<IResource, IDictionary<string, object>> ResourceClientDataMappings { get; }
         internal bool IsInWebSocket { get; set; }
@@ -58,7 +62,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Creates a new client with the given origin type
         /// </summary>
-        public Client(OriginType origin, string host, IPAddress clientIp, IPAddress proxyIp, string userAgent, bool https, Cookies cookies)
+        public Client(OriginType origin, string host, IPAddress clientIp, IPAddress proxyIp, string userAgent, bool https, Cookies cookies, AccessRights accessRights)
         {
             Origin = origin;
             Host = host;
@@ -69,6 +73,7 @@ namespace RESTable.Requests
             ResourceAuthMappings = new ConcurrentDictionary<IResource, byte>();
             ResourceClientDataMappings = new ConcurrentDictionary<IResource, IDictionary<string, object>>();
             Cookies = cookies;
+            AccessRights = accessRights;
         }
 
         /// <summary>
@@ -81,7 +86,7 @@ namespace RESTable.Requests
         /// <param name="https">Is the client connected with HTTPS?</param>
         /// <param name="cookies">The cookies registered for this client</param>
         /// <returns></returns>
-        public static Client External(IPAddress clientIp, IPAddress proxyIp, string userAgent, string host, bool https, Cookies cookies) => new
+        public static Client External(IPAddress clientIp, IPAddress proxyIp, string userAgent, string host, bool https, Cookies cookies, AccessRights accessRights) => new
         (
             origin: OriginType.External,
             host: host,
@@ -89,7 +94,8 @@ namespace RESTable.Requests
             proxyIp: proxyIp,
             userAgent: userAgent,
             https: https,
-            cookies: cookies ?? new Cookies()
+            cookies: cookies ?? new Cookies(),
+            accessRights: accessRights
         );
 
         /// <inheritdoc />

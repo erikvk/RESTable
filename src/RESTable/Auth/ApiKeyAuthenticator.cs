@@ -5,13 +5,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
-using RESTable.Internal;
 using RESTable.Meta;
-using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Results;
 using RESTable.WebSockets;
-using static RESTable.Method;
 
 namespace RESTable.Auth
 {
@@ -21,7 +18,7 @@ namespace RESTable.Auth
     /// </summary>
     public class ApiKeyAuthenticator : IRequestAuthenticator, IDisposable
     {
-        private const string AuthHeaderMask = "*******";
+        private const string AuthHeaderMask = "ApiKey *******";
 
         private IDictionary<string, AccessRights> ApiKeys { get; }
         private ResourceCollection ResourceCollection { get; }
@@ -40,18 +37,16 @@ namespace RESTable.Auth
         }
 
         /// <inheritdoc />
-        public bool TryAuthenticate(RESTableContext context, ref string uri, Headers headers, out Unauthorized error)
+        public bool TryAuthenticate(ref string uri, Headers headers, out AccessRights accessRights, out Unauthorized error)
         {
-            var accessRights = GetAccessRights(ref uri, headers);
+            accessRights = GetAccessRights(ref uri, headers);
             if (accessRights is null)
             {
                 error = new Unauthorized();
-                error.SetContext(context);
                 if (headers?.Metadata == "full")
                     error.Headers.Metadata = error.Metadata;
                 return false;
             }
-            context.Client.AccessRights = accessRights;
             error = null;
             return true;
         }
@@ -65,10 +60,11 @@ namespace RESTable.Auth
                 uri = uri.Remove(keyGroup.Index, keyGroup.Length);
                 authorizationHeader = $"apikey {keyGroup.Value.Substring(1, keyGroup.Length - 2).UriDecode()}";
             }
-            else if (headers.Authorization is string header && !string.IsNullOrWhiteSpace(header))
+            else if (headers?.Authorization is string header && !string.IsNullOrWhiteSpace(header))
                 authorizationHeader = header;
             else return null;
-            headers.Authorization = AuthHeaderMask;
+            if (headers is not null)
+                headers.Authorization = AuthHeaderMask;
             var (method, key) = authorizationHeader.TupleSplit(' ');
             if (key is null) return null;
             switch (method)
@@ -83,7 +79,7 @@ namespace RESTable.Auth
                 }
                 default: return null;
             }
-            var keyHash = key.SHA256();
+            var keyHash = ComputeHash(key);
             return ApiKeys.TryGetValue(keyHash, out var _rights) ? _rights : null;
         }
 
@@ -113,18 +109,10 @@ namespace RESTable.Auth
             }
         }
 
-        private static IEnumerable<Method> GetDistinctMethods(IEnumerable<string> methodsArray)
+        private static string ComputeHash(string input)
         {
-            var methodSet = new HashSet<Method>();
-            foreach (var methodItem in methodsArray)
-            {
-                var method = methodItem.Trim();
-                if (method == "*")
-                    return EnumMember<Method>.Values;
-                var parsedMethod = (Method) Enum.Parse(typeof(Method), method, ignoreCase: true);
-                methodSet.Add(parsedMethod);
-            }
-            return methodSet;
+            using var hasher = System.Security.Cryptography.SHA256.Create();
+            return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
         }
 
         private string ReadApiKey(ApiKeyItem apiKeyItem)
@@ -133,34 +121,18 @@ namespace RESTable.Auth
             if (apiKey is null || Regex.IsMatch(apiKey, @"[\(\)]") || !Regex.IsMatch(apiKey, RegEx.ApiKey))
                 throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                     "whitespace or parentheses, and only containing ASCII characters 33 through 126");
-            var keyHash = apiKey.SHA256();
-            var accessRightsEnumeration = apiKeyItem.AllowAccess.Select(allowAccess => new AccessRight
-            (
-                resources: allowAccess.Resources
-                    .Select(resource => ResourceCollection.SafeFindResources(resource))
-                    .SelectMany(iresources => iresources.Union(iresources
-                        .Cast<IResourceInternal>()
-                        .Where(r => r.InnerResources is not null)
-                        .SelectMany(r => r.InnerResources)))
-                    .OrderBy(r => r.Name)
-                    .ToList(),
-                allowedMethods: GetDistinctMethods(allowAccess.Methods)
-                    .OrderBy(i => i, MethodComparer.Instance)
-                    .ToArray()
-            ));
-            var accessRights = AccessRights.ToAccessRights(accessRightsEnumeration, keyHash);
-            foreach (var resource in ResourceCollection.Where(r => r.GETAvailableToAll))
-            {
-                if (accessRights.TryGetValue(resource, out var methods))
-                    accessRights[resource] = methods.Union(new[] {GET, REPORT, HEAD})
-                        .OrderBy(i => i, MethodComparer.Instance)
-                        .ToArray();
-                else accessRights[resource] = new[] {GET, REPORT, HEAD};
-            }
+            var keyHash = ComputeHash(apiKey);
+
+            var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess, ResourceCollection);
+            var accessRights = new AccessRights(keyHash, assignments);
+
             if (ApiKeys.TryGetValue(keyHash, out var existing))
             {
                 existing.Clear();
-                foreach (var (resource, value) in accessRights) existing[resource] = value;
+                foreach (var (resource, value) in accessRights)
+                {
+                    existing[resource] = value;
+                }
             }
             else ApiKeys[keyHash] = accessRights;
             return keyHash;
