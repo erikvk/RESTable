@@ -60,10 +60,10 @@ namespace RESTable.Meta.IL
 
         private readonly MethodBase method;
         private readonly Module module;
-        private readonly Type[] type_arguments;
-        private readonly Type[] method_arguments;
+        private readonly Type[] type_arguments = null!;
+        private readonly Type[] method_arguments = null!;
         private readonly ByteBuffer il;
-        private readonly ParameterInfo this_parameter;
+        private readonly ParameterInfo this_parameter = null!;
         private readonly ParameterInfo[] parameters;
         private readonly IList<LocalVariableInfo> locals;
         private readonly List<Instruction> instructions;
@@ -97,7 +97,7 @@ namespace RESTable.Meta.IL
 
         private void ReadInstructions()
         {
-            Instruction previous = null;
+            Instruction? previous = null;
 
             while (il.position < il.buffer.Length)
             {
@@ -188,13 +188,13 @@ namespace RESTable.Meta.IL
                 {
                     case OperandType.ShortInlineBrTarget:
                     case OperandType.InlineBrTarget:
-                        instruction.Operand = GetInstruction(instructions, (int) instruction.Operand);
+                        instruction.Operand = GetInstruction(instructions, (int) instruction.Operand!);
                         break;
                     case OperandType.InlineSwitch:
-                        var offsets = (int[]) instruction.Operand;
-                        var branches = new Instruction [offsets.Length];
+                        var offsets = (int[]) instruction.Operand!;
+                        var branches = new Instruction [offsets!.Length];
                         for (var j = 0; j < offsets.Length; j++)
-                            branches[j] = GetInstruction(instructions, offsets[j]);
+                            branches[j] = GetInstruction(instructions, offsets[j])!;
 
                         instruction.Operand = branches;
                         break;
@@ -202,7 +202,7 @@ namespace RESTable.Meta.IL
             }
         }
 
-        private static Instruction GetInstruction(List<Instruction> instructions, int offset)
+        private static Instruction? GetInstruction(List<Instruction> instructions, int offset)
         {
             var size = instructions.Count;
             if (offset < 0 || offset > instructions[size - 1].Offset)

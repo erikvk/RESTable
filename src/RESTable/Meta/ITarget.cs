@@ -17,7 +17,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Descriptions are visible in the AvailableMethods resource
         /// </summary>
-        string Description { get; }
+        string? Description { get; }
 
         /// <summary>
         /// The target type

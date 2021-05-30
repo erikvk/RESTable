@@ -4,7 +4,8 @@ namespace RESTable.Meta.Internal
 {
     internal interface IResourceInternal
     {
-        IReadOnlyList<IResource> InnerResources { get; set; }
+        void AddInnerResource(IResource resource);
+        IEnumerable<IResource> GetInnerResources();
         string Description { set; }
         IReadOnlyCollection<Method> AvailableMethods { set; }
     }

@@ -37,7 +37,7 @@ namespace RESTable.ProtocolProviders
         /// If only external content type providers should be used, return null.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<IContentTypeProvider> GetCustomContentTypeProviders();
+        IEnumerable<IContentTypeProvider>? GetCustomContentTypeProviders();
 
         /// <summary>
         /// Reads a uri string, which is everyting after the root URI in the full request URI, parses 

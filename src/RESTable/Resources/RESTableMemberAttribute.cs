@@ -18,7 +18,7 @@ namespace RESTable.Resources
         /// <summary>
         /// A new name for this property, used by RESTable. Equivalent to using the .NET standard DataMemberAttribute attribute.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The order at which this property appears when all properties are enumerated
@@ -54,7 +54,7 @@ namespace RESTable.Resources
         /// <summary>
         /// The name of the excel reducer, passed as argument in the constructor
         /// </summary>
-        public string ExcelReducerName { get; }
+        public string? ExcelReducerName { get; }
 
         /// <summary>
         /// Should this object be replaced with a new instance on update, or reused? Applicable for types 
@@ -65,7 +65,7 @@ namespace RESTable.Resources
         /// <summary>
         /// The custom datetime format string of this property (if any)
         /// </summary>
-        public string DateTimeFormat { get; }
+        public string? DateTimeFormat { get; }
 
         /// <summary>
         /// Should this member, and all its members, be merged onto the owner type when serializing?
@@ -89,9 +89,9 @@ namespace RESTable.Resources
         /// <param name="dateTimeFormat">A custom datetime format string to use when writing and reading this property</param>
         /// <param name="mergeOntoOwner">Should this member, and all its members, be merged onto the owner type when serializing?</param>
         /// <param name="required">Should this member be required to have a value set in a condition in all requests to this resource?</param>
-        public RESTableMemberAttribute(bool ignore = false, string name = null, int order = int.MinValue, bool hide = false,
+        public RESTableMemberAttribute(bool ignore = false, string? name = null, int order = int.MinValue, bool hide = false,
             bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
-            string excelReducer = null, bool replaceOnUpdate = false, string dateTimeFormat = null, bool mergeOntoOwner = false)
+            string? excelReducer = null, bool replaceOnUpdate = false, string? dateTimeFormat = null, bool mergeOntoOwner = false)
         {
             Ignored = ignore;
             Name = name;

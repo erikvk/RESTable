@@ -22,7 +22,7 @@ namespace RESTable.Meta
         /// <summary>
         /// The function for obtaining an instance of this entity type
         /// </summary>
-        public Constructor CustomCreator { get; set; }
+        public Constructor? CustomCreator { get; set; }
 
         public EntityTypeContract(Type entityType, List<DeclaredProperty> properties)
         {

@@ -14,7 +14,7 @@ namespace RESTable.Internal
         public Headers Headers { get; }
         public Func<Stream, Task> WriteBody { get; }
         public RESTableContext Context { get; }
-        public async Task<HttpResponse> GetResponseAsync() => await MakeExternalRequestAsync(this, Method.ToString(), new Uri(URI), WriteBody, Headers).ConfigureAwait(false);
+        public async Task<HttpResponse?> GetResponseAsync() => await MakeExternalRequestAsync(this, Method.ToString(), new Uri(URI), WriteBody, Headers).ConfigureAwait(false);
 
         internal HttpRequest(ITraceable trace, HeaderRequestParameters parameters, Func<Stream, Task> writeBody)
         {
@@ -25,7 +25,7 @@ namespace RESTable.Internal
             Method = parameters.Method;
         }
 
-        private static async Task<HttpResponse> MakeExternalRequestAsync(ITraceable trace, string method, Uri uri, Func<Stream, Task> writeBody, IHeaders headers)
+        private static async Task<HttpResponse?> MakeExternalRequestAsync(ITraceable trace, string method, Uri uri, Func<Stream, Task>? writeBody, IHeaders headers)
         {
             try
             {

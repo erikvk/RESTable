@@ -51,9 +51,9 @@ namespace RESTable.Meta
             Stub = stub;
             AllLinks = new HashSet<PropertyLink>();
 
-            var discoveredTypes = new HashSet<Type>();
+            HashSet<Type> discoveredTypes = new();
 
-            void recurseTree(Type owner, PropertyLink rootWard)
+            void recurseTree(Type owner, PropertyLink? rootWard)
             {
                 if (!discoveredTypes.Add(owner)) return;
                 if (owner.ImplementsGenericInterface(typeof(IEnumerable<>), out var p))

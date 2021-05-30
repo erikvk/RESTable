@@ -25,12 +25,12 @@ namespace RESTable.Requests
         public IResource<T> Resource { get; }
         public ITarget<T> Target { get; }
         ITarget IRequest.Target => Target;
-        private Exception Error { get; set; }
+        private Exception? Error { get; set; }
         private bool IsEvaluating { get; set; }
-        private Headers _responseHeaders;
+        private Headers? _responseHeaders;
         public Headers ResponseHeaders => _responseHeaders ??= new Headers();
 
-        private List<Condition<T>> _conditions;
+        private List<Condition<T>>? _conditions;
 
         public List<Condition<T>> Conditions
         {
@@ -38,7 +38,7 @@ namespace RESTable.Requests
             set => _conditions = value;
         }
 
-        private MetaConditions _metaConditions;
+        private MetaConditions? _metaConditions;
 
         public MetaConditions MetaConditions
         {
@@ -54,15 +54,15 @@ namespace RESTable.Requests
         public string ProtocolIdentifier => Parameters.ProtocolIdentifier;
         public TimeSpan TimeElapsed => Stopwatch.Elapsed;
         private Stopwatch Stopwatch { get; }
-        IEntityResource<T> IEntityRequest<T>.EntityResource => Resource as IEntityResource<T>;
+        IEntityResource<T> IEntityRequest<T>.EntityResource => (IEntityResource<T>) Resource;
 
-        public Func<IAsyncEnumerable<T>> GetSelector() => Selector;
-        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> GetUpdater() => Updater;
+        public Func<IAsyncEnumerable<T>> GetCustomSelector() => Selector;
+        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> GetCustomUpdater() => Updater;
 
         public Func<IAsyncEnumerable<T>> Selector { private get; set; }
         public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { private get; set; }
 
-        public Func<IAsyncEnumerable<T>> EntitiesProducer { get; set; }
+        public Func<IAsyncEnumerable<T>>? EntitiesProducer { get; set; }
 
         public IEnumerable<T> GetInputEntities() => GetInputEntitiesAsync().ToEnumerable();
 
@@ -134,17 +134,17 @@ namespace RESTable.Requests
 
         #endregion
 
-        public TData GetClientData<TData>(string key)
+        public TData? GetClientData<TData>(string key)
         {
             if (Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data) && data.TryGetValue(key, out var value))
-                return (TData) value;
+                return (TData?) value;
             return default;
         }
 
         public void SetClientData<TData>(string key, TData value)
         {
-            if (!Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data))
-                data = Context.Client.ResourceClientDataMappings[Resource] = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            if (!Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out IDictionary<string, object?> data))
+                data = Context.Client.ResourceClientDataMappings[Resource] = new ConcurrentDictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
             data[key] = value;
         }
 

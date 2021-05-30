@@ -1,5 +1,5 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Resources;
 
@@ -10,7 +10,7 @@ namespace RESTable.SQLite.Meta
     /// </summary>
     public class CLRProperty
     {
-        private ColumnMapping Mapping { get; set; }
+        private ColumnMapping? Mapping { get; set; }
 
         /// <summary>
         /// The name of the CLR property
@@ -35,17 +35,14 @@ namespace RESTable.SQLite.Meta
         /// <summary>
         /// The getter for the property value
         /// </summary>
-        [RESTableMember(ignore: true)] public Getter Get { get; }
+        [RESTableMember(ignore: true)]
+        public Getter Get { get; }
 
         /// <summary>
         /// The setter for the property value
         /// </summary>
-        [RESTableMember(ignore: true)] public Setter Set { get; }
-
-        /// <summary>
-        /// The CLR type of this property, used for internal traceability
-        /// </summary>
-        internal Type _Type { get; }
+        [RESTableMember(ignore: true)]
+        public Setter Set { get; }
 
         /// <summary>
         /// The optional SQLiteMemberAttribute associated with this CLR property
@@ -72,7 +69,6 @@ namespace RESTable.SQLite.Meta
             Set = propertyInfo.MakeDynamicSetter();
             MemberAttribute = propertyInfo.GetCustomAttribute<SQLiteMemberAttribute>();
             IsDeclared = true;
-            _Type = propertyInfo.PropertyType;
         }
 
         /// <summary>
@@ -80,18 +76,23 @@ namespace RESTable.SQLite.Meta
         /// </summary>
         public CLRProperty(string name, CLRDataType typeCode)
         {
+            MemberAttribute = null!;
             Name = name;
             Type = typeCode;
             Get = obj =>
             {
-                if (obj is IDynamicMemberValueProvider dm && dm.TryGetValue(Name, out var value, out var actualKey))
+                object? value = null;
+                if (obj is IDynamicMemberValueProvider dm && dm.TryGetValue(Name, out value, out var actualKey))
                 {
                     Name = actualKey;
-                    return value;
                 }
-                return null;
+                return new ValueTask<object?>(value);
             };
-            Set = (obj, value) => (obj as IDynamicMemberValueProvider)?.TrySetValue(Name, value);
+            Set = (obj, value) =>
+            {
+                (obj as IDynamicMemberValueProvider)?.TrySetValue(Name, value);
+                return default;
+            };
             IsDeclared = false;
         }
     }

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.Auth;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -40,8 +39,6 @@ namespace RESTable.OData
             (
                 level: OnlyResources,
                 rights: null,
-                rootAccess: request.GetRequiredService<RootAccess>(),
-                resourceCollection: request.GetRequiredService<ResourceCollection>(),
                 typeCache: request.GetRequiredService<TypeCache>()
             )
             .EntityResources

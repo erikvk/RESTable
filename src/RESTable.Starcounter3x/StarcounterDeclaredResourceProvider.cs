@@ -9,8 +9,8 @@ namespace RESTable.Starcounter3x
 {
     internal class StarcounterDeclaredResourceProvider : EntityResourceProvider<object>
     {
-        protected override Type AttributeType => null;
-        protected override IDatabaseIndexer DatabaseIndexer => null;
+        protected override Type AttributeType => null!;
+        protected override IDatabaseIndexer DatabaseIndexer => null!;
 
         protected override void Validate() { }
 
@@ -26,6 +26,6 @@ namespace RESTable.Starcounter3x
         protected override IEnumerable<T> DefaultUpdate<T>(IRequest<T> request) => StarcounterOperations<T>.Update(request);
         protected override int DefaultDelete<T>(IRequest<T> request) => StarcounterOperations<T>.Delete(request);
 
-        protected override bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason) => StarcounterOperations<object>.IsValid(resource, typeCache, out reason);
+        protected override bool IsValid(IEntityResource resource, TypeCache typeCache, out string? reason) => StarcounterOperations<object>.IsValid(resource, typeCache, out reason);
     }
 }

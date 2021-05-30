@@ -8,25 +8,20 @@ namespace RESTable
         public Method[] Methods { get; }
         public string Version { get; }
         public string[] ReservedNamespaces { get; }
-        public string RootUri { get; private set; }
-        
+        public string RootUri { get; internal set; }
+
         public RESTableConfiguration()
         {
+            RootUri = null!;
             Methods = EnumMember<Method>.Values;
             var version = typeof(RESTableConfigurator).Assembly.GetName().Version;
-            if (version is not null)
-                Version = $"{version.Major}.{version.Minor}.{version.Build}";
+            Version = $"{version.Major}.{version.Minor}.{version.Build}";
             ReservedNamespaces = typeof(RESTableConfigurator).Assembly
                 .GetTypes()
                 .Select(type => type.Namespace?.ToLower())
                 .Where(ns => ns is not null)
                 .Distinct()
-                .ToArray();
-        }
-
-        internal void Update(string rootUri)
-        {
-            RootUri = rootUri;
+                .ToArray()!;
         }
     }
 }

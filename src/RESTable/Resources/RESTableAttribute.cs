@@ -35,7 +35,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Resource descriptions are visible in the AvailableResource resource
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         /// <summary>
         /// Should this resource, with methods GET and REPORT, be included in all access scopes, 

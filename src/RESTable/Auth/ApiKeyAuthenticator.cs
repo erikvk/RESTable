@@ -7,7 +7,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using RESTable.Meta;
 using RESTable.Requests;
-using RESTable.Results;
 using RESTable.WebSockets;
 
 namespace RESTable.Auth
@@ -37,21 +36,13 @@ namespace RESTable.Auth
         }
 
         /// <inheritdoc />
-        public bool TryAuthenticate(ref string uri, Headers headers, out AccessRights accessRights, out Unauthorized error)
+        public bool TryAuthenticate(ref string? uri, Headers? headers, out AccessRights accessRights)
         {
             accessRights = GetAccessRights(ref uri, headers);
-            if (accessRights is null)
-            {
-                error = new Unauthorized();
-                if (headers?.Metadata == "full")
-                    error.Headers.Metadata = error.Metadata;
-                return false;
-            }
-            error = null;
-            return true;
+            return accessRights is not NoAccess;
         }
 
-        private AccessRights GetAccessRights(ref string uri, IHeaders headers)
+        private AccessRights GetAccessRights(ref string? uri, IHeaders? headers)
         {
             string authorizationHeader;
             if (uri is not null && Regex.Match(uri, RegEx.UriKey) is {Success: true} keyMatch)
@@ -62,11 +53,10 @@ namespace RESTable.Auth
             }
             else if (headers?.Authorization is string header && !string.IsNullOrWhiteSpace(header))
                 authorizationHeader = header;
-            else return null;
+            else return new NoAccess();
             if (headers is not null)
                 headers.Authorization = AuthHeaderMask;
             var (method, key) = authorizationHeader.TupleSplit(' ');
-            if (key is null) return null;
             switch (method)
             {
                 case var apikey when apikey.EqualsNoCase("apikey"): break;
@@ -74,13 +64,13 @@ namespace RESTable.Auth
                 {
                     var keyString = Convert.FromBase64String(key);
                     key = Encoding.UTF8.GetString(keyString).Split(":").ElementAtOrDefault(1);
-                    if (key is null) return null;
+                    if (key is null) return new NoAccess();
                     break;
                 }
-                default: return null;
+                default: return new NoAccess();
             }
             var keyHash = ComputeHash(key);
-            return ApiKeys.TryGetValue(keyHash, out var _rights) ? _rights : null;
+            return ApiKeys.TryGetValue(keyHash, out AccessRights accessRights) ? accessRights : new NoAccess();
         }
 
         private void Reload()
@@ -100,7 +90,7 @@ namespace RESTable.Auth
                 .ToList();
             foreach (var key in ApiKeys.Keys.Except(currentKeys).ToList())
             {
-                if (ApiKeys.TryGetValue(key, out var accessRights))
+                if (ApiKeys.TryGetValue(key, out AccessRights accessRights))
                 {
                     WebSocketManager.RevokeAllWithKey(key).Wait();
                     accessRights.Clear();
@@ -122,11 +112,10 @@ namespace RESTable.Auth
                 throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                     "whitespace or parentheses, and only containing ASCII characters 33 through 126");
             var keyHash = ComputeHash(apiKey);
-
-            var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess, ResourceCollection);
+            var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess ?? new AllowAccess[0], ResourceCollection);
             var accessRights = new AccessRights(keyHash, assignments);
 
-            if (ApiKeys.TryGetValue(keyHash, out var existing))
+            if (ApiKeys.TryGetValue(keyHash, out AccessRights existing))
             {
                 existing.Clear();
                 foreach (var (resource, value) in accessRights)

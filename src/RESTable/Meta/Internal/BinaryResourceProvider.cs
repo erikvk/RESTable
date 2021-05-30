@@ -14,7 +14,7 @@ namespace RESTable.Meta.Internal
 
         public BinaryResourceProvider(TypeCache typeCache, ResourceCollection resourceCollection)
         {
-            BuildBinaryMethod = typeof(BinaryResourceProvider).GetMethod(nameof(MakeBinaryResource), BindingFlags.Instance | BindingFlags.NonPublic);
+            BuildBinaryMethod = typeof(BinaryResourceProvider).GetMethod(nameof(MakeBinaryResource), BindingFlags.Instance | BindingFlags.NonPublic)!;
             TypeCache = typeCache;
             ResourceCollection = resourceCollection;
         }

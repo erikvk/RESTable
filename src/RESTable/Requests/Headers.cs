@@ -29,61 +29,61 @@ namespace RESTable.Requests
 
         #endregion
 
-        public string Info
+        public string? Info
         {
             get => this[_Info];
             set => this[_Info] = value;
         }
 
-        public string Error
+        public string? Error
         {
             get => this[_Error];
             set => this[_Error] = value;
         }
 
-        public string Metadata
+        public string? Metadata
         {
             get => this[_Metadata];
             set => this[_Metadata] = value;
         }
 
-        public string Version
+        public string? Version
         {
             get => this[_Version];
             set => this[_Version] = value;
         }
 
-        public string Vary
+        public string? Vary
         {
             get => this[_Vary];
             set => this[_Vary] = value;
         }
 
-        internal string AccessControlAllowOrigin
+        internal string? AccessControlAllowOrigin
         {
             get => this[_AccessControlAllowOrigin];
             set => this[_AccessControlAllowOrigin] = value;
         }
 
-        internal string AccessControlAllowMethods
+        internal string? AccessControlAllowMethods
         {
             get => this[_AccessControlAllowMethods];
             set => this[_AccessControlAllowMethods] = value;
         }
 
-        internal string AccessControlMaxAge
+        internal string? AccessControlMaxAge
         {
             get => this[_AccessControlMaxAge];
             set => this[_AccessControlMaxAge] = value;
         }
 
-        internal string AccessControlAllowCredentials
+        internal string? AccessControlAllowCredentials
         {
             get => this[_AccessControlAllowCredentials];
             set => this[_AccessControlAllowCredentials] = value;
         }
 
-        internal string AccessControlAllowHeaders
+        internal string? AccessControlAllowHeaders
         {
             get => this[_AccessControlAllowHeaders];
             set => this[_AccessControlAllowHeaders] = value;
@@ -92,16 +92,16 @@ namespace RESTable.Requests
         #endregion
 
         /// <inheritdoc />
-        public ContentTypes Accept { get; set; }
+        public ContentTypes? Accept { get; set; }
 
         /// <inheritdoc />
         public ContentType? ContentType { get; set; }
 
         /// <inheritdoc />
-        public string Source { get; set; }
+        public string? Source { get; set; }
 
         /// <inheritdoc />
-        public string Destination { get; set; }
+        public string? Destination { get; set; }
 
         /// <inheritdoc />
         public TimeSpan? Elapsed { get; set; }
@@ -109,10 +109,10 @@ namespace RESTable.Requests
         /// <summary>
         /// The Authorization header
         /// </summary>
-        public string Authorization { get; set; }
+        public string? Authorization { get; set; }
 
         /// <inheritdoc />
-        public string Origin { get; set; }
+        public string? Origin { get; set; }
 
         internal bool UnsafeOverride { get; set; }
 
@@ -121,7 +121,7 @@ namespace RESTable.Requests
         /// Gets the header with the given name, or null if there is 
         /// no such header.
         /// </summary>
-        public string this[string key]
+        public string? this[string key]
         {
             get => this._Get(key);
             set

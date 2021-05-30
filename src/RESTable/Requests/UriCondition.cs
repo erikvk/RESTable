@@ -80,7 +80,7 @@ namespace RESTable.Requests
 
         private class _EqualityComparer : IEqualityComparer<IUriCondition>
         {
-            public bool Equals(IUriCondition x, IUriCondition y)
+            public bool Equals(IUriCondition? x, IUriCondition? y)
             {
                 if (x is null && y is null) return true;
                 if (x is null || y is null) return false;

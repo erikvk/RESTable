@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using RESTable.Auth;
 using RESTable.ContentTypeProviders;
@@ -52,10 +51,11 @@ namespace RESTable
 
         public void ConfigureRESTable(string rootUri = "/restable")
         {
+            if (rootUri is null)
+                throw new ArgumentNullException(nameof(rootUri));
             ValidateRootUri(ref rootUri);
-            Configuration.Update(rootUri: rootUri);
+            Configuration.RootUri = rootUri;
             ResourceCollection.SetDependencies(this, TypeCache, RootAccess);
-            ResourceFactory.SetConfiguration(this);
             ResourceFactory.MakeResources();
             IsConfigured = true;
             foreach (var startupActivator in StartupActivators)
@@ -68,7 +68,7 @@ namespace RESTable
 
         private static void ValidateRootUri(ref string uri)
         {
-            uri = uri?.Trim() ?? "/rest";
+            uri = uri.Trim();
             if (!Regex.IsMatch(uri, RegEx.BaseUri))
                 throw new FormatException("The URI contained invalid characters. It can only contain " +
                                           "letters, numbers, forward slashes and underscores");

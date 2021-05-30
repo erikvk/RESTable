@@ -14,7 +14,7 @@ namespace RESTable.Starcounter3x
     /// </summary>
     public static class StarcounterOperations<T> where T : class
     {
-        private const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
+        //private const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
         private static readonly string TableName = typeof(T).GetRESTableTypeName();
         private static readonly string select = $"SELECT t FROM {TableName.Fnuttify()} t ";
         private const string ObjectNo = nameof(ObjectNo);
@@ -30,15 +30,15 @@ namespace RESTable.Starcounter3x
             {
                 case 0:
                     var sql = $"{select}";
-                    QueryConsole.Publish(request.Context, sql, null);
+                    QueryConsole.Publish(request.Context, sql);
                     foreach (var item in Transaction.Run(db => db.Sql<T>(sql)))
                         yield return item;
                     yield break;
-                case 1 when request.Conditions[0] is var only && only.Operator == Operators.EQUALS:
+                case 1 when request.Conditions[0] is Condition<T> {Operator: Operators.EQUALS} only:
                     if (string.Equals(ObjectNo, only.Key, StringComparison.OrdinalIgnoreCase))
                     {
-                        var objectNo = only.SafeSelect(_ => (ulong) only.Value);
-                        QueryConsole.Publish(request.Context, $"FROMID {objectNo}", null);
+                        var objectNo = only.SafeSelect(_ => (ulong) only.Value!);
+                        QueryConsole.Publish(request.Context, $"FROMID {objectNo}");
                         if (objectNo == 0)
                             yield break;
                         yield return Transaction.Run(db => db.Get<T>(objectNo));
@@ -46,15 +46,17 @@ namespace RESTable.Starcounter3x
                     }
                     else goto case default;
                 default:
-                    string orderBy = null;
-                    var (where, values) = request.Conditions.GetSQL().MakeWhereClause(null, out var useOrderBy);
-                    sql = useOrderBy ? $"{select}{where}{orderBy}" : $"{select}{where}";
-                    QueryConsole.Publish(request.Context, sql, values);
-                    if (request.Conditions.HasPost(out var post))
-                        request.Conditions = post;
-                    foreach (var item in Transaction.Run(db => db.Sql<T>(sql, values)))
-                        yield return item;
                     yield break;
+//                    TODO This is broken and has to be fixed:
+//                    string? orderBy = null;
+//                    var (where, values) = request.Conditions.GetSQL().MakeWhereClause(null, out var useOrderBy);
+//                    sql = useOrderBy ? $"{select}{where}{orderBy}" : $"{select}{where}";
+//                    QueryConsole.Publish(request.Context, sql, values);
+//                    if (request.Conditions.HasPost(out var post))
+//                        request.Conditions = post;
+//                    foreach (var item in Transaction.Run(db => db.Sql<T>(sql, values)))
+//                        yield return item;
+//                    yield break;
             }
         }
 
@@ -91,7 +93,7 @@ namespace RESTable.Starcounter3x
             return count;
         }
 
-        internal static bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
+        internal static bool IsValid(IEntityResource resource, TypeCache typeCache, out string? reason)
         {
             if (resource.InterfaceType is not null)
             {

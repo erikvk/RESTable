@@ -20,7 +20,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The value of the condition
         /// </summary>
-        object Value { get; }
+        object? Value { get; }
 
         /// <summary>
         /// The term describing the property to compare with

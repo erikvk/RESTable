@@ -1,5 +1,4 @@
 ﻿using RESTable.Requests;
-using RESTable.Results;
 
 namespace RESTable.Auth
 {
@@ -15,10 +14,9 @@ namespace RESTable.Auth
             RootAccess = rootAccess;
         }
 
-        public bool TryAuthenticate(ref string uri, Headers headers, out AccessRights accessRights, out Unauthorized error)
+        public bool TryAuthenticate(ref string uri, Headers headers, out AccessRights accessRights)
         {
             accessRights = RootAccess;
-            error = null;
             return true;
         }
     }

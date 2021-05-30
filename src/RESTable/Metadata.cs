@@ -23,60 +23,78 @@ namespace RESTable
         /// <summary>
         /// The access scope for the current client
         /// </summary>
-        public IDictionary<IResource, Method[]> CurrentAccessScope { get; private set; }
+        public IDictionary<IResource, Method[]> CurrentAccessScope { get; }
 
         /// <summary>
         /// The entity resources within the access scope
         /// </summary>
-        public IEntityResource[] EntityResources { get; private set; }
+        public IEntityResource[] EntityResources { get; }
 
         /// <summary>
         /// The terminal resources within the access scope
         /// </summary>
-        public ITerminalResource[] TerminalResources { get; private set; }
+        public ITerminalResource[] TerminalResources { get; }
 
         /// <summary>
         /// The type list containing all entity resource types
         /// </summary>
-        public IReadOnlyDictionary<Type, Member[]> EntityResourceTypes { get; private set; }
+        public IReadOnlyDictionary<Type, Member[]> EntityResourceTypes { get; }
 
         /// <summary>
         /// The type list containing all peripheral types, types that are 
         /// referenced by some entity resource type or peripheral type.
         /// </summary>
-        public IReadOnlyDictionary<Type, Member[]> PeripheralTypes { get; private set; }
+        public IReadOnlyDictionary<Type, Member[]> PeripheralTypes { get; }
+
+        public Metadata
+        (
+            IDictionary<IResource, Method[]> currentAccessScope,
+            IEntityResource[] entityResources,
+            ITerminalResource[] terminalResources,
+            IReadOnlyDictionary<Type, Member[]> entityResourceTypes,
+            IReadOnlyDictionary<Type, Member[]> peripheralTypes
+        )
+        {
+            CurrentAccessScope = currentAccessScope;
+            EntityResources = entityResources;
+            TerminalResources = terminalResources;
+            EntityResourceTypes = entityResourceTypes;
+            PeripheralTypes = peripheralTypes;
+        }
 
         /// <inheritdoc />
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
             var accessrights = request.Context.Client.AccessRights;
-            var rootAccess = request.GetRequiredService<RootAccess>();
-            var resourceCollection = request.GetRequiredService<ResourceCollection>();
             var typeCache = request.GetRequiredService<TypeCache>();
-            yield return GetMetadata(MetadataLevel.Full, accessrights, rootAccess, resourceCollection, typeCache);
+            yield return GetMetadata(MetadataLevel.Full, accessrights, typeCache);
         }
 
-        public static Metadata GetMetadata(MetadataLevel level, AccessRights rights, RootAccess rootAccess, ResourceCollection resourceCollection, TypeCache typeCache)
+        public static Metadata GetMetadata(MetadataLevel level, AccessRights rights, TypeCache typeCache)
         {
-            var domain = rights?.Keys ?? resourceCollection.AllResources;
-            var entityResources = domain
+            var domain = rights.Keys;
+            var entityResources = domain!
                 .OfType<IEntityResource>()
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.Name)
                 .ToList();
-            var terminalResources = domain
+            var terminalResources = domain!
                 .OfType<ITerminalResource>()
                 .ToList();
 
             if (level == MetadataLevel.OnlyResources)
+            {
                 return new Metadata
-                {
-                    CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? rootAccess),
-                    EntityResources = entityResources.ToArray(),
-                    TerminalResources = terminalResources.ToArray()
-                };
+                (
+                    currentAccessScope: new Dictionary<IResource, Method[]>(rights),
+                    entityResources: entityResources.ToArray(),
+                    terminalResources: terminalResources.ToArray(),
+                    entityResourceTypes: new Dictionary<Type, Member[]>(),
+                    peripheralTypes: new Dictionary<Type, Member[]>()
+                );
+            }
 
-            var checkedTypes = new HashSet<Type>();
+            HashSet<Type> checkedTypes = new();
 
             void parseType(Type type)
             {
@@ -125,25 +143,25 @@ namespace RESTable
                 parseType(type);
             checkedTypes.ExceptWith(terminalTypes);
 
-            return new Metadata
+            var entityResourceTypes = entityTypes.ToDictionary(t => t, type => typeCache.GetDeclaredProperties(type).Values.Cast<Member>().ToArray());
+            var peripheralTypes = checkedTypes.ToDictionary(t => t, type =>
             {
-                CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? rootAccess),
-                EntityResources = entityResources.ToArray(),
-                TerminalResources = terminalResources.ToArray(),
-                EntityResourceTypes = new ReadOnlyDictionary<Type, Member[]>(entityTypes.ToDictionary(t => t, type =>
-                    typeCache.GetDeclaredProperties(type).Values.Cast<Member>().ToArray())),
-                PeripheralTypes = new ReadOnlyDictionary<Type, Member[]>(checkedTypes.ToDictionary(t => t, type =>
-                {
-                    var props = typeCache.GetDeclaredProperties(type).Values;
-                    var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
-                        .Where(p => !p.RESTableIgnored())
-                        .Select(f => new Field(f));
-                    return props.Union<Member>(fields).ToArray();
-                }))
-            };
-        }
+                var props = typeCache.GetDeclaredProperties(type).Values;
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => !p.RESTableIgnored())
+                    .Select(f => new Field(f));
+                return props.Union<Member>(fields).ToArray();
+            });
 
-        private Metadata() { }
+            return new Metadata
+            (
+                currentAccessScope: new Dictionary<IResource, Method[]>(rights),
+                entityResources: entityResources.ToArray(),
+                terminalResources: terminalResources.ToArray(),
+                entityResourceTypes: new ReadOnlyDictionary<Type, Member[]>(entityResourceTypes),
+                peripheralTypes: new ReadOnlyDictionary<Type, Member[]>(peripheralTypes)
+            );
+        }
 
         private static bool IsPrimitive(Type type)
         {

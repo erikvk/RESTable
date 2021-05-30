@@ -15,9 +15,9 @@ namespace RESTable.Auth
     /// </summary>
     public class AccessRights : ReadOnlyDictionary<IResource, Method[]>
     {
-        public string Token { get; }
+        public string? Token { get; }
 
-        public AccessRights(string token, IDictionary<IResource, Method[]> assignments) : base(assignments)
+        public AccessRights(string? token, IDictionary<IResource, Method[]> assignments) : base(assignments)
         {
             Token = token;
         }
@@ -32,8 +32,7 @@ namespace RESTable.Auth
                 (
                     resources: allowAccess.Resources.Select(resourceCollection.SafeFindResources)
                         .SelectMany(iresources => iresources.Union(iresources.Cast<IResourceInternal>()
-                            .Where(r => r.InnerResources is not null)
-                            .SelectMany(r => r.InnerResources)))
+                            .SelectMany(r => r.GetInnerResources())))
                         .OrderBy(r => r.Name)
                         .ToList(),
                     allowedMethods: GetDistinctMethods(allowAccess.Methods)

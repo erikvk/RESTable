@@ -12,12 +12,12 @@ namespace RESTable.Meta
     public class PropertyLink : IDisposable
     {
         private PropertyMonitoringTree MonitoringTree { get; }
-        internal PropertyLink Rootward { get; }
+        internal PropertyLink? Rootward { get; }
         internal DeclaredProperty Property { get; }
         private Term TermFromRoot { get; }
         private bool HasUnresolvedIndexes { get; }
 
-        internal PropertyLink(PropertyMonitoringTree monitoringTree, PropertyLink rootward, DeclaredProperty property)
+        internal PropertyLink(PropertyMonitoringTree monitoringTree, PropertyLink? rootward, DeclaredProperty property)
         {
             MonitoringTree = monitoringTree;
             monitoringTree.AllLinks.Add(this);
@@ -27,7 +27,7 @@ namespace RESTable.Meta
             HasUnresolvedIndexes = TermFromRoot.OfType<AnyIndexProperty>().Any();
         }
 
-        private void OnPropertyChanged(DeclaredProperty declaredProperty, object target, dynamic value, dynamic newValue)
+        private void OnPropertyChanged(DeclaredProperty declaredProperty, object? target, dynamic value, dynamic newValue)
         {
             if (target is null) return;
             MonitoringTree.HandleObservedChange

@@ -31,7 +31,8 @@ namespace RESTable.Meta.Internal
             getter: null,
             setter: null,
             mergeOntoOwner: false,
-            readOnly: false
+            readOnly: false,
+            excelReducer: null
         ) { }
     }
 }

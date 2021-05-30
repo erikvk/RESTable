@@ -16,8 +16,10 @@ namespace RESTable.Requests.Processors
 
         internal Select GetCopy() => new(this);
 
-        internal JObject Apply<T>(T entity)
+        private JObject? Apply<T>(T entity)
         {
+            if (entity is null)
+                return null;
             var jobj = new JObject();
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             var serializer = jsonProvider.GetSerializer();
@@ -33,6 +35,6 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Selects a set of properties from an IEnumerable of entities
         /// </summary>
-        public IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities) => entities?.Select(Apply);
+        public IAsyncEnumerable<JObject?>? Apply<T>(IAsyncEnumerable<T>? entities) => entities?.Select(Apply);
     }
 }

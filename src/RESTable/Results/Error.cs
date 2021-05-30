@@ -78,7 +78,7 @@ namespace RESTable.Results
             IsSuccess = false;
         }
 
-        internal Error(ErrorCodes code, string message, Exception ie) : base(code, message, ie)
+        internal Error(ErrorCodes code, string? message, Exception? ie) : base(code, message, ie)
         {
             ExcludeHeaders = false;
             if (message is null)

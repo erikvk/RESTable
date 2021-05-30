@@ -11,18 +11,18 @@ namespace RESTable.Meta
             string name,
             Type owner,
             Type type,
-            Getter getter = null,
-            Setter setter = null,
-            string actualName = null,
+            Getter? getter = null,
+            Setter? setter = null,
+            string? actualName = null,
             int? order = null,
-            ICollection<Attribute> attributes = null,
+            ICollection<Attribute>? attributes = null,
             bool skipConditions = false,
             bool hidden = false,
             bool hiddenIfNull = false,
             bool isEnum = false,
             bool mergeOntoOwner = false,
             bool readOnly = false,
-            string customDateTimeFormat = null,
+            string? customDateTimeFormat = null,
             Operators allowedConditionOperators = Operators.All
         ) : base
         (
@@ -31,7 +31,7 @@ namespace RESTable.Meta
             actualName: actualName ?? name,
             type: type,
             order: order,
-            attributes: attributes,
+            attributes: attributes ?? new Attribute[0],
             skipConditions: skipConditions,
             hidden: hidden,
             hiddenIfNull: hiddenIfNull,
@@ -42,6 +42,7 @@ namespace RESTable.Meta
             getter: getter,
             setter: setter,
             mergeOntoOwner: mergeOntoOwner,
+            excelReducer: null,
             readOnly: readOnly
         ) { }
     }
@@ -51,18 +52,18 @@ namespace RESTable.Meta
         public CustomProperty
         (
             string name,
-            Getter<TOwner, TPropertyType> getter = null,
-            Setter<TOwner, TPropertyType> setter = null,
-            string actualName = null,
+            Getter<TOwner, TPropertyType>? getter = null,
+            Setter<TOwner, TPropertyType>? setter = null,
+            string? actualName = null,
             int? order = null,
-            ICollection<Attribute> attributes = null,
+            ICollection<Attribute>? attributes = null,
             bool skipConditions = false,
             bool hidden = false,
             bool hiddenIfNull = false,
             bool isEnum = false,
             bool mergeOntoOwner = false,
             bool readOnly = false,
-            string customDateTimeFormat = null,
+            string? customDateTimeFormat = null,
             Operators allowedConditionOperators = Operators.All
         ) : base
         (
@@ -71,7 +72,7 @@ namespace RESTable.Meta
             actualName: actualName ?? name,
             type: typeof(TPropertyType),
             order: order,
-            attributes: attributes,
+            attributes: attributes ?? new Attribute[0],
             skipConditions: skipConditions,
             hidden: hidden,
             hiddenIfNull: hiddenIfNull,
@@ -79,8 +80,20 @@ namespace RESTable.Meta
             customDateTimeFormat: customDateTimeFormat,
             allowedConditionOperators: allowedConditionOperators,
             owner: typeof(TOwner),
-            getter: getter is null ? default(Getter) : o => getter((TOwner) o),
-            setter: setter is null ? default(Setter) : (o, v) => setter((TOwner) o, (TPropertyType) v),
+            excelReducer: null,
+            getter: getter is null
+                ? default(Getter)
+                : async o =>
+                {
+                    var value = await getter((TOwner) o).ConfigureAwait(false);
+                    return value;
+                },
+            setter: setter is null
+                ? default(Setter)
+                : async (o, v) =>
+                {
+                    await setter((TOwner) o, (TPropertyType) v!).ConfigureAwait(false);
+                },
             mergeOntoOwner: mergeOntoOwner,
             readOnly: readOnly
         ) { }

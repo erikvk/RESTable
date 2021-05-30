@@ -37,16 +37,17 @@ namespace RESTable.Requests
             StackDepth -= 1;
         }
 
-        private WebSocket webSocket;
+        private WebSocket? webSocket;
 
         /// <summary>
         /// The websocket connected with this context
         /// </summary>
-        internal WebSocket WebSocket
+        internal WebSocket? WebSocket
         {
             get => webSocket;
             set
             {
+                if (value == null) return;
                 Services.GetRequiredService<WebSocketManager>().Add(value);
                 webSocket = value;
             }
@@ -84,7 +85,7 @@ namespace RESTable.Requests
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
-        public virtual IRequest<T> CreateRequest<T>(Method method = GET, string protocolId = "restable", string viewName = null) where T : class
+        public virtual IRequest<T> CreateRequest<T>(Method method = GET, string protocolId = "restable", string? viewName = null) where T : class
         {
             var resourceCollection = Services.GetRequiredService<ResourceCollection>();
             var resource = resourceCollection.SafeGetResource<T>() ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());

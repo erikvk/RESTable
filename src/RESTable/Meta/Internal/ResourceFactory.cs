@@ -5,7 +5,6 @@ using RESTable.Auth;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
-using RESTable.Requests;
 using static System.Reflection.BindingFlags;
 
 namespace RESTable.Meta.Internal
@@ -19,10 +18,8 @@ namespace RESTable.Meta.Internal
         private TypeCache TypeCache { get; }
         private ResourceValidator ResourceValidator { get; }
         private ResourceCollection ResourceCollection { get; }
-        private RESTableConfigurator Configurator { get; set; }
         private RootAccess RootAccess { get; }
         internal IDictionary<string, IEntityResourceProviderInternal> EntityResourceProviders { get; }
-        
 
         public ResourceFactory
         (
@@ -45,11 +42,6 @@ namespace RESTable.Meta.Internal
             ResourceCollection = resourceCollection;
             RootAccess = rootAccess;
             EntityResourceProviders = new Dictionary<string, IEntityResourceProviderInternal>();
-        }
-
-        internal void SetConfiguration(RESTableConfigurator configurator)
-        {
-            Configurator = configurator;
         }
 
         internal void MakeResources()
@@ -213,7 +205,10 @@ namespace RESTable.Meta.Internal
                         $"Resource type(s) {string.Join(", ", group.Select(item => $"'{item.Name}'"))} is/are declared " +
                         $"within the scope of another class '{group.Key}', that is not a RESTable resource. Inner " +
                         "resources must be declared within a resource class.");
-                parentResource.InnerResources = group.ToList();
+                foreach (var innerResource in group)
+                {
+                    parentResource.AddInnerResource(innerResource);
+                }
             }
         }
 
@@ -255,7 +250,7 @@ namespace RESTable.Meta.Internal
         /// </summary>
         internal void FinalCheck()
         {
-            var metadata = Metadata.GetMetadata(MetadataLevel.Full, null, RootAccess, ResourceCollection, TypeCache);
+            var metadata = Metadata.GetMetadata(MetadataLevel.Full, RootAccess, TypeCache);
             foreach (var enumType in metadata.PeripheralTypes.Keys.Where(t => t.IsEnum))
             {
                 if (Enum.GetNames(enumType).Select(name => name.ToLower()).ContainsDuplicates(out var dupe))

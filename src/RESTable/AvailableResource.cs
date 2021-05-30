@@ -110,7 +110,7 @@ namespace RESTable
                 ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray() ?? new ViewInfo[0]
                 : null,
             InnerResources = ((IResourceInternal) iresource)
-                .InnerResources?
+                .GetInnerResources()
                 .Select(r => Make(r, trace))
                 .ToArray()
         };

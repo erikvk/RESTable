@@ -8,12 +8,12 @@ namespace RESTable.Requests
     /// <summary>
     /// A common interface for objects representing request headers
     /// </summary>
-    public interface IHeaders : IDictionary<string, string>
+    public interface IHeaders : IDictionary<string, string?>
     {
         /// <summary>
         /// The Accept header
         /// </summary>
-        ContentTypes Accept { get; set; }
+        ContentTypes? Accept { get; set; }
 
         /// <summary>
         /// The Content-Type header
@@ -23,22 +23,22 @@ namespace RESTable.Requests
         /// <summary>
         /// The Source header
         /// </summary>
-        string Source { get; set; }
+        string? Source { get; set; }
 
         /// <summary>
         /// The Destination header
         /// </summary>
-        string Destination { get; set; }
+        string? Destination { get; set; }
 
         /// <summary>
         /// The Authorization header
         /// </summary>
-        string Authorization { get; set; }
+        string? Authorization { get; set; }
 
         /// <summary>
         /// The Origin header
         /// </summary>
-        string Origin { get; set; }
+        string? Origin { get; set; }
         
         /// <summary>
         /// The Elapsed header

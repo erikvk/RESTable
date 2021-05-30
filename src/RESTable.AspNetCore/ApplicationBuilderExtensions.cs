@@ -70,14 +70,17 @@ namespace RESTable.AspNetCore
         {
             var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(RootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
-            if (!authenticator.TryAuthenticate(ref uri, headers, out var accessRights, out var notAuthorized))
+            if (!authenticator.TryAuthenticate(ref uri, headers, out var accessRights))
             {
-                WriteResponse(aspNetCoreContext, notAuthorized);
+                var error = new Unauthorized();
+                if (headers.Metadata == "full")
+                    error.Headers.Metadata = error.Metadata;
+                WriteResponse(aspNetCoreContext, error);
                 return;
             }
             var client = GetClient(aspNetCoreContext, accessRights);
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
-            
+
             var body = aspNetCoreContext.Request.Body;
             var request = context.CreateRequest(method, uri, body, headers);
             await using var result = await request.GetResult().ConfigureAwait(false);

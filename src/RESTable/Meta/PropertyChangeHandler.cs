@@ -7,7 +7,7 @@
     (
         DeclaredProperty property,
         object target,
-        dynamic oldValue,
-        dynamic newValue
+        dynamic? oldValue,
+        dynamic? newValue
     );
 }

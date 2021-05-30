@@ -27,21 +27,24 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the value of this property, for a given target object
         /// </summary>
-        public virtual object GetValue(object target) => Getter?.Invoke(target);
+        public virtual object? GetValue(object target) => Getter?.Invoke(target);
 
         /// <summary>
         /// Sets the value of this property, for a given target object and a given value
         /// </summary>
-        public virtual void SetValue(object target, object value) => Setter?.Invoke(target, value);
+        public virtual void SetValue(object target, object? value) => Setter?.Invoke(target, value);
 
         /// <summary>
         /// </summary>
-        internal Setter Setter { get; set; }
+        internal Setter? Setter { get; set; }
 
         /// <summary>
         /// </summary>
-        internal Getter Getter { get; set; }
+        internal Getter? Getter { get; set; }
 
+        /// <summary>
+        /// Is this property marked as read-only?
+        /// </summary>
         public bool ReadOnly { get; set; }
 
         /// <inheritdoc />
@@ -50,6 +53,6 @@ namespace RESTable.Meta
         /// <inheritdoc />
         public override bool IsWritable => !ReadOnly && Setter is not null;
 
-        protected Property(Type owner) : base(owner) { }
+        protected Property(Type? owner) : base(owner) { }
     }
 }

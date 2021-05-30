@@ -40,7 +40,7 @@ namespace RESTable
         public static string RESTableMemberName(this MemberInfo m, bool flagged = false)
         {
             string name;
-            if (m.HasAttribute<RESTableMemberAttribute>(out var attribute) && attribute.Name is not null)
+            if (m.HasAttribute(out RESTableMemberAttribute? attribute) && attribute!.Name is not null)
                 name = attribute.Name;
             else name = m.Name;
             return flagged ? $"${name}" : name;
@@ -53,7 +53,7 @@ namespace RESTable
 
         #region Type reflection
 
-        public static string GetRESTableTypeName(this Type type) => type?.FullName?.Replace('+', '.');
+        public static string GetRESTableTypeName(this Type type) => type.FullName?.Replace('+', '.') ?? throw new Exception("Could not establish the name of a type");
 
         /// <summary>
         /// Can this type hold dynamic members? Defined as implementing the IDictionary`2 interface
@@ -80,7 +80,7 @@ namespace RESTable
             })
             .Where(type => type.IsSubclassOf(baseType));
 
-        internal static bool HasAttribute(this MemberInfo type, Type attributeType)
+        internal static bool HasAttribute(this MemberInfo? type, Type attributeType)
         {
             return (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
         }
@@ -90,12 +90,12 @@ namespace RESTable
             return resource.GetCustomAttributes().OfType<EntityResourceProviderAttribute>().Any();
         }
 
-        public static bool HasAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
+        public static bool HasAttribute<TAttribute>(this MemberInfo? type) where TAttribute : Attribute
         {
             return type?.GetCustomAttribute<TAttribute>() is not null;
         }
 
-        public static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute) where TAttribute : Attribute
+        public static bool HasAttribute<TAttribute>(this MemberInfo? type, out TAttribute? attribute) where TAttribute : Attribute
         {
             attribute = type?.GetCustomAttribute<TAttribute>();
             return attribute is not null;
@@ -131,7 +131,7 @@ namespace RESTable
         /// Returns true if and only if the type implements the generic interface type. Returns the 
         /// generic type parameters (if any) in an out parameter.
         /// </summary>
-        public static bool ImplementsGenericInterface(this Type type, Type interfaceType, out Type[] genericParameters)
+        public static bool ImplementsGenericInterface(this Type type, Type interfaceType, out Type[]? genericParameters)
         {
             var match = type.GetInterfaces()
                 .FirstOrDefault(i => i.Name == interfaceType.Name &&
@@ -146,27 +146,19 @@ namespace RESTable
             return match is not null;
         }
 
-        internal static long ByteCount(this PropertyInfo property, object target)
-        {
-            if (target is null) throw new NullReferenceException(nameof(target));
-            return property.GetValue(target) switch
-            {
-                null => 0,
-                string str => Encoding.UTF8.GetByteCount(str),
-                byte[] binary => binary.Length,
-                _ => CountBytes(property.PropertyType)
-            };
-        }
-
         internal static long CountBytes(this Type type)
         {
             if (type.IsEnum) return 8;
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Object:
+                {
                     if (type.IsNullable(out var baseType))
-                        return CountBytes(baseType);
+                    {
+                        return CountBytes(baseType!);
+                    }
                     throw new Exception($"Unknown type encountered: '{type.GetRESTableTypeName()}'");
+                }
                 case TypeCode.Boolean: return 4;
                 case TypeCode.Char: return 2;
                 case TypeCode.SByte: return 1;
@@ -189,13 +181,13 @@ namespace RESTable
 
         #region Other
 
-        internal static string UriEncode(this string str)
+        internal static string? UriEncode(this string? str)
         {
             if (str is null) return null;
             return Uri.EscapeDataString(str);
         }
 
-        internal static string UriDecode(this string str)
+        internal static string? UriDecode(this string? str)
         {
             if (str is null) return null;
             return Uri.UnescapeDataString(str);
@@ -209,7 +201,7 @@ namespace RESTable
         /// <summary>
         /// Checks if the type is a Nullable struct, and - if so -  returns the underlying type in the out parameter.
         /// </summary>
-        public static bool IsNullable(this Type type, out Type baseType)
+        public static bool IsNullable(this Type type, out Type? baseType)
         {
             baseType = Nullable.GetUnderlyingType(type);
             return baseType is not null;
@@ -219,7 +211,7 @@ namespace RESTable
         /// Splits a string into two parts by a separator char, and returns a 2-tuple 
         /// holding the parts.
         /// </summary>
-        public static (string, string) TupleSplit(this string str, char separator, bool trim = false)
+        public static (string, string?) TupleSplit(this string str, char separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.RemoveEmptyEntries);
             return trim switch
@@ -243,7 +235,7 @@ namespace RESTable
         /// Splits a string into two parts by a separator string, and returns a 2-tuple 
         /// holding the parts.
         /// </summary>
-        public static (string, string) TupleSplit(this string str, string separator, bool trim = false)
+        public static (string, string?) TupleSplit(this string str, string separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
             return trim switch
@@ -276,7 +268,7 @@ namespace RESTable
             _ => ResourceKind.All
         };
 
-        internal static (bool allowDynamic, TermBindingRule bindingRule) GetDynamicConditionHandling(this Type type, RESTableAttribute attribute)
+        internal static (bool allowDynamic, TermBindingRule bindingRule) GetDynamicConditionHandling(this Type type, RESTableAttribute? attribute)
         {
             var dynamicConditionsAllowed = typeof(IDynamicMemberValueProvider).IsAssignableFrom(type) ||
                                            attribute?.AllowDynamicConditions == true;
@@ -284,7 +276,7 @@ namespace RESTable
             return (dynamicConditionsAllowed, conditionBindingRule);
         }
 
-        internal static Type GetRESTableInterfaceType(this Type resourceType) => resourceType
+        internal static Type? GetRESTableInterfaceType(this Type resourceType) => resourceType
             .GetInterfaces()
             .FirstOrDefault(i => typeof(IEntityDefinition).IsAssignableFrom(i));
 
@@ -341,7 +333,7 @@ namespace RESTable
             return typeName;
         }
 
-        public static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
+        public static Type? GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
 
         public static bool IsWrapper(this Type type) => typeof(IResourceWrapper).IsAssignableFrom(type);
 
@@ -349,15 +341,20 @@ namespace RESTable
 
         #region Filter and Process
 
-        internal static IAsyncEnumerable<T> Filter<T>(this IAsyncEnumerable<T> entities, IFilter filter) where T : class
+        internal static IAsyncEnumerable<T> Filter<T>(this IAsyncEnumerable<T> entities, IFilter? filter) where T : class
         {
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IAsyncEnumerable<JObject> Process<T>(this IAsyncEnumerable<T> entities, params IProcessor[] processors)
+        internal static IAsyncEnumerable<JObject> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors)
             where T : class
         {
-            return processors.Aggregate(default(IAsyncEnumerable<JObject>), (e, p) => e is not null ? p.Apply(e) : p.Apply(entities));
+            var target = processors[0].Apply(entities);
+            for (var i = 1; i < processors.Count; i += 1)
+            {
+                target = processors[i].Apply(target);
+            }
+            return target;
         }
 
         #endregion
@@ -380,6 +377,7 @@ namespace RESTable
         {
             return new(enumerable, equalityComparer);
         }
+
         /// <summary>
         /// Splits a string by a separator string
         /// </summary>
@@ -396,8 +394,9 @@ namespace RESTable
         /// <summary>
         /// Gets the value of a key from an IDictionary, or null if the dictionary does not contain the key.
         /// </summary>
-        public static TValue SafeGet<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
+        public static TValue? SafeGet<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
         {
+            if (key is null) throw new ArgumentNullException(nameof(key));
             dict.TryGetValue(key, out var value);
             return value;
         }
@@ -407,6 +406,7 @@ namespace RESTable
         /// </summary>
         public static void TuplePut<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
         {
+            if (pair.key is null) throw new ArgumentNullException(nameof(pair.key));
             dict[pair.key] = pair.value;
         }
 
@@ -415,7 +415,10 @@ namespace RESTable
         {
             var dictionary = new Dictionary<TKey, T>(equalityComparer);
             foreach (var item in source)
-                dictionary[keySelector(item)] = item;
+            {
+                var key = keySelector(item) ?? throw new ArgumentNullException(nameof(keySelector));
+                dictionary[key] = item;
+            }
             return dictionary;
         }
 
@@ -423,21 +426,25 @@ namespace RESTable
         /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
         /// not contain the key. The actual key is returned in the actualKey out parameter.
         /// </summary>
-        internal static bool TryFindInDictionary<T>(this IDictionary<string, T> dict, string key, out string actualKey,
-            out T result)
+        internal static bool TryFindInDictionary<T>(this IDictionary<string, T> dict, string key, out string? actualKey, out T? result)
         {
-            result = default;
-            actualKey = null;
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
             switch (matches.Count)
             {
-                case 0: return false;
+                case 0:
+                    result = default;
+                    actualKey = null;
+                    return false;
                 case 1:
                     actualKey = matches[0].Key;
                     result = matches[0].Value;
                     return true;
                 default:
-                    if (!dict.TryGetValue(key, out result)) return false;
+                    if (!dict.TryGetValue(key, out result))
+                    {
+                        actualKey = null;
+                        return false;
+                    }
                     actualKey = key;
                     return true;
             }
@@ -501,8 +508,8 @@ namespace RESTable
             TypeCode.Decimal => "a floating point number",
             TypeCode.String => "a string",
             TypeCode.DateTime => "a date time",
-            _ when type.IsNullable(out var baseType) => baseType.GetFriendlyTypeName(),
-            _ => type.FullName
+            _ when type.IsNullable(out var baseType) => baseType!.GetFriendlyTypeName(),
+            _ => type.FullName ?? type.ToString()
         };
 
         public static Error AsError(this Exception exception) => exception switch
@@ -516,7 +523,7 @@ namespace RESTable
             _ => new Unknown(exception)
         };
 
-        public static Error AsResultOf(this Exception exception, IRequest request)
+        public static Error AsResultOf(this Exception exception, IRequest? request)
         {
             var error = exception.AsError();
             if (request is null) return error;
@@ -527,7 +534,7 @@ namespace RESTable
                 var errorId = Admin.Error.Create(error, request).Id;
                 error.Headers.Error = $"/restable.admin.error/id={errorId}";
             }
-            if (request.Headers.Metadata.EqualsNoCase("full"))
+            if (request.Headers.Metadata?.EqualsNoCase("full") == true)
                 error.Headers.Metadata = error.Metadata;
             error.Headers.Version = request.GetRequiredService<RESTableConfiguration>().Version;
             return error;
@@ -638,7 +645,7 @@ namespace RESTable
         public static IContentTypeProvider GetInputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
         {
             var contentType = contentTypeOverride ?? protocolHolder.Headers.ContentType ?? protocolHolder.CachedProtocolProvider.DefaultInputProvider.ContentType;
-            if (!protocolHolder.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out var contentTypeProvider))
+            if (!protocolHolder.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out IContentTypeProvider contentTypeProvider))
                 throw new UnsupportedContent(contentType.ToString());
             return contentTypeProvider;
         }
@@ -646,21 +653,26 @@ namespace RESTable
         /// <summary>
         /// Checks if the given protocol holder can accept a request with the given content type
         /// </summary>
-        public static bool Accepts(this IProtocolHolder protocolHolder, ContentType contentType, out string acceptHeader)
+        public static bool Accepts(this IProtocolHolder protocolHolder, ContentType contentType, out string? acceptHeader)
         {
-            acceptHeader = protocolHolder.Headers.Accept.ToString();
-            foreach (var acceptType in protocolHolder.Headers.Accept)
+            var accept = protocolHolder.Headers.Accept;
+            if (accept is not null)
             {
-                if (acceptType.AnyType) return true;
-                if (protocolHolder.CachedProtocolProvider.OutputMimeBindings.TryGetValue(acceptType.MediaType, out _))
-                    return true;
+                acceptHeader = accept.ToString();
+                foreach (var acceptType in accept)
+                {
+                    if (acceptType.AnyType) return true;
+                    if (protocolHolder.CachedProtocolProvider.OutputMimeBindings.TryGetValue(contentType.MediaType, out _))
+                        return true;
+                }
             }
+            acceptHeader = null;
             return false;
         }
 
-        public static IContentTypeProvider GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
+        public static IContentTypeProvider? GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
         {
-            IContentTypeProvider acceptProvider = null;
+            IContentTypeProvider? acceptProvider = null;
 
             var protocolProvider = protocolHolder.CachedProtocolProvider;
             var headers = protocolHolder.Headers;
@@ -672,7 +684,7 @@ namespace RESTable
             if (!contentType.HasValue)
             {
                 var containedWildcard = false;
-                var foundProvider = headers.Accept.Any(a =>
+                var foundProvider = headers.Accept!.Any(a =>
                 {
                     if (!a.AnyType)
                         return protocolProvider.OutputMimeBindings.TryGetValue(a.MediaType, out acceptProvider);
@@ -682,8 +694,7 @@ namespace RESTable
                 if (!foundProvider)
                     if (containedWildcard)
                         acceptProvider = protocolProvider.DefaultOutputProvider;
-                    else
-                        throw new NotAcceptable(headers.Accept.ToString());
+                    else throw new NotAcceptable(headers.Accept!.ToString());
             }
             else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MediaType, out acceptProvider))
                 throw new NotAcceptable(contentType.Value.ToString());
@@ -693,7 +704,7 @@ namespace RESTable
         /// <summary>
         /// Parses a condition value from a value literal, and performs an optional type check (non-optional for enums)
         /// </summary>
-        internal static object ParseConditionValue(this string valueLiteral, DeclaredProperty property = null)
+        internal static object? ParseConditionValue(this string valueLiteral, DeclaredProperty? property = null)
         {
             switch (valueLiteral)
             {
@@ -741,7 +752,8 @@ namespace RESTable
                             return dateTime.ToUniversalTime();
                         throw new Exception();
                     }
-                    return Convert.ChangeType(valueLiteral, property.Type.IsNullable(out var t) ? t : property.Type);
+                    Type targetType = property.Type.IsNullable(out var t) ? t! : property.Type;
+                    return Convert.ChangeType(valueLiteral, targetType!);
                 }
                 catch
                 {
@@ -784,12 +796,12 @@ namespace RESTable
             return timeSpan.GetRESTableElapsedMs().ToString(CultureInfo.InvariantCulture);
         }
 
-        internal static byte[] ToBytes(this string str)
+        internal static byte[]? ToBytes(this string? str)
         {
             return str is not null ? Encoding.UTF8.GetBytes(str) : null;
         }
 
-        internal static byte[] ToByteArray(this Stream stream)
+        internal static byte[]? ToByteArray(this Stream? stream)
         {
             switch (stream)
             {
@@ -807,7 +819,7 @@ namespace RESTable
             }
         }
 
-        internal static async Task<byte[]> ToByteArrayAsync(this Stream stream)
+        internal static async Task<byte[]?> ToByteArrayAsync(this Stream? stream)
         {
             switch (stream)
             {

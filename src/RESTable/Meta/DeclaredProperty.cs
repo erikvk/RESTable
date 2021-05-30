@@ -45,7 +45,7 @@ namespace RESTable.Meta
         /// <summary>
         /// The function to use when reduding this property to an Excel-compatible string
         /// </summary>
-        public dynamic ExcelReducer { get; }
+        public object? ExcelReducer { get; }
 
         /// <summary>
         /// Should this object be replaced with a new instance on update, or reused? Applicable for types 
@@ -61,7 +61,7 @@ namespace RESTable.Meta
         /// <summary>
         /// A custom datetime format string of this property (if any)
         /// </summary>
-        public string CustomDateTimeFormat { get; }
+        public string? CustomDateTimeFormat { get; }
 
         /// <summary>
         /// Should this member, and all its members, be merged onto the owner type when (de)serializing?
@@ -73,7 +73,7 @@ namespace RESTable.Meta
         /// </summary>
         public bool DefinesOtherProperties { get; internal set; }
 
-        private ISet<Term> definesPropertyTerms;
+        private ISet<Term>? definesPropertyTerms;
 
         /// <summary>
         /// The properties that reflects upon this property
@@ -83,7 +83,7 @@ namespace RESTable.Meta
         /// <summary>
         /// An event that is fired when this property is changed for some target
         /// </summary>
-        public event PropertyChangeHandler PropertyChanged;
+        public event PropertyChangeHandler? PropertyChanged;
 
         /// <summary>
         /// The attributes that this property has been decorated with
@@ -94,7 +94,7 @@ namespace RESTable.Meta
         /// Gets the first instance of a given attribute type that this resource property 
         /// has been decorated with.
         /// </summary>
-        public T GetAttribute<T>() where T : Attribute => Attributes?.OfType<T>().FirstOrDefault();
+        public T? GetAttribute<T>() where T : Attribute => Attributes.OfType<T>().FirstOrDefault();
 
         /// <summary>
         /// Returns true if and only if this resource property has been decorated with the given 
@@ -106,10 +106,10 @@ namespace RESTable.Meta
         /// Returns true if and only if this resource property has been decorated with the given 
         /// attribute type.
         /// </summary>
-        public bool HasAttribute<TAttribute>(out TAttribute attribute) where TAttribute : Attribute => (attribute = GetAttribute<TAttribute>()) is not null;
+        public bool HasAttribute<TAttribute>(out TAttribute? attribute) where TAttribute : Attribute => (attribute = GetAttribute<TAttribute>()) is not null;
 
         /// <inheritdoc />
-        public override void SetValue(object target, object value)
+        public override void SetValue(object target, object? value)
         {
             if (PropertyChanged is not null)
             {
@@ -124,7 +124,7 @@ namespace RESTable.Meta
             base.SetValue(target, value);
         }
 
-        internal void NotifyChange(object target, object oldValue, object newValue)
+        internal void NotifyChange(object target, object? oldValue, object? newValue)
         {
             PropertyChanged?.Invoke(this, target, oldValue, newValue);
         }
@@ -146,11 +146,12 @@ namespace RESTable.Meta
             bool isEnum,
             bool mergeOntoOwner,
             bool readOnly,
-            string customDateTimeFormat,
+            string? customDateTimeFormat,
             Operators allowedConditionOperators,
+            object? excelReducer,
             Type owner,
-            Getter getter,
-            Setter setter
+            Getter? getter,
+            Setter? setter
         )
             : base(owner)
         {
@@ -159,6 +160,7 @@ namespace RESTable.Meta
             Type = type;
             ActualName = actualName;
             Order = order;
+            ExcelReducer = excelReducer;
             Attributes = attributes;
             SkipConditions = skipConditions;
             Hidden = hidden;
@@ -177,10 +179,8 @@ namespace RESTable.Meta
         /// <summary>
         /// The regular constructor, called by the type cache when creating declared properties
         /// </summary>
-        internal DeclaredProperty(PropertyInfo p, bool flagName = false) : base(p?.DeclaringType)
+        internal DeclaredProperty(PropertyInfo p, bool flagName = false) : base(p.DeclaringType)
         {
-            if (p is null) return;
-
             MetadataToken = p.MetadataToken;
             Name = p.RESTableMemberName(flagName);
             Type = p.PropertyType;
@@ -191,13 +191,14 @@ namespace RESTable.Meta
             MergeOntoOwner = memberAttribute?.MergeOntoOwner ?? false;
             ReadOnly = memberAttribute?.ReadOnly ?? false;
             Order = memberAttribute?.Order;
+            ExcelReducer = null!;
 
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTableViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true;
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
-            IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base.IsEnum;
+            IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base!.IsEnum;
             IsDateTime = p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(DateTime?);
             if (memberAttribute?.ExcelReducerName is not null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
@@ -206,7 +207,7 @@ namespace RESTable.Meta
             ReplaceOnUpdate = memberAttribute?.ReplaceOnUpdate == true;
         }
 
-        private static dynamic MakeExcelReducer(string methodName, PropertyInfo p)
+        private static object MakeExcelReducer(string methodName, PropertyInfo p)
         {
             if (p.DeclaringType is null) throw new Exception("Type error, cannot cache property " + p);
             try
@@ -255,13 +256,13 @@ namespace RESTable.Meta
 
         private class _NameComparer : IEqualityComparer<DeclaredProperty>
         {
-            public bool Equals(DeclaredProperty x, DeclaredProperty y) => x?.Name == y?.Name;
+            public bool Equals(DeclaredProperty? x, DeclaredProperty? y) => x?.Name == y?.Name;
             public int GetHashCode(DeclaredProperty obj) => obj.Name.GetHashCode();
         }
 
         private class _IdentityComparer : IEqualityComparer<DeclaredProperty>
         {
-            public bool Equals(DeclaredProperty x, DeclaredProperty y) => x?.MetadataToken == y?.MetadataToken;
+            public bool Equals(DeclaredProperty? x, DeclaredProperty? y) => x?.MetadataToken == y?.MetadataToken;
             public int GetHashCode(DeclaredProperty obj) => obj.MetadataToken;
         }
     }

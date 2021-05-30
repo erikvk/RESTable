@@ -34,7 +34,7 @@ namespace RESTable.Meta
         /// <summary>
         /// The name of the parent resource, if this is an inner resource
         /// </summary>
-        string ParentResourceName { get; }
+        string? ParentResourceName { get; }
 
         /// <summary>
         /// Is this resource declared as available to all, regardless of API keys?
@@ -45,7 +45,7 @@ namespace RESTable.Meta
         /// An interface type to use instead of this type when determing the public instance 
         /// members of this resource type. The resource type must implement this interface.
         /// </summary>
-        Type InterfaceType { get; }
+        Type? InterfaceType { get; }
 
         /// <summary>
         /// The kind of resource, for example entity resource

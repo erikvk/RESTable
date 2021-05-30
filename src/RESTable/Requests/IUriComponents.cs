@@ -21,7 +21,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Specifies the view for the request
         /// </summary>
-        string ViewName { get; }
+        string? ViewName { get; }
 
         /// <summary>
         /// Specifies the conditions for the request

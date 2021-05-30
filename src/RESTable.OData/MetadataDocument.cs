@@ -87,7 +87,7 @@ namespace RESTable.OData
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var metadata = Metadata.GetMetadata(MetadataLevel.Full, null, rootAccess, resourceCollection, typeCache);
+                var metadata = Metadata.GetMetadata(MetadataLevel.Full, null, typeCache);
 
                 var swr = new StreamWriter(stream, Encoding.UTF8, 4096, true);
 #if NETSTANDARD2_1

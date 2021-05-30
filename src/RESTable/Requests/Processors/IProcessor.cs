@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 
 namespace RESTable.Requests.Processors
 {
-    internal interface IProcessor
+    public interface IProcessor
     {
         IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities);
     }

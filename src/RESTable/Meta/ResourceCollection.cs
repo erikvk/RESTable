@@ -12,14 +12,24 @@ namespace RESTable.Meta
 {
     public class ResourceCollection : ICollection<IResource>
     {
-        internal IDictionary<string, IResource> ResourceFinder { get; }
-        internal IDictionary<string, IResource> ResourceByName { get; }
-        internal IDictionary<Type, IResource> ResourceByType { get; }
-        internal ICollection<IResource> AllResources => ResourceByName.Values;
-
+        private IDictionary<string, IResource?> ResourceFinder { get; }
+        private IDictionary<string, IResource> ResourceByName { get; }
+        private IDictionary<Type, IResource> ResourceByType { get; }
         private RESTableConfigurator Configurator { get; set; }
         private TypeCache TypeCache { get; set; }
         private RootAccess RootAccess { get; set; }
+
+        public ResourceCollection()
+        {
+            ResourceFinder = new ConcurrentDictionary<string, IResource?>(StringComparer.OrdinalIgnoreCase);
+            ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
+            ResourceByType = new Dictionary<Type, IResource>();
+
+            // Resolved in SetDependencies to avoid circular dependencies
+            Configurator = null!;
+            TypeCache = null!;
+            RootAccess = null!;
+        }
 
         internal void SetDependencies
         (
@@ -33,15 +43,8 @@ namespace RESTable.Meta
             RootAccess = rootAccess;
         }
 
-        public ResourceCollection()
-        {
-            ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            ResourceByType = new Dictionary<Type, IResource>();
-        }
-
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        public IEnumerator<IResource> GetEnumerator() => AllResources.GetEnumerator();
+        public IEnumerator<IResource> GetEnumerator() => ResourceByName.Values.GetEnumerator();
 
         #region ICollection
 
@@ -54,10 +57,10 @@ namespace RESTable.Meta
             ResourceByType.Clear();
         }
 
-        public bool Contains(IResource item) => AllResources.Contains(item);
-        public void CopyTo(IResource[] array, int arrayIndex) => AllResources.CopyTo(array, arrayIndex);
+        public bool Contains(IResource item) => ResourceByName.Values.Contains(item);
+        public void CopyTo(IResource[] array, int arrayIndex) => ResourceByName.Values.CopyTo(array, arrayIndex);
         public bool Remove(IResource item) => RemoveResource(item);
-        public int Count => AllResources.Count;
+        public int Count => ResourceByName.Count;
         public bool IsReadOnly => false;
 
         #endregion
@@ -84,7 +87,7 @@ namespace RESTable.Meta
         private void ReloadResourceFinder()
         {
             ResourceFinder.Clear();
-            foreach (var resource in AllResources)
+            foreach (var resource in ResourceByName.Values)
                 AddToResourceFinder(resource);
         }
 
@@ -126,7 +129,7 @@ namespace RESTable.Meta
         {
             if (searchString is null) throw new UnknownResource("null");
             if (!ResourceFinder.TryGetValue(searchString, out var resource))
-               throw new UnknownResource(searchString);
+                throw new UnknownResource(searchString);
             if (resource is null)
                 throw new AmbiguousResource(searchString);
             if (!kind.HasFlag(resource.ResourceKind))
@@ -211,6 +214,16 @@ namespace RESTable.Meta
             }
         }
 
+        /// <summary>
+        /// Tries to retrieve the resource with the given name
+        /// </summary>
+        public bool TryGetResource(string name, out IResource resource) => ResourceByName.TryGetValue(name, out resource);
+
+        /// <summary>
+        /// Tries to retrieve the resource with the given type
+        /// </summary>
+        public bool TryGetResource(Type type, out IResource resource) => ResourceByType.TryGetValue(type, out resource);
+
         /// Gets the resource for a given type, or throws an UnknownResource exception if there is no such resource
         /// </summary>
         public IResource GetResource(Type type) => ResourceByType.SafeGet(type) ?? throw new UnknownResource(type.GetRESTableTypeName());
@@ -218,7 +231,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the resource for a given type or returns null if there is no such resource
         /// </summary>
-        public IResource SafeGetResource(Type type) => ResourceByType.SafeGet(type);
+        public IResource? SafeGetResource(Type type) => ResourceByType.SafeGet(type);
 
         /// <summary>
         /// Finds a resource by name (case insensitive) and throws an UnknownResource exception
@@ -242,7 +255,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the terminal resource for a given type or null if there is no such resource
         /// </summary>
-        public IResource<T> SafeGetResource<T>() where T : class => ResourceByType.SafeGet(typeof(T)) as IResource<T>;
+        public IResource<T>? SafeGetResource<T>() where T : class => ResourceByType.SafeGet(typeof(T)) as IResource<T>;
 
         /// <summary>
         /// Gets the resource specifier for a given resource
@@ -260,7 +273,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the terminal resource for a given type or null if there is no such resource
         /// </summary>
-        public ITerminalResource<T> SafeGetTerminalResource<T>() where T : Terminal => ResourceByType.SafeGet(typeof(T)) as ITerminalResource<T>;
+        public ITerminalResource<T>? SafeGetTerminalResource<T>() where T : Terminal => ResourceByType.SafeGet(typeof(T)) as ITerminalResource<T>;
 
         #endregion
     }

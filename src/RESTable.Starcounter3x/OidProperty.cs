@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -24,7 +25,11 @@ namespace RESTable.Starcounter3x
                 .MetadataToken ?? throw new NullReferenceException();
         }
 
-        private static object GetOid(object target) => DbProxy.GetContext(target).GetOid(target);
+        private static ValueTask<object?> GetOid(object target)
+        {
+            var oid = DbProxy.GetContext(target).GetOid(target);
+            return new ValueTask<object?>(oid);
+        }
 
         internal OidProperty(Type owner) : base
         (
@@ -44,6 +49,7 @@ namespace RESTable.Starcounter3x
             owner: owner,
             readOnly: false,
             setter: null,
+            excelReducer: null,
             mergeOntoOwner: false
         ) { }
     }

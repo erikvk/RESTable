@@ -25,62 +25,83 @@ namespace RESTable.Requests
         /// <summary>
         /// The limit by which the request's response body entity count should be restricted to
         /// </summary>
-        public Limit Limit { get; set; } = Limit.NoLimit;
+        public Limit Limit { get; set; }
 
         /// <summary>
         /// An offset in the request's entities, on which enumeration will start when creating the 
         /// response
         /// </summary>
-        public Offset Offset { get; set; } = Offset.NoOffset;
+        public Offset Offset { get; set; }
 
         /// <summary>
         /// The OrderBy filter to apply to the output from this request
         /// </summary>
-        public OrderBy OrderBy { get; set; }
+        public OrderBy? OrderBy { get; set; }
 
         /// <summary>
         /// The Select processor to apply to the output from this request
         /// </summary>
-        public Select Select { get; set; }
+        public Select? Select { get; set; }
 
         /// <summary>
         /// The Add processor to apply to the output from this request
         /// </summary>
-        public Add Add { get; set; }
+        public Add? Add { get; set; }
 
         /// <summary>
         /// The Renam processor to apply to the output from this request
         /// </summary>
-        public Rename Rename { get; set; }
+        public Rename? Rename { get; set; }
 
         /// <summary>
         /// The Distinct processor to apply to the output from this request
         /// </summary>
-        public Distinct Distinct { get; set; }
+        public Distinct? Distinct { get; set; }
 
         /// <summary>
         /// The search filter to apply to the output from this request
         /// </summary>
-        public Search Search { get; set; }
+        public Search? Search { get; set; }
 
         /// <summary>
         /// The term to use for safepost
         /// </summary>
-        public string SafePost { get; set; }
+        public string? SafePost { get; set; }
 
-        internal bool Empty = true;
+        private List<IProcessor> ProcessorsList { get; }
 
-        internal IProcessor[] Processors { get; private set; }
-        internal bool HasProcessors { get; private set; }
-        internal bool CanUseExternalCounter { get; private set; } = true;
+        public IReadOnlyList<IProcessor> Processors => ProcessorsList.AsReadOnly();
+
+        public bool HasProcessors => ProcessorsList.Count > 0;
+
+        private bool Empty;
+
+        internal bool CanUseExternalCounter { get; private set; }
+
+        public MetaConditions()
+        {
+            CanUseExternalCounter = true;
+            Empty = true;
+            SafePost = null!;
+            Search = null!;
+            Distinct = null!;
+            Rename = null!;
+            Add = null!;
+            Select = null!;
+            OrderBy = null!;
+            Offset = Offset.NoOffset;
+            Limit = Limit.NoLimit;
+            ProcessorsList = new List<IProcessor>(3);
+        }
 
         internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource, TermFactory termFactory)
         {
-            if (uriMetaConditions?.Any() != true) return null;
+            if (!uriMetaConditions.Any() != true)
+                return new MetaConditions();
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
             var others = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
-            var metaConditions = new MetaConditions {Empty = false};
-            ICollection<string> dynamicDomain = default;
+            MetaConditions metaConditions = new() {Empty = false};
+            ICollection<string>? dynamicDomain = default;
 
             void make(IEnumerable<IUriCondition> conditions)
             {
@@ -206,12 +227,17 @@ namespace RESTable.Requests
             make(renames);
             make(others);
 
-            metaConditions.Processors = new IProcessor[] {metaConditions.Add, metaConditions.Rename, metaConditions.Select}.Where(p => p is not null).ToArray();
-            metaConditions.HasProcessors = metaConditions.Processors.Any();
             metaConditions.CanUseExternalCounter = metaConditions.Search is null
                                                    && metaConditions.Distinct is null
                                                    && metaConditions.Limit.Number == -1
                                                    && metaConditions.Offset.Number == 0;
+
+            if (metaConditions.Add is not null)
+                metaConditions.ProcessorsList.Add(metaConditions.Add);
+            if (metaConditions.Rename is not null)
+                metaConditions.ProcessorsList.Add(metaConditions.Rename);
+            if (metaConditions.Select is not null)
+                metaConditions.ProcessorsList.Add(metaConditions.Select);
 
             if (metaConditions.OrderBy is not null)
             {
@@ -236,7 +262,7 @@ namespace RESTable.Requests
             return metaConditions;
         }
 
-        private static string GetTypeString(Type type) => type switch
+        private static string? GetTypeString(Type type) => type switch
         {
             _ when type == typeof(string) => "a string",
             _ when type == typeof(int) => "an integer",
@@ -295,8 +321,6 @@ namespace RESTable.Requests
                 SafePost = SafePost,
                 Empty = Empty
             };
-            copy.Processors = new IProcessor[] {copy.Add, copy.Rename, copy.Select}.Where(p => p is not null).ToArray();
-            copy.HasProcessors = copy.Processors.Any();
             copy.CanUseExternalCounter = copy.Search is null && copy.Distinct is null && copy.Limit.Number == -1 && copy.Offset.Number == 0;
             return copy;
         }

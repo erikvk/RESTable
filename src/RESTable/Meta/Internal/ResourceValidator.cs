@@ -26,19 +26,19 @@ namespace RESTable.Meta.Internal
             Configuration = configuration;
         }
 
-        public void ValidateRuntimeInsertion(Type type, string fullName, RESTableAttribute attribute)
+        public void ValidateRuntimeInsertion(Type type, string? fullName, RESTableAttribute? attribute)
         {
             string name;
             if (fullName is not null)
                 name = fullName;
-            else name = type.GetRESTableTypeName();
+            else name = type.GetRESTableTypeName() ?? throw new Exception("Could not establish name for a runtime resource");
             if (name is null)
                 throw new InvalidResourceDeclarationException(
                     "Encountered an unknown type. No further information is available.");
-            if (ResourceCollection.ResourceByType.ContainsKey(type))
+            if (ResourceCollection.TryGetResource(type, out _))
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same type ('{type.GetRESTableTypeName()}') has already been added to RESTable");
-            if (ResourceCollection.ResourceByName.ContainsKey(name))
+            if (ResourceCollection.TryGetResource(name, out _))
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same name has already been added to RESTable");
             attribute ??= type.GetCustomAttribute<RESTableAttribute>();
@@ -128,7 +128,7 @@ namespace RESTable.Meta.Internal
                             .First(p => p.GetGetMethod()?.Name is string getname && method.Name.EndsWith(getname) ||
                                         p.GetSetMethod()?.Name is string setname && method.Name.EndsWith(setname));
 
-                        Type propertyType = null;
+                        Type? propertyType = null;
                         if (method.IsPrivate && method.Name.StartsWith($"{interfaceName}.get_") || method.Name.StartsWith("get_"))
                             propertyType = method.ReturnType;
                         else if (method.IsPrivate && method.Name.StartsWith($"{interfaceName}.set_") || method.Name.StartsWith("set_"))
@@ -139,7 +139,7 @@ namespace RESTable.Meta.Internal
                                 $"Invalid implementation of interface '{interfaceType.GetRESTableTypeName()}' assigned to resource '{type.GetRESTableTypeName()}'. " +
                                 $"Unable to determine the type for interface property '{interfaceProperty.Name}'");
 
-                        PropertyInfo projectedProperty;
+                        PropertyInfo? projectedProperty;
                         if (method.Name.StartsWith($"{interfaceName}.get_"))
                         {
                             projectedProperty = method.GetInstructions()
@@ -219,7 +219,7 @@ namespace RESTable.Meta.Internal
 
                 #region Check for properties with duplicate case insensitive names
 
-                if (TypeCache.FindAndParseDeclaredProperties(type).ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
+                if (TypeCache.FindAndParseDeclaredProperties(type).ContainsDuplicates(DeclaredProperty.NameComparer, out DeclaredProperty duplicate))
                     throw new InvalidResourceMemberException(
                         $"Invalid properties for resource '{type.GetRESTableTypeName()}'. Names of public instance properties must " +
                         $"be unique (case insensitive). Two or more property names were equivalent to '{duplicate.Name}'."

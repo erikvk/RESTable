@@ -175,7 +175,7 @@ namespace RESTable.Resources
         /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
         /// created by this provider to have database indexes managed by that resource.
         /// </summary>
-        protected virtual IDatabaseIndexer DatabaseIndexer => null;
+        protected virtual IDatabaseIndexer? DatabaseIndexer => null;
 
         /// <summary>
         /// The ReceiveClaimed method is called by RESTable once one or more resources provided
@@ -194,7 +194,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <param name="resource">The resource to check validity for</param>
         /// <param name="reason">Return the reason for this Type not being valid</param>
-        protected virtual bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
+        protected virtual bool IsValid(IEntityResource resource, TypeCache typeCache, out string? reason)
         {
             reason = null;
             return true;
@@ -444,12 +444,12 @@ namespace RESTable.Resources
 
         private IEntityResource<TResource> _InsertResource<TResource>
         (
-            string fullName = null,
-            RESTableAttribute attribute = null,
-            DelegateSet<TResource> delegates = null
+            string? fullName = null,
+            RESTableAttribute? attribute = null,
+            DelegateSet<TResource>? delegates = null
         ) where TResource : class, TBase => new EntityResource<TResource>
         (
-            fullName: fullName ?? typeof(TResource).GetRESTableTypeName(),
+            fullName: fullName ?? typeof(TResource).GetRESTableTypeName() ?? throw new Exception("Could not establish name for inserted resource"),
             attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTableAttribute>(),
             delegates: ResolveDelegateSet<TResource, TResource>(delegates),
             views: GetViews<TResource>(),
@@ -476,7 +476,7 @@ namespace RESTable.Resources
             resourceCollection: ResourceCollection
         );
 
-        private DelegateSet<TResource> ResolveDelegateSet<TTarget, TResource>(DelegateSet<TResource> delegates)
+        private DelegateSet<TResource> ResolveDelegateSet<TTarget, TResource>(DelegateSet<TResource>? delegates)
             where TResource : class, TBase
             where TTarget : class => (delegates ?? new DelegateSet<TResource>())
             .GetDelegatesFromTargetWhereNull<TTarget>()

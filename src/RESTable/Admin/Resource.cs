@@ -104,7 +104,7 @@ namespace RESTable.Admin
                 IResource = iresource,
                 Provider = entityResource?.Provider ?? (iresource is IBinaryResource ? "Binary" : "Terminal"),
                 Kind = iresource.ResourceKind,
-                InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make<T>).ToArray()
+                InnerResources = ((IResourceInternal) iresource).GetInnerResources().Select(Make<T>).ToArray()
             };
         }
 

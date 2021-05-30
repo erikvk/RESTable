@@ -16,7 +16,7 @@ namespace RESTable.Requests
         public string ResourceSpecifier { get; }
 
         /// <inheritdoc />
-        public string ViewName { get; }
+        public string? ViewName { get; }
 
         /// <summary>
         /// The read and writable conditions list
@@ -43,7 +43,7 @@ namespace RESTable.Requests
         (
             IProtocolProvider protocolProvider,
             string resourceSpecifier,
-            string viewName,
+            string? viewName,
             IEnumerable<IUriCondition> conditions,
             IEnumerable<IUriCondition> metaConditions,
             IMacro macro
@@ -60,6 +60,7 @@ namespace RESTable.Requests
 
         internal UriComponents(IUriComponents existing)
         {
+            ProtocolProvider = null!;
             ProtocolIdentifier = existing.ProtocolIdentifier;
             ResourceSpecifier = existing.ResourceSpecifier;
             ViewName = existing.ViewName;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Serialization;
 using RESTable.ContentTypeProviders;
 
@@ -23,15 +24,8 @@ namespace RESTable.Meta
         /// </summary>
         public static Getter MakeDynamicGetter(this PropertyInfo propertyInfo)
         {
-            try
-            {
-                var valueProvider = new ExpressionValueProvider(propertyInfo);
-                return target => valueProvider.GetValue(target);
-            }
-            catch
-            {
-                return null;
-            }
+            var valueProvider = new ExpressionValueProvider(propertyInfo);
+            return target => new ValueTask<object?>(valueProvider.GetValue(target));
         }
 
         /// <summary>
@@ -39,21 +33,18 @@ namespace RESTable.Meta
         /// </summary>
         public static Setter MakeDynamicSetter(this PropertyInfo propertyInfo)
         {
-            try
+            var valueProvider = new ExpressionValueProvider(propertyInfo);
+            return (target, value) =>
             {
-                var valueProvider = new ExpressionValueProvider(propertyInfo);
-                return (target, value) => valueProvider.SetValue(target, value);
-            }
-            catch
-            {
-                return null;
-            }
+                valueProvider.SetValue(target, value);
+                return default;
+            };
         }
 
         /// <summary>
-        /// Makes a fast delegate for setting the value for a given property.
+        /// Makes a fast delegate for creating an instance of a given type
         /// </summary>
-        public static Constructor MakeDynamicConstructor(this Type type)
+        public static Constructor? MakeDynamicConstructor(this Type type)
         {
             try
             {
@@ -72,7 +63,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Makes a fast delegate for setting the value for a given property.
         /// </summary>
-        public static Constructor<T> MakeStaticConstructor<T>(this Type type)
+        public static Constructor<T>? MakeStaticConstructor<T>(this Type type)
         {
             try
             {

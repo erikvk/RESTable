@@ -18,7 +18,7 @@ namespace RESTable.Starcounter3x
             dynamic inserter = typeof(IDatabaseContext)
                 .GetMethod("Insert")?
                 .MakeGenericMethod(contract.EntityType)
-                .CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IDatabaseContext), contract.EntityType));
+                .CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IDatabaseContext), contract.EntityType))!;
 
             contract.CustomCreator = () =>
             {

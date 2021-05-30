@@ -35,9 +35,9 @@ namespace RESTable.Meta.IL
     {
         public int Offset { get; }
         public OpCode OpCode { get; }
-        public object Operand { get; internal set; }
-        public Instruction Previous { get; internal set; }
-        public Instruction Next { get; internal set; }
+        public object? Operand { get; internal set; } = null!;
+        public Instruction Previous { get; internal set; } = null!;
+        public Instruction Next { get; internal set; } = null!;
 
         internal Instruction(int offset, OpCode opcode)
         {

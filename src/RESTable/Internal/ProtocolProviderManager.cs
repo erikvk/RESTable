@@ -11,12 +11,13 @@ namespace RESTable.Internal
 {
     public class ProtocolProviderManager
     {
-        internal IDictionary<string, CachedProtocolProvider> CachedProtocolProviders { get; private set; }
-        internal CachedProtocolProvider DefaultProtocolProvider { get; private set; }
+        internal IDictionary<string, CachedProtocolProvider> CachedProtocolProviders { get; }
+        internal CachedProtocolProvider DefaultProtocolProvider { get; }
         private ContentTypeProviderManager ContentTypeProviderManager { get; }
 
         public ProtocolProviderManager(ContentTypeProviderManager contentTypeProviderManager, IEnumerable<IProtocolProvider> protocolProviders)
         {
+            DefaultProtocolProvider = null!;
             CachedProtocolProviders = new Dictionary<string, CachedProtocolProvider>(StringComparer.OrdinalIgnoreCase);
             ContentTypeProviderManager = contentTypeProviderManager;
             foreach (var provider in protocolProviders)
@@ -29,7 +30,7 @@ namespace RESTable.Internal
                     CachedProtocolProviders[""] = cachedProvider;
                 }
                 var protocolId = provider.ProtocolIdentifier;
-                if (CachedProtocolProviders.TryGetValue(protocolId, out var existing))
+                if (CachedProtocolProviders.TryGetValue(protocolId, out CachedProtocolProvider existing))
                 {
                     if (existing.GetType() == provider.GetType())
                         throw new InvalidProtocolProviderException(
@@ -43,7 +44,7 @@ namespace RESTable.Internal
                 throw new InvalidOperationException("Expected at least one protocol provider available from the service provider given to RESTableConfig");
         }
 
-        internal CachedProtocolProvider ResolveCachedProtocolProvider(string protocolIdentifier) => protocolIdentifier is null
+        internal CachedProtocolProvider ResolveCachedProtocolProvider(string? protocolIdentifier) => protocolIdentifier is null
             ? DefaultProtocolProvider
             : CachedProtocolProviders.SafeGet(protocolIdentifier) ?? throw new UnknownProtocol(protocolIdentifier);
 
@@ -51,7 +52,7 @@ namespace RESTable.Internal
         {
             var cProvider = new CachedProtocolProvider(provider);
             var contentTypeProviders = provider.GetCustomContentTypeProviders()?.ToList() ?? new List<IContentTypeProvider>();
-            foreach (var contentTypeProvider in contentTypeProviders.Where(p => p.MatchStrings is not null))
+            foreach (var contentTypeProvider in contentTypeProviders)
             {
                 if (contentTypeProvider.CanRead)
                 {

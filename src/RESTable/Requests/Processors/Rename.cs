@@ -23,8 +23,10 @@ namespace RESTable.Requests.Processors
         private Rename(Rename other) : base(other) { }
         internal Rename GetCopy() => new(this);
 
-        private JObject Renamed(JObject entity)
+        private JObject? Renamed(JObject? entity)
         {
+            if (entity is null) 
+                return null;
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             var serializer = jsonProvider.GetSerializer();
             foreach (var pair in this)
@@ -37,7 +39,7 @@ namespace RESTable.Requests.Processors
                     entity[newName] = termValue is null ? null : JToken.FromObject(termValue, serializer);
                     continue;
                 }
-                var property = (JProperty) value.Parent;
+                var property = (JProperty?) value.Parent;
                 var actualKey = property?.Name;
                 if (actualKey is not null)
                     entity.Remove(actualKey);
@@ -49,6 +51,6 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Renames properties in an IEnumerable
         /// </summary>
-        public IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities) => entities?.Select(entity => Renamed(entity.ToJObject()));
+        public IAsyncEnumerable<JObject?>? Apply<T>(IAsyncEnumerable<T>? entities) => entities?.Select(entity => Renamed(entity?.ToJObject()));
     }
 }

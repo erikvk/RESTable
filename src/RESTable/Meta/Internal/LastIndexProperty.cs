@@ -24,22 +24,20 @@ namespace RESTable.Meta.Internal
             customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
             owner: owner,
-            getter: target =>
+            excelReducer: null,
+            getter: async target =>
             {
-                try
+                switch (target)
                 {
-                    switch (target)
-                    {
-                        case IEnumerable<object> ie: return ie.LastOrDefault();
-                        case string str: return str.Last();
-                        case IList l:
-                            var count = l.Count;
-                            return count == 0 ? null : l[l.Count - 1];
-                        case IEnumerable e: return e.Cast<object>().LastOrDefault();
-                    }
+                    case IAsyncEnumerable<object> ae: return await ae.LastOrDefaultAsync().ConfigureAwait(false);
+                    case IEnumerable<object> ie: return ie.LastOrDefault();
+                    case string str: return str.Last();
+                    case IList l:
+                        var count = l.Count;
+                        return count == 0 ? null : l[l.Count - 1];
+                    case IEnumerable e: return e.Cast<object>().LastOrDefault();
+                    default: throw new Exception("Could not get the last value of the enumeration");
                 }
-                catch { }
-                return null;
             },
             setter: collectionReadonly
                 ? default
@@ -71,6 +69,7 @@ namespace RESTable.Meta.Internal
                             catch { }
                             break;
                     }
+                    return default;
                 }),
             mergeOntoOwner: false
         ) { }

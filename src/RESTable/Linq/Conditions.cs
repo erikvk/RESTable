@@ -16,8 +16,7 @@ namespace RESTable.Linq
         public static IAsyncEnumerable<T> Where<T>(this IAsyncEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
             where T : class
         {
-            if (conditions is null) return entities;
-            return entities?.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
+            return entities.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
         }
 
         /// <summary>
@@ -25,7 +24,6 @@ namespace RESTable.Linq
         /// </summary>
         public static bool AllHoldFor<T>(this IEnumerable<Condition<T>> conditions, T subject) where T : class
         {
-            if (conditions is null) return true;
             return conditions.All(condition => condition.HoldsFor(subject));
         }
 
@@ -40,7 +38,7 @@ namespace RESTable.Linq
         /// <summary>
         /// Access a condition by its key (case insensitive) and operator
         /// </summary>
-        public static Condition<T> Get<T>(this IEnumerable<Condition<T>> conds, string key, Operators op) where T : class
+        public static Condition<T>? Get<T>(this IEnumerable<Condition<T>> conds, string key, Operators op) where T : class
         {
             return conds.FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key));
         }
@@ -49,7 +47,7 @@ namespace RESTable.Linq
         /// Gets the first condition from a collection by its key (case insensitive) and operator, and removes
         /// it from the collection. 
         /// </summary>
-        public static Condition<T> Pop<T>(this ICollection<Condition<T>> conds, string key, Operators op) where T : class
+        public static Condition<T>? Pop<T>(this ICollection<Condition<T>> conds, string key, Operators op) where T : class
         {
             var match = conds.Get(key, op);
             if (match is not null)

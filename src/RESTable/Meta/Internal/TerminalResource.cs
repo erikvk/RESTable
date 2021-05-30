@@ -17,42 +17,44 @@ namespace RESTable.Meta.Internal
         public bool IsInternal { get; }
         public bool IsGlobal { get; }
         public bool IsInnerResource { get; }
-        public string ParentResourceName { get; }
-        public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
+        public string? ParentResourceName { get; }
+        public bool Equals(IResource? x, IResource? y) => x?.Name == y?.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public TermBindingRule ConditionBindingRule { get; }
-        public string Description { get; set; }
+        public string? Description { get; set; }
         public bool GETAvailableToAll { get; }
         public override string ToString() => Name;
         public override bool Equals(object obj) => obj is TerminalResource<T> t && t.Name == Name;
         public override int GetHashCode() => Name.GetHashCode();
-        public IReadOnlyList<IResource> InnerResources { get; set; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         public Type InterfaceType { get; }
         public ResourceKind ResourceKind { get; }
         private bool IsDynamicTerminal { get; }
-
         private ConstructorInfo Constructor { get; }
         private Dictionary<string, int> ConstructorParameterIndexes { get; }
         private ParameterInfo[] ConstructorParameterInfos { get; }
-        private bool HasConstructorParameters { get; }
+        private bool HasParameterizedConstructor { get; }
+
+        private List<IResource> InnerResources { get; }
+        public void AddInnerResource(IResource resource) => InnerResources.Add(resource);
+        public IEnumerable<IResource> GetInnerResources() => InnerResources.AsReadOnly();
 
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
 
-        internal Terminal MakeTerminal(RESTableContext context, IEnumerable<Condition<T>> assignments = null)
+        internal Terminal MakeTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
         {
             var assignmentList = assignments?.ToList() ?? new List<Condition<T>>();
 
-            var newTerminal = HasConstructorParameters
+            var newTerminal = HasParameterizedConstructor
                 ? InvokeParameterizedConstructor(assignmentList)
-                : Constructor.Invoke(null) as Terminal;
+                : (Terminal) Constructor.Invoke(null);
 
             foreach (var assignment in assignmentList)
             {
                 if (assignment.Operator != Operators.EQUALS)
                     throw new BadConditionOperator(this, assignment.Operator);
-                if (!Members.TryGetValue(assignment.Key, out var property))
+                if (!Members.TryGetValue(assignment.Key, out DeclaredProperty property))
                 {
                     if (newTerminal is IDictionary<string, object> dynTerminal)
                         dynTerminal[assignment.Key] = assignment.Value;
@@ -69,7 +71,7 @@ namespace RESTable.Meta.Internal
                     throw new InvalidInputEntity(invalidEntity);
                 }
             }
-            newTerminal?.SetTerminalResource(this);
+            newTerminal.SetTerminalResource(this);
             return newTerminal;
         }
 
@@ -94,7 +96,7 @@ namespace RESTable.Meta.Internal
 
             for (var i = 0; i < ConstructorParameterInfos.Length; i += 1)
             {
-                if (parameterAssignments.TryGetValue(i, out var value))
+                if (parameterAssignments.TryGetValue(i, out object value))
                     constructorParameterList[i] = value;
                 else
                 {
@@ -122,7 +124,7 @@ namespace RESTable.Meta.Internal
                 throw new MissingTerminalParameter(Type, invalidEntity);
             }
 
-            return Constructor.Invoke(constructorParameterList) as Terminal;
+            return (Terminal) Constructor.Invoke(constructorParameterList);
         }
 
         internal TerminalResource(TypeCache typeCache)
@@ -132,6 +134,7 @@ namespace RESTable.Meta.Internal
             AvailableMethods = new[] {Method.GET};
             IsInternal = false;
             IsGlobal = true;
+            InnerResources = new List<IResource>();
             var attribute = typeof(T).GetCustomAttribute<RESTableAttribute>();
             InterfaceType = typeof(T).GetRESTableInterfaceType();
             ResourceKind = ResourceKind.TerminalResource;
@@ -143,7 +146,7 @@ namespace RESTable.Meta.Internal
             ConstructorParameterInfos = Constructor.GetParameters();
             for (var i = 0; i < ConstructorParameterInfos.Length; i += 1)
             {
-                HasConstructorParameters = true;
+                HasParameterizedConstructor = true;
                 var parameter = ConstructorParameterInfos[i];
                 ConstructorParameterIndexes[parameter.Name] = i;
             }
@@ -158,6 +161,7 @@ namespace RESTable.Meta.Internal
                 ParentResourceName = typeName.Substring(0, location).Replace('+', '.');
                 Name = typeName.Replace('+', '.');
             }
+            else ParentResourceName = null!;
         }
     }
 }

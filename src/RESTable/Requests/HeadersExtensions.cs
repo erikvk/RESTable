@@ -22,7 +22,7 @@ namespace RESTable.Requests
 
         public static bool IsCustomHeaderName(this string key) => !NonCustomHeaders.Contains(key);
 
-        internal static string _Get(this IHeadersInternal headers, string key) => key switch
+        internal static string? _Get(this IHeadersInternal headers, string key) => key switch
         {
             _ when key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept?.ToString(),
             _ when key.EqualsNoCase("Content-Type") => headers.ContentType?.ToString(),
@@ -35,7 +35,7 @@ namespace RESTable.Requests
             _ => default
         };
 
-        internal static void _Set(this IHeadersInternal headers, string key, string value)
+        internal static void _Set(this IHeadersInternal headers, string key, string? value)
         {
             switch (key)
             {
@@ -79,10 +79,10 @@ namespace RESTable.Requests
         {
             _ when item.Key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept?.ToString().EqualsNoCase(item.Value) ?? item.Value is null,
             _ when item.Key.EqualsNoCase("Content-Type") => headers.ContentType?.ToString().EqualsNoCase(item.Value) ?? item.Value is null,
-            _ when item.Key.EqualsNoCase(nameof(IHeaders.Source)) => headers.Source.EqualsNoCase(item.Value),
-            _ when item.Key.EqualsNoCase(nameof(IHeaders.Destination)) => headers.Destination.EqualsNoCase(item.Value),
-            _ when item.Key.EqualsNoCase(nameof(IHeaders.Authorization)) => headers.Authorization.EqualsNoCase(item.Value),
-            _ when item.Key.EqualsNoCase(nameof(IHeaders.Origin)) => headers.Origin.EqualsNoCase(item.Value),
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Source)) => headers.Source?.EqualsNoCase(item.Value) ?? item.Value is null,
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Destination)) => headers.Destination?.EqualsNoCase(item.Value) ?? item.Value is null,
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Authorization)) => headers.Authorization?.EqualsNoCase(item.Value) ?? item.Value is null,
+            _ when item.Key.EqualsNoCase(nameof(IHeaders.Origin)) => headers.Origin?.EqualsNoCase(item.Value) ?? item.Value is null,
             _ when item.Key.EqualsNoCase("RESTable-elapsed-ms") => Equals(headers.Elapsed?.ToStringRESTable(), item.Value),
             _ => headers.ContainsCustomHeader(item)
         };
@@ -157,7 +157,7 @@ namespace RESTable.Requests
             }
         }
 
-        internal static bool _TryGetValue(this IHeadersInternal headers, string key, out string value)
+        internal static bool _TryGetValue(this IHeadersInternal headers, string key, out string? value)
         {
             switch (key)
             {
@@ -186,12 +186,12 @@ namespace RESTable.Requests
             }
         }
 
-        internal static void _CopyTo(this IHeadersInternal headers, KeyValuePair<string, string>[] array, int arrayIndex)
+        internal static void _CopyTo(this IHeadersInternal headers, KeyValuePair<string, string?>[] array, int arrayIndex)
         {
             headers.ToList().CopyTo(array, arrayIndex);
         }
 
         internal static ICollection<string> _Keys(this IHeadersInternal headers) => headers.Select(kvp => kvp.Key).ToList();
-        internal static ICollection<string> _Values(this IHeadersInternal headers) => headers.Select(kvp => kvp.Value).ToList();
+        internal static ICollection<string?> _Values(this IHeadersInternal headers) => headers.Select(kvp => kvp.Value).ToList();
     }
 }

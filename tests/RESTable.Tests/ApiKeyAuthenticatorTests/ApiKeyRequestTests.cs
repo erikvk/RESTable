@@ -12,7 +12,7 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
             var uri = "/testresource";
             var headers = new Headers {Authorization = $"apikey notAnApiKey"};
 
-            var authSuccess = ApiKeyAuthenticator.TryAuthenticate(ref uri, headers, out var accessRights, out _);
+            var authSuccess = ApiKeyAuthenticator.TryAuthenticate(ref uri, headers, out var accessRights);
 
             Assert.False(authSuccess);
             Assert.Null(accessRights);
@@ -23,7 +23,7 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
         {
             var uri = "/testresource";
             var headers = new Headers {Authorization = $"apikey {ApiKey}"};
-            var authSuccess = ApiKeyAuthenticator.TryAuthenticate(ref uri, headers, out var accessRights, out _);
+            var authSuccess = ApiKeyAuthenticator.TryAuthenticate(ref uri, headers, out var accessRights);
 
             Assert.True(authSuccess);
             Assert.NotEmpty(accessRights);
@@ -33,7 +33,7 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
         public void ApiKeyInUriWorks()
         {
             var uri = $"({ApiKey})/testresource";
-            var authSuccess = ApiKeyAuthenticator.TryAuthenticate(ref uri, null, out var accessRights, out _);
+            var authSuccess = ApiKeyAuthenticator.TryAuthenticate(ref uri, null, out var accessRights);
 
             Assert.True(authSuccess);
             Assert.NotEmpty(accessRights);

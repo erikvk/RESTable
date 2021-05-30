@@ -53,12 +53,11 @@ namespace RESTable.Excel
         public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken)
             where T : class
         {
-            if (collection is null) return 0;
             try
             {
                 using var package = new ExcelPackage(stream);
                 var currentRow = 1;
-                var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheet1");
+                var worksheet = package.Workbook.Worksheets.Add(request.Resource.Name);
 
                 async Task writeEntities(IAsyncEnumerable<object> entities)
                 {
@@ -98,7 +97,7 @@ namespace RESTable.Excel
                                         cell.Style.Font.Bold = true;
                                         cell.Value = key;
                                     }
-                                    WriteExcelCell(worksheet.Cells[currentRow, column], value.ToObject<object>());
+                                    WriteExcelCell(worksheet.Cells[currentRow, column], value?.ToObject<object>());
                                 }
                             }
                             break;
@@ -138,14 +137,14 @@ namespace RESTable.Excel
             }
         }
 
-        private static object GetCellValue(DeclaredProperty prop, object target) => prop switch
+        private static object? GetCellValue(DeclaredProperty prop, object target) => prop switch
         {
-            _ when prop.ExcelReducer is not null => prop.ExcelReducer((dynamic) target),
+            _ when prop.ExcelReducer is not null => ((dynamic) prop.ExcelReducer)(target),
             _ when prop.Type.IsEnum => prop.GetValue(target)?.ToString(),
             _ => prop.GetValue(target)
         };
 
-        private static void WriteExcelCell(ExcelRange target, object value)
+        private static void WriteExcelCell(ExcelRange target, object? value)
         {
             switch (value)
             {
@@ -185,7 +184,7 @@ namespace RESTable.Excel
                 case IEnumerable<DateTime> dateTimes:
                     target.Value = string.Join(", ", dateTimes.Select(o => o.ToString("O")));
                     break;
-                case var valArr when value.GetType().ImplementsGenericInterface(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsValueType:
+                case var valArr when value.GetType().ImplementsGenericInterface(typeof(IEnumerable<>), out var p) && p!.Any() && p![0].IsValueType:
                     IEnumerable<object> objects = Enumerable.Cast<object>((dynamic) valArr);
                     target.Value = string.Join(", ", objects.Select(o => o.ToString()));
                     break;

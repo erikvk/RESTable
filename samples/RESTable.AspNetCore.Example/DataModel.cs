@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Resources;
 using RESTable.SQLite;
@@ -73,10 +74,10 @@ namespace RESTable.Example
         {
             if (contract.EntityType == typeof(string))
             {
-                var nextToLastChar = new CustomProperty<string, char?>
+                var nextToLastChar = new CustomProperty<string?, char?>
                 (
                     name: "NextToLastChar",
-                    getter: o => o?.ElementAtOrDefault(o.Length - 2)
+                    getter: o => new ValueTask<char?>(o?.ElementAtOrDefault(o.Length - 2))
                 );
                 contract.Properties.Add(nextToLastChar);
             }

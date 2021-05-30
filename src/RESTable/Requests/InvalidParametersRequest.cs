@@ -12,7 +12,7 @@ namespace RESTable.Requests
         public bool IsValid { get; }
         private Exception Error { get; }
         public Task<IResult> GetResult(CancellationToken cancellationToken = new()) => Task.FromResult<IResult>(Error.AsResultOf(this));
-        public ITarget Target => null;
+        public ITarget Target { get; }
         public bool HasConditions => false;
 
         #region Logable
@@ -24,7 +24,7 @@ namespace RESTable.Requests
         ValueTask<string> ILogable.GetLogContent() => LogItem.GetLogContent();
 
         /// <inheritdoc />
-        public DateTime LogTime { get; } = DateTime.Now;
+        public DateTime LogTime { get; }
 
         string IHeaderHolder.HeadersStringCache
         {
@@ -60,15 +60,21 @@ namespace RESTable.Requests
         {
             IsValid = false;
             Parameters = parameters;
+            LogTime = DateTime.Now;
+            MetaConditions = null!;
+            ResponseHeaders = null!;
             Error = parameters.Error;
             Resource = parameters.iresource;
-            MetaConditions = null;
             Method = parameters.Method;
             Body = parameters.Body;
-            ResponseHeaders = null;
+            
+            // These are always null for invalid requests
+            Target = null!;
+            MetaConditions = null!;
+            ResponseHeaders = null!;
         }
 
-        public Task<IRequest> GetCopy(string newProtocol = null)
+        public Task<IRequest> GetCopy(string? newProtocol = null)
         {
             // We do not care about changing the protocol of an invalid parameters request.
             return Task.FromResult<IRequest>(new InvalidParametersRequest(Parameters));

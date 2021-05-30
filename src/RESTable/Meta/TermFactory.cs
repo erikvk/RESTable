@@ -79,7 +79,7 @@ namespace RESTable.Meta
         /// Output terms are terms that refer to properties in RESTable output. If they refer to
         /// a property in the dynamic domain, they are not cached. 
         /// </summary>
-        public Term MakeOutputTerm(IEntityResource target, string key, ICollection<string> dynamicDomain) =>
+        public Term MakeOutputTerm(IEntityResource target, string key, ICollection<string>? dynamicDomain) =>
             dynamicDomain is null
                 ? MakeOrGetCachedTerm(target.Type, key, ".", target.OutputBindingRule)
                 : Parse(target.Type, key, ".", target.OutputBindingRule, dynamicDomain);

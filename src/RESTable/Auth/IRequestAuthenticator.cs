@@ -1,5 +1,4 @@
 ﻿using RESTable.Requests;
-using RESTable.Results;
 
 namespace RESTable.Auth
 {
@@ -12,8 +11,7 @@ namespace RESTable.Auth
         /// <param name="uri">The URI of the request</param>
         /// <param name="headers">The headers of the request</param>
         /// <param name="accessRights">The access rights associated with the authenticated client</param>
-        /// <param name="error">The error result, if not authenticated</param>
         /// <returns></returns>
-        bool TryAuthenticate(ref string uri, Headers headers, out AccessRights accessRights, out Unauthorized error);
+        bool TryAuthenticate(ref string? uri, Headers? headers, out AccessRights accessRights);
     }
 }

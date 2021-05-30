@@ -16,17 +16,17 @@ namespace RESTable.Meta.Internal
         private Dictionary<string, ITarget<T>> ViewDictionaryInternal { get; }
         public string Name { get; }
         public IReadOnlyCollection<Method> AvailableMethods { get; private set; }
-        public string Description { get; private set; }
+        public string? Description { get; private set; }
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
         public bool IsInternal { get; }
         public bool IsGlobal => !IsInternal;
         public bool IsInnerResource { get; }
-        public string ParentResourceName { get; }
+        public string? ParentResourceName { get; }
         public bool DynamicConditionsAllowed { get; }
         public IReadOnlyDictionary<string, ITarget<T>> ViewDictionary => ViewDictionaryInternal;
-        public IEnumerable<ITarget> Views => ViewDictionaryInternal?.Values;
+        public IEnumerable<ITarget> Views => ViewDictionaryInternal.Values;
         public TermBindingRule ConditionBindingRule { get; }
         public TermBindingRule OutputBindingRule { get; }
         public bool GETAvailableToAll { get; }
@@ -35,11 +35,14 @@ namespace RESTable.Meta.Internal
         public bool DeclaredPropertiesFlagged { get; }
         public override string ToString() => Name;
         public string Provider { get; }
-        public IReadOnlyList<IResource> InnerResources { get; set; }
         public bool ClaimedBy<T1>() where T1 : IEntityResourceProvider => Provider == typeof(T1).GetEntityResourceProviderId();
         public ResourceKind ResourceKind { get; }
         public bool IsDeclared { get; }
         public bool RequiresValidation { get; }
+
+        private List<IResource> InnerResources { get; }
+        public void AddInnerResource(IResource resource) => InnerResources.Add(resource);
+        public IEnumerable<IResource> GetInnerResources() => InnerResources.AsReadOnly();
 
         string IResourceInternal.Description
         {
@@ -89,7 +92,12 @@ namespace RESTable.Meta.Internal
                 ParentResourceName = typeName.Substring(0, location).Replace('+', '.');
                 Name = typeName.Replace('+', '.');
             }
-            else Name = fullName;
+            else
+            {
+                Name = fullName;
+                ParentResourceName = null;
+            }
+            InnerResources = new List<IResource>();
             provider.ModifyResourceAttribute(typeof(T), attribute);
             IsDeclared = attribute.IsDeclared;
             Description = attribute.Description;
@@ -112,25 +120,22 @@ namespace RESTable.Meta.Internal
             Members = typeCache.GetDeclaredProperties(typeof(T));
             Delegates = delegates;
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
-            if (views is not null)
+            foreach (var view in views)
             {
-                foreach (var view in views)
-                {
-                    if (ViewDictionaryInternal.ContainsKey(view.Name))
-                        throw new InvalidResourceViewDeclarationException(view.Type, $"Found multiple views with name '{view.Name}'.");
-                    ViewDictionaryInternal[view.Name] = view;
-                    view.SetEntityResource(this);
-                }
+                if (ViewDictionaryInternal.ContainsKey(view.Name))
+                    throw new InvalidResourceViewDeclarationException(view.Type, $"Found multiple views with name '{view.Name}'.");
+                ViewDictionaryInternal[view.Name] = view;
+                view.SetEntityResource(this);
             }
             CheckOperationsSupport();
             resourceCollection.AddResource(this);
         }
 
-        private static IReadOnlyList<Method> GetAvailableMethods(Type resource)
+        private static IReadOnlyList<Method> GetAvailableMethods(Type? resource)
         {
             if (resource is null)
-                return null;
-            return resource.GetCustomAttribute<RESTableAttribute>()?.AvailableMethods;
+                return new Method[0];
+            return resource.GetCustomAttribute<RESTableAttribute>()?.AvailableMethods ?? new Method[0];
         }
 
         private static RESTableOperations[] NecessaryOpDefs(IEnumerable<Method> restMethods)
@@ -192,7 +197,7 @@ namespace RESTable.Meta.Internal
         }
 
         public override bool Equals(object obj) => obj is EntityResource<T> resource && resource.Name == Name;
-        public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
+        public bool Equals(IResource? x, IResource? y) => x?.Name == y?.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();

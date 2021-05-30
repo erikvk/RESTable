@@ -8,13 +8,13 @@ namespace RESTable
 
     public class ApiKeyItem
     {
-        public string ApiKey { get; set; }
-        public AllowAccess[] AllowAccess { get; set; }
+        public string? ApiKey { get; set; }
+        public AllowAccess[]? AllowAccess { get; set; }
     }
 
     public class AllowAccess
     {
-        public string[] Resources { get; set; }
-        public string[] Methods { get; set; }
+        public string[]? Resources { get; set; }
+        public string[]? Methods { get; set; }
     }
 }

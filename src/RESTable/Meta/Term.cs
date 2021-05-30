@@ -45,22 +45,22 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the first property reference of the term, and safe casts it to T
         /// </summary>
-        public T FirstAs<T>() where T : Property => First as T;
+        public T? FirstAs<T>() where T : Property => First as T;
 
         /// <summary>
         /// Gets the first property reference of the term, or null of the term is empty
         /// </summary>
-        public Property First => Store.Count > 0 ? Store[0] : null;
+        public Property? First => Store.Count > 0 ? Store[0] : null;
 
         /// <summary>
         /// Gets the last property reference of the term, and safe casts it to T
         /// </summary>
-        public T LastAs<T>() where T : Property => Store.LastOrDefault() as T;
+        public T? LastAs<T>() where T : Property => Store.LastOrDefault() as T;
 
         /// <summary>
         /// Gets the last property reference of the term, or null of the term is empty
         /// </summary>
-        public Property Last => Store.Count > 0 ? Store[Store.Count - 1] : null;
+        public Property? Last => Store.Count > 0 ? Store[Store.Count - 1] : null;
 
         /// <summary>
         /// A cache with values for whether some flag (key) is present on all
@@ -147,15 +147,15 @@ namespace RESTable.Meta
         /// <summary>
         /// Returns the value that this term denotes for a given target object
         /// </summary>
-        public object GetValue(object target) => GetValue(target, out _);
+        public object? GetValue(object target) => GetValue(target, out _);
 
         /// <summary>
         /// Returns the value that this term denotes for a given target object as well as
         /// the actual key for this property (matching is case insensitive).
         /// </summary>
-        public object GetValue(object target, out string actualKey) => GetValue(target, out actualKey, out _, out _);
+        public object? GetValue(object target, out string actualKey) => GetValue(target, out actualKey, out _, out _);
 
-        private static object GetValueInternal(Term term, object target, out string actualKey, out object parent, out Property property)
+        private static object? GetValueInternal(Term term, object target, out string actualKey, out object parent, out Property property)
         {
             parent = null;
             property = null;
@@ -201,7 +201,7 @@ namespace RESTable.Meta
         /// the actual key for this property (matching is case insensitive), the parent
         /// of the denoted value, and the property representing the denoted value.
         /// </summary>
-        public object GetValue(object target, out string actualKey, out object parent, out Property property)
+        public object? GetValue(object target, out string actualKey, out object parent, out Property property)
         {
             return GetValueInternal(this, target, out actualKey, out parent, out property);
         }

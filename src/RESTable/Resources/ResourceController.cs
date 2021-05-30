@@ -55,7 +55,7 @@ namespace RESTable.Resources
                 }
                 else name = $"{BaseNamespace}.{name}";
             }
-            if (ResourceProviderInternal.ResourceCollection.ResourceByName.ContainsKey(name))
+            if (ResourceProviderInternal.ResourceCollection.TryGetResource(name, out _))
                 throw new Exception($"Invalid resource name '{name}'. Name already in use.");
         }
 

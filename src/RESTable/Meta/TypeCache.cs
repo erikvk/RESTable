@@ -200,7 +200,7 @@ namespace RESTable.Meta
         /// <param name="type">The type to match the property from</param>
         /// <param name="key">The string to match a property from</param>
         /// <returns></returns>
-        public DeclaredProperty FindDeclaredProperty(Type type, string key)
+        public DeclaredProperty? FindDeclaredProperty(Type type, string key)
         {
             var isDictionary = typeof(IDictionary).IsAssignableFrom(type) ||
                                type.ImplementsGenericInterface(typeof(IDictionary<,>));

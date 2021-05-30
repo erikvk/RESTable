@@ -10,9 +10,9 @@ namespace RESTable.Requests
     internal interface IEntityRequest<T> : IEntityRequest, IRequest, IRequest<T> where T : class
     {
         IEntityResource<T> EntityResource { get; }
-        Func<IAsyncEnumerable<T>> EntitiesProducer { get; set; }
-        Func<IAsyncEnumerable<T>> GetSelector();
-        Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> GetUpdater();
+        Func<IAsyncEnumerable<T>>? EntitiesProducer { get; set; }
+        Func<IAsyncEnumerable<T>>? GetCustomSelector();
+        Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? GetCustomUpdater();
     }
 
     /// <inheritdoc />
@@ -166,6 +166,6 @@ namespace RESTable.Requests
         /// Gets a deep exact copy of this request
         /// </summary>
         /// <returns></returns>
-        Task<IRequest> GetCopy(string newProtocol = null);
+        Task<IRequest> GetCopy(string? newProtocol = null);
     }
 }

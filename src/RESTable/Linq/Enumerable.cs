@@ -43,7 +43,7 @@ namespace RESTable.Linq
         /// Returns true if and only if the source IEnumerable contains two or more equal objects.
         /// If a duplicate is found, it is assigned to the out 'duplicate' variable.
         /// </summary>
-        public static bool ContainsDuplicates<T>(this IEnumerable<T> source, out T duplicate)
+        public static bool ContainsDuplicates<T>(this IEnumerable<T> source, out T? duplicate)
         {
             duplicate = default;
             var d = new HashSet<T>();
@@ -63,7 +63,7 @@ namespace RESTable.Linq
         /// comparing the images of a selector function. If a duplicate is found, it is assigned to 
         /// the out 'duplicate' variable.
         /// </summary>
-        public static bool ContainsDuplicates<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector, out T1 duplicate)
+        public static bool ContainsDuplicates<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector, out T1? duplicate)
         {
             duplicate = default;
             var d = new HashSet<T2>();
@@ -83,7 +83,7 @@ namespace RESTable.Linq
         /// Returns true if and only if the source IEnumerable contains two or more equal objects.
         /// If a duplicate is found, it is assigned to the out 'duplicate' variable.
         /// </summary>
-        public static bool ContainsDuplicates<T>(this IEnumerable<T> source, IEqualityComparer<T> comparer, out T duplicate)
+        public static bool ContainsDuplicates<T>(this IEnumerable<T> source, IEqualityComparer<T> comparer, out T? duplicate)
         {
             duplicate = default;
             var d = new HashSet<T>(comparer);
@@ -104,7 +104,7 @@ namespace RESTable.Linq
         /// the out 'duplicate' variable.
         /// </summary>
         public static bool ContainsDuplicates<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector, IEqualityComparer<T2> comparer,
-            out T1 duplicate)
+            out T1? duplicate)
         {
             duplicate = default;
             var d = new HashSet<T2>(comparer);
@@ -176,7 +176,6 @@ namespace RESTable.Linq
         internal static IAsyncEnumerable<T> UnsafeLimit<T>(this IAsyncEnumerable<T> source, bool limit = true)
         {
             if (!limit) return source;
-            if (source is null) return null;
 
             async IAsyncEnumerable<T> apply()
             {
@@ -195,7 +194,6 @@ namespace RESTable.Linq
         internal static IAsyncEnumerable<T> InputLimit<T>(this IAsyncEnumerable<T> source, bool limit = true)
         {
             if (!limit) return source;
-            if (source is null) return null;
 
             async IAsyncEnumerable<T> apply()
             {

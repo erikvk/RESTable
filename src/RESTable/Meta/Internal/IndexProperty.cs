@@ -30,25 +30,23 @@ namespace RESTable.Meta.Internal
             customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
             readOnly: false,
+            excelReducer: null,
             owner: owner,
-            getter: target =>
+            getter: async target =>
             {
-                try
+                switch (target)
                 {
-                    switch (target)
-                    {
-                        case IEnumerable<object> ie: return ie.ElementAtOrDefault(index);
-                        case string str:
-                            var length = str.Length;
-                            return index >= length - 1 ? default : str[index];
-                        case IList l:
-                            var count = l.Count;
-                            return index >= count - 1 ? null : l[index];
-                        case IEnumerable e: return e.Cast<object>().ElementAtOrDefault(index);
-                    }
+                    case IAsyncEnumerable<object> ae: return await ae.ElementAtOrDefaultAsync(index).ConfigureAwait(false);
+                    case IEnumerable<object> ie: return ie.ElementAtOrDefault(index);
+                    case string str:
+                        var length = str.Length;
+                        return index >= length - 1 ? default : str[index];
+                    case IList l:
+                        var count = l.Count;
+                        return index >= count - 1 ? null : l[index];
+                    case IEnumerable e: return e.Cast<object>().ElementAtOrDefault(index);
+                    default: throw new Exception("Could not get value at index " + index);
                 }
-                catch { }
-                return null;
             },
             setter: collectionReadonly
                 ? default
@@ -74,6 +72,7 @@ namespace RESTable.Meta.Internal
                             catch { }
                             break;
                     }
+                    return default;
                 }),
             mergeOntoOwner: false
         ) { }

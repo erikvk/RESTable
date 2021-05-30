@@ -19,7 +19,7 @@ namespace RESTable.Resources.Operations
         /// <param name="target">The target object that has had a property changed</param>
         /// <param name="propertyName">The name of the changed property, supplied by the compiler
         /// (if called from the property set accessor)</param>
-        public static void NotifyState<T>(this T target, [CallerMemberName] string propertyName = null)
+        public static void NotifyState<T>(this T target, [CallerMemberName] string? propertyName = null)
             where T : class, IPropertyChangeNotifier
         {
             NotifyState(target, default(UnknownValue), propertyName);
@@ -36,7 +36,7 @@ namespace RESTable.Resources.Operations
         /// <param name="oldValue">The old value of the changed property</param>
         /// <param name="propertyName">The name of the changed property, supplied by the compiler
         /// (if called from the property set accessor)</param>
-        public static void NotifyState<T>(this T target, object oldValue, [CallerMemberName] string propertyName = null)
+        public static void NotifyState<T>(this T target, object oldValue, [CallerMemberName] string? propertyName = null)
             where T : class, IPropertyChangeNotifier
         {
             if (propertyName is null)
@@ -44,7 +44,7 @@ namespace RESTable.Resources.Operations
                                                                       "context of the call to NotifyChange, and consider providing an explicit " +
                                                                       "'propertyName' parameter.");
             var typeCache = ApplicationServicesAccessor.TypeCache;
-            if (!typeCache.GetDeclaredProperties(typeof(T), groupByActualName: true).TryGetValue(propertyName, out var property))
+            if (!typeCache.GetDeclaredProperties(typeof(T), groupByActualName: true).TryGetValue(propertyName, out DeclaredProperty property))
                 throw new ArgumentException($"Could not find a property with actual name '{propertyName}' in type '{typeof(T)}'.");
 
             property.NotifyChange

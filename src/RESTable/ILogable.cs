@@ -23,7 +23,7 @@ namespace RESTable
         /// <summary>
         /// The content to log
         /// </summary>
-        ValueTask<string> GetLogContent();
+        ValueTask<string?> GetLogContent();
 
         /// <summary>
         /// The date and time of this logable instance

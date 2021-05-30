@@ -29,13 +29,13 @@ namespace RESTable.Requests
         /// </summary>
         public Operators Operator { get; }
 
-        private object _value;
+        private object? _value;
 
         /// <summary>
         /// The second operand for the operation defined by the operator. Defines
         /// the object for comparison.
         /// </summary>
-        public object Value
+        public object? Value
         {
             get => _value;
             set
@@ -43,12 +43,13 @@ namespace RESTable.Requests
                 _value = value;
                 ValueLiteral = _value switch
                 {
+                    null => "null",
                     DateTime dt => dt.ToString("O"),
                     string str => str,
                     decimal dec => dec.ToString(CultureInfo.InvariantCulture),
                     double dou => dou.ToString(CultureInfo.InvariantCulture),
                     float flo => flo.ToString(CultureInfo.InvariantCulture),
-                    var other => other?.ToString()
+                    var other => other.ToString(),
                 };
                 ValueTypeCode = Type.GetTypeCode(_value?.GetType());
             }
@@ -70,12 +71,15 @@ namespace RESTable.Requests
 
         public Operator ParsedOperator => Operator;
 
-        public Type Type => Term.IsDeclared ? Term.LastAs<DeclaredProperty>()?.Type : null;
+        public Type? Type => Term.IsDeclared ? Term.LastAs<DeclaredProperty>()?.Type : null;
 
         public bool IsOfType<T1>() => Type == typeof(T1);
 
-        public Condition(Term term, Operators op, object value)
+        public Condition(Term term, Operators op, object? value)
         {
+            // The value literal is set from the Value setter
+            ValueLiteral = null!;
+
             Term = term;
             Operator = op;
             Value = value;
@@ -92,7 +96,7 @@ namespace RESTable.Requests
             };
         }
 
-        private int Compare(object other, object value)
+        private int Compare(object other, object? value)
         {
             try
             {

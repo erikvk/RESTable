@@ -14,7 +14,7 @@ namespace RESTable
         public ErrorCodes ErrorCode { get; }
 
         /// <inheritdoc />
-        protected RESTableException(ErrorCodes errorCode, string message, Exception ie = null) : base(message, ie)
+        protected RESTableException(ErrorCodes errorCode, string? message, Exception? ie = null) : base(message, ie)
         {
             ErrorCode = errorCode;
         }

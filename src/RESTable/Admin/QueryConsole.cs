@@ -17,7 +17,7 @@ namespace RESTable.Admin
     [RESTable]
     public class QueryConsole : FeedTerminal
     {
-        public static async Task Publish(RESTableContext context, string query, object[] args)
+        public static async Task Publish(RESTableContext context, string query, params object[] args)
         {
             var consoles = context.GetRequiredService<ICombinedTerminal<QueryConsole>>();
             if (consoles.Count == 0) return;

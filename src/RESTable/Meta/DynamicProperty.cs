@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.Resources.Operations;
 
@@ -31,9 +32,7 @@ namespace RESTable.Meta
         /// <returns>A dynamic property that represents the runtime property
         /// described by the key string</returns>
         public static DynamicProperty Parse(string keyString, bool declaredFallback = false) => new(keyString, declaredFallback);
-
-        internal void SetName(string name) => Name = name;
-
+        
         private DynamicProperty(string name, bool declaredFallback) : base(null)
         {
             Name = ActualName = name;
@@ -43,21 +42,20 @@ namespace RESTable.Meta
 
             Getter = obj =>
             {
-                object value;
-                string actualKey = null;
-                string capitalized;
+                object? value;
+                string? actualKey = null;
 
-                object getFromStatic()
+                ValueTask<object?> getFromStatic()
                 {
                     var type = obj.GetType();
                     value = Do.Try(() =>
                     {
                         var prop = typeCache.FindDeclaredProperty(type, Name);
-                        actualKey = prop.Name;
-                        return prop.GetValue(obj);
+                        actualKey = prop?.Name;
+                        return prop?.GetValue(obj);
                     }, default(object));
                     Name = actualKey ?? Name;
-                    return value;
+                    return new ValueTask<object?>(value);
                 }
 
                 switch (obj)
@@ -66,27 +64,27 @@ namespace RESTable.Meta
                         if (dm.TryGetValue(Name, out value, out actualKey))
                         {
                             Name = actualKey;
-                            return value;
+                            return new ValueTask<object?>(value);
                         }
-                        return DeclaredFallback ? getFromStatic() : null;
+                        return DeclaredFallback ? getFromStatic() : new ValueTask<object?>(null);
                     case JObject jobj:
                         if (jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is not JProperty property)
-                            return DeclaredFallback ? getFromStatic() : null;
+                            return DeclaredFallback ? getFromStatic() : new ValueTask<object?>(null);
                         Name = property.Name;
-                        return property.Value.ToObject<object>();
+                        return new ValueTask<object?>(property.Value.ToObject<object?>());
                     case IDictionary<string, object> dict:
-                        capitalized = Name.Capitalize();
+                        string capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
                         {
                             Name = capitalized;
-                            return value;
+                            return new ValueTask<object?>(null);
                         }
                         if (dict.TryFindInDictionary(Name, out actualKey, out value))
                         {
-                            Name = actualKey;
-                            return value;
+                            Name = actualKey!;
+                            return new ValueTask<object?>(null);
                         }
-                        return DeclaredFallback ? getFromStatic() : null;
+                        return DeclaredFallback ? getFromStatic() : new ValueTask<object?>(null);
                     default: return getFromStatic();
                 }
             };
@@ -98,20 +96,21 @@ namespace RESTable.Meta
                     case IDynamicMemberValueProvider dm:
                         dm.TrySetValue(Name, value);
                         break;
-                    case IDictionary<string, object> ddict:
+                    case IDictionary<string, object?> ddict:
                         ddict[Name] = value;
                         break;
                     case IDictionary idict:
                         idict[Name] = value;
                         break;
-                    case IDictionary<string, JToken> jobj:
-                        jobj[Name] = (dynamic) value;
+                    case IDictionary<string, JToken?> jobj:
+                        jobj[Name] = (dynamic?) value;
                         break;
                     default:
                         var type = obj.GetType();
                         Do.Try(() => typeCache.FindDeclaredProperty(type, Name)?.SetValue(obj, value));
                         break;
                 }
+                return default;
             };
         }
     }

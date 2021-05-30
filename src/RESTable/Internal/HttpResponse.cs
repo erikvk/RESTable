@@ -10,26 +10,24 @@ namespace RESTable.Internal
         public string StatusDescription { get; }
         public long ContentLength { get; }
         public ContentType? ContentType { get; }
-        public Stream Body { get; }
+        public Stream? Body { get; }
         public Headers Headers { get; }
         internal bool IsSuccessStatusCode => StatusCode is >= (HttpStatusCode) 200 and < (HttpStatusCode) 300;
         public RESTableContext Context { get; }
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes) {Headers.Info}";
 
-        private HttpResponse(ITraceable trace)
+        internal HttpResponse(ITraceable trace, HttpStatusCode statusCode, string statusDescription)
         {
             Context = trace.Context;
             Headers = new Headers();
-        }
-
-        internal HttpResponse(ITraceable trace, HttpStatusCode statusCode, string statusDescription) : this(trace)
-        {
             StatusCode = statusCode;
             StatusDescription = statusDescription;
         }
 
-        internal HttpResponse(ITraceable trace, HttpWebResponse webResponse) : this(trace)
+        internal HttpResponse(ITraceable trace, HttpWebResponse webResponse)
         {
+            Context = trace.Context;
+            Headers = new Headers();
             StatusCode = webResponse.StatusCode;
             StatusDescription = webResponse.StatusDescription;
             ContentLength = webResponse.ContentLength;
