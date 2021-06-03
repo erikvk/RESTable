@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.Meta;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace RESTable.Requests.Processors
 {
@@ -20,23 +21,26 @@ namespace RESTable.Requests.Processors
             dynamicDomain = Values;
         }
 
-        private Rename(Rename other) : base(other) { }
+        private JsonSerializer Serializer { get; }
+
+        private Rename(Rename other) : base(other)
+        {
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            Serializer = jsonProvider.GetSerializer();
+        }
+
         internal Rename GetCopy() => new(this);
 
-        private JObject? Renamed(JObject? entity)
+        private async ValueTask<JObject> Renamed(JObject entity)
         {
-            if (entity is null) 
-                return null;
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-            var serializer = jsonProvider.GetSerializer();
             foreach (var pair in this)
             {
                 var (key, newName) = pair;
                 var value = entity.GetValue(key.Key, StringComparison.OrdinalIgnoreCase);
                 if (value is null)
                 {
-                    var termValue = key.GetValue(entity, out _);
-                    entity[newName] = termValue is null ? null : JToken.FromObject(termValue, serializer);
+                    var termValue = await key.GetValue(entity).ConfigureAwait(false);
+                    entity[newName] = termValue.Value is null ? null : JToken.FromObject(termValue.Value, Serializer);
                     continue;
                 }
                 var property = (JProperty?) value.Parent;
@@ -51,6 +55,14 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Renames properties in an IEnumerable
         /// </summary>
-        public IAsyncEnumerable<JObject?>? Apply<T>(IAsyncEnumerable<T>? entities) => entities?.Select(entity => Renamed(entity?.ToJObject()));
+        public async IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities)
+        {
+            await foreach (var entity in entities)
+            {
+                if (entity is null) throw new ArgumentNullException(nameof(entities));
+                var jobject = await entity.ToJObject().ConfigureAwait(false);
+                yield return await Renamed(jobject).ConfigureAwait(false);
+            }
+        }
     }
 }

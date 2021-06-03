@@ -403,7 +403,7 @@ namespace RESTable
                                 }
                                 try
                                 {
-                                    declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
+                                    await declaredProperty!.SetValue(this, valueString.ParseConditionValue(declaredProperty)).ConfigureAwait(false);
                                     await WebSocket.SendJson(this).ConfigureAwait(false);
                                 }
                                 catch (Exception e)

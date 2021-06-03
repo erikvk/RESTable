@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using RESTable.Requests;
 
 namespace RESTable.Meta
@@ -27,12 +28,23 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the value of this property, for a given target object
         /// </summary>
-        public virtual object? GetValue(object target) => Getter?.Invoke(target);
+        public virtual async ValueTask<object?> GetValue(object target)
+        {
+            if (Getter is null)
+                return default;
+            var value = await Getter.Invoke(target).ConfigureAwait(false);
+            return value;
+        }
 
         /// <summary>
         /// Sets the value of this property, for a given target object and a given value
         /// </summary>
-        public virtual void SetValue(object target, object? value) => Setter?.Invoke(target, value);
+        public virtual async ValueTask SetValue(object target, object? value)
+        {
+            if (Setter is null)
+                return;
+            await Setter.Invoke(target, value).ConfigureAwait(false);
+        }
 
         /// <summary>
         /// </summary>

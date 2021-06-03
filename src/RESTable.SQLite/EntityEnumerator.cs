@@ -15,7 +15,7 @@ namespace RESTable.SQLite
 
         private SQLiteConnection Connection { get; set; }
         private SQLiteCommand Command { get; set; }
-        private DbDataReader Reader { get; set; }
+        private DbDataReader? Reader { get; set; }
         private string Sql { get; }
         private bool OnlyRowId { get; }
         private CancellationToken CancellationToken { get; }
@@ -23,6 +23,8 @@ namespace RESTable.SQLite
 
         public async ValueTask DisposeAsync()
         {
+            if (Reader is null)
+                return;
             await Command.DisposeAsync().ConfigureAwait(false);
             await Reader.DisposeAsync().ConfigureAwait(false);
             await Connection.DisposeAsync().ConfigureAwait(false);
@@ -31,16 +33,17 @@ namespace RESTable.SQLite
         public async ValueTask<bool> MoveNextAsync()
         {
             CancellationToken.ThrowIfCancellationRequested();
-            if (Reader == null)
+            if (Reader is null)
             {
                 Connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
-                Command = Connection.CreateCommand();;
+                Command = Connection.CreateCommand();
                 Command.CommandText = Sql;
                 Reader ??= await Command.ExecuteReaderAsync(CancellationToken).ConfigureAwait(false);
             }
             var read = await Reader.ReadAsync(CancellationToken).ConfigureAwait(false);
             if (!read) return false;
             CurrentRowId = await Reader.GetFieldValueAsync<long>(0, CancellationToken).ConfigureAwait(false);
+            _current = await MakeEntity().ConfigureAwait(false);
             return true;
         }
 
@@ -51,9 +54,11 @@ namespace RESTable.SQLite
             OnlyRowId = onlyRowId;
         }
 
-        public T Current => MakeEntity();
+        private T _current;
 
-        private T MakeEntity()
+        public T Current => _current;
+
+        private async ValueTask<T> MakeEntity()
         {
             var entity = Constructor();
             entity.RowId = CurrentRowId;
@@ -61,14 +66,20 @@ namespace RESTable.SQLite
             {
                 foreach (var column in TableMapping<T>.TransactMappings)
                 {
+                    if (column.CLRProperty.Set is not Setter setter)
+                        continue;
                     var value = Reader[column.SQLColumn.Name];
                     if (value is not DBNull)
-                        column.CLRProperty.Set?.Invoke(entity, value);
+                    {
+                        await setter.Invoke(entity, value).ConfigureAwait(false);
+                    }
                     else if (!column.CLRProperty.IsDeclared)
-                        column.CLRProperty.Set?.Invoke(entity, null);
+                    {
+                        await setter.Invoke(entity, null).ConfigureAwait(false);
+                    }
                 }
             }
-            entity._OnSelect();
+            await entity._OnSelect().ConfigureAwait(false);
             return entity;
         }
     }

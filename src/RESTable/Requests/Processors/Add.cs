@@ -19,25 +19,25 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Adds properties to entities in an IEnumerable
         /// </summary>
-        public async IAsyncEnumerable<JObject?>? Apply<T>(IAsyncEnumerable<T>? entities)
+        public async IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities)
         {
-            if (entities is null)
-                yield break;
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             var serializer = jsonProvider.GetSerializer();
             await foreach (var entity in entities.ConfigureAwait(false))
             {
                 if (entity is null)
                 {
-                    yield return null;
                     continue;
                 }
-                var jobj = entity.ToJObject();
+                var jobj = await entity.ToJObject().ConfigureAwait(false);
                 foreach (var term in this)
                 {
-                    if (jobj[term.Key] is not null) continue;
-                    var termValue = term.GetValue(entity, out var actualKey);
-                    jobj[actualKey] = termValue is null ? null : JToken.FromObject(termValue, serializer);
+                    if (jobj[term.Key] is not null)
+                        continue;
+                    var termValue = await term.GetValue(entity).ConfigureAwait(false);
+                    var actualKey = termValue.ActualKey;
+                    var value = termValue.Value;
+                    jobj[actualKey] = value is null ? null : JToken.FromObject(termValue, serializer);
                 }
                 yield return jobj;
             }

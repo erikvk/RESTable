@@ -46,7 +46,7 @@ namespace RESTable.Meta
         internal IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(Type type, bool flag = false)
         {
             if (type.HasAttribute<RESTableMemberAttribute>(out var memberAttribute) && memberAttribute.Ignored)
-                return new DeclaredProperty[0];
+                return Array.Empty<DeclaredProperty>();
             return ParseDeclaredProperties(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), flag);
         }
 
@@ -73,7 +73,7 @@ namespace RESTable.Meta
             {
                 switch (_type)
                 {
-                    case null: return new DeclaredProperty[0];
+                    case null: return Array.Empty<DeclaredProperty>();
                     case var _ when _type.IsInterface:
                     {
                         return ParseDeclaredProperties

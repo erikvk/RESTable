@@ -21,11 +21,13 @@ namespace RESTable.Example
 
         private long JobRowId { get; set; }
 
-        public Job Job
+        public Job? Job
         {
-            get => SQLite<Job>.Select($"WHERE RowId={JobRowId}").FirstOrDefaultAsync().Result;
+            get => SQLite<Job>.Select($"WHERE RowId={JobRowId}").FirstOrDefaultAsync().AsTask().Result;
             set
             {
+                if (value is null)
+                    return;
                 SQLite<Job>.Insert(value).CountAsync().AsTask().Wait();
                 JobRowId = value.RowId;
             }

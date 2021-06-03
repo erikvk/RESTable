@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace RESTable.Meta
@@ -145,65 +146,58 @@ namespace RESTable.Meta
         private string GetActualNameKey() => string.Join(".", Store.Select(p => p.ActualName));
 
         /// <summary>
-        /// Returns the value that this term denotes for a given target object
-        /// </summary>
-        public object? GetValue(object target) => GetValue(target, out _);
-
-        /// <summary>
-        /// Returns the value that this term denotes for a given target object as well as
-        /// the actual key for this property (matching is case insensitive).
-        /// </summary>
-        public object? GetValue(object target, out string actualKey) => GetValue(target, out actualKey, out _, out _);
-
-        private static object? GetValueInternal(Term term, object target, out string actualKey, out object parent, out Property property)
-        {
-            parent = null;
-            property = null;
-
-            // If the target is the result of processing using some IProcessor, the type
-            // will be JObject. In that case, the object may contain the entire term key
-            // as member, even if the term has multiple properties (common result of add 
-            // and select). This code handles those cases.
-            if (target is JObject jobj)
-            {
-                if (jobj.GetValue(term.Key, StringComparison.OrdinalIgnoreCase)?.Parent is JProperty jproperty)
-                {
-                    actualKey = jproperty.Name;
-                    parent = jobj;
-                    property = DynamicProperty.Parse(term.Key);
-                    return jproperty.Value.ToObject<object>();
-                }
-                term = MakeDynamic(term);
-            }
-
-            // Walk over the properties in the term, and if null is encountered, simply
-            // keep the null. Else continue evaluating the next property as a property of the
-            // previous property value.
-            for (var i = 0; target is not null && i < term.Store.Count; i++)
-            {
-                parent = target;
-                property = term.Store[i];
-                target = property.GetValue(target);
-            }
-
-            // If the term is dynamic, we do not know the actual key beforehand. We instead
-            // set names inside the dynamic properties when getting their values, and concatenate the
-            // property names here.
-            if (term.IsDynamic)
-                term.Key = term.GetKey();
-
-            actualKey = term.Key;
-            return target;
-        }
-
-        /// <summary>
         /// Returns the value that this term denotes for a given target object as well as
         /// the actual key for this property (matching is case insensitive), the parent
         /// of the denoted value, and the property representing the denoted value.
         /// </summary>
-        public object? GetValue(object target, out string actualKey, out object parent, out Property property)
+        public ValueTask<TermValue> GetValue(object target)
         {
-            return GetValueInternal(this, target, out actualKey, out parent, out property);
+            static async ValueTask<TermValue> getTermValue(Term term, object? target)
+            {
+                object? parent = null;
+                Property? property = null;
+                string actualKey;
+                object? value;
+
+                // If the target is the result of processing using some IProcessor, the type
+                // will be JObject. In that case, the object may contain the entire term key
+                // as member, even if the term has multiple properties (common result of add 
+                // and select). This code handles those cases.
+                if (target is JObject jobj)
+                {
+                    if (jobj.GetValue(term.Key, StringComparison.OrdinalIgnoreCase)?.Parent is JProperty jproperty)
+                    {
+                        actualKey = jproperty.Name;
+                        parent = jobj;
+                        property = DynamicProperty.Parse(term.Key);
+                        value = jproperty.Value.ToObject<object>();
+                        return new TermValue(value, actualKey, parent, property);
+                    }
+                    term = MakeDynamic(term);
+                }
+
+                // Walk over the properties in the term, and if null is encountered, simply
+                // keep the null. Else continue evaluating the next property as a property of the
+                // previous property value.
+                for (var i = 0; target is not null && i < term.Store.Count; i++)
+                {
+                    parent = target;
+                    property = term.Store[i];
+                    target = await property.GetValue(target).ConfigureAwait(false);
+                }
+
+                // If the term is dynamic, we do not know the actual key beforehand. We instead
+                // set names inside the dynamic properties when getting their values, and concatenate the
+                // property names here.
+                if (term.IsDynamic)
+                    term.Key = term.GetKey();
+
+                actualKey = term.Key;
+                value = target;
+                return new TermValue(value, actualKey, parent, property);
+            }
+
+            return getTermValue(this, target);
         }
 
         internal static Term Create(IEnumerable<DeclaredProperty> properties, string componentSeparator)
@@ -281,6 +275,22 @@ namespace RESTable.Meta
             unchecked
             {
                 return ((Key is not null ? Key.GetHashCode() : 0) * 397) ^ IsDeclared.GetHashCode();
+            }
+        }
+
+        public readonly struct TermValue
+        {
+            public object? Value { get; }
+            public string ActualKey { get; }
+            public object? Parent { get; }
+            public Property? Property { get; }
+
+            public TermValue(object? value, string actualKey, object? parent, Property? property)
+            {
+                Value = value;
+                ActualKey = actualKey;
+                Parent = parent;
+                Property = property;
             }
         }
     }

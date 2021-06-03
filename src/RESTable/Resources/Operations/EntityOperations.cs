@@ -222,7 +222,7 @@ namespace RESTable.Resources.Operations
             Task<RequestSuccess> GetEvaluator(IEntityRequest<T> request)
             {
                 var entities = TrySelectProcessFilter(request);
-                var result = MakeEntities(request, (dynamic) entities);
+                RequestSuccess result = MakeEntities(request, (dynamic) entities);
                 return Task.FromResult(result);
             }
 
@@ -237,7 +237,10 @@ namespace RESTable.Resources.Operations
 
             async Task<RequestSuccess> PutEvaluator(IEntityRequest<T> request)
             {
-                var source = await TrySelectFilter(request).InputLimit().ToListAsync().ConfigureAwait(false);
+                var source = await TrySelectFilter(request)
+                    .InputLimit()
+                    .ToListAsync()
+                    .ConfigureAwait(false);
                 switch (source.Count)
                 {
                     case 0:
@@ -248,7 +251,7 @@ namespace RESTable.Resources.Operations
                     }
                     case 1 when request.GetCustomUpdater() is null && !request.Body.CanRead:
                     {
-                        return new UpdatedEntities<T>(request, 0, new T[0]);
+                        return new UpdatedEntities<T>(request, 0, Array.Empty<T>());
                     }
                     default:
                     {
@@ -305,7 +308,7 @@ namespace RESTable.Resources.Operations
                     buffer.Add(item);
                 count += 1;
             }
-            var changedEntitiesArray = count <= maxNumberOfChangedEntities ? buffer.ToArray() : new T[0];
+            var changedEntitiesArray = count <= maxNumberOfChangedEntities ? buffer.ToArray() : Array.Empty<T>();
             return (count, changedEntitiesArray);
         }
 
@@ -334,7 +337,7 @@ namespace RESTable.Resources.Operations
                 insertedCount += 1;
                 totalCount += 1;
             }
-            var changedEntitiesArray = totalCount <= maxNumberOfChangedEntities ? buffer.ToArray() : new T[0];
+            var changedEntitiesArray = totalCount <= maxNumberOfChangedEntities ? buffer.ToArray() : Array.Empty<T>();
             return (updatedCount, insertedCount, changedEntitiesArray);
         }
 
@@ -400,7 +403,17 @@ namespace RESTable.Resources.Operations
                 await foreach (var entity in body.Deserialize<JObject>().ConfigureAwait(false))
                 {
                     foreach (var cond in conditions)
-                        cond.Value = entity.SafeSelect(cond.Term.GetValue);
+                    {
+                        try
+                        {
+                            var termValue = await cond.Term.GetValue(entity).ConfigureAwait(false);
+                            cond.Value = termValue.Value;
+                        }
+                        catch
+                        {
+                            cond.Value = null;
+                        }
+                    }
                     innerRequest.Conditions = conditions;
                     var result = await innerRequest.GetResultEntities().ConfigureAwait(false);
                     var resultList = await result.ToListAsync().ConfigureAwait(false);

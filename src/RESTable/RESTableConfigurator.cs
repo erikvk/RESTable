@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTable.Auth;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
@@ -58,12 +60,12 @@ namespace RESTable
             ResourceCollection.SetDependencies(this, TypeCache, RootAccess);
             ResourceFactory.MakeResources();
             IsConfigured = true;
-            foreach (var startupActivator in StartupActivators)
-                startupActivator.Activate();
             RootAccess.Load();
             ResourceFactory.BindControllers();
-            ResourceFactory.FinalCheck();
             ProtocolProviderManager.OnInit();
+            ResourceFactory.FinalCheck();
+            var startupTasks = StartupActivators.Select(activator => activator.Activate());
+            Task.WhenAll(startupTasks).Wait();
         }
 
         private static void ValidateRootUri(ref string uri)

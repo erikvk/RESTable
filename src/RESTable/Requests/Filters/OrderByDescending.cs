@@ -16,20 +16,7 @@ namespace RESTable.Requests.Filters
         public override IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities)
         {
             if (Skip) return entities;
-
-            dynamic selector(T i)
-            {
-                try
-                {
-                    return Term.GetValue(i);
-                }
-                catch
-                {
-                    return default;
-                }
-            }
-
-            return entities.OrderByDescending(selector);
+            return entities.OrderByDescendingAwait(Selector);
         }
 
         internal override OrderBy GetCopy() => new OrderByDescending(Resource, Term);

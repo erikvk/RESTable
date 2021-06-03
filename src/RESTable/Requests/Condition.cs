@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Results;
@@ -17,7 +18,7 @@ namespace RESTable.Requests
     /// </summary>
     public class Condition<T> : ICondition, IUriCondition where T : class
     {
-        private Predicate<object> Predicate { get; }
+        private Predicate<object?> Predicate { get; }
 
         /// <inheritdoc cref="ICondition" />
         /// <inheritdoc cref="IUriCondition" />
@@ -191,10 +192,11 @@ namespace RESTable.Requests
         /// <summary>
         /// Returns true if and only if the condition holds for the given subject
         /// </summary>
-        public bool HoldsFor(T subject)
+        public async ValueTask<bool> HoldsFor(T subject)
         {
             if (Skip) return true;
-            var subjectValue = Term.GetValue(subject);
+            var termValue = await Term.GetValue(subject).ConfigureAwait(false);
+            var subjectValue = termValue.Value;
             return Predicate(subjectValue);
         }
 

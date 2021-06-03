@@ -18,11 +18,10 @@ namespace RESTable.SQLite
     public static class SQLite<T> where T : SQLiteTable
     {
         private const string RowIdParameter = "@rowId";
-
-
+        
         /// <summary>
         /// Selects entities in the SQLite database using the RESTable.SQLite O/RM mapping 
-        /// facilities. Returns an IEnumerable of the provided resource type.
+        /// facilities. Returns an IAsyncEnumerable of the provided resource type.
         /// </summary>
         /// <param name="where">The WHERE clause of the SQL squery to execute. Will be preceded 
         /// by "SELECT * FROM {type} " in the actual query</param>

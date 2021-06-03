@@ -42,7 +42,7 @@ namespace RESTable.SQLite.Meta
         /// The setter for the property value
         /// </summary>
         [RESTableMember(ignore: true)]
-        public Setter Set { get; }
+        public Setter? Set { get; }
 
         /// <summary>
         /// The optional SQLiteMemberAttribute associated with this CLR property

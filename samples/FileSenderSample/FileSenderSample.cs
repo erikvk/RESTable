@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
+using RESTable.Meta;
 using RESTable.Resources;
 using RESTable.WebSockets;
 
@@ -52,7 +53,7 @@ namespace FileSenderSample
         /// <summary>
         /// We expect clients to set this in the initial request.
         /// </summary>
-        public string Id { get; }
+        public string WorkstationId { get; }
 
         /// <summary>
         /// This is a read-only file count, set here on the server
@@ -71,15 +72,16 @@ namespace FileSenderSample
 
         private DateTime OpenedAt { get; set; }
 
-        public FileSenderConnection(string id)
+        public FileSenderConnection(string workstationId, ResourceCollection collection)
         {
-            Id = id;
+            WorkstationId = workstationId;
+            var a = "";
         }
 
         protected override async Task Open()
         {
             OpenedAt = DateTime.Now;
-            await WebSocket.SendText($"Hi, I'm a connection named {Id}!");
+            await WebSocket.SendText($"Hi, I'm a connection named {WorkstationId}!");
         }
 
         public async Task FileSent(string fileName, long fileLength)
@@ -168,7 +170,7 @@ namespace FileSenderSample
 
                 case "DEACTIVATE":
                 {
-                    var connection = activeConnections.FirstOrDefault(c => c.Id == id);
+                    var connection = activeConnections.FirstOrDefault(c => c.WorkstationId == id);
                     if (connection is not null)
                     {
                         connection.Deactivated = true;
@@ -180,7 +182,7 @@ namespace FileSenderSample
                 }
                 case "ACTIVATE":
                 {
-                    var connection = activeConnections.FirstOrDefault(c => c.Id == id);
+                    var connection = activeConnections.FirstOrDefault(c => c.WorkstationId == id);
                     if (connection is not null)
                     {
                         connection.Deactivated = false;

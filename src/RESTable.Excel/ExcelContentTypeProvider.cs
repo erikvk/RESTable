@@ -117,7 +117,7 @@ namespace RESTable.Excel
                                 columnIndex = 1;
                                 foreach (var property in properties)
                                 {
-                                    WriteExcelCell(worksheet.Cells[currentRow, columnIndex], GetCellValue(property, entity));
+                                    WriteExcelCell(worksheet.Cells[currentRow, columnIndex], await GetCellValue(property, entity).ConfigureAwait(false));
                                     columnIndex += 1;
                                 }
                             }
@@ -137,11 +137,11 @@ namespace RESTable.Excel
             }
         }
 
-        private static object? GetCellValue(DeclaredProperty prop, object target) => prop switch
+        private static async ValueTask<object?> GetCellValue(DeclaredProperty prop, object target) => prop switch
         {
             _ when prop.ExcelReducer is not null => ((dynamic) prop.ExcelReducer)(target),
-            _ when prop.Type.IsEnum => prop.GetValue(target)?.ToString(),
-            _ => prop.GetValue(target)
+            _ when prop.Type.IsEnum => (await prop.GetValue(target).ConfigureAwait(false))?.ToString(),
+            _ => await prop.GetValue(target).ConfigureAwait(false)
         };
 
         private static void WriteExcelCell(ExcelRange target, object? value)

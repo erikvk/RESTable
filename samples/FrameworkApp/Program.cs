@@ -39,7 +39,6 @@ namespace FrameworkApp
     /// </summary>
     public class Program
     {
-        // METHOD URI
         public static void Main()
         {
             // Build services

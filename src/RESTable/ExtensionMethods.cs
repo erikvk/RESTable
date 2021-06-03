@@ -75,7 +75,7 @@ namespace RESTable
                 }
                 catch
                 {
-                    return new Type[0];
+                    return Array.Empty<Type>();
                 }
             })
             .Where(type => type.IsSubclassOf(baseType));
@@ -295,7 +295,7 @@ namespace RESTable
         /// <summary>
         /// Converts a resource entitiy to a JSON.net JObject.
         /// </summary>
-        internal static JObject ToJObject(this object entity)
+        internal static async ValueTask<JObject> ToJObject(this object entity)
         {
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
 
@@ -306,9 +306,11 @@ namespace RESTable
                 case IDictionary idict:
                     var _jobj = new JObject();
                     foreach (DictionaryEntry pair in idict)
-                        _jobj[pair.Key.ToString()] = pair.Value is null
+                    {
+                        _jobj[pair.Key.ToString()!] = pair.Value is null
                             ? null
                             : JToken.FromObject(pair.Value, jsonProvider.GetSerializer());
+                    }
                     return _jobj;
             }
 
@@ -316,7 +318,7 @@ namespace RESTable
             var typeCache = ApplicationServicesAccessor.TypeCache;
             foreach (var property in typeCache.GetDeclaredProperties(entity.GetType()).Values.Where(p => !p.Hidden))
             {
-                var propertyValue = property.GetValue(entity);
+                var propertyValue = await property.GetValue(entity).ConfigureAwait(false);
                 jobj[property.Name] = propertyValue is null ? null : JToken.FromObject(propertyValue, jsonProvider.GetSerializer());
             }
             return jobj;
@@ -699,6 +701,38 @@ namespace RESTable
             else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MediaType, out acceptProvider))
                 throw new NotAcceptable(contentType.Value.ToString());
             return acceptProvider;
+        }
+
+        /// <summary>
+        /// Is this type a type that can be encoded in a RESTable request URI value literal?
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsOfValueLiteralType(this Type type)
+        {
+            switch (type)
+            {
+                case var _ when type.IsNullable(out var baseType): return IsOfValueLiteralType(baseType!);
+                case var _ when type.IsEnum:
+                case var _ when type == typeof(DBNull):
+                case var _ when type == typeof(bool):
+                case var _ when type == typeof(decimal):
+                case var _ when type == typeof(long):
+                case var _ when type == typeof(sbyte):
+                case var _ when type == typeof(byte):
+                case var _ when type == typeof(short):
+                case var _ when type == typeof(ushort):
+                case var _ when type == typeof(int):
+                case var _ when type == typeof(uint):
+                case var _ when type == typeof(ulong):
+                case var _ when type == typeof(float):
+                case var _ when type == typeof(double):
+                case var _ when type == typeof(string):
+                case var _ when type == typeof(DateTime):
+                case var _ when type == typeof(char):
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>

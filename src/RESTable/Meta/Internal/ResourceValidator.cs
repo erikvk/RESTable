@@ -275,11 +275,11 @@ namespace RESTable.Meta.Internal
                         if (!constructorParameterNames.Add(parameter.Name))
                             throw new InvalidTerminalDeclarationException(terminal, "must not define multiple constructor parameters with the same case " +
                                                                                     $"insensitive parameter name. Found duplicate of '{parameter.Name.ToLowerInvariant()}'");
-                        if (!properties.ContainsKey(parameter.Name))
+                        if (parameter.ParameterType.IsOfValueLiteralType() && !properties.ContainsKey(parameter.Name))
                         {
-                            throw new InvalidTerminalDeclarationException(terminal, "must not define a constructor parameter with a name that does not equal the name of a " +
-                                                                                    "public instance property on the same type (case insensitive). Found parameter " +
-                                                                                    $"'{parameter.Name.ToLowerInvariant()}' with no matching public instance property.");
+                            throw new InvalidTerminalDeclarationException(terminal, "must not define a condition-resolved constructor parameter with a name that does not " +
+                                                                                    "equal the name of a public instance property on the same type (case insensitive). Found " +
+                                                                                    $"parameter '{parameter.Name.ToLowerInvariant()}' with no matching public instance property.");
                         }
                     }
                     if (terminal.ImplementsGenericInterface(typeof(IEnumerable<>)))

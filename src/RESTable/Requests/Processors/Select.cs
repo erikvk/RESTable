@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTable.Meta;
 
@@ -12,22 +14,26 @@ namespace RESTable.Requests.Processors
     /// </summary>
     public class Select : List<Term>, IProcessor
     {
-        public Select(IEnumerable<Term> collection) : base(collection) { }
+        private JsonSerializer Serializer { get; }
+
+        public Select(IEnumerable<Term> collection) : base(collection)
+        {
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            Serializer = jsonProvider.GetSerializer();
+        }
 
         internal Select GetCopy() => new(this);
 
-        private JObject? Apply<T>(T entity)
+        private async ValueTask<JObject> Apply<T>(T entity)
         {
-            if (entity is null)
-                return null;
+            if (entity is null) throw new ArgumentNullException(nameof(entity));
             var jobj = new JObject();
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-            var serializer = jsonProvider.GetSerializer();
             foreach (var term in this)
             {
                 if (jobj[term.Key] is not null) continue;
-                var termValue = term.GetValue(entity, out var actualKey);
-                jobj[actualKey] = termValue is null ? null : JToken.FromObject(termValue, serializer);
+                var termValue = await term.GetValue(entity).ConfigureAwait(false);
+                var actualKey = termValue.ActualKey;
+                jobj[actualKey] = termValue.Value is null ? null : JToken.FromObject(termValue.Value, Serializer);
             }
             return jobj;
         }
@@ -35,6 +41,12 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Selects a set of properties from an IEnumerable of entities
         /// </summary>
-        public IAsyncEnumerable<JObject?>? Apply<T>(IAsyncEnumerable<T>? entities) => entities?.Select(Apply);
+        public async IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities)
+        {
+            await foreach (var entity in entities)
+            {
+                yield return await Apply(entity).ConfigureAwait(false);
+            }
+        }
     }
 }

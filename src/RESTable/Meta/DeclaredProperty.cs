@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 
@@ -109,19 +110,19 @@ namespace RESTable.Meta
         public bool HasAttribute<TAttribute>(out TAttribute? attribute) where TAttribute : Attribute => (attribute = GetAttribute<TAttribute>()) is not null;
 
         /// <inheritdoc />
-        public override void SetValue(object target, object? value)
+        public override async ValueTask SetValue(object target, object? value)
         {
             if (PropertyChanged is not null)
             {
-                var oldValue = GetValue(target);
-                base.SetValue(target, value);
-                var changedValue = GetValue(target);
+                var oldValue = await GetValue(target).ConfigureAwait(false);
+                await base.SetValue(target, value).ConfigureAwait(false);
+                var changedValue = await GetValue(target).ConfigureAwait(false);
                 if (Equals(changedValue, oldValue))
                     return;
                 NotifyChange(target, oldValue, value);
                 return;
             }
-            base.SetValue(target, value);
+            await base.SetValue(target, value).ConfigureAwait(false);
         }
 
         internal void NotifyChange(object target, object? oldValue, object? newValue)
@@ -223,10 +224,10 @@ namespace RESTable.Meta
             }
         }
 
-        internal long ByteCount(object target)
+        internal async ValueTask<long> ByteCount(object target)
         {
             if (target is null) throw new NullReferenceException(nameof(target));
-            return GetValue(target) switch
+            return await GetValue(target).ConfigureAwait(false) switch
             {
                 null => 0,
                 string str => Encoding.UTF8.GetByteCount(str),

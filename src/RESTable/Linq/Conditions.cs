@@ -13,20 +13,27 @@ namespace RESTable.Linq
         /// Filters an IEnumerable of resource entities and returns all entities x such that all the 
         /// conditions are true of x.
         /// </summary>
-        public static IAsyncEnumerable<T> Where<T>(this IAsyncEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
+        public static async IAsyncEnumerable<T> Where<T>(this IAsyncEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
             where T : class
         {
-            return entities.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
+            await foreach (T entity in entities)
+            {
+                var allHold = true;
+                foreach (var condition in conditions)
+                {
+                    if (!await condition.HoldsFor(entity).ConfigureAwait(false))
+                    {
+                        allHold = false;
+                        break;
+                    }
+                }
+                if (allHold)
+                {
+                    yield return entity;
+                }
+            }
         }
-
-        /// <summary>
-        /// Returns true if and only if all the given conditions hold for the given subject
-        /// </summary>
-        public static bool AllHoldFor<T>(this IEnumerable<Condition<T>> conditions, T subject) where T : class
-        {
-            return conditions.All(condition => condition.HoldsFor(subject));
-        }
-
+        
         /// <summary>
         /// Access all conditions with a given key (case insensitive)
         /// </summary>

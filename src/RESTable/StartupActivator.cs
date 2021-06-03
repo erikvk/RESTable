@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace RESTable
@@ -9,7 +10,7 @@ namespace RESTable
     /// </summary>
     public interface IStartupActivator
     {
-        void Activate();
+        Task Activate();
     }
 
     /// <summary>
@@ -19,15 +20,18 @@ namespace RESTable
     public class StartupActivator<TService> : IStartupActivator where TService : class
     {
         private IServiceProvider ServiceProvider { get; }
+        private Func<TService, Task> OnActivate { get; }
 
-        public StartupActivator(IServiceProvider serviceProvider)
+        public StartupActivator(IServiceProvider serviceProvider, Func<TService, Task> onActivate)
         {
             ServiceProvider = serviceProvider;
+            OnActivate = onActivate;
         }
 
-        public void Activate()
+        public async Task Activate()
         {
-            ServiceProvider.GetRequiredService<TService>();
+            var service = ServiceProvider.GetRequiredService<TService>();
+            await OnActivate(service).ConfigureAwait(false);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
@@ -14,7 +15,6 @@ namespace RESTable.Requests.Filters
         /// </summary>
         public IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
         {
-            if (entities is null) return null;
             return DistinctIterator(entities);
         }
 
@@ -23,7 +23,9 @@ namespace RESTable.Requests.Filters
             var set = new HashSet<JObject>(JToken.EqualityComparer);
             await foreach (var element in source.ConfigureAwait(false))
             {
-                if (set.Add(element.ToJObject()))
+                if (element is null) throw new ArgumentNullException(nameof(source));
+                var jobject = await element.ToJObject().ConfigureAwait(false);
+                if (set.Add(jobject))
                 {
                     yield return element;
                 }

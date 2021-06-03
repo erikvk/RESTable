@@ -100,13 +100,13 @@ namespace RESTable.Results
         public IRequest Request { get; set; }
 
         /// <inheritdoc />
-        public void Dispose() => Request?.Body?.Dispose();
+        public void Dispose() => Request?.Dispose();
 
         /// <inheritdoc />
         public async ValueTask DisposeAsync()
         {
-            if (Request?.Body is Body body)
-                await body.DisposeAsync().ConfigureAwait(false);
+            if (Request is not null)
+                await Request.DisposeAsync().ConfigureAwait(false);
         }
 
         private readonly string _logContent = null;

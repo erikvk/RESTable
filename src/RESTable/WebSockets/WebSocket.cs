@@ -277,7 +277,7 @@ namespace RESTable.WebSockets
             if (resource is null)
                 throw new ArgumentNullException(nameof(resource));
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
-            var newTerminal = _resource.MakeTerminal(Context, assignments);
+            var newTerminal = await _resource.MakeTerminal(Context, assignments).ConfigureAwait(false);
             await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
         }

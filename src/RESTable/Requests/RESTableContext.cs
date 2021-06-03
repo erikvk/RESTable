@@ -21,7 +21,7 @@ namespace RESTable.Requests
         private int StackDepth;
         internal bool IsBottomOfStack => StackDepth < 1;
         private IServiceProvider Services { get; }
-        public object GetService(Type serviceType) => Services.GetService(serviceType);
+        public object? GetService(Type serviceType) => Services.GetService(serviceType);
 
         public RESTableContext Context => this;
 
@@ -47,7 +47,7 @@ namespace RESTable.Requests
             get => webSocket;
             set
             {
-                if (value == null) return;
+                if (value is null) return;
                 Services.GetRequiredService<WebSocketManager>().Add(value);
                 webSocket = value;
             }

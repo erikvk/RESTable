@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using RESTable;
 using RESTable.Auth;
 using RESTable.Internal;
@@ -29,7 +31,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddStartupActivator<TService>(this IServiceCollection serviceCollection) where TService : class
         {
-            serviceCollection.AddTransient<IStartupActivator>(pr => new StartupActivator<TService>(pr));
+            serviceCollection.AddTransient<IStartupActivator>(pr => new StartupActivator<TService>(pr, _ => Task.CompletedTask));
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddStartupActivator<TService>(this IServiceCollection serviceCollection, Func<TService, Task> activator) where TService : class
+        {
+            serviceCollection.AddTransient<IStartupActivator>(pr => new StartupActivator<TService>(pr, activator));
             return serviceCollection;
         }
 
@@ -56,6 +64,11 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton<IAllowedCorsOriginsFilter, AllCorsOriginsAllowed>();
             serviceCollection.TryAddSingleton<RootAccess>();
             serviceCollection.TryAddSingleton<RootClient>();
+            serviceCollection.TryAddTransient<RootContext>(pr =>
+            {
+                var rootClient = pr.GetRequiredService<RootClient>();
+                return new RootContext(rootClient, pr);
+            });
             serviceCollection.AddSingleton<IEntityResourceProvider, InMemoryEntityResourceProvider>();
             serviceCollection.AddSingleton<IProtocolProvider, DefaultProtocolProvider>();
             serviceCollection.AddTransient(typeof(ICombinedTerminal<>), typeof(CombinedTerminal<>));

@@ -27,7 +27,7 @@ namespace RESTable.Results
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
-        public abstract IRequest Request { get; }
+        public abstract IRequest? Request { get; }
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
@@ -77,13 +77,13 @@ namespace RESTable.Results
         public void ThrowIfError() { }
 
         /// <inheritdoc />
-        public void Dispose() => Request?.Body?.Dispose();
+        public void Dispose() => Request?.Dispose();
 
         /// <inheritdoc />
         public async ValueTask DisposeAsync()
         {
-            if (Request?.Body is Body body)
-                await body.DisposeAsync().ConfigureAwait(false);
+            if (Request is not null)
+                await Request.DisposeAsync().ConfigureAwait(false);
         }
 
         protected Success(IProtocolHolder protocolHolder, Headers headers = null)

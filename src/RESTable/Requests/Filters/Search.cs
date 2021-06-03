@@ -19,7 +19,7 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// The selector to use before searching
         /// </summary>
-        protected string Selector { get; }
+        protected string? Selector { get; }
 
         /// <summary>
         /// Should the search ignore case?
@@ -77,7 +77,11 @@ namespace RESTable.Requests.Filters
                 var jsonProvider = ApplicationServicesAccessor.JsonProvider;
                 return entities.Where(e => jsonProvider.Serialize(e).IndexOf(Pattern, comparison) >= 0);
             }
-            return entities.Where(e => e?.ToJObject().GetValue(Selector, OrdinalIgnoreCase)?.ToString().IndexOf(Pattern, comparison) >= 0);
+            return entities.WhereAwait(async e =>
+            {
+                var jobject = await e.ToJObject().ConfigureAwait(false);
+                return jobject.GetValue(Selector, OrdinalIgnoreCase)?.ToString().IndexOf(Pattern, comparison) >= 0;
+            });
         }
 
         internal string GetValueLiteral() => $"{Pattern},{Selector},{(IgnoreCase ? "CI" : "CS")}";

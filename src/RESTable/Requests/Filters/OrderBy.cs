@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using RESTable.Meta;
 
 namespace RESTable.Requests.Filters
@@ -12,6 +14,20 @@ namespace RESTable.Requests.Filters
         internal string Key => Term.Key;
         internal IEntityResource Resource { get; }
         internal bool Skip { get; set; }
+
+        protected async ValueTask<object?> Selector<T>(T entity)
+        {
+            if (entity is null) throw new ArgumentNullException(nameof(entity));
+            try
+            {
+                var termValue = await Term.GetValue(entity).ConfigureAwait(false);
+                return termValue.Value;
+            }
+            catch
+            {
+                return default;
+            }
+        }
 
         internal OrderBy(IEntityResource resource, Term term)
         {

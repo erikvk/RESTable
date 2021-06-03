@@ -28,6 +28,10 @@ namespace RESTable.Auth
 
             foreach (var allowAccess in allowAccessItems)
             {
+                if (allowAccess.Resources is null)
+                    throw new NullReferenceException(nameof(allowAccess.Resources));
+                if (allowAccess.Methods is null)
+                    throw new NullReferenceException(nameof(allowAccess.Methods));
                 var accessRight = new AccessRight
                 (
                     resources: allowAccess.Resources.Select(resourceCollection.SafeFindResources)
@@ -50,7 +54,7 @@ namespace RESTable.Auth
             foreach (var resource in resourceCollection.Where(r => r.GETAvailableToAll))
             {
                 if (assignments.TryGetValue(resource, out var methods))
-                    assignments[resource] = methods.Union(new[] {GET, REPORT, HEAD})
+                    assignments[resource] = methods!.Union(new[] {GET, REPORT, HEAD})
                         .OrderBy(i => i, MethodComparer.Instance)
                         .ToArray();
                 else assignments[resource] = new[] {GET, REPORT, HEAD};
@@ -73,10 +77,15 @@ namespace RESTable.Auth
             return methodSet;
         }
 
-        public new Method[] this[IResource resource]
+        public new Method[]? this[IResource resource]
         {
             get => TryGetValue(resource, out var r) ? r : null;
-            internal set => Dictionary[resource] = value;
+            internal set
+            {
+                if (value is null)
+                    Dictionary.Remove(resource);
+                else Dictionary[resource] = value;
+            }
         }
 
         internal void Clear() => Dictionary.Clear();

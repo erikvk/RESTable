@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
 using RESTable.Resources.Operations;
+using RESTable.WebSockets;
 
 namespace RESTable.Meta.Internal
 {
@@ -42,12 +44,12 @@ namespace RESTable.Meta.Internal
 
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
 
-        internal Terminal MakeTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
+        internal async Task<Terminal> MakeTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
         {
             var assignmentList = assignments?.ToList() ?? new List<Condition<T>>();
 
             var newTerminal = HasParameterizedConstructor
-                ? InvokeParameterizedConstructor(assignmentList)
+                ? InvokeParameterizedConstructor(context, assignmentList)
                 : (Terminal) Constructor.Invoke(null);
 
             foreach (var assignment in assignmentList)
@@ -60,7 +62,7 @@ namespace RESTable.Meta.Internal
                         dynTerminal[assignment.Key] = assignment.Value;
                     else throw new UnknownProperty(Type, this, assignment.Key);
                 }
-                else property.SetValue(newTerminal, assignment.Value);
+                else await property.SetValue(newTerminal, assignment.Value).ConfigureAwait(false);
             }
             if (newTerminal is T terminal and IValidator<T> validator)
             {
@@ -75,7 +77,7 @@ namespace RESTable.Meta.Internal
             return newTerminal;
         }
 
-        private Terminal InvokeParameterizedConstructor(List<Condition<T>> assignmentList)
+        private Terminal InvokeParameterizedConstructor(RESTableContext context, List<Condition<T>> assignmentList)
         {
             var constructorParameterList = new object[ConstructorParameterInfos.Length];
             var parameterAssignments = new Dictionary<int, object>();
@@ -96,12 +98,16 @@ namespace RESTable.Meta.Internal
 
             for (var i = 0; i < ConstructorParameterInfos.Length; i += 1)
             {
-                if (parameterAssignments.TryGetValue(i, out object value))
-                    constructorParameterList[i] = value;
+                if (parameterAssignments.TryGetValue(i, out var value))
+                    constructorParameterList[i] = value!;
                 else
                 {
                     var parameterInfo = ConstructorParameterInfos[i];
-                    if (parameterInfo.IsOptional)
+                    if (parameterInfo.ParameterType == typeof(IWebSocket))
+                        constructorParameterList[i] = context.WebSocket!;
+                    else if (context.GetService(parameterInfo.ParameterType) is object service)
+                        constructorParameterList[i] = service;
+                    else if (parameterInfo.IsOptional)
                         constructorParameterList[i] = Missing.Value;
                     else
                     {

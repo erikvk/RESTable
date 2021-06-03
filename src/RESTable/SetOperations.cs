@@ -74,7 +74,11 @@ namespace RESTable
                                             yield return item;
                                         yield break;
                                     }
-                                    case var other: throw new ArgumentException($"Could not get source data from '{argument}'. {other.GetLogMessage().Result}");
+                                    case var other:
+                                    {
+                                        var logMessage = await other.GetLogMessage().ConfigureAwait(false);
+                                        throw new ArgumentException($"Could not get source data from '{argument}'. {logMessage}");
+                                    }
                                 }
                             }
                             default:
@@ -219,7 +223,10 @@ namespace RESTable
                 if (result is IEntities<object> entities)
                 {
                     await foreach (var entity in entities)
-                        mapped.Add(entity.ToJObject());
+                    {
+                        var jobject = await entity.ToJObject().ConfigureAwait(false);
+                        mapped.Add(jobject);
+                    }
                 }
                 else throw new Exception($"Could not get source data from '{localMapper}'. {await result.GetLogMessage().ConfigureAwait(false)}");
             }

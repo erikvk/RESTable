@@ -221,7 +221,7 @@ namespace RESTable.Requests
                         if (IsWebSocketUpgrade)
                         {
                             var terminalResourceInternal = (TerminalResource<T>) terminalResource;
-                            var terminal = terminalResourceInternal.MakeTerminal(Context, Conditions);
+                            var terminal = await terminalResourceInternal.MakeTerminal(Context, Conditions).ConfigureAwait(false);
                             await Context.WebSocket.Open(this).ConfigureAwait(false);
                             await Context.WebSocket.ConnectTo(terminal).ConfigureAwait(false);
                             await terminal.OpenTerminal().ConfigureAwait(false);
@@ -302,7 +302,7 @@ namespace RESTable.Requests
         private async Task<IResult> SwitchTerminal(ITerminalResource<T> resource)
         {
             var _resource = (TerminalResource<T>) resource;
-            var newTerminal = _resource.MakeTerminal(Context, Conditions);
+            var newTerminal = await _resource.MakeTerminal(Context, Conditions).ConfigureAwait(false);
             await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
             return new SwitchedTerminal(this);

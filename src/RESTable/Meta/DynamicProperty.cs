@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using RESTable.Resources.Operations;
 
 namespace RESTable.Meta
 {
@@ -32,7 +31,7 @@ namespace RESTable.Meta
         /// <returns>A dynamic property that represents the runtime property
         /// described by the key string</returns>
         public static DynamicProperty Parse(string keyString, bool declaredFallback = false) => new(keyString, declaredFallback);
-        
+
         private DynamicProperty(string name, bool declaredFallback) : base(null)
         {
             Name = ActualName = name;
@@ -40,56 +39,57 @@ namespace RESTable.Meta
             Type = typeof(object);
             var typeCache = ApplicationServicesAccessor.TypeCache;
 
-            Getter = obj =>
+            async ValueTask<object?> getValue(object obj)
             {
                 object? value;
-                string? actualKey = null;
+                string? actualKey;
 
-                ValueTask<object?> getFromStatic()
+                async ValueTask<object?> getFromDeclared()
                 {
                     var type = obj.GetType();
-                    value = Do.Try(() =>
-                    {
-                        var prop = typeCache.FindDeclaredProperty(type, Name);
-                        actualKey = prop?.Name;
-                        return prop?.GetValue(obj);
-                    }, default(object));
+                    var prop = typeCache.FindDeclaredProperty(type, Name);
+                    actualKey = prop?.Name;
+                    if (prop is null)
+                        value = null;
+                    else value = await prop.GetValue(obj).ConfigureAwait(false);
                     Name = actualKey ?? Name;
-                    return new ValueTask<object?>(value);
+                    return value;
                 }
 
                 switch (obj)
                 {
-                    case IDynamicMemberValueProvider dm:
-                        if (dm.TryGetValue(Name, out value, out actualKey))
+                    case IDynamicMemberValueProvider dynamicMemberValueProvider:
+                        if (dynamicMemberValueProvider.TryGetValue(Name, out value, out actualKey))
                         {
                             Name = actualKey;
-                            return new ValueTask<object?>(value);
+                            return value;
                         }
-                        return DeclaredFallback ? getFromStatic() : new ValueTask<object?>(null);
+                        return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
                     case JObject jobj:
                         if (jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is not JProperty property)
-                            return DeclaredFallback ? getFromStatic() : new ValueTask<object?>(null);
+                            return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
                         Name = property.Name;
-                        return new ValueTask<object?>(property.Value.ToObject<object?>());
+                        return property.Value.ToObject<object?>();
                     case IDictionary<string, object> dict:
                         string capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
                         {
                             Name = capitalized;
-                            return new ValueTask<object?>(null);
+                            return value;
                         }
                         if (dict.TryFindInDictionary(Name, out actualKey, out value))
                         {
                             Name = actualKey!;
-                            return new ValueTask<object?>(null);
+                            return value;
                         }
-                        return DeclaredFallback ? getFromStatic() : new ValueTask<object?>(null);
-                    default: return getFromStatic();
+                        return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
+                    default: return await getFromDeclared().ConfigureAwait(false);
                 }
-            };
+            }
 
-            Setter = (obj, value) =>
+            Getter = getValue;
+
+            async ValueTask setValue(object obj, object? value)
             {
                 switch (obj)
                 {
@@ -107,11 +107,21 @@ namespace RESTable.Meta
                         break;
                     default:
                         var type = obj.GetType();
-                        Do.Try(() => typeCache.FindDeclaredProperty(type, Name)?.SetValue(obj, value));
+                        try
+                        {
+                            var property = typeCache.FindDeclaredProperty(type, Name);
+                            if (property is null) return;
+                            await property.SetValue(obj, value).ConfigureAwait(false);
+                        }
+                        catch
+                        {
+                            // Setting the value could fail due to access restrictions, in which case we just return
+                        }
                         break;
                 }
-                return default;
-            };
+            }
+
+            Setter = setValue;
         }
     }
 }

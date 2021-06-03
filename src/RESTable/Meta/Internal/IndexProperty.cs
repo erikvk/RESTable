@@ -22,7 +22,7 @@ namespace RESTable.Meta.Internal
             actualName: name,
             type: type,
             order: null,
-            attributes: new Attribute[0],
+            attributes: Array.Empty<Attribute>(),
             skipConditions: false,
             hidden: true,
             hiddenIfNull: false,

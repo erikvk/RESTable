@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
+using RESTable.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -91,8 +92,55 @@ namespace RESTable.Tutorial
     public enum Gender
     {
         Male,
+
         Female,
         Other
+    }
+
+    [RESTable(GET)]
+    public class Test2 : IAsyncSelector<Test2>
+    {
+        public static TaskCompletionSource<int> GetNextInt = new();
+
+        private static int Count;
+
+        private void Fire()
+        {
+            var previous = GetNextInt;
+            GetNextInt = new TaskCompletionSource<int>();
+            previous.SetResult(Count += 1);
+        }
+
+        public int Number { get; set; }
+
+        public IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request)
+        {
+            var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
+            for (var i = 0; i < number; i += 1)
+            {
+                Fire();
+            }
+            return AsyncEnumerable.Empty<Test2>();
+        }
+    }
+
+    [RESTable(GET)]
+    public class Test : IAsyncSelector<Test>
+    {
+        public int Value { get; set; }
+
+        public async IAsyncEnumerable<Test> SelectAsync(IRequest<Test> request)
+        {
+            yield return new Test {Value = -1};
+            while (true)
+            {
+                var value = await Test2.GetNextInt.Task;
+                yield return new Test
+                {
+                    Value = value
+                };
+            }
+        }
     }
 
     [RESTable(GET)]

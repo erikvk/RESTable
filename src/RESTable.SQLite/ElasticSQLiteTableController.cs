@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using RESTable.Requests;
@@ -64,7 +65,7 @@ namespace RESTable.SQLite
                 Columns = mapping.ColumnMappings.Values.ToDictionary(
                     keySelector: columnMapping => columnMapping.CLRProperty.Name,
                     elementSelector: columnMapping => columnMapping.CLRProperty.Type),
-                DroppedColumns = new string[0]
+                DroppedColumns = Array.Empty<string>()
             });
 
         /// <summary>

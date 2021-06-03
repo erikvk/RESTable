@@ -27,7 +27,7 @@ namespace RESTable.Meta
             HasUnresolvedIndexes = TermFromRoot.OfType<AnyIndexProperty>().Any();
         }
 
-        private void OnPropertyChanged(DeclaredProperty declaredProperty, object? target, dynamic value, dynamic newValue)
+        private async void OnPropertyChanged(DeclaredProperty declaredProperty, object? target, dynamic value, dynamic newValue)
         {
             if (target is null) return;
             MonitoringTree.HandleObservedChange
@@ -38,13 +38,10 @@ namespace RESTable.Meta
             );
             foreach (var definesTerm in declaredProperty.DefinesPropertyTerms)
             {
-                var definesNewValue = definesTerm.GetValue
-                (
-                    target: target,
-                    actualKey: out _,
-                    parent: out var definesTarget,
-                    property: out var definesProperty
-                );
+                var termValue = await definesTerm.GetValue(target).ConfigureAwait(false);
+                var definesTarget = termValue.Parent;
+                var definesProperty = termValue.Property;
+                var definesNewValue = termValue.Value;
                 var definesDeclaredProperty = (DeclaredProperty) definesProperty;
                 definesDeclaredProperty.NotifyChange
                 (

@@ -10,12 +10,12 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
         public void ApiKeyIsRequiredInRequests()
         {
             var uri = "/testresource";
-            var headers = new Headers {Authorization = $"apikey notAnApiKey"};
+            var headers = new Headers {Authorization = "apikey notAnApiKey"};
 
             var authSuccess = ApiKeyAuthenticator.TryAuthenticate(ref uri, headers, out var accessRights);
 
             Assert.False(authSuccess);
-            Assert.Null(accessRights);
+            Assert.Empty(accessRights);
         }
 
         [Fact]
