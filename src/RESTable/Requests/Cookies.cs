@@ -12,34 +12,7 @@ namespace RESTable.Requests
     /// </summary>
     public class Cookies : HashSet<Cookie>
     {
-#if NETSTANDARD2_1
-        /// <summary>
-        /// Finds a cookie by name (case sensitive)
-        /// </summary>
-        /// <param name="cookieName">The name of the cookie to find</param>
-        /// <returns>The cookie with the given name, or throws an exception if
-        /// there is no cookie with the given name</returns>
-        public Cookie this[string cookieName]
-        {
-            get
-            {
-                if (TryGetValue(new Cookie(cookieName), out var found))
-                    return found;
-                throw new KeyNotFoundException($"Found no cookie with name '{cookieName}'");
-            }
-        }
-
-        /// <summary>
-        /// Tries to find a cookie with the given name, and returns whether the operation was successful.
-        /// </summary>
-        /// <param name="cookieName">The name of the cookie to find</param>
-        /// <param name="value">The found cookie</param>
-        /// <returns></returns>
-        public bool TryGetValue(string cookieName, out Cookie value)
-        {
-            return base.TryGetValue(new Cookie(cookieName), out value);
-        }
-#else
+#if NETSTANDARD2_0
         /// <summary>
         /// Finds a cookie by name (case sensitive)
         /// </summary>
@@ -71,6 +44,33 @@ namespace RESTable.Requests
             }
             value = System.Linq.Enumerable.First(this, c => c.Name == cookieName);
             return true;
+        }
+#else
+        /// <summary>
+        /// Finds a cookie by name (case sensitive)
+        /// </summary>
+        /// <param name="cookieName">The name of the cookie to find</param>
+        /// <returns>The cookie with the given name, or throws an exception if
+        /// there is no cookie with the given name</returns>
+        public Cookie this[string cookieName]
+        {
+            get
+            {
+                if (TryGetValue(new Cookie(cookieName), out var found))
+                    return found;
+                throw new KeyNotFoundException($"Found no cookie with name '{cookieName}'");
+            }
+        }
+
+        /// <summary>
+        /// Tries to find a cookie with the given name, and returns whether the operation was successful.
+        /// </summary>
+        /// <param name="cookieName">The name of the cookie to find</param>
+        /// <param name="value">The found cookie</param>
+        /// <returns></returns>
+        public bool TryGetValue(string cookieName, out Cookie value)
+        {
+            return base.TryGetValue(new Cookie(cookieName), out value);
         }
 #endif
 

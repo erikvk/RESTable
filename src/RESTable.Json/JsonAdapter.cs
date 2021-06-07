@@ -73,10 +73,10 @@ namespace RESTable.Json
             await using (jsonStream.ConfigureAwait(false))
             {
                 var populateStream = new MemoryStream(body);
-#if NETSTANDARD2_1
-                await using (populateStream.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
                 using (populateStream)
+#else
+                await using (populateStream.ConfigureAwait(false))
 #endif
                 {
                     await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);

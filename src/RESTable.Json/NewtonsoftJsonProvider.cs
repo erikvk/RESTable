@@ -112,7 +112,7 @@ namespace RESTable.Json
         /// <summary>
         /// A general-purpose deserializer. Deserializes the given JSON string.
         /// </summary>
-        public T Deserialize<T>(string json)
+        public T? Deserialize<T>(string json)
         {
             return JsonConvert.DeserializeObject<T>(json, SerializerSettings);
         }
@@ -120,7 +120,7 @@ namespace RESTable.Json
         /// <summary>
         /// A general-purpose deserializer. Deserializes the given byte array.
         /// </summary>
-        public T Deserialize<T>(byte[] bytes)
+        public T? Deserialize<T>(byte[] bytes)
         {
             var json = Encoding.UTF8.GetString(bytes);
             return JsonConvert.DeserializeObject<T>(json, SerializerSettings);
@@ -177,7 +177,7 @@ namespace RESTable.Json
             var json = Encoding.UTF8.GetString(body);
             await foreach (var entity in entities.ConfigureAwait(false))
             {
-                JsonConvert.PopulateObject(json, entity, SerializerSettings);
+                JsonConvert.PopulateObject(json, entity!, SerializerSettings);
                 yield return entity;
             }
         }
@@ -189,7 +189,6 @@ namespace RESTable.Json
         public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (collection is null) return 0;
             var swr = new StreamWriter
             (
                 stream: stream,
@@ -197,10 +196,10 @@ namespace RESTable.Json
                 bufferSize: 4096,
                 leaveOpen: true
             );
-#if NETSTANDARD2_1
-            await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (swr)
+#else
+            await using (swr.ConfigureAwait(false))
 #endif
             {
                 using var jwr = new NewtonsoftJsonWriter(swr, JsonSettings.LineEndings, 0)
@@ -218,7 +217,6 @@ namespace RESTable.Json
             where T : class
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (collectionObject is null) return Task.FromResult<long>(0);
             textWriter.StartCountObjectsWritten();
             Serializer.Serialize((NewtonsoftJsonWriter) textWriter, collectionObject.ToEnumerable());
             var objectsWritten = textWriter.StopCountObjectsWritten();
@@ -247,16 +245,24 @@ namespace RESTable.Json
             {
                 case JsonToken.None: yield break;
                 case JsonToken.StartObject:
-                    yield return Serializer.Deserialize<T>(jsonReader);
+                {
+                    var value = Serializer.Deserialize<T>(jsonReader);
+                    if (value is not null)
+                        yield return value;
                     break;
+                }
                 case JsonToken.StartArray:
+                {
                     await jsonReader.ReadAsync().ConfigureAwait(false);
                     while (jsonReader.TokenType != JsonToken.EndArray)
                     {
-                        yield return Serializer.Deserialize<T>(jsonReader);
+                        var value = Serializer.Deserialize<T>(jsonReader);
+                        if (value is not null)
+                            yield return value;
                         await jsonReader.ReadAsync().ConfigureAwait(false);
                     }
                     break;
+                }
                 case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");
             }
         }

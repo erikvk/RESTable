@@ -134,8 +134,8 @@ namespace RESTable.Meta.Internal
         private static IReadOnlyList<Method> GetAvailableMethods(Type? resource)
         {
             if (resource is null)
-                return new Method[0];
-            return resource.GetCustomAttribute<RESTableAttribute>()?.AvailableMethods ?? new Method[0];
+                return Array.Empty<Method>();
+            return resource.GetCustomAttribute<RESTableAttribute>()?.AvailableMethods ?? Array.Empty<Method>();
         }
 
         private static RESTableOperations[] NecessaryOpDefs(IEnumerable<Method> restMethods)

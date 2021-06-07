@@ -16,7 +16,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Specifies the resource for the request
         /// </summary>
-        string ResourceSpecifier { get; }
+        string? ResourceSpecifier { get; }
 
         /// <summary>
         /// Specifies the view for the request
@@ -36,7 +36,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The macro, if any, belonging to these uri components
         /// </summary>
-        IMacro Macro { get; }
+        IMacro? Macro { get; }
 
         /// <summary>
         /// The protocol provider specified in the uri string

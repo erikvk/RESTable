@@ -45,7 +45,7 @@ namespace RESTable.Tests.OperationsTests
         {
             context.GetRequiredService<OperationsTestsFlags>().ValidatorWasCalled = true;
             if (entity.Id == 99)
-                yield return this.Invalidate(p => p.Id, "Cannot be 99");
+                yield return this.MemberInvalid(p => p.Id, "Cannot be 99");
         }
 
         public long Count(IRequest<ResourceSync> request)

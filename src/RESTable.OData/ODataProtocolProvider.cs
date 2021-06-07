@@ -208,7 +208,7 @@ namespace RESTable.OData
         };
 
         /// <inheritdoc />
-        public bool IsCompliant(IRequest request, out string invalidReason)
+        public bool IsCompliant(IRequest request, out string? invalidReason)
         {
             invalidReason = null;
             switch (request.Headers["OData-Version"] ?? request.Headers["OData-MaxVersion"])
@@ -246,7 +246,7 @@ namespace RESTable.OData
                 case not IEntities: return;
             }
 
-            string contextFragment;
+            string? contextFragment;
             bool writeMetadata;
             var entities = (IEntities) toSerialize.Result;
             switch (entities)
@@ -261,10 +261,10 @@ namespace RESTable.OData
                     break;
             }
             var swr = new StreamWriter(toSerialize.Body, Encoding.Default, 4096, true);
-#if NETSTANDARD2_1
-            await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (swr)
+#else
+            await using (swr.ConfigureAwait(false))
 #endif
             {
                 using var jwr = JsonProvider.GetJsonWriter(swr);

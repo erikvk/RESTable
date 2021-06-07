@@ -70,7 +70,7 @@ namespace RESTable.Meta
                             return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
                         Name = property.Name;
                         return property.Value.ToObject<object?>();
-                    case IDictionary<string, object> dict:
+                    case IDictionary<string, object?> dict:
                         string capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
                         {

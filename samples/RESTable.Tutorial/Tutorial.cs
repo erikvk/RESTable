@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -20,6 +23,23 @@ using static RESTable.Tutorial.Gender;
 
 namespace RESTable.Tutorial
 {
+    public static class ExtensionMethods
+    {
+        public static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(
+            this IReceivableSourceBlock<T> source,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            while (await source.OutputAvailableAsync(cancellationToken).ConfigureAwait(false))
+            {
+                while (source.TryReceive(out var item))
+                {
+                    yield return item;
+                }
+            }
+            await source.Completion.ConfigureAwait(false); // Propagate possible exception
+        }
+    }
+
     #region Tutorial 1
 
     /// <summary>
@@ -97,30 +117,40 @@ namespace RESTable.Tutorial
         Other
     }
 
+    public interface IMyTest
+    {
+        string Name { get; }
+    }
+
+    [RESTable, InMemory]
+    public class MyTest : IValidator<IMyTest>, IMyTest
+    {
+        public string Name { get; set; }
+
+        public IEnumerable<InvalidMember> Validate(IMyTest entity, RESTableContext context)
+        {
+            if (entity.Name == "Bananas")
+                yield return this.MemberInvalid(t => t.Name, "can't be 'Bananas'");
+        }
+    }
+
     [RESTable(GET)]
     public class Test2 : IAsyncSelector<Test2>
     {
-        public static TaskCompletionSource<int> GetNextInt = new();
+        public static BufferBlock<int> BufferBlock = new();
 
         private static int Count;
 
-        private void Fire()
-        {
-            var previous = GetNextInt;
-            GetNextInt = new TaskCompletionSource<int>();
-            previous.SetResult(Count += 1);
-        }
-
         public int Number { get; set; }
 
-        public IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request)
+        public async IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request)
         {
             var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
             for (var i = 0; i < number; i += 1)
             {
-                Fire();
+                await BufferBlock.SendAsync(Count += 1).ConfigureAwait(false);
             }
-            return AsyncEnumerable.Empty<Test2>();
+            yield break;
         }
     }
 
@@ -131,15 +161,30 @@ namespace RESTable.Tutorial
 
         public async IAsyncEnumerable<Test> SelectAsync(IRequest<Test> request)
         {
-            yield return new Test {Value = -1};
-            while (true)
+            await foreach (var value in Test2.BufferBlock.ToAsyncEnumerable())
             {
-                var value = await Test2.GetNextInt.Task;
-                yield return new Test
-                {
-                    Value = value
-                };
+                yield return new Test {Value = value};
             }
+        }
+    }
+
+    [RESTable(GET)]
+    public class Test3 : IAsyncSelector<Test3>
+    {
+        public int Value { get; set; }
+
+        public async IAsyncEnumerable<Test3> SelectAsync(IRequest<Test3> request)
+        {
+            yield return new Test3 {Value = 0};
+            await Task.Delay(2000);
+            yield return new Test3 {Value = 1};
+            await Task.Delay(2000);
+            yield return new Test3 {Value = 2};
+            await Task.Delay(2000);
+            yield return new Test3 {Value = 3};
+            await Task.Delay(2000);
+            yield return new Test3 {Value = 4};
+            await Task.Delay(2000);
         }
     }
 
@@ -193,7 +238,7 @@ namespace RESTable.Tutorial
         public IEnumerable<InvalidMember> Validate(Person entity, RESTableContext context)
         {
             if (entity.Name == "Banarne")
-                yield return this.Invalidate(e => e.Name, "Banarne is not a real name!");
+                yield return this.MemberInvalid(e => e.Name, "Banarne is not a real name!");
         }
     }
 

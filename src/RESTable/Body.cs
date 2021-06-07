@@ -144,7 +144,7 @@ namespace RESTable
             var content = UninitializedBodyObject;
             switch (content)
             {
-                case IDictionary<string, object> _:
+                case IDictionary<string, object?> _:
                 case JObject _:
                     await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
@@ -229,17 +229,17 @@ namespace RESTable
             base.Dispose(disposing);
         }
 
-#if NETSTANDARD2_1
-        public override async ValueTask DisposeAsync()
-        {
-            await Stream.DisposeAsync().ConfigureAwait(false);
-            await base.DisposeAsync().ConfigureAwait(false);
-        }
-#else
+#if NETSTANDARD2_0
         public async ValueTask DisposeAsync()
         {
             await Stream.DisposeAsync().ConfigureAwait(false);
             base.Dispose();
+        }
+#else
+        public override async ValueTask DisposeAsync()
+        {
+            await Stream.DisposeAsync().ConfigureAwait(false);
+            await base.DisposeAsync().ConfigureAwait(false);
         }
 #endif
 
@@ -295,7 +295,8 @@ namespace RESTable
         public override void Write(byte[] buffer, int offset, int count) => Stream.Write(buffer, offset, count);
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => Stream.WriteAsync(buffer, offset, count, cancellationToken);
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_0
+#else
         public override void CopyTo(Stream destination, int bufferSize) => Stream.CopyTo(destination, bufferSize);
         public override int Read(Span<byte> buffer) => Stream.Read(buffer);
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new()) => Stream.ReadAsync(buffer, cancellationToken);

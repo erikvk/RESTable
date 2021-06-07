@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Requests;
@@ -21,7 +22,7 @@ namespace RESTable
     /// internal requests.
     /// </summary>
     [RESTable(Method.GET, Description = description)]
-    public class Aggregator : Dictionary<string, object>, IAsyncSelector<Aggregator>
+    public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator>
     {
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
 
@@ -35,6 +36,7 @@ namespace RESTable
             ).ConfigureAwait(false);
 
             var jsonProvider = request.GetRequiredService<IJsonProvider>();
+            JsonSerializer serializer = jsonProvider.GetSerializer();
 
             async Task<object> Populator(object node)
             {
@@ -43,7 +45,7 @@ namespace RESTable
                     case Aggregator aggregator:
                         foreach (var (key, obj) in aggregator.ToList())
                         {
-                            var value = await Populator(obj).ConfigureAwait(false);
+                            var value = await Populator(obj!).ConfigureAwait(false);
                             switch (key)
                             {
                                 case "$add" when IsNumberArray(value, out var terms): return terms.Sum();
@@ -65,12 +67,12 @@ namespace RESTable
                         foreach (var item in array)
                         {
                             var obj = item.ToObject<object>();
-                            var populated = await Populator(obj).ConfigureAwait(false);
+                            var populated = await Populator(obj!).ConfigureAwait(false);
                             list.Add(populated);
                         }
                         return list;
                     }
-                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(jsonProvider.GetSerializer())).ConfigureAwait(false);
+                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(serializer)!).ConfigureAwait(false);
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
                     {
@@ -101,7 +103,7 @@ namespace RESTable
                             Error error => throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}"),
                             Report report => report.Count,
                             IEntities entities => entities,
-                            var other => throw new Exception($"Unexpected result from {method.ToString()} request inside " + $"Aggregator: {other.GetLogMessage().Result}")
+                            var other => throw new Exception($"Unexpected result from {method.ToString()} request inside " + $"Aggregator: {await other.GetLogMessage()}")
                         };
                     }
                     case var other: return other;
@@ -116,7 +118,7 @@ namespace RESTable
             };
         }
 
-        private static Exception GetArithmeticException(string operation, string message = null)
+        private static Exception GetArithmeticException(string operation, string? message = null)
         {
             return new InvalidOperationException($"Invalid arguments for operation '{operation}'. The value for key '{operation}' must evaluate " +
                                                  $"to a list of integers. {message}");
@@ -132,7 +134,7 @@ namespace RESTable
             }
             catch (InvalidCastException)
             {
-                array = null;
+                array = Array.Empty<long>();
                 return false;
             }
         }

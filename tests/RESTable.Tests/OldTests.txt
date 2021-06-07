@@ -929,7 +929,7 @@ namespace RESTarTester
     }
 
     [RESTar(GET, AllowDynamicConditions = true, FlagStaticMembers = true)]
-    public class MyRes : Dictionary<string, object>, ISelector<MyRes>
+    public class MyRes : Dictionary<string, object?>, ISelector<MyRes>
     {
         public Things T { get; set; }
 

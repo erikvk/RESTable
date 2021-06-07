@@ -240,7 +240,7 @@ namespace RESTable.Meta
         public override string ToString() => $"{Type.GetRESTableTypeName()}.{Name}";
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj is DeclaredProperty p && p.MetadataToken == MetadataToken;
+        public override bool Equals(object? obj) => obj is DeclaredProperty p && p.MetadataToken == MetadataToken;
 
         /// <inheritdoc />
         public override int GetHashCode() => MetadataToken;

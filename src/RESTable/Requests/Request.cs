@@ -180,10 +180,10 @@ namespace RESTable.Requests
                     await Context.WebSocket.Open(this, false).ConfigureAwait(false);
                     await webSocket.SendResult(result).ConfigureAwait(false);
                     var message = await webSocket.GetMessageStream(false).ConfigureAwait(false);
-#if NETSTANDARD2_1
-                    await using (message.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
                     using (message)
+#else
+                    await using (message.ConfigureAwait(false))
 #endif
                     {
                         await result.Serialize(message, cancellationToken: cancellationToken).ConfigureAwait(false);

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using RESTable.Resources.Operations;
 
 namespace RESTable.Results
@@ -11,13 +13,22 @@ namespace RESTable.Results
     {
         public InvalidEntity InvalidEntity { get; }
 
-        internal InvalidInputEntity(InvalidEntity invalidEntity, string info = null) : base
+        public InvalidInputEntity(InvalidEntity invalidEntity, string info = null) : base
         (
             code: ErrorCodes.InvalidResourceEntity,
             info: info ?? "An invalid input entity was encountered"
         )
         {
             InvalidEntity = invalidEntity;
+        }
+
+        public InvalidInputEntity(IEnumerable<InvalidMember> invalidMembers, string info = null) : base
+        (
+            code: ErrorCodes.InvalidResourceEntity,
+            info: info ?? "An invalid input entity was encountered"
+        )
+        {
+            InvalidEntity = new InvalidEntity(invalidMembers.ToList());
         }
     }
 
@@ -27,9 +38,9 @@ namespace RESTable.Results
     /// </summary>
     public class MissingTerminalParameter : InvalidInputEntity
     {
-        internal MissingTerminalParameter(Type terminalType, InvalidEntity invalidEntity) : base
+        internal MissingTerminalParameter(Type terminalType, IEnumerable<InvalidMember> invalidMembers) : base
         (
-            invalidEntity: invalidEntity,
+            invalidMembers: invalidMembers,
             info: $"Missing or invalid terminal parameters in request to '{terminalType.GetRESTableTypeName()}'"
         ) { }
     }

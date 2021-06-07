@@ -12,7 +12,7 @@ namespace RESTable.Json
     {
         private readonly PropertyInfo Property;
         public RESTableMacroWrapperProvider(PropertyInfo property) => Property = property;
-        public void SetValue(object target, object value) { }
+        public void SetValue(object target, object? value) { }
 
         public object GetValue(object target) => Property.GetValue(target) switch
         {

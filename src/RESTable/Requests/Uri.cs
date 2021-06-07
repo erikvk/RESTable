@@ -17,10 +17,10 @@ namespace RESTable.Requests
         public string ProtocolIdentifier { get; private set; }
 
         /// <inheritdoc />
-        public string ResourceSpecifier { get; private set; }
+        public string? ResourceSpecifier { get; private set; }
 
         /// <inheritdoc />
-        public string ViewName { get; private set; }
+        public string? ViewName { get; private set; }
 
         /// <inheritdoc />
         public IReadOnlyCollection<IUriCondition> Conditions { get; private set; }
@@ -28,7 +28,7 @@ namespace RESTable.Requests
         /// <inheritdoc />
         public IReadOnlyCollection<IUriCondition> MetaConditions { get; private set; }
 
-        public IMacro Macro { get; private set; }
+        public IMacro? Macro { get; private set; }
 
         internal Exception Error { get; private set; }
         internal bool HasError => Error is not null;

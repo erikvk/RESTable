@@ -13,7 +13,7 @@ namespace RESTable.Requests
         public string ProtocolIdentifier { get; }
 
         /// <inheritdoc />
-        public string ResourceSpecifier { get; }
+        public string? ResourceSpecifier { get; }
 
         /// <inheritdoc />
         public string? ViewName { get; }
@@ -29,7 +29,7 @@ namespace RESTable.Requests
         public List<IUriCondition> MetaConditions { get; }
 
         /// <inheritdoc />
-        public IMacro Macro { get; }
+        public IMacro? Macro { get; }
 
         public IProtocolProvider ProtocolProvider { get; }
 

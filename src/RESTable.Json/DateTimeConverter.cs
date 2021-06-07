@@ -18,7 +18,7 @@ namespace RESTable.Json
         /// This really should not be necessary, but DateTimeStyles does not work when writing JSON. It
         /// keeps assuming local when kind is unspecified. Hence this workaround.
         /// </summary>
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             if (value is DateTime dt)
                 base.WriteJson(writer, DateTime.SpecifyKind(dt, DateTimeKind.Utc).ToUniversalTime(), serializer);

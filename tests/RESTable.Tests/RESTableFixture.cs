@@ -1,8 +1,9 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
+using RESTable.Tests.OperationsTests;
 
-namespace RESTable.Tests.OperationsTests
+namespace RESTable.Tests
 {
     public class RESTableFixture : ServiceCollection, IServiceProvider
     {

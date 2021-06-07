@@ -18,7 +18,7 @@ namespace FrameworkApp
         public int Id { get; }
         public string Name { get; set; }
         public int? FavoriteNumber { get; set; }
-        public Dictionary<string, object> Properties { get; }
+        public Dictionary<string, object?> Properties { get; }
         public int? BestFriendId { get; set; }
 
         public Person BestFriend => InMemoryOperations<Person>
@@ -29,7 +29,7 @@ namespace FrameworkApp
         {
             Counter += 1;
             Id = Counter;
-            Properties = new Dictionary<string, object>();
+            Properties = new Dictionary<string, object?>();
         }
     }
 

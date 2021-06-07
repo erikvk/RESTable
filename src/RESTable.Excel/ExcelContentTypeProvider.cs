@@ -63,7 +63,7 @@ namespace RESTable.Excel
                 {
                     switch (entities)
                     {
-                        case IAsyncEnumerable<IDictionary<string, object>> dicts:
+                        case IAsyncEnumerable<IDictionary<string, object?>> dicts:
                             var columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                             await foreach (var dict in dicts.ConfigureAwait(false))
                             {
@@ -197,10 +197,10 @@ namespace RESTable.Excel
             try
             {
                 var swr = new StreamWriter(jsonStream, ExcelSettings.Encoding, 4096, true);
-#if NETSTANDARD2_1
-                await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
                 using (swr)
+#else
+                await using (swr.ConfigureAwait(false))
 #endif
                 {
                     using var jwr = new RESTableFromExcelJsonTextWriter(swr);

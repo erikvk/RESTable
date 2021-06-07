@@ -88,15 +88,15 @@ namespace RESTable.Admin
         {
             if (string.IsNullOrWhiteSpace(entity.ResourceName))
             {
-                yield return this.Invalidate(e => e.ResourceName, "Index resource name cannot be null or whitespace");
+                yield return this.MemberInvalid(e => e.ResourceName, "Index resource name cannot be null or whitespace");
             }
             if (string.IsNullOrWhiteSpace(entity.Name))
             {
-                yield return this.Invalidate(e => e.Name, "Index name cannot be null or whitespace");
+                yield return this.MemberInvalid(e => e.Name, "Index name cannot be null or whitespace");
             }
             if (entity.Columns?.Any() != true)
             {
-                yield return this.Invalidate(e => e.Columns, "No columns specified for index");
+                yield return this.MemberInvalid(e => e.Columns, "No columns specified for index");
             }
         }
 

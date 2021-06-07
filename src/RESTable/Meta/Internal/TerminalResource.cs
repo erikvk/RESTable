@@ -22,15 +22,15 @@ namespace RESTable.Meta.Internal
         public string? ParentResourceName { get; }
         public bool Equals(IResource? x, IResource? y) => x?.Name == y?.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
-        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public int CompareTo(IResource? other) => string.Compare(Name, other?.Name, StringComparison.Ordinal);
         public TermBindingRule ConditionBindingRule { get; }
         public string? Description { get; set; }
         public bool GETAvailableToAll { get; }
         public override string ToString() => Name;
-        public override bool Equals(object obj) => obj is TerminalResource<T> t && t.Name == Name;
+        public override bool Equals(object? obj) => obj is TerminalResource<T> t && t.Name == Name;
         public override int GetHashCode() => Name.GetHashCode();
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
-        public Type InterfaceType { get; }
+        public Type? InterfaceType { get; }
         public ResourceKind ResourceKind { get; }
         private bool IsDynamicTerminal { get; }
         private ConstructorInfo Constructor { get; }
@@ -56,21 +56,20 @@ namespace RESTable.Meta.Internal
             {
                 if (assignment.Operator != Operators.EQUALS)
                     throw new BadConditionOperator(this, assignment.Operator);
-                if (!Members.TryGetValue(assignment.Key, out DeclaredProperty property))
+                if (!Members.TryGetValue(assignment.Key, out var property))
                 {
-                    if (newTerminal is IDictionary<string, object> dynTerminal)
+                    if (newTerminal is IDictionary<string, object?> dynTerminal)
                         dynTerminal[assignment.Key] = assignment.Value;
                     else throw new UnknownProperty(Type, this, assignment.Key);
                 }
-                else await property.SetValue(newTerminal, assignment.Value).ConfigureAwait(false);
+                else await property!.SetValue(newTerminal, assignment.Value).ConfigureAwait(false);
             }
             if (newTerminal is T terminal and IValidator<T> validator)
             {
                 var invalidMembers = validator.Validate(terminal, context).ToList();
                 if (invalidMembers.Count > 0)
                 {
-                    var invalidEntity = new InvalidEntity(invalidMembers);
-                    throw new InvalidInputEntity(invalidEntity);
+                    throw new InvalidInputEntity(invalidMembers);
                 }
             }
             newTerminal.SetTerminalResource(this);
@@ -80,7 +79,7 @@ namespace RESTable.Meta.Internal
         private Terminal InvokeParameterizedConstructor(RESTableContext context, List<Condition<T>> assignmentList)
         {
             var constructorParameterList = new object[ConstructorParameterInfos.Length];
-            var parameterAssignments = new Dictionary<int, object>();
+            var parameterAssignments = new Dictionary<int, object?>();
             var missingParameterAssignments = default(List<ParameterInfo>);
 
             for (var i = 0; i < assignmentList.Count; i += 1)
@@ -122,12 +121,11 @@ namespace RESTable.Meta.Internal
                 var invalidMembers = missingParameterAssignments
                     .Select(parameter => new InvalidMember(
                         entityType: Type,
-                        memberName: parameter.Name,
+                        memberName: parameter.Name!,
                         memberType: parameter.ParameterType,
                         message: $"Missing parameter of type '{parameter.ParameterType}'")
                     ).ToList();
-                var invalidEntity = new InvalidEntity(invalidMembers);
-                throw new MissingTerminalParameter(Type, invalidEntity);
+                throw new MissingTerminalParameter(Type, invalidMembers);
             }
 
             return (Terminal) Constructor.Invoke(constructorParameterList);
@@ -135,7 +133,7 @@ namespace RESTable.Meta.Internal
 
         internal TerminalResource(TypeCache typeCache)
         {
-            Name = typeof(T).GetRESTableTypeName() ?? throw new Exception();
+            Name = typeof(T).GetRESTableTypeName();
             Type = typeof(T);
             AvailableMethods = new[] {Method.GET};
             IsInternal = false;
@@ -154,10 +152,10 @@ namespace RESTable.Meta.Internal
             {
                 HasParameterizedConstructor = true;
                 var parameter = ConstructorParameterInfos[i];
-                ConstructorParameterIndexes[parameter.Name] = i;
+                ConstructorParameterIndexes[parameter.Name!] = i;
             }
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
-            IsDynamicTerminal = typeof(IDictionary<string, object>).IsAssignableFrom(typeof(T));
+            IsDynamicTerminal = typeof(IDictionary<string, object?>).IsAssignableFrom(typeof(T));
 
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)

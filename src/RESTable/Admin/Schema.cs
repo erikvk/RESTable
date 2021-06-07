@@ -17,17 +17,18 @@ namespace RESTable.Admin
     /// The Schema resource provides schemas for non-dynamic RESTable resources
     /// </summary>
     [RESTable(GET, Description = description)]
-    internal class Schema : Dictionary<string, object>, ISelector<Schema>
+    internal class Schema : Dictionary<string, object?>, ISelector<Schema>
     {
         private const string description = "The Schema resource provides schemas for " +
                                            "non-dynamic RESTable resources.";
 
         /// <summary>
-        /// The name of the resource to get the schema for
+        /// The name of the resource to get the schema for. Private get, so only for matching conditions,
+        /// not visible in the resource entities.
         /// </summary>
-        public string Resource { private get; set; }
+        public string? Resource { private get; set; }
 
-        public Schema(IEnumerable<KeyValuePair<string, object>> collection)
+        public Schema(IEnumerable<KeyValuePair<string, object?>> collection)
         {
             foreach (var (key, value) in collection)
             {
@@ -48,7 +49,7 @@ namespace RESTable.Admin
                 yield break;
             yield return new Schema
             (
-                collection: resource.Members.Values.Select(p => new KeyValuePair<string, object>(p.Name, p.Type.FullName))
+                collection: resource.Members.Values.Select(p => new KeyValuePair<string, object?>(p.Name, p.Type.FullName))
             );
         }
     }

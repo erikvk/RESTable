@@ -50,7 +50,7 @@ namespace RESTable.ProtocolProviders
         /// protocolprovider to throw an exception and abort a request if the API call is not 
         /// in compliance with the protocol.
         /// </summary>
-        bool IsCompliant(IRequest request, out string invalidReason);
+        bool IsCompliant(IRequest request, out string? invalidReason);
 
         /// <summary>
         /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 

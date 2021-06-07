@@ -20,6 +20,7 @@ namespace RESTable.Json
         private JsonConverter ContentTypesConverter { get; }
         private JsonConverter ToStringConverter { get; }
         private JsonConverter AggregatorTemplateConverter { get; }
+        private JsonConverter VersionConverter { get; }
 
         private TypeCache TypeCache { get; }
 
@@ -33,6 +34,7 @@ namespace RESTable.Json
             ContentTypesConverter = new ContentTypesConverter();
             ToStringConverter = new ToStringConverter();
             AggregatorTemplateConverter = new AggregatorTemplateConverter();
+            VersionConverter = new VersionConverter();
 
             TypeCache = typeCache;
             DateTimeConverters = new Dictionary<string, DateTimeConverter>();
@@ -50,14 +52,15 @@ namespace RESTable.Json
             var entityTypeContract = TypeCache.GetEntityTypeContract(objectType);
             contract.Converter = objectType switch
             {
-                _ when objectType.HasAttribute<JsonConverterAttribute>(out var attribute) => (JsonConverter) Activator.CreateInstance(attribute.ConverterType,
-                    attribute.ConverterParameters),
+                _ when objectType.HasAttribute<JsonConverterAttribute>(out var attribute) => (JsonConverter) Activator
+                    .CreateInstance(attribute!.ConverterType, attribute.ConverterParameters),
                 _ when objectType.IsSubclassOf(typeof(Type)) => TypeConverter,
                 _ when objectType == typeof(Headers) => HeadersConverter,
                 _ when objectType == typeof(ContentType) => ContentTypeConverter,
                 _ when objectType == typeof(ContentTypes) => ContentTypesConverter,
                 _ when objectType == typeof(Term) => ToStringConverter,
                 _ when objectType == typeof(Aggregator) => AggregatorTemplateConverter,
+                _ when objectType == typeof(Version) => VersionConverter,
                 _ when objectType.IsEnum => StringEnumConverter,
                 _ when objectType.ImplementsGenericInterface(typeof(IAsyncEnumerable<>)) => AsyncEnumerableConverter,
                 _ => contract.Converter
@@ -75,8 +78,8 @@ namespace RESTable.Json
             {
                 case PropertyInfo propertyInfo:
                     var property = TypeCache.GetDeclaredProperty(propertyInfo);
-                    if (property is null || property.Hidden)
-                        return null;
+                    if (property.Hidden)
+                        return null!;
                     var p = base.CreateProperty(propertyInfo, memberSerialization);
                     if (property.IsDateTime)
                     {
@@ -93,11 +96,11 @@ namespace RESTable.Json
                     p.ValueProvider = new DefaultValueProvider(property);
                     return p;
                 case FieldInfo fieldInfo:
-                    if (fieldInfo.RESTableIgnored()) return null;
+                    if (fieldInfo.RESTableIgnored()) return null!;
                     var f = base.CreateProperty(fieldInfo, memberSerialization);
                     f.PropertyName = fieldInfo.RESTableMemberName();
                     return f;
-                default: return null;
+                default: return null!;
             }
         }
 

@@ -15,11 +15,18 @@ namespace RESTable.Resources.Templates
     /// </summary>
     public abstract class OptionsTerminal : Terminal
     {
-        private IReadOnlyDictionary<string, Option> _options { get; set; }
+        private IDictionary<string, Option> Options { get; }
+
+        public OptionsTerminal()
+        {
+            Options = new Dictionary<string, Option>(StringComparer.OrdinalIgnoreCase);
+        }
 
         protected override async Task Open()
         {
-            _options = GetOptions().SafeToDictionary(o => o.Command, StringComparer.OrdinalIgnoreCase);
+            Options.Clear();
+            foreach (var option in GetOptions()) 
+                Options[option.Command] = option;
             await PrintOptions().ConfigureAwait(false);
         }
 
@@ -31,9 +38,9 @@ namespace RESTable.Resources.Templates
                 case var cancel when cancel.EqualsNoCase("cancel"):
                     await WebSocket.DirectToShell().ConfigureAwait(false);
                     break;
-                case var _ when _options.TryGetValue(command, out var option):
-                    var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
-                    await WebSocket.SendText($"> {option.Command}").ConfigureAwait(false);
+                case var _ when Options.TryGetValue(command, out var option):
+                    var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+                    await WebSocket.SendText($"> {option!.Command}").ConfigureAwait(false);
                     try
                     {
                         await option.Action(argsArray).ConfigureAwait(false);
@@ -54,13 +61,13 @@ namespace RESTable.Resources.Templates
         private async Task PrintOptions()
         {
             var stringBuilder = new StringBuilder($"### {GetType().GetRESTableTypeName()} ###\n\n");
-            if (!_options.Any())
+            if (!Options.Any())
             {
                 stringBuilder.Append("  No available options.\n\n");
                 stringBuilder.Append("> Type 'cancel' to return to the shell");
             }
             var first = true;
-            foreach (var option in _options.Values)
+            foreach (var option in Options.Values)
             {
                 if (!first)
                     stringBuilder.Append("  - - - - - - - - - - - - - - - - - - - - - - - - - - - -  \n");

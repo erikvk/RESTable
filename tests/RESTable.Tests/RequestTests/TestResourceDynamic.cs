@@ -9,7 +9,7 @@ namespace RESTable.Tests.RequestTests
 {
     [RESTable(AllowDynamicConditions = true)]
     public class TestResourceDynamic :
-        Dictionary<string, object>,
+        Dictionary<string, object?>,
         ISelector<TestResourceDynamic>,
         IInserter<TestResourceDynamic>,
         IUpdater<TestResourceDynamic>,

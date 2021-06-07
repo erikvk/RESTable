@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.Auth;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -33,20 +34,22 @@ namespace RESTable.OData
         /// </summary>
         public string url { get; private set; }
 
+        public ServiceDocument(string name, string kind, string url)
+        {
+            this.name = name;
+            this.kind = kind;
+            this.url = url;
+        }
+
         /// <inheritdoc />
         public IEnumerable<ServiceDocument> Select(IRequest<ServiceDocument> request) => Metadata
             .GetMetadata
             (
                 level: OnlyResources,
-                rights: null,
+                rights: request.GetRequiredService<RootAccess>(),
                 typeCache: request.GetRequiredService<TypeCache>()
             )
             .EntityResources
-            .Select(resource => new ServiceDocument
-            {
-                kind = "EntitySet",
-                name = resource.Name,
-                url = resource.Name
-            });
+            .Select(resource => new ServiceDocument(resource.Name, "EntitySet", resource.Name));
     }
 }

@@ -302,7 +302,7 @@ namespace RESTable
             switch (entity)
             {
                 case JObject j: return j;
-                case Dictionary<string, object> _idict: return _idict.ToJObject();
+                case Dictionary<string, object?> _idict: return _idict.ToJObject();
                 case IDictionary idict:
                     var _jobj = new JObject();
                     foreach (DictionaryEntry pair in idict)
@@ -408,18 +408,22 @@ namespace RESTable
         /// </summary>
         public static void TuplePut<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
         {
-            if (pair.key is null) throw new ArgumentNullException(nameof(pair.key));
+            if (pair.key is null) throw new ArgumentNullException(nameof(pair));
             dict[pair.key] = pair.value;
         }
 
-        internal static Dictionary<TKey, T> SafeToDictionary<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector,
-            IEqualityComparer<TKey> equalityComparer)
+        internal static Dictionary<TKey, T> SafeToDictionary<T, TKey>
+        (
+            this IEnumerable<T> source,
+            Func<T, TKey> keySelector,
+            IEqualityComparer<TKey> equalityComparer
+        )
+            where TKey : notnull
         {
             var dictionary = new Dictionary<TKey, T>(equalityComparer);
             foreach (var item in source)
             {
-                var key = keySelector(item) ?? throw new ArgumentNullException(nameof(keySelector));
-                dictionary[key] = item;
+                dictionary[keySelector(item)] = item;
             }
             return dictionary;
         }
@@ -462,7 +466,7 @@ namespace RESTable
         /// <summary>
         /// Converts a Dictionary object to a JSON.net JObject
         /// </summary>
-        public static JObject ToJObject(this Dictionary<string, object> dictionary)
+        public static JObject ToJObject(this Dictionary<string, object?> dictionary)
         {
             var jobj = new JObject();
             foreach (var (key, value) in dictionary)
@@ -470,11 +474,13 @@ namespace RESTable
             return jobj;
         }
 
-        private static JToken MakeJToken(dynamic value)
+        private static JToken? MakeJToken(dynamic? value)
         {
+            if (value is null)
+                return null;
             try
             {
-                return (JToken) value;
+                return (JToken?) value;
             }
             catch
             {
@@ -647,9 +653,9 @@ namespace RESTable
         public static IContentTypeProvider GetInputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
         {
             var contentType = contentTypeOverride ?? protocolHolder.Headers.ContentType ?? protocolHolder.CachedProtocolProvider.DefaultInputProvider.ContentType;
-            if (!protocolHolder.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out IContentTypeProvider contentTypeProvider))
+            if (!protocolHolder.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out var contentTypeProvider))
                 throw new UnsupportedContent(contentType.ToString());
-            return contentTypeProvider;
+            return contentTypeProvider!;
         }
 
         /// <summary>
@@ -835,11 +841,10 @@ namespace RESTable
             return str is not null ? Encoding.UTF8.GetBytes(str) : null;
         }
 
-        internal static byte[]? ToByteArray(this Stream? stream)
+        internal static byte[] ToByteArray(this Stream stream)
         {
             switch (stream)
             {
-                case null: return null;
                 case MemoryStream ms: return ms.ToArray();
                 case Body body: return body.GetBytes();
                 default:
@@ -853,19 +858,18 @@ namespace RESTable
             }
         }
 
-        internal static async Task<byte[]?> ToByteArrayAsync(this Stream? stream)
+        internal static async Task<byte[]> ToByteArrayAsync(this Stream stream)
         {
             switch (stream)
             {
-                case null: return null;
                 case MemoryStream ms: return ms.ToArray();
                 default:
                 {
                     var ms = new MemoryStream();
-#if NETSTANDARD2_1
-                    await using (ms)
-#else
+#if NETSTANDARD2_0
                     using (ms)
+#else
+                    await using (ms)
 #endif
                     {
                         await stream.CopyToAsync(ms).ConfigureAwait(false);

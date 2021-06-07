@@ -515,10 +515,10 @@ namespace RESTable.WebSockets
         {
             if (item is null) throw new ArgumentNullException(nameof(item));
             var message = await GetMessageStream(false).ConfigureAwait(false);
-#if NETSTANDARD2_1
-            await using (message.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (message)
+#else
+            await using (message.ConfigureAwait(false))
 #endif
             {
                 JsonProvider.SerializeToStream(message, item, prettyPrint, ignoreNulls);

@@ -39,7 +39,9 @@ namespace RESTable.AspNetCore
             ).ConfigureAwait(false);
         }
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_0
+        public ValueTask DisposeAsync() => DisposeImpl();
+#else
         public override ValueTask DisposeAsync() => DisposeImpl();
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
@@ -65,8 +67,6 @@ namespace RESTable.AspNetCore
                 cancellationToken: CancellationToken
             ).Wait(CancellationToken);
         }
-#else
-        public ValueTask DisposeAsync() => DisposeImpl();
 #endif
 
         private async ValueTask DisposeImpl()

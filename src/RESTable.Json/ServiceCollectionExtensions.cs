@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddJsonProvider(this IServiceCollection serviceCollection, Action<JsonSettings> jsonSettingsAction = null)
+        public static IServiceCollection AddJsonProvider(this IServiceCollection serviceCollection, Action<JsonSettings>? jsonSettingsAction = null)
         {
             var jsonSettings = new JsonSettings();
             jsonSettingsAction?.Invoke(jsonSettings);

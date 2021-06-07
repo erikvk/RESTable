@@ -10,7 +10,7 @@ namespace RESTable.Json
 
         public override bool CanConvert(Type objectType) => objectType == typeof(object) || base.CanConvert(objectType);
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             switch (reader.TokenType)
             {

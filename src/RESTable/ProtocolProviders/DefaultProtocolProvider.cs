@@ -233,10 +233,10 @@ namespace RESTable.ProtocolProviders
             var optionsBody = new OptionsBody(resource.Name, resource.ResourceKind, resource.AvailableMethods);
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
-#if NETSTANDARD2_1
-            await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (swr)
+#else
+            await using (swr.ConfigureAwait(false))
 #endif
             {
                 using var jwr = JsonProvider.GetJsonWriter(swr);
@@ -258,10 +258,10 @@ namespace RESTable.ProtocolProviders
                 return;
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
-#if NETSTANDARD2_1
-            await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (swr)
+#else
+            await using (swr.ConfigureAwait(false))
 #endif
             {
                 using var jwr = JsonProvider.GetJsonWriter(swr);
@@ -321,10 +321,10 @@ namespace RESTable.ProtocolProviders
             }
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
-#if NETSTANDARD2_1
-            await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (swr)
+#else
+            await using (swr.ConfigureAwait(false))
 #endif
             {
                 using var jwr = JsonProvider.GetJsonWriter(swr);
@@ -367,10 +367,10 @@ namespace RESTable.ProtocolProviders
                 return;
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
-#if NETSTANDARD2_1
-            await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (swr)
+#else
+            await using (swr.ConfigureAwait(false))
 #endif
             {
                 using var jwr = JsonProvider.GetJsonWriter(swr);
@@ -431,10 +431,10 @@ namespace RESTable.ProtocolProviders
                 return;
 
             var swr = new StreamWriter(toSerialize.Body, Encoding.UTF8, StreamWriterBufferSize, true);
-#if NETSTANDARD2_1
-            await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (swr)
+#else
+            await using (swr.ConfigureAwait(false))
 #endif
             {
                 using var jwr = JsonProvider.GetJsonWriter(swr);

@@ -80,20 +80,19 @@ namespace RESTable.OData
         public BinaryResult Select(IRequest<MetadataDocument> request)
         {
             var rootAccess = request.GetRequiredService<RootAccess>();
-            var resourceCollection = request.GetRequiredService<ResourceCollection>();
             var typeCache = request.GetRequiredService<TypeCache>();
 
             async Task WriteStream(Stream stream, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var metadata = Metadata.GetMetadata(MetadataLevel.Full, null, typeCache);
+                var metadata = Metadata.GetMetadata(MetadataLevel.Full, rootAccess, typeCache);
 
                 var swr = new StreamWriter(stream, Encoding.UTF8, 4096, true);
-#if NETSTANDARD2_1
-                await using (swr.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
                 using (swr)
+#else
+                await using (swr.ConfigureAwait(false))
 #endif
                 {
                     await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>").ConfigureAwait(false);
@@ -135,7 +134,8 @@ namespace RESTable.OData
                         var isOpenType = type.IsDynamic() || dynamicMembers.Any();
                         await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
                         var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
-                        if (key is not null) await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
+                        if (key is not null)
+                            await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
                         await WriteMembers(swr, declaredMembers.Where(p => p is not DeclaredProperty {Hidden: true} d || d.Equals(key))).ConfigureAwait(false);
                         await swr.WriteAsync("</EntityType>").ConfigureAwait(false);
                     }
@@ -202,9 +202,9 @@ namespace RESTable.OData
                 TypeCode.Object => type switch
                 {
                     _ when type == typeof(Guid) => "Edm.Guid",
-                    _ when type.IsNullable(out var baseType) => GetEdmTypeName(baseType),
-                    _ when type.ImplementsGenericInterface(typeof(IDictionary<,>), out var p) && p[0] == typeof(string) => "global.RESTable.DynamicResource",
-                    _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p) => $"Collection({GetEdmTypeName(p[0])})",
+                    _ when type.IsNullable(out var baseType) => GetEdmTypeName(baseType!),
+                    _ when type.ImplementsGenericInterface(typeof(IDictionary<,>), out var p) && p![0] == typeof(string) => "global.RESTable.DynamicResource",
+                    _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p) => $"Collection({GetEdmTypeName(p![0])})",
                     _ => $"global.{type.FullName}"
                 },
                 TypeCode.Boolean => "Edm.Boolean",

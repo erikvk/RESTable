@@ -39,10 +39,10 @@ namespace RESTable.Internal
                 if (writeBody is not null)
                 {
                     var requestStream = await request.GetRequestStreamAsync().ConfigureAwait(false);
-#if NETSTANDARD2_1
-                    await using (requestStream.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
                     using (requestStream)
+#else
+                    await using (requestStream.ConfigureAwait(false))
 #endif
                     {
                         await writeBody(requestStream).ConfigureAwait(false);

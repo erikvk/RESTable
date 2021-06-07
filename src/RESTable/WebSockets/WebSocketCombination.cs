@@ -84,10 +84,10 @@ namespace RESTable.WebSockets
         public async Task SendText(Stream stream)
         {
             var messageStream = await GetMessageStream(true).ConfigureAwait(false);
-#if NETSTANDARD2_1
-            await using (messageStream.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (messageStream)
+#else
+            await using (messageStream.ConfigureAwait(false))
 #endif
             {
                 await stream.CopyToAsync(messageStream, 81920, CancellationToken).ConfigureAwait(false);
@@ -97,10 +97,10 @@ namespace RESTable.WebSockets
         public async Task SendBinary(Stream stream)
         {
             var messageStream = await GetMessageStream(false).ConfigureAwait(false);
-#if NETSTANDARD2_1
-            await using (messageStream.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (messageStream)
+#else
+            await using (messageStream.ConfigureAwait(false))
 #endif
             {
                 await stream.CopyToAsync(messageStream, 81920, CancellationToken).ConfigureAwait(false);

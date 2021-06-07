@@ -45,7 +45,7 @@ namespace RESTable.Json
 
         public override async Task WriteStartObjectAsync(CancellationToken cancellationToken = new())
         {
-            if (CurrentDepth == 0)
+            if (CurrentDepth == LevelToCountObjectsAt)
             {
                 ObjectsWritten += 1;
                 if (ObjectsWritten % 15000 == 0)
@@ -59,30 +59,31 @@ namespace RESTable.Json
         {
             CurrentDepth -= 1;
             base.WriteEndObject();
+            if (CurrentDepth == LevelToCountObjectsAt)
+            {
+                Flush();
+            }
         }
 
-        public override Task WriteEndObjectAsync(CancellationToken cancellationToken = new())
+        public override async Task WriteEndObjectAsync(CancellationToken cancellationToken = new())
         {
             CurrentDepth -= 1;
-            return base.WriteEndObjectAsync(cancellationToken);
+            await base.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+            if (CurrentDepth == LevelToCountObjectsAt)
+            {
+                await FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public NewtonsoftJsonWriter(TextWriter textWriter, LineEndings lineEndings, int baseIndentation) : base(textWriter)
         {
             BaseIndentation = baseIndentation;
-            switch (lineEndings)
+            NewLine = lineEndings switch
             {
-                case LineEndings.Environment:
-                    NewLine = Environment.NewLine;
-                    break;
-                case LineEndings.Windows:
-                    NewLine = "\r\n";
-                    break;
-                case LineEndings.Linux:
-                    NewLine = "\n";
-                    break;
-                default: return;
-            }
+                LineEndings.Environment => Environment.NewLine,
+                LineEndings.Windows => "\r\n",
+                _ => "\n"
+            };
         }
 
         protected override void WriteIndent()

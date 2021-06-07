@@ -36,7 +36,17 @@ namespace RESTable.WebSockets
             return Task.WhenAll(MessageStreams.Select(s => s.WriteAsync(buffer, offset, count, cancellationToken)));
         }
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_0
+        public ValueTask DisposeAsync()
+        {
+            foreach (var stream in MessageStreams)
+            {
+                stream.Dispose();
+            }
+            base.Dispose();
+            return default;
+        }
+#else
         public override async ValueTask DisposeAsync()
         {
             foreach (var stream in MessageStreams)
@@ -61,16 +71,6 @@ namespace RESTable.WebSockets
             {
                 stream.Write(buffer);
             }
-        }
-#else
-        public ValueTask DisposeAsync()
-        {
-            foreach (var stream in MessageStreams)
-            {
-                stream.Dispose();
-            }
-            base.Dispose();
-            return default;
         }
 #endif
 

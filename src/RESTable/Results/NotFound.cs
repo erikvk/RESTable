@@ -10,7 +10,7 @@ namespace RESTable.Results
     public abstract class NotFound : Error
     {
         /// <inheritdoc />
-        protected NotFound(ErrorCodes code, string info, Exception ie = null) : base(code, info, ie)
+        protected NotFound(ErrorCodes code, string info, Exception? ie = null) : base(code, info, ie)
         {
             StatusCode = HttpStatusCode.NotFound;
             StatusDescription = "Not found";

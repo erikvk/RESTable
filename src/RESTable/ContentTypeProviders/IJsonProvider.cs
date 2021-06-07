@@ -14,8 +14,8 @@ namespace RESTable.ContentTypeProviders
         JsonSerializer GetSerializer(); 
         void Populate(string json, object target);
         void Serialize(IJsonWriter jsonWriter, object value);
-        T Deserialize<T>(byte[] bytes);
-        T Deserialize<T>(string json);
+        T? Deserialize<T>(byte[] bytes);
+        T? Deserialize<T>(string json);
         void SerializeToStream(Stream stream, object entity, bool? prettyPrint = null, bool ignoreNulls = false);
         string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false);
     }

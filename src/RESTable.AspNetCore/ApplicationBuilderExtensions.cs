@@ -56,10 +56,10 @@ namespace RESTable.AspNetCore
             WriteResponse(aspNetCoreContext, options);
 
             var remote = aspNetCoreContext.Response.Body;
-#if NETSTANDARD2_1
-            await using (remote.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (remote)
+#else
+            await using (remote.ConfigureAwait(false))
 #endif
             {
                 await using var serializedResult = await options.Serialize(remote).ConfigureAwait(false);
@@ -100,10 +100,10 @@ namespace RESTable.AspNetCore
                     WriteResponse(aspNetCoreContext, result);
                     var remote = aspNetCoreContext.Response.Body;
 
-#if NETSTANDARD2_1
-                    await using (remote.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
                     using (remote)
+#else
+                    await using (remote.ConfigureAwait(false))
 #endif
                     {
                         await using var serializedResult = await result.Serialize(remote).ConfigureAwait(false);

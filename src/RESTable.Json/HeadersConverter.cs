@@ -24,7 +24,7 @@ namespace RESTable.Json
         /// <summary>
         /// Writes only custom headers to JSON
         /// </summary>s
-        public override void WriteJson(JsonWriter writer, Headers headers, JsonSerializer s)
+        public override void WriteJson(JsonWriter writer, Headers? headers, JsonSerializer s)
         {
             var jobj = new JObject();
 
@@ -41,13 +41,13 @@ namespace RESTable.Json
         /// <summary>
         /// Reads only custom headers from JSON
         /// </summary>
-        public override Headers ReadJson(JsonReader reader, Type o, Headers headers, bool h, JsonSerializer s)
+        public override Headers ReadJson(JsonReader reader, Type o, Headers? headers, bool h, JsonSerializer s)
         {
-            IEnumerable<KeyValuePair<string, JToken>> values = JObject.Load(reader);
+            IEnumerable<KeyValuePair<string, JToken?>> values = JObject.Load(reader);
             headers ??= new Headers();
             var headersToRead = values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Key) || pair.Key.IsCustomHeaderName());
             foreach (var (key, value) in headersToRead)
-                headers[key] = value.ToObject<string>();
+                headers[key] = value?.ToObject<string>();
             return headers;
         }
     }

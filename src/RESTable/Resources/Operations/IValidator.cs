@@ -9,7 +9,7 @@ namespace RESTable.Resources.Operations
     /// By implementing the <see cref="IValidator{T}"/> interface, entity resources can add custom validation
     /// validation logic that will be called by RESTable each time an entity is inserted or updated in the resource.
     /// </summary>
-    public interface IValidator<T> where T : class
+    public interface IValidator<in T> where T : class
     {
         /// <summary>
         /// Validates the entity given as input. If invalid, include a reason in the out parameter to inform the
@@ -20,13 +20,13 @@ namespace RESTable.Resources.Operations
 
     public static class ValidatorExtensions
     {
-        public static InvalidMember Invalidate<TValidator, TMember>
+        public static InvalidMember MemberInvalid<TValidator, TMember>
         (
             this TValidator validator,
             Expression<Func<TValidator, TMember>> memberSelector,
-            string message
+            string invalidReason = "had a missing or invalid value"
         )
-        where TValidator : class, IValidator<TValidator>
+            where TValidator : class, IValidator<TValidator>
         {
             if (memberSelector.Body is not MemberExpression memberExpression)
                 throw new ArgumentException("Expected a member expression", nameof(memberSelector));
@@ -35,8 +35,18 @@ namespace RESTable.Resources.Operations
                 entityType: typeof(TValidator),
                 memberName: memberExpression.Member.Name,
                 memberType: typeof(TMember),
-                message: message
+                message: invalidReason
             );
+        }
+
+        public static InvalidMember MemberNull<TValidator, TMember>
+        (
+            this TValidator validator,
+            Expression<Func<TValidator, TMember>> memberSelector
+        )
+            where TValidator : class, IValidator<TValidator>
+        {
+            return validator.MemberInvalid(memberSelector, "was null");
         }
     }
 }

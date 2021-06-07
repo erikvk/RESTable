@@ -18,7 +18,7 @@ namespace RESTable
 
         public byte[] GetBytes()
         {
-            if (!Stream.CanRead) return new byte[0];
+            if (!Stream.CanRead) return Array.Empty<byte>();
             try
             {
                 return Stream.ToByteArray();
@@ -31,7 +31,7 @@ namespace RESTable
 
         public async Task<byte[]> GetBytesAsync()
         {
-            if (!Stream.CanRead) return new byte[0];
+            if (!Stream.CanRead) return Array.Empty<byte>();
             try
             {
                 return await Stream.ToByteArrayAsync().ConfigureAwait(false);
@@ -73,10 +73,10 @@ namespace RESTable
             Position = 0;
             var fileStream = MakeTempFile();
             var memoryStream = (MemoryStream) Stream;
-#if NETSTANDARD2_1
-            await using (memoryStream.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (memoryStream)
+#else
+            await using (memoryStream.ConfigureAwait(false))
 #endif
             {
                 await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
@@ -181,7 +181,14 @@ namespace RESTable
 
         #endregion
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_0
+        public ValueTask DisposeAsync()
+        {
+            Stream.Dispose();
+            base.Dispose();
+            return default;
+        }
+#else
         public override void CopyTo(Stream destination, int bufferSize) => Stream.CopyTo(destination, bufferSize);
         public override int Read(Span<byte> buffer) => Stream.Read(buffer);
 
@@ -205,14 +212,6 @@ namespace RESTable
         {
             await Stream.DisposeAsync().ConfigureAwait(false);
             await base.DisposeAsync().ConfigureAwait(false);
-        }
-
-#else
-        public ValueTask DisposeAsync()
-        {
-            Stream.Dispose();
-            base.Dispose();
-            return default;
         }
 #endif
 

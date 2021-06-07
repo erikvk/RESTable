@@ -705,10 +705,10 @@ namespace RESTable
             if (result is SwitchedTerminal) return;
             await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
             var message = await WebSocket.GetMessageStream(false).ConfigureAwait(false);
-#if NETSTANDARD2_1
-            await using (message.ConfigureAwait(false))
-#else
+#if NETSTANDARD2_0
             using (message)
+#else
+            await using (message.ConfigureAwait(false))
 #endif
             {
                 await using var serialized = await result.Serialize(message).ConfigureAwait(false);
