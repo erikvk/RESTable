@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using RESTable.Auth;
 using RESTable.Requests;
-using RESTable.Tests.OperationsTests;
 using Xunit;
 
 namespace RESTable.Tests.ApiKeyAuthenticatorTests

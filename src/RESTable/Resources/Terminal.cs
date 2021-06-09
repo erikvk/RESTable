@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.WebSockets;
@@ -48,7 +49,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Performs and action on binary input
         /// </summary>
-        public virtual Task HandleBinaryInput(byte[] input) => Task.CompletedTask;
+        public virtual Task HandleBinaryInput(Stream input) => Task.CompletedTask;
 
         internal bool SupportsTextInputInternal => SupportsTextInput;
         internal bool SupportsBinaryInputInternal => SupportsBinaryInput;

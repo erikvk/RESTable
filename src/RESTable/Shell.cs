@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -182,9 +183,8 @@ namespace RESTable
         }
 
         /// <inheritdoc />
-        public override async Task HandleBinaryInput(byte[] input)
+        public override async Task HandleBinaryInput(Stream input)
         {
-            if (!(input?.Length > 0)) return;
             if (Query.Length == 0 || AwaitingConfirmation)
                 await WebSocket.SendResult(new InvalidShellStateForBinaryInput()).ConfigureAwait(false);
             else await SafeOperation(POST, input).ConfigureAwait(false);
@@ -587,7 +587,7 @@ namespace RESTable
             return result;
         }
 
-        private async Task<IResult> GetResult(Method method, byte[] body)
+        private async Task<IResult> GetResult(Method method, object body)
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
@@ -639,8 +639,8 @@ namespace RESTable
             await WebSocket.SendJson(options, true).ConfigureAwait(false);
             await SendQuery().ConfigureAwait(false);
         }
-
-        private async Task SafeOperation(Method method, byte[] body = null)
+        
+        private async Task SafeOperation(Method method, object body = null)
         {
             var sw = Stopwatch.StartNew();
             await using var result = await GetResult(method, body).ConfigureAwait(false);

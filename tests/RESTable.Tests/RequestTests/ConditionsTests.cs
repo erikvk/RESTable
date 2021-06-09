@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Results;
-using RESTable.Tests.OperationsTests;
 using Xunit;
 
 namespace RESTable.Tests.RequestTests

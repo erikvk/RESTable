@@ -20,7 +20,7 @@ namespace RESTable.Internal.Logging
         public ValueTask<string> GetLogMessage() => new(_logMessage);
         public ValueTask<string?> GetLogContent() => new(_logContent);
 
-        public WebSocketEvent(MessageType direction, IWebSocket webSocket, string? content = null, long length = 0)
+        public WebSocketEvent(MessageType direction, IWebSocket webSocket, string? content = null, long? length = null)
         {
             HeadersStringCache = null!;
             MessageType = direction;
@@ -28,8 +28,8 @@ namespace RESTable.Internal.Logging
             LogTime = DateTime.Now;
             _logMessage = direction switch
             {
-                MessageType.WebSocketInput => $"Received {length} bytes",
-                MessageType.WebSocketOutput => $"Sent {length} bytes",
+                MessageType.WebSocketInput => $"Received {length?.ToString() ?? "a stream of"} bytes",
+                MessageType.WebSocketOutput => $"Sent {length?.ToString() ?? "a stream of"} bytes",
                 MessageType.WebSocketOpen => "WebSocket opened",
                 MessageType.WebSocketClose => "WebSocket closed",
                 _ => throw new ArgumentOutOfRangeException(nameof(direction))

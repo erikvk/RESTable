@@ -52,9 +52,14 @@ namespace RESTable.AspNetCore
             return bytesSent;
         }
 
-        protected override Task<Stream> GetOutgoingMessageStream(bool asText, CancellationToken token)
+        protected override Task<Stream> GetOutgoingMessageStream(bool asText, CancellationToken cancellationToken)
         {
-            var messageStream = new AspNetCoreMessageStream(WebSocket, asText, token);
+            var messageStream = new AspNetCoreOutputMessageStream
+            (
+                webSocket: WebSocket,
+                messageType: asText ? Text : Binary,
+                webSocketCancelledToken: cancellationToken
+            );
             return Task.FromResult<Stream>(messageStream);
         }
 
@@ -67,40 +72,39 @@ namespace RESTable.AspNetCore
 
         protected override async Task InitMessageReceiveListener(CancellationToken cancellationToken)
         {
-            while (await ReceiveMessageAsync(cancellationToken).ConfigureAwait(false) is var (byteArray, isBinary) && !WebSocket.CloseStatus.HasValue)
+            while (await AwaitNextMessage(cancellationToken).ConfigureAwait(false) is var nextMessage && !WebSocket.CloseStatus.HasValue)
             {
-                if (isBinary)
+                switch (nextMessage.MessageType)
                 {
-                    HandleBinaryInput(byteArray);
-                }
-                else
-                {
-                    var stringMessage = Encoding.UTF8.GetString(byteArray);
-                    HandleTextInput(stringMessage);
+                    case Binary:
+                    {
+                        // We await the handling of the entire binary message, and only await the next message 
+                        // when the handler has been completed, since streams are not immutable.
+                        await HandleBinaryInput(nextMessage).ConfigureAwait(false);
+                        break;
+                    }
+                    case Text:
+                    {
+                        // We read the entire message to a string, then fire and forget the handler for that
+                        // message. This means we can handle multiple text messages in parallel, which is fine
+                        // since strings are immutable.
+                        await using (nextMessage)
+                        {
+                            using var reader = new StreamReader(nextMessage, Encoding.Default);
+                            var stringMessage = await reader.ReadToEndAsync().ConfigureAwait(false);
+                            HandleTextInput(stringMessage);
+                        }
+                        break;
+                    }
                 }
             }
         }
 
-        private async Task<(byte[] data, bool isText)> ReceiveMessageAsync(CancellationToken ct = default)
+        private async Task<AspNetCoreMessageStream> AwaitNextMessage(CancellationToken cancellationToken)
         {
-            var buffer = new ArraySegment<byte>(new byte[4096]);
-            var ms = new SwappingStream();
-
-            WebSocketReceiveResult result;
-            do
-            {
-                ct.ThrowIfCancellationRequested();
-                result = await WebSocket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
-                if (buffer.Array is not null)
-                    await ms.WriteAsync(buffer.Array, buffer.Offset, result.Count, ct).ConfigureAwait(false);
-            } while (!result.EndOfMessage);
-
-            ms.Seek(0, SeekOrigin.Begin);
-
-            return (
-                data: await ms.GetBytesAsync().ConfigureAwait(false),
-                isText: result.MessageType == Binary
-            );
+            var emptyBuffer = new ArraySegment<byte>(Array.Empty<byte>());
+            var firstEmptyRead = await WebSocket.ReceiveAsync(emptyBuffer, cancellationToken).ConfigureAwait(false);
+            return new AspNetCoreInputMessageStream(WebSocket, firstEmptyRead, cancellationToken);
         }
 
         protected override async Task Close()

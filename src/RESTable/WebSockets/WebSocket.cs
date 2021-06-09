@@ -152,7 +152,7 @@ namespace RESTable.WebSockets
             }
         }
 
-        private void RunWebSocketMessageTask(Task toRun)
+        private void RunWebSocketTextMessageTask(Task toRun)
         {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
@@ -211,12 +211,12 @@ namespace RESTable.WebSockets
 
         protected void HandleTextInput(string textInput)
         {
-            RunWebSocketMessageTask(WebSocketManager.HandleTextInput(Id, textInput, CancellationTokenSource.Token));
+            RunWebSocketTextMessageTask(WebSocketManager.HandleTextInput(Id, textInput, CancellationTokenSource.Token));
         }
 
-        protected void HandleBinaryInput(byte[] binaryInput)
+        protected Task HandleBinaryInput(Stream binaryInput)
         {
-            RunWebSocketMessageTask(WebSocketManager.HandleBinaryInput(Id, binaryInput, CancellationTokenSource.Token));
+            return WebSocketManager.HandleBinaryInput(Id, binaryInput, CancellationTokenSource.Token);
         }
 
         /// <summary>
@@ -242,7 +242,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Returns a stream that, when written to, writes data over the websocket
         /// </summary>
-        protected abstract Task<Stream> GetOutgoingMessageStream(bool asText, CancellationToken token);
+        protected abstract Task<Stream> GetOutgoingMessageStream(bool asText, CancellationToken cancellationToken);
 
         /// <summary>
         /// Sends the WebSocket upgrade and initiates the actual underlying WebSocket connection
@@ -311,7 +311,7 @@ namespace RESTable.WebSockets
             BytesReceived += Encoding.UTF8.GetByteCount(textData);
         }
 
-        internal async Task HandleBinaryInputInternal(byte[] binaryData, CancellationToken cancellationToken)
+        internal async Task HandleBinaryInputInternal(Stream binaryData, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (TerminalConnection is null) return;
@@ -320,19 +320,19 @@ namespace RESTable.WebSockets
                 await SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support binary input")).ConfigureAwait(false);
                 return;
             }
+            await TerminalConnection.Terminal.HandleBinaryInput(binaryData).ConfigureAwait(false);
             if (TerminalConnection.Resource?.Name != Admin.Console.TypeName)
             {
                 var wsEvent = new WebSocketEvent
                 (
                     direction: MessageType.WebSocketInput,
                     webSocket: this,
-                    content: Encoding.UTF8.GetString(binaryData),
-                    length: binaryData.LongLength
+                    content: null,
+                    length: binaryData.Position
                 );
                 await Admin.Console.Log(Context, wsEvent).ConfigureAwait(false);
             }
-            await TerminalConnection.Terminal.HandleBinaryInput(binaryData).ConfigureAwait(false);
-            TotalSentBytesCount += binaryData.Length;
+            TotalSentBytesCount += binaryData.Position;
         }
 
         #endregion

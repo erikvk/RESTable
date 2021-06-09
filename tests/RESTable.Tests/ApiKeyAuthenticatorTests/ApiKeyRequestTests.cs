@@ -1,5 +1,4 @@
 ﻿using RESTable.Requests;
-using RESTable.Tests.OperationsTests;
 using Xunit;
 
 namespace RESTable.Tests.ApiKeyAuthenticatorTests

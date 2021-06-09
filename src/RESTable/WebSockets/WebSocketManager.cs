@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -92,7 +93,7 @@ namespace RESTable.WebSockets
             else await webSocket.HandleTextInputInternal(textInput, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task HandleBinaryInput(string wsId, byte[] binaryInput, CancellationToken cancellationToken)
+        public async Task HandleBinaryInput(string wsId, Stream binaryInput, CancellationToken cancellationToken)
         {
             if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");

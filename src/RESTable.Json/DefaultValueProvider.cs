@@ -11,7 +11,7 @@ namespace RESTable.Json
     {
         private readonly Property Property;
         public DefaultValueProvider(Property property) => Property = property;
-        public object? GetValue(object target) => Property.GetValue(target).Result;
-        public void SetValue(object target, object? value) => Property.SetValue(target, value);
+        public object? GetValue(object target) => Property.GetValue(target).AsTask().Result;
+        public void SetValue(object target, object? value) => Property.SetValue(target, value).AsTask().Wait();
     }
 }
