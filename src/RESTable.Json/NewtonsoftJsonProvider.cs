@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -124,6 +125,36 @@ namespace RESTable.Json
         {
             var json = Encoding.UTF8.GetString(bytes);
             return JsonConvert.DeserializeObject<T>(json, SerializerSettings);
+        }
+
+        /// <summary>
+        /// A general-purpose deserializer. Deserializes the given byte array, from
+        /// a given offset and a given byte count
+        /// </summary>
+        public T? Deserialize<T>(byte[] bytes, int offset, int count)
+        {
+            var json = Encoding.UTF8.GetString(bytes, offset, count);
+            return JsonConvert.DeserializeObject<T>(json, SerializerSettings);
+        }
+
+        /// <summary>
+        /// A general-purpose non-generic deserializer. Deserializes the given byte array to
+        /// an instance of the given type.
+        /// </summary>
+        public object? Deserialize(Type targetType, byte[] bytes)
+        {
+            var json = Encoding.UTF8.GetString(bytes);
+            return JsonConvert.DeserializeObject(json, targetType, SerializerSettings);
+        }
+
+        /// <summary>
+        /// A general-purpose non-generic deserializer. Deserializes the given byte array to
+        /// an instance of the given type, from a given offset and a given byte count
+        /// </summary>
+        public object? Deserialize(Type targetType, byte[] bytes, int offset, int count)
+        {
+            var json = Encoding.UTF8.GetString(bytes, offset, count);
+            return JsonConvert.DeserializeObject(json, targetType, SerializerSettings);
         }
 
         /// <summary>

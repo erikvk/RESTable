@@ -41,7 +41,7 @@ namespace RESTable.Tests.OperationsTests
             return 0;
         }
 
-        public IEnumerable<InvalidMember> Validate(ResourceSync entity, RESTableContext context)
+        public IEnumerable<InvalidMember> GetInvalidMembers(ResourceSync entity, RESTableContext context)
         {
             context.GetRequiredService<OperationsTestsFlags>().ValidatorWasCalled = true;
             if (entity.Id == 99)

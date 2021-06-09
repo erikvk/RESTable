@@ -11,11 +11,14 @@ namespace RESTable.ContentTypeProviders
     {
         Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collectionObject, IJsonWriter textWriter, CancellationToken cancellationToken) where T : class;
         IJsonWriter GetJsonWriter(TextWriter writer);
-        JsonSerializer GetSerializer(); 
+        JsonSerializer GetSerializer();
         void Populate(string json, object target);
         void Serialize(IJsonWriter jsonWriter, object value);
         T? Deserialize<T>(byte[] bytes);
+        T? Deserialize<T>(byte[] bytes, int offset, int count);
         T? Deserialize<T>(string json);
+        object? Deserialize(Type targetType, byte[] bytes);
+        object? Deserialize(Type targetType, byte[] bytes, int offset, int count);
         void SerializeToStream(Stream stream, object entity, bool? prettyPrint = null, bool ignoreNulls = false);
         string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false);
     }

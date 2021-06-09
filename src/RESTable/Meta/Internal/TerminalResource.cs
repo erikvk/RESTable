@@ -66,7 +66,7 @@ namespace RESTable.Meta.Internal
             }
             if (newTerminal is T terminal and IValidator<T> validator)
             {
-                var invalidMembers = validator.Validate(terminal, context).ToList();
+                var invalidMembers = validator.GetInvalidMembers(terminal, context).ToList();
                 if (invalidMembers.Count > 0)
                 {
                     throw new InvalidInputEntity(invalidMembers);

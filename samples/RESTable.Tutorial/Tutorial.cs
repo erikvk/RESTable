@@ -127,7 +127,7 @@ namespace RESTable.Tutorial
     {
         public string Name { get; set; }
 
-        public IEnumerable<InvalidMember> Validate(IMyTest entity, RESTableContext context)
+        public IEnumerable<InvalidMember> GetInvalidMembers(IMyTest entity, RESTableContext context)
         {
             if (entity.Name == "Bananas")
                 yield return this.MemberInvalid(t => t.Name, "can't be 'Bananas'");
@@ -235,7 +235,7 @@ namespace RESTable.Tutorial
     {
         public string Name { get; set; }
 
-        public IEnumerable<InvalidMember> Validate(Person entity, RESTableContext context)
+        public IEnumerable<InvalidMember> GetInvalidMembers(Person entity, RESTableContext context)
         {
             if (entity.Name == "Banarne")
                 yield return this.MemberInvalid(e => e.Name, "Banarne is not a real name!");

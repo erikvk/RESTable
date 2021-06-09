@@ -84,7 +84,7 @@ namespace RESTable.Admin
         public ColumnInfo[] Columns { get; set; }
 
         /// <inheritdoc />
-        public IEnumerable<InvalidMember> Validate(DatabaseIndex entity, RESTableContext context)
+        public IEnumerable<InvalidMember> GetInvalidMembers(DatabaseIndex entity, RESTableContext context)
         {
             if (string.IsNullOrWhiteSpace(entity.ResourceName))
             {
