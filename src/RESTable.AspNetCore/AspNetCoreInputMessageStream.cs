@@ -56,8 +56,7 @@ namespace RESTable.AspNetCore
             return ReceiveAsync(arraySegment, WebSocketCancelledToken).Result;
         }
 
-#if NETSTANDARD2_0
-#else
+#if !NETSTANDARD2_0
         private async Task<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             var result = await WebSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);

@@ -12,6 +12,7 @@ namespace RESTable.Requests
         public bool IsValid { get; }
         private Exception Error { get; }
         public Task<IResult> GetResult(CancellationToken cancellationToken = new()) => Task.FromResult<IResult>(Error.AsResultOf(this));
+        
         public ITarget Target { get; }
         public bool HasConditions => false;
 
@@ -67,7 +68,7 @@ namespace RESTable.Requests
             Resource = parameters.iresource;
             Method = parameters.Method;
             Body = parameters.Body;
-            
+
             // These are always null for invalid requests
             Target = null!;
             MetaConditions = null!;

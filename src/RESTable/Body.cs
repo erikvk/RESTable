@@ -295,8 +295,7 @@ namespace RESTable
         public override void Write(byte[] buffer, int offset, int count) => Stream.Write(buffer, offset, count);
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => Stream.WriteAsync(buffer, offset, count, cancellationToken);
 
-#if NETSTANDARD2_0
-#else
+#if !NETSTANDARD2_0
         public override void CopyTo(Stream destination, int bufferSize) => Stream.CopyTo(destination, bufferSize);
         public override int Read(Span<byte> buffer) => Stream.Read(buffer);
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new()) => Stream.ReadAsync(buffer, cancellationToken);

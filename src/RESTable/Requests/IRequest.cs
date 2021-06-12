@@ -111,7 +111,7 @@ namespace RESTable.Requests
         /// The target of the request
         /// </summary>
         ITarget Target { get; }
-        
+
         /// <summary>
         /// Does this request have conditions?
         /// </summary>
@@ -152,6 +152,18 @@ namespace RESTable.Requests
         /// </summary>
         Task<IResult> GetResult(CancellationToken cancellationToken = new());
 
+#if !NETSTANDARD2_0
+        /// <summary>
+        /// Evaluates the request asynchronously and returns the result, or
+        /// throws an exception of the result is an error.
+        /// </summary>
+        public async Task<IResult> GetResultOrThrow(CancellationToken cancellationToken = new())
+        {
+            var result = await GetResult(cancellationToken).ConfigureAwait(false);
+            result.ThrowIfError();
+            return result;
+        }
+#endif
         /// <summary>
         /// Is this request valid?
         /// </summary>
