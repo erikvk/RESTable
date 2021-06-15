@@ -28,7 +28,8 @@ namespace RESTable.AspNetCore
             if (!configurator.IsConfigured)
                 configurator.ConfigureRESTable();
             var config = builder.ApplicationServices.GetRequiredService<RESTableConfiguration>();
-            var authenticator = builder.ApplicationServices.GetRequiredService<IRequestAuthenticator>();
+            var authenticator = builder.ApplicationServices.GetService<IRequestAuthenticator>() ??
+                                builder.ApplicationServices.GetRequiredService<IAllowAllAuthenticator>();
 
             RootUri = config.RootUri;
             Template = RootUri + "/{resource?}/{conditions?}/{metaconditions?}";

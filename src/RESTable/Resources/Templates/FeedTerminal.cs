@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace RESTable.Resources.Templates
 {
@@ -39,10 +40,11 @@ namespace RESTable.Resources.Templates
         {
             var welcomeBody = WelcomeBody;
             if (welcomeBody is not null)
-                welcomeBody = welcomeBody + "\n\n";
-            return $"### {WelcomeHeader ?? GetType().GetRESTableTypeName()} ###\n\n{welcomeBody}> Status: {Status}\n\n" +
-                   (IsOpen ? "" : "> To open the feed, type OPEN\n") +
-                   "> To pause, type PAUSE\n> To close, type CLOSE\n";
+                welcomeBody = welcomeBody + Environment.NewLine + Environment.NewLine;
+            return
+                $"### {WelcomeHeader ?? GetType().GetRESTableTypeName()} ###{Environment.NewLine}{Environment.NewLine}" +
+                $"{welcomeBody}> Status: {Status}{Environment.NewLine}{Environment.NewLine}{(IsOpen ? "" : $"> To open the feed, type OPEN{Environment.NewLine}")}> To pause, type PAUSE" +
+                $"{Environment.NewLine}> To close, type CLOSE{Environment.NewLine}";
         }
 
         protected override async Task Open()
@@ -62,14 +64,14 @@ namespace RESTable.Resources.Templates
                 case "": break;
                 case "OPEN":
                     Status = FeedStatus.OPEN;
-                    await WebSocket.SendText("> Status: OPEN\n").ConfigureAwait(false);
+                    await WebSocket.SendText("> Status: OPEN" + Environment.NewLine).ConfigureAwait(false);
                     break;
                 case "PAUSE":
                     Status = FeedStatus.PAUSED;
-                    await WebSocket.SendText("> Status: PAUSED\n").ConfigureAwait(false);
+                    await WebSocket.SendText("> Status: PAUSED" + Environment.NewLine).ConfigureAwait(false);
                     break;
                 case "CLOSE":
-                    await WebSocket.SendText("> Status: CLOSED\n").ConfigureAwait(false);
+                    await WebSocket.SendText("> Status: CLOSED" + Environment.NewLine).ConfigureAwait(false);
                     await WebSocket.DirectToShell().ConfigureAwait(false);
                     break;
                 case var unrecognized:

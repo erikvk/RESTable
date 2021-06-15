@@ -18,18 +18,18 @@ namespace RESTable.WebSockets
 
         public RESTableContext Context => ProtocolHolder.Context;
         private IProtocolHolder ProtocolHolder { get; }
-        public Headers Headers => null;
+        public Headers Headers => null!;
 
         public string HeadersStringCache
         {
-            get => null;
+            get => null!;
             set { }
         }
 
         public bool ExcludeHeaders => false;
         public string ProtocolIdentifier => ProtocolHolder.ProtocolIdentifier;
         public CachedProtocolProvider CachedProtocolProvider => ProtocolHolder.CachedProtocolProvider;
-        public ReadonlyCookies Cookies => null;
+        public ReadonlyCookies Cookies => null!;
         public CancellationToken CancellationToken => CancellationTokenSource.Token;
         public WebSocketStatus Status => WebSocketStatus.Open;
 
@@ -42,7 +42,7 @@ namespace RESTable.WebSockets
         {
             var empty = true;
             WebSockets = new List<IWebSocket>();
-            IProtocolHolder protocolHolder = null;
+            IProtocolHolder? protocolHolder = null;
 
             IEnumerable<CancellationToken> iterate()
             {
@@ -56,9 +56,10 @@ namespace RESTable.WebSockets
             }
 
             var cancellationTokens = iterate().ToArray();
-            ProtocolHolder = protocolHolder;
-            if (empty) return;
-            CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokens);
+            ProtocolHolder = protocolHolder!;
+            CancellationTokenSource = empty
+                ? new CancellationTokenSource()
+                : CancellationTokenSource.CreateLinkedTokenSource(cancellationTokens);
         }
 
         private Task DoForAll(Func<IWebSocket, Task> action)

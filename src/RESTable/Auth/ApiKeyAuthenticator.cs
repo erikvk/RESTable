@@ -11,14 +11,17 @@ using RESTable.WebSockets;
 
 namespace RESTable.Auth
 {
+    public interface IApiKeyAuthenticator : IRequestAuthenticator, IDisposable { }
+
     /// <summary>
     /// Handles authorization and authentication of clients using Api keys in either uris or headers, and
     /// reads these api kets from an app configuration.
     /// </summary>
-    public class ApiKeyAuthenticator : IRequestAuthenticator, IDisposable
+    public class ApiKeyAuthenticator : IApiKeyAuthenticator, IRequestAuthenticator, IDisposable
     {
         private const string AuthHeaderMask = "ApiKey *******";
-
+        private const string ApiKeysConfigSection = "RESTable.ApiKeys";
+        
         private IDictionary<string, AccessRights> ApiKeys { get; }
         private ResourceCollection ResourceCollection { get; }
         private WebSocketManager WebSocketManager { get; }
@@ -75,7 +78,7 @@ namespace RESTable.Auth
 
         private void Reload()
         {
-            var apiKeysConfiguration = Configuration.GetSection(nameof(RESTable.ApiKeys)).Get<ApiKeys>();
+            var apiKeysConfiguration = Configuration.GetSection(ApiKeysConfigSection).Get<ApiKeys>();
             if (apiKeysConfiguration?.Count is not > 0)
                 throw new InvalidOperationException($"When using {nameof(ApiKeyAuthenticator)}, the application configuration file is used " +
                                                     "to read API keys. The config file is missing an 'ApiKeys' array with at least one " +
@@ -112,7 +115,7 @@ namespace RESTable.Auth
                 throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                     "whitespace or parentheses, and only containing ASCII characters 33 through 126");
             var keyHash = ComputeHash(apiKey);
-            var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess ?? new AllowAccess[0], ResourceCollection);
+            var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess ?? Array.Empty<AllowAccess>(), ResourceCollection);
             var accessRights = new AccessRights(keyHash, assignments);
 
             if (ApiKeys.TryGetValue(keyHash, out AccessRights existing))

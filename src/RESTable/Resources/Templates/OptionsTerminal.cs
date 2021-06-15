@@ -17,6 +17,8 @@ namespace RESTable.Resources.Templates
     {
         private IDictionary<string, Option> Options { get; }
 
+        protected bool RunSilent { get; set; }
+
         public OptionsTerminal()
         {
             Options = new Dictionary<string, Option>(StringComparer.OrdinalIgnoreCase);
@@ -25,7 +27,7 @@ namespace RESTable.Resources.Templates
         protected override async Task Open()
         {
             Options.Clear();
-            foreach (var option in GetOptions()) 
+            foreach (var option in GetOptions())
                 Options[option.Command] = option;
             await PrintOptions().ConfigureAwait(false);
         }
@@ -40,11 +42,13 @@ namespace RESTable.Resources.Templates
                     break;
                 case var _ when Options.TryGetValue(command, out var option):
                     var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-                    await WebSocket.SendText($"> {option!.Command}").ConfigureAwait(false);
+                    if (!RunSilent)
+                        await WebSocket.SendText($"> {option!.Command}").ConfigureAwait(false);
                     try
                     {
                         await option.Action(argsArray).ConfigureAwait(false);
-                        await WebSocket.SendText("> Done!\n").ConfigureAwait(false);
+                        if (!RunSilent)
+                            await WebSocket.SendText($"> Done!{Environment.NewLine}").ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
@@ -60,21 +64,21 @@ namespace RESTable.Resources.Templates
 
         private async Task PrintOptions()
         {
-            var stringBuilder = new StringBuilder($"### {GetType().GetRESTableTypeName()} ###\n\n");
+            var stringBuilder = new StringBuilder($"### {GetType().GetRESTableTypeName()} ###{Environment.NewLine}{Environment.NewLine}");
             if (!Options.Any())
             {
-                stringBuilder.Append("  No available options.\n\n");
+                stringBuilder.Append($"  No available options.{Environment.NewLine}{Environment.NewLine}");
                 stringBuilder.Append("> Type 'cancel' to return to the shell");
             }
             var first = true;
             foreach (var option in Options.Values)
             {
                 if (!first)
-                    stringBuilder.Append("  - - - - - - - - - - - - - - - - - - - - - - - - - - - -  \n");
-                stringBuilder.Append($"  Option:  {option.Command}\n  About:   {option.Description}\n");
+                    stringBuilder.Append($"  - - - - - - - - - - - - - - - - - - - - - - - - - - - -  {Environment.NewLine}");
+                stringBuilder.Append($"  Option:  {option.Command}{Environment.NewLine}  About:   {option.Description}{Environment.NewLine}");
                 first = false;
             }
-            stringBuilder.Append("\n> Type an option to continue, or 'cancel' to return to the shell\n");
+            stringBuilder.Append($"{Environment.NewLine}> Type an option to continue, or 'cancel' to return to the shell{Environment.NewLine}");
             await WebSocket.SendText(stringBuilder.ToString()).ConfigureAwait(false);
         }
 

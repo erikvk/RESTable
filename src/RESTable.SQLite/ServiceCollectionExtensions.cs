@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection.Extensions;
-using RESTable.Resources;
+﻿using RESTable.Resources;
 using RESTable.SQLite;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -8,7 +7,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddSqliteProvider(this IServiceCollection serviceCollection, string dbPath)
         {
-            serviceCollection.TryAddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider(dbPath));
+            serviceCollection.AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider(dbPath));
             return serviceCollection;
         }
     }

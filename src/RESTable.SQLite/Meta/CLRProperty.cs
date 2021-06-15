@@ -36,7 +36,7 @@ namespace RESTable.SQLite.Meta
         /// The getter for the property value
         /// </summary>
         [RESTableMember(ignore: true)]
-        public Getter Get { get; }
+        public Getter? Getter { get; }
 
         /// <summary>
         /// The setter for the property value
@@ -65,7 +65,7 @@ namespace RESTable.SQLite.Meta
         {
             Name = propertyInfo.Name;
             Type = propertyInfo.PropertyType.ResolveCLRTypeCode();
-            Get = propertyInfo.MakeDynamicGetter();
+            Getter = propertyInfo.MakeDynamicGetter();
             Set = propertyInfo.MakeDynamicSetter();
             MemberAttribute = propertyInfo.GetCustomAttribute<SQLiteMemberAttribute>();
             IsDeclared = true;
@@ -79,7 +79,7 @@ namespace RESTable.SQLite.Meta
             MemberAttribute = null!;
             Name = name;
             Type = typeCode;
-            Get = obj =>
+            Getter = obj =>
             {
                 object? value = null;
                 if (obj is IDynamicMemberValueProvider dm && dm.TryGetValue(Name, out value, out var actualKey))

@@ -73,8 +73,8 @@ namespace FrameworkApp
                 using var serializedResult = result.Serialize().Result;
 
                 // Write output
-                Console.WriteLine($"=> {request.GetLogMessage().Result} {request.GetLogContent().Result}");
-                Console.WriteLine($"<= {result.GetLogMessage().Result}");
+                Console.WriteLine($"=> {request.GetLogMessage().AsTask().Result} {request.GetLogContent().Result}");
+                Console.WriteLine($"<= {result.GetLogMessage().AsTask().Result}");
                 foreach (var (key, value) in result.Headers)
                     Console.WriteLine($"{key}: {value}");
                 using var streamReader = new StreamReader(serializedResult.Body);

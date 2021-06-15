@@ -55,6 +55,9 @@ namespace RESTable.Json
         public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class;
 
         /// <inheritdoc />
+        public abstract Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class;
+
+        /// <inheritdoc />
         public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream)
         {
             var jsonStream = new SwappingStream();

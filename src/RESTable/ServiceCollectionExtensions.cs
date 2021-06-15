@@ -17,8 +17,9 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton<IRequestAuthenticator, ApiKeyAuthenticator>();
-            serviceCollection.AddStartupActivator<IAllowedCorsOriginsFilter>();
+            serviceCollection.TryAddSingleton<IApiKeyAuthenticator, ApiKeyAuthenticator>();
+            serviceCollection.TryAddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
+            serviceCollection.AddStartupActivator<IRequestAuthenticator>();
             return serviceCollection;
         }
 
@@ -60,7 +61,7 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton<ResourceValidator>();
             serviceCollection.TryAddSingleton(typeof(ConditionCache<>), typeof(ConditionCache<>));
             serviceCollection.TryAddSingleton<ResourceAuthenticator>();
-            serviceCollection.TryAddSingleton<IRequestAuthenticator, AllowAllAuthenticator>();
+            serviceCollection.TryAddSingleton<IAllowAllAuthenticator, AllowAllAuthenticator>();
             serviceCollection.TryAddSingleton<IAllowedCorsOriginsFilter, AllCorsOriginsAllowed>();
             serviceCollection.TryAddSingleton<RootAccess>();
             serviceCollection.TryAddSingleton<RootClient>();

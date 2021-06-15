@@ -50,7 +50,7 @@ namespace RESTable.Requests
             set
             {
                 if (Equals(_body, value)) return;
-                _body?.DisposeAsync().AsTask().Wait();
+                _body.DisposeAsync().AsTask().Wait();
                 _body = value;
             }
         }
@@ -66,14 +66,14 @@ namespace RESTable.Requests
         /// <summary>
         /// Has the client requested a WebSocket upgrade for this request?
         /// </summary>
-        public bool IsWebSocketUpgrade { get; }
+        public bool IsWebSocketUpgrade => Context.WebSocket?.Status == WebSocketStatus.Waiting;
 
         #region Private and internal
 
         private string UnparsedUri { get; }
         internal IResource iresource;
         internal IResource IResource => iresource ??= Context.GetRequiredService<ResourceCollection>().FindResource(Uri.ResourceSpecifier);
-        internal Exception Error { get; }
+        internal Exception? Error { get; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
         bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true};
         public MessageType MessageType { get; } = MessageType.HttpInput;
@@ -105,7 +105,6 @@ namespace RESTable.Requests
             uri: Uri,
             bodyCopy: await Body.GetCopy().ConfigureAwait(false),
             headers: Headers,
-            isWebSocketUpgrade: IsWebSocketUpgrade,
             unparsedUri: UnparsedUri,
             error: Error,
             messageType: MessageType,
@@ -116,16 +115,15 @@ namespace RESTable.Requests
 
         #endregion
 
-        private RequestParameters(IResource iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, bool isWebSocketUpgrade, string unparsedUri,
+        private RequestParameters(IResource iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, string unparsedUri,
             Exception error, MessageType messageType, CachedProtocolProvider cachedProtocolProvider, string protocolIdentifier, string headersStringCache)
         {
             this.iresource = iresource;
             Context = context;
             Method = method;
             Uri = uri;
-            Body = bodyCopy;
+            _body = bodyCopy;
             Headers = headers;
-            IsWebSocketUpgrade = isWebSocketUpgrade;
             UnparsedUri = unparsedUri;
             Error = error;
             MessageType = messageType;
@@ -148,24 +146,24 @@ namespace RESTable.Requests
             Method = method;
             Headers = new Headers();
             iresource = resource;
-            IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = new URI(resourceSpecifier: resource.Name, viewName: viewName);
             var protocolController = context.GetRequiredService<ProtocolProviderManager>();
             ProtocolIdentifier = protocolIdentifier?.ToLower() ?? protocolController.DefaultProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             CachedProtocolProvider = protocolController.ResolveCachedProtocolProvider(protocolIdentifier);
+            _body = new Body(this);
         }
 
         /// <summary>
         /// Used when creating parsed requests
         /// </summary>
-        internal RequestParameters(RESTableContext context, Method method, string uri, Headers headers)
+        internal RequestParameters(RESTableContext context, Method method, string uri, Headers? headers, object? body)
         {
             Context = context;
             Method = method;
             Headers = headers ?? new Headers();
-            IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
+            _body = new Body(this, body);
             var hasMacro = Uri?.Macro is not null;
             if (hasMacro && Uri.Macro.Headers is not null)
             {

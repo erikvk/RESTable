@@ -10,9 +10,9 @@ using static RESTable.Method;
 namespace RESTable.Requests
 {
     /// <summary>
-    /// Requests are run from inside contexts. Contexts guard against infinite recursion 
-    /// and define the root for each ITraceable tree. They also hold WebSocket connections
-    /// and Client access rights.
+    /// Represents a context in which an interaction with the local RESTable APIs can take place.
+    /// Requests are run from inside contexts. Contexts guard against infinite recursion and define
+    /// the root for each ITraceable tree.
     /// </summary>
     public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable, IServiceProvider
     {
@@ -108,15 +108,14 @@ namespace RESTable.Requests
         /// <param name="uri">The URI of the request</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public virtual IRequest CreateRequest(Method method = GET, string uri = "/", object body = null, Headers headers = null)
+        public virtual IRequest CreateRequest(Method method = GET, string uri = "/", object? body = null, Headers? headers = null)
         {
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
             {
                 WebSocket = CreateWebSocket();
             }
-            var parameters = new RequestParameters(this, method, uri, headers);
-            parameters.SetBodyObject(body);
+            var parameters = new RequestParameters(this, method, uri, headers, body);
             if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
             return DynamicCreateRequest((dynamic) parameters.IResource, parameters);
         }
@@ -129,10 +128,10 @@ namespace RESTable.Requests
         /// <param name="error">A RESTableError describing the error, or null if valid</param>
         /// <param name="resource">The resource referenced in the URI</param>
         /// <param name="uriComponents">The URI components of the uri, if valid. Otherwise null</param>
-        public bool UriIsValid(string uri, out Error error, out IResource resource, out IUriComponents uriComponents)
+        public bool UriIsValid(string uri, out Error error, out IResource? resource, out IUriComponents? uriComponents)
         {
             if (uri is null) throw new ArgumentNullException(nameof(uri));
-            var parameters = new RequestParameters(this, (Method) (-1), uri, null);
+            var parameters = new RequestParameters(this, (Method) (-1), uri, null, null);
             uriComponents = null;
             if (parameters.Error is not null)
             {
@@ -145,7 +144,7 @@ namespace RESTable.Requests
             IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
             if (!request.IsValid)
             {
-                // Will run synchronously since the request is not valid
+                // Will run synchronously since the request is known to be invalid
                 using var result = request.GetResult().Result;
                 error = result as Error;
                 return false;

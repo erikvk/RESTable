@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
 using RESTable.Linq;
+using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -104,9 +105,14 @@ namespace RESTable.Tutorial
             set => Year = value.GetValueOrDefault();
         }
 
-        [RESTableMember(hide: true)] public int Year { get; set; }
-        [RESTableMember(hide: true)] public string Id { get; set; }
-        [RESTableMember(hide: true)] public string Sex { get; set; }
+        [RESTableMember(hide: true)]
+        public int Year { get; set; }
+
+        [RESTableMember(hide: true)]
+        public string Id { get; set; }
+
+        [RESTableMember(hide: true)]
+        public string Sex { get; set; }
     }
 
     public enum Gender
@@ -132,6 +138,32 @@ namespace RESTable.Tutorial
             if (entity.Name == "Bananas")
                 yield return this.MemberInvalid(t => t.Name, "can't be 'Bananas'");
         }
+    }
+
+    [RESTable]
+    public class MyTerminal : Terminal
+    {
+        public Version Version { get; }
+
+        public MyTerminal
+        (
+            string version,
+            ITraceable trace,
+            IHeaders headers,
+            ResourceCollection r,
+            ITerminalCollection<MyTerminal> tc,
+            ICombinedTerminal<MyTerminal> comb
+        )
+        {
+            Version = Version.Parse(version);
+        }
+
+        public override Task HandleTextInput(string input)
+        {
+            return WebSocket.SendText(input);
+        }
+
+        protected override bool SupportsTextInput => true;
     }
 
     [RESTable(GET)]

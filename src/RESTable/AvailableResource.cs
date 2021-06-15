@@ -104,10 +104,10 @@ namespace RESTable
             Methods = trace.Context.Client.AccessRights
                 .SafeGet(iresource)?
                 .Intersect(iresource.AvailableMethods)
-                .ToArray() ?? new Method[0],
+                .ToArray() ?? Array.Empty<Method>(),
             Kind = iresource.ResourceKind,
             Views = iresource is IEntityResource er
-                ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray() ?? new ViewInfo[0]
+                ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray() ?? Array.Empty<ViewInfo>()
                 : null,
             InnerResources = ((IResourceInternal) iresource)
                 .GetInnerResources()

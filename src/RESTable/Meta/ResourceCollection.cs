@@ -199,7 +199,7 @@ namespace RESTable.Meta
                 case 0:
                     if (TryFindResource(searchString, out var resource, out _))
                         return new[] {resource};
-                    return new IResource[0];
+                    return Array.Empty<IResource>();
                 case 1 when searchString.Last() != '*':
                     throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
                 case 1:

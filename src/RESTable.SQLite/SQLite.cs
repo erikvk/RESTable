@@ -18,7 +18,7 @@ namespace RESTable.SQLite
     public static class SQLite<T> where T : SQLiteTable
     {
         private const string RowIdParameter = "@rowId";
-        
+
         /// <summary>
         /// Selects entities in the SQLite database using the RESTable.SQLite O/RM mapping 
         /// facilities. Returns an IAsyncEnumerable of the provided resource type.
@@ -86,7 +86,10 @@ namespace RESTable.SQLite
                     await entity._OnInsert().ConfigureAwait(false);
                     for (var i = 0; i < mappings.Length; i++)
                     {
-                        var propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
+                        var getter = mappings[i].CLRProperty.Getter;
+                        object? propertyValue = null;
+                        if (getter is not null)
+                            propertyValue = await getter(entity).ConfigureAwait(false);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
                     if (context != null)
@@ -130,7 +133,10 @@ namespace RESTable.SQLite
                     command.Parameters[RowIdParameter].Value = entity.RowId;
                     for (var i = 0; i < mappings.Length; i++)
                     {
-                        var propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
+                        var getter = mappings[i].CLRProperty.Getter;
+                        object? propertyValue = null;
+                        if (getter is not null)
+                            propertyValue = await getter(entity).ConfigureAwait(false);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
                     if (context != null)

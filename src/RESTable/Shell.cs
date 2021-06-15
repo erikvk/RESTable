@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Admin;
@@ -186,7 +187,12 @@ namespace RESTable
         public override async Task HandleBinaryInput(Stream input)
         {
             if (Query.Length == 0 || AwaitingConfirmation)
+            {
+                if (input is IAsyncDisposable asyncDisposable)
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                else input.Dispose();
                 await WebSocket.SendResult(new InvalidShellStateForBinaryInput()).ConfigureAwait(false);
+            }
             else await SafeOperation(POST, input).ConfigureAwait(false);
         }
 
@@ -240,6 +246,7 @@ namespace RESTable
         {
             try
             {
+                input = input.TrimEnd('\r', '\n');
                 if (AwaitingConfirmation)
                 {
                     switch (input.FirstOrDefault())
@@ -312,9 +319,28 @@ namespace RESTable
                             case "HEAD":
                                 await SafeOperation(HEAD, tail?.ToBytes()).ConfigureAwait(false);
                                 break;
+                            case "OBSERVE":
+                            {
+                                CancellationTokenSource cancellationTokenSource;
+                                if (!string.IsNullOrWhiteSpace(tail) && double.TryParse(tail, out var timeOutSeconds))
+                                    cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(timeOutSeconds));
+                                else cancellationTokenSource = new CancellationTokenSource();
+
+                                await using var result = await GetResult(GET, cancellationToken: cancellationTokenSource.Token).ConfigureAwait(false);
+                                if (result is not IEntities<object> entities)
+                                {
+                                    await SendResult(result).ConfigureAwait(false);
+                                    break;
+                                }
+                                await foreach (var entity in entities.WithCancellation(cancellationTokenSource.Token))
+                                {
+                                    await WebSocket.SendJson(entity).ConfigureAwait(false);
+                                }
+                                break;
+                            }
                             case "STREAM":
                             {
-                                await using var result = await GetResult(GET, null).ConfigureAwait(false);
+                                await using var result = await GetResult(GET).ConfigureAwait(false);
                                 var serialized = await result.Serialize().ConfigureAwait(false);
                                 if (result is Content)
                                     await StreamSerializedResult(serialized, result.TimeElapsed).ConfigureAwait(false);
@@ -587,12 +613,12 @@ namespace RESTable
             return result;
         }
 
-        private async Task<IResult> GetResult(Method method, object body)
+        private async Task<IResult> GetResult(Method method, object? body = null, CancellationToken cancellationToken = new())
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
             var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers);
-            var result = await request.GetResult().ConfigureAwait(false);
+            var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
             switch (result)
             {
                 case Results.Error _ when queryChangedPreEval:
@@ -639,15 +665,15 @@ namespace RESTable
             await WebSocket.SendJson(options, true).ConfigureAwait(false);
             await SendQuery().ConfigureAwait(false);
         }
-        
-        private async Task SafeOperation(Method method, object body = null)
+
+        private async Task SafeOperation(Method method, object? body = null)
         {
             var sw = Stopwatch.StartNew();
             await using var result = await GetResult(method, body).ConfigureAwait(false);
             await SerializeAndSendResult(result, sw.Elapsed).ConfigureAwait(true);
         }
 
-        private async Task UnsafeOperation(Method method, byte[] body = null)
+        private async Task UnsafeOperation(Method method, byte[]? body = null)
         {
             async Task runOperation()
             {
@@ -657,7 +683,7 @@ namespace RESTable
 
             if (PreviousEntities is null)
             {
-                await using var result = await GetResult(GET, null).ConfigureAwait(false);
+                await using var result = await GetResult(GET).ConfigureAwait(false);
                 if (result is not IEntities)
                 {
                     await SendResult(result).ConfigureAwait(false);
@@ -758,11 +784,7 @@ namespace RESTable
             }
         }
 
-        private async Task SendShellInit()
-        {
-            await WebSocket.SendText("### Entering the RESTable WebSocket shell... ###").ConfigureAwait(false);
-            await WebSocket.SendText("### Type a command to continue...            ###").ConfigureAwait(false);
-        }
+        private async Task SendShellInit() => await WebSocket.SendText("### Entering the RESTable WebSocket shell... ###").ConfigureAwait(false);
 
         private const string ConfirmationText = "Type 'Y' to continue, 'N' to cancel";
         private const string CancelText = "Operation cancelled";

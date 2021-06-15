@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
-using RESTable.Linq;
 using RESTable.Results;
 
 namespace RESTable
@@ -19,13 +18,13 @@ namespace RESTable
     /// </summary>
     public class Body : Stream, IDisposable, IAsyncDisposable
     {
-        private SwappingStream Stream { get; }
+        private SwappingStream Stream { get; set; }
 
         private IProtocolHolder ProtocolHolder { get; }
 
         private bool IsIngoing { get; }
-
-        private object UninitializedBodyObject { get; set; }
+        
+        public object? UninitializedBodyObject { get; set; }
 
         public ContentType ContentType => IsIngoing
             ? ProtocolHolder.GetInputContentTypeProvider().ContentType
@@ -71,7 +70,6 @@ namespace RESTable
         {
             if (IsClosed)
                 throw new ObjectDisposedException(nameof(Stream));
-            if (source is null) return null;
             try
             {
                 return ContentTypeProvider.Populate(source, Stream.GetBytes());
@@ -98,7 +96,7 @@ namespace RESTable
         /// </summary>
         /// <param name="protocolHolder">The protocol holder, for example a request</param>
         /// <param name="bodyObject">The object to initialize this body from</param>
-        public Body(IProtocolHolder protocolHolder, object bodyObject = null)
+        public Body(IProtocolHolder protocolHolder, object? bodyObject = null)
         {
             ProtocolHolder = protocolHolder;
             IsIngoing = true;
@@ -115,18 +113,11 @@ namespace RESTable
             Stream = new SwappingStream(customOutputStream);
         }
 
-        private SwappingStream ResolveStream(object bodyObject)
+        private SwappingStream ResolveStream(object? bodyObject)
         {
             switch (bodyObject)
             {
-                case Body body:
-                {
-                    ProtocolHolder.Headers.ContentType = body.ContentType;
-                    body.TryRewind();
-                    return body.Stream;
-                }
-                case SwappingStream swappingStream: return swappingStream.Rewind();
-                case Stream otherStream: return new SwappingStream(otherStream);
+                case var _ when TryGetStream(bodyObject, out var stream): return stream!;
                 case byte[] bytes: return new SwappingStream(bytes);
                 case string str: return new SwappingStream(str.ToBytes());
                 case null: return new SwappingStream();
@@ -136,17 +127,51 @@ namespace RESTable
             }
         }
 
+        private bool TryGetStream(object? bodyObject, out SwappingStream? stream)
+        {
+            switch (bodyObject)
+            {
+                case Body body:
+                {
+                    ProtocolHolder.Headers.ContentType = body.ContentType;
+                    body.TryRewind();
+                    stream = body.Stream;
+                    return true;
+                }
+                case SwappingStream swappingStream:
+                    stream = swappingStream.Rewind();
+                    return true;
+                case Stream otherStream:
+                    stream = new SwappingStream(otherStream);
+                    return true;
+                default:
+                    stream = null;
+                    return false;
+            }
+        }
+
         public async Task Initialize(CancellationToken cancellationToken)
         {
             if (UninitializedBodyObject is null)
                 return;
-            var contentTypeProvider = ProtocolHolder.GetInputContentTypeProvider();
-            var content = UninitializedBodyObject;
-            switch (content)
+
+            if (TryGetStream(UninitializedBodyObject, out var stream) && stream is not null)
             {
-                case IDictionary<string, object?> _:
-                case JObject _:
-                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream, null, cancellationToken).ConfigureAwait(false);
+                var previous = Stream;
+                Stream = stream;
+                await previous.DisposeAsync().ConfigureAwait(false);
+                return;
+            }
+
+            var contentTypeProvider = ProtocolHolder.GetInputContentTypeProvider();
+
+            switch (UninitializedBodyObject)
+            {
+                case IDictionary<string, object?> dict:
+                    await contentTypeProvider.Serialize(dict, Stream, null, cancellationToken).ConfigureAwait(false);
+                    break;
+                case JObject jo:
+                    await contentTypeProvider.Serialize(jo, Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
                 case IAsyncEnumerable<object> aie:
                     await contentTypeProvider.SerializeCollection(aie, Stream, null, cancellationToken).ConfigureAwait(false);
@@ -157,8 +182,8 @@ namespace RESTable
                 case IEnumerable ie:
                     await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
-                default:
-                    await contentTypeProvider.SerializeCollection(content.ToAsyncSingleton(), Stream, null, cancellationToken).ConfigureAwait(false);
+                case { } other:
+                    await contentTypeProvider.Serialize(other, Stream, null, cancellationToken).ConfigureAwait(false);
                     break;
             }
             Stream.Rewind();
@@ -232,14 +257,14 @@ namespace RESTable
 #if NETSTANDARD2_0
         public async ValueTask DisposeAsync()
         {
+            base.Dispose(false);
             await Stream.DisposeAsync().ConfigureAwait(false);
-            base.Dispose();
         }
 #else
         public override async ValueTask DisposeAsync()
         {
+            base.Dispose(false);
             await Stream.DisposeAsync().ConfigureAwait(false);
-            await base.DisposeAsync().ConfigureAwait(false);
         }
 #endif
 
@@ -265,12 +290,6 @@ namespace RESTable
             get => Stream.Position;
             set => Stream.Position = value;
         }
-
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-            Stream.BeginRead(buffer, offset, count, callback, state);
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-            Stream.BeginWrite(buffer, offset, count, callback, state);
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Stream.CopyToAsync(destination, bufferSize, cancellationToken);
         public override int EndRead(IAsyncResult asyncResult) => Stream.EndRead(asyncResult);

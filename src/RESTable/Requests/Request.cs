@@ -177,7 +177,8 @@ namespace RESTable.Requests
                 {
                     if (result is Forbidden forbidden)
                         return new WebSocketUpgradeFailed(forbidden);
-                    await Context.WebSocket.Open(this, false).ConfigureAwait(false);
+                    Context.WebSocket.Upgrade(this);
+                    await Context.WebSocket.Open(false).ConfigureAwait(false);
                     await webSocket.SendResult(result).ConfigureAwait(false);
                     var message = await webSocket.GetMessageStream(false).ConfigureAwait(false);
 #if NETSTANDARD2_0
@@ -220,12 +221,14 @@ namespace RESTable.Requests
                             throw new UpgradeRequired(terminalResource.Name);
                         if (IsWebSocketUpgrade)
                         {
+                            // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
+                            var (webSocket, webSocketContext) = Context.WebSocket.Upgrade(upgradeRequest: this);
                             var terminalResourceInternal = (TerminalResource<T>) terminalResource;
-                            var terminal = await terminalResourceInternal.MakeTerminal(Context, Conditions).ConfigureAwait(false);
-                            await Context.WebSocket.Open(this).ConfigureAwait(false);
-                            await Context.WebSocket.ConnectTo(terminal).ConfigureAwait(false);
+                            var terminal = await terminalResourceInternal.CreateTerminal(webSocketContext, Conditions).ConfigureAwait(false);
+                            await webSocket.Open().ConfigureAwait(false);
+                            await webSocket.ConnectTo(terminal).ConfigureAwait(false);
                             await terminal.OpenTerminal().ConfigureAwait(false);
-                            return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
+                            return new WebSocketUpgradeSuccessful(this, webSocket);
                         }
                         return await SwitchTerminal(terminalResource).ConfigureAwait(false);
                     }
@@ -299,10 +302,14 @@ namespace RESTable.Requests
             return null;
         }
 
+        /// <summary>
+        /// This method is called from a websocket, so the context of this request is already a
+        /// WebSocket context. This is what it means to not be a WebSocket upgrade request. 
+        /// </summary>
         private async Task<IResult> SwitchTerminal(ITerminalResource<T> resource)
         {
             var _resource = (TerminalResource<T>) resource;
-            var newTerminal = await _resource.MakeTerminal(Context, Conditions).ConfigureAwait(false);
+            var newTerminal = await _resource.CreateTerminal(Context, Conditions).ConfigureAwait(false);
             await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
             return new SwitchedTerminal(this);

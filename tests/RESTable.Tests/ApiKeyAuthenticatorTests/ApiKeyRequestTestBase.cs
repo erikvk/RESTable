@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,9 +25,9 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
         {
             Fixture = fixture;
 
-            var config = new
+            var config = new Dictionary<string, object>
             {
-                ApiKeys = new ApiKeys
+                ["RESTable.ApiKeys"] = new ApiKeys
                 {
                     new()
                     {

@@ -328,7 +328,9 @@ namespace RESTable
         {
             var typeName = providerType.Name;
             if (typeName is null) throw new ArgumentNullException();
-            if (typeName.EndsWith("resourceprovider", InvariantCultureIgnoreCase))
+            if (typeName.EndsWith("entityresourceprovider", InvariantCultureIgnoreCase))
+                typeName = typeName.Substring(0, typeName.Length - 22);
+            else if (typeName.EndsWith("resourceprovider", InvariantCultureIgnoreCase))
                 typeName = typeName.Substring(0, typeName.Length - 16);
             else if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
                 typeName = typeName.Substring(0, typeName.Length - 8);
@@ -678,7 +680,7 @@ namespace RESTable
             return false;
         }
 
-        public static IContentTypeProvider? GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
+        public static IContentTypeProvider GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
         {
             IContentTypeProvider? acceptProvider = null;
 
@@ -706,7 +708,7 @@ namespace RESTable
             }
             else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MediaType, out acceptProvider))
                 throw new NotAcceptable(contentType.Value.ToString());
-            return acceptProvider;
+            return acceptProvider!;
         }
 
         /// <summary>
@@ -784,6 +786,7 @@ namespace RESTable
             }
             if (property is not null)
             {
+                Type targetType = property.Type.IsNullable(out var t) ? t! : property.Type;
                 try
                 {
                     if (property.IsDateTime)
@@ -792,8 +795,14 @@ namespace RESTable
                             return dateTime.ToUniversalTime();
                         throw new Exception();
                     }
-                    Type targetType = property.Type.IsNullable(out var t) ? t! : property.Type;
                     return Convert.ChangeType(valueLiteral, targetType!);
+                }
+                catch (InvalidCastException) when (targetType!.IsClass)
+                {
+                    // In this case, we could not cast the value literal to some class type. 
+                    // We should just keep it as literal for now, and see if the resource wants
+                    // to use it as string.
+                    return valueLiteral;
                 }
                 catch
                 {
@@ -836,9 +845,9 @@ namespace RESTable
             return timeSpan.GetRESTableElapsedMs().ToString(CultureInfo.InvariantCulture);
         }
 
-        internal static byte[]? ToBytes(this string? str)
+        internal static byte[] ToBytes(this string str)
         {
-            return str is not null ? Encoding.UTF8.GetBytes(str) : null;
+            return Encoding.UTF8.GetBytes(str);
         }
 
         internal static byte[] ToByteArray(this Stream stream)

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\pack.props" />
-    
+
     <PropertyGroup>
         <TargetFrameworks>netstandard2.1;netstandard2.0;net5.0</TargetFrameworks>
         <LangVersion>latest</LangVersion>
@@ -9,13 +9,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Csharp" Version="4.7.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="5.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Primitives" Version="5.0.1" />
-        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.0.0" />
-        <PackageReference Include="System.Linq.Async" Version="5.0.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+        <PackageReference Include="Microsoft.Csharp" Version="4.7.*" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.*" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="5.0.*" />
+        <PackageReference Include="Microsoft.Extensions.Primitives" Version="5.0.*" />
+        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.1.*" />
+        <PackageReference Include="System.Linq.Async" Version="5.0.*" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.*" />
     </ItemGroup>
 
 </Project>

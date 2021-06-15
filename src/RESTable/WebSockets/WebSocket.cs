@@ -126,15 +126,19 @@ namespace RESTable.WebSockets
             TerminalConnection = null;
         }
 
+        internal (WebSocket webSocket, RESTableContext webSocketContext) Upgrade(IRequest upgradeRequest)
+        {
+            ProtocolHolder = upgradeRequest;
+            Context = new WebSocketContext(this, Client, upgradeRequest);
+            return (this, Context); 
+        }
+
         /// <summary>
         /// Sends the websocket upgrade and open this websocket for a single transfer or
         /// a terminal connection lifetime.
         /// </summary>
-        internal async Task Open(IRequest upgradeRequest, bool acceptIncomingMessages = true)
+        internal async Task Open(bool acceptIncomingMessages = true)
         {
-            ProtocolHolder = upgradeRequest;
-            Context = new WebSocketContext(this, Client, upgradeRequest);
-
             switch (Status)
             {
                 case WebSocketStatus.Waiting:
@@ -277,7 +281,7 @@ namespace RESTable.WebSockets
             if (resource is null)
                 throw new ArgumentNullException(nameof(resource));
             var _resource = (Meta.Internal.TerminalResource<T>) resource;
-            var newTerminal = await _resource.MakeTerminal(Context, assignments).ConfigureAwait(false);
+            var newTerminal = await _resource.CreateTerminal(Context, assignments).ConfigureAwait(false);
             await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
         }

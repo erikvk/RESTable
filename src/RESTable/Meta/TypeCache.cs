@@ -184,13 +184,13 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the DeclaredProperty for a given PropertyInfo
         /// </summary>
-        public DeclaredProperty GetDeclaredProperty(PropertyInfo member)
+        public DeclaredProperty? GetDeclaredProperty(PropertyInfo member)
         {
             var declaringType = member.DeclaringType;
             if (declaringType?.GetRESTableTypeName() is null)
                 throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
             GetDeclaredProperties(declaringType, true).TryGetValue(member.Name, out var property);
-            return property!;
+            return property;
         }
 
 

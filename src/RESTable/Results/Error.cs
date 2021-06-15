@@ -23,7 +23,7 @@ namespace RESTable.Results
         public Headers Headers { get; } = new();
 
         /// <inheritdoc />
-        public Cookies Cookies => Context.Client.Cookies;
+        public Cookies Cookies { get; } = new();
 
         /// <inheritdoc />
         public bool IsSuccess { get; }

@@ -82,8 +82,31 @@ namespace RESTable.AspNetCore
             if (EndOfMessage) return 0;
             return await ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
+
+        public override async ValueTask DisposeAsync()
+        {
+            var memory = new byte[4096];
+            while (!EndOfMessage)
+            {
+                await ReadAsync(memory);
+            }
+        }
+#else
+        public override async ValueTask DisposeAsync()
+        {
+            var memory = new byte[4096];
+            while (!EndOfMessage)
+            {
+                await ReadAsync(memory, 0, memory.Length);
+            }
+        }
 #endif
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            DisposeAsync().AsTask().Wait();
+        }
     }
 }

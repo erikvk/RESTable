@@ -49,15 +49,20 @@ namespace RESTable.Excel
             ExcelSettings = excelSettings;
         }
 
+        public override Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken)
+        {
+            return SerializeCollection(Linq.Enumerable.ToAsyncSingleton(item), stream, request, cancellationToken);
+        }
+
         /// <inheritdoc />
-        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken)
+        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken)
             where T : class
         {
             try
             {
                 using var package = new ExcelPackage(stream);
                 var currentRow = 1;
-                var worksheet = package.Workbook.Worksheets.Add(request.Resource.Name);
+                var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheet 1");
 
                 async Task writeEntities(IAsyncEnumerable<object> entities)
                 {

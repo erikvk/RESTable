@@ -58,8 +58,8 @@ namespace RESTable.Admin
                 {
                     case ConsoleFormat.Line:
                     {
-                        var requestStub = GetLogLineStub(request);
-                        var responseStub = GetLogLineStub(result, milliseconds);
+                        var requestStub = await GetLogLineStub(request).ConfigureAwait(false);
+                        var responseStub = await  GetLogLineStub(result, milliseconds).ConfigureAwait(false);
                         foreach (var console in group)
                         {
                             await console.PrintLines(
@@ -113,7 +113,7 @@ namespace RESTable.Admin
                 {
                     case ConsoleFormat.Line:
                     {
-                        var requestStub = GetLogLineStub(logable);
+                        var requestStub = await GetLogLineStub(logable).ConfigureAwait(false);
                         foreach (var console in group)
                         {
                             await console.PrintLine(new StringBuilder(requestStub), logable).ConfigureAwait(false);
@@ -208,7 +208,7 @@ namespace RESTable.Admin
             await ActualSocket.SendTextRaw(builder2.ToString()).ConfigureAwait(false);
         }
 
-        private static string GetLogLineStub(ILogable logable, double? milliseconds = null)
+        private static async Task<string> GetLogLineStub(ILogable logable, double? milliseconds = null)
         {
             var builder = new StringBuilder();
             switch (logable.MessageType)
@@ -231,7 +231,7 @@ namespace RESTable.Admin
             var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz");
             builder.Append(dateTimeString);
             builder.Append($"[{logable.Context.TraceId}] ");
-            builder.Append(logable.GetLogMessage());
+            builder.Append(await logable.GetLogMessage());
             if (milliseconds is not null)
                 builder.Append($" ({milliseconds} ms)");
             return builder.ToString();

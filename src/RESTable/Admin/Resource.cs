@@ -99,7 +99,7 @@ namespace RESTable.Admin
                 Type = iresource.Type,
                 Views = entityResource is not null
                     ? entityResource.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
-                      ?? new ViewInfo[0]
+                      ?? Array.Empty<ViewInfo>()
                     : null,
                 IResource = iresource,
                 Provider = entityResource?.Provider ?? (iresource is IBinaryResource ? "Binary" : "Terminal"),

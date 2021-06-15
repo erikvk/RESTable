@@ -20,6 +20,7 @@ namespace RESTable.AspNetCore
             : base(webSocketId, context, client)
         {
             HttpContext = httpContext;
+            WebSocket = null!;
         }
 
         protected override async Task Send(string text, CancellationToken cancellationToken)
@@ -103,8 +104,8 @@ namespace RESTable.AspNetCore
         private async Task<AspNetCoreMessageStream> AwaitNextMessage(CancellationToken cancellationToken)
         {
             var emptyBuffer = new ArraySegment<byte>(Array.Empty<byte>());
-            var firstEmptyRead = await WebSocket.ReceiveAsync(emptyBuffer, cancellationToken).ConfigureAwait(false);
-            return new AspNetCoreInputMessageStream(WebSocket, firstEmptyRead, cancellationToken);
+            var nextMessageResult = await WebSocket.ReceiveAsync(emptyBuffer, cancellationToken).ConfigureAwait(false);
+            return new AspNetCoreInputMessageStream(WebSocket, nextMessageResult, cancellationToken);
         }
 
         protected override async Task Close()

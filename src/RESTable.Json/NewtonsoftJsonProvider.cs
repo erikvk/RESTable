@@ -216,8 +216,32 @@ namespace RESTable.Json
         /// <inheritdoc />
         public string[] MatchStrings { get; set; }
 
+        public async Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var swr = new StreamWriter
+            (
+                stream: stream,
+                encoding: JsonSettings.Encoding,
+                bufferSize: 4096,
+                leaveOpen: true
+            );
+#if NETSTANDARD2_0
+            using (swr)
+#else
+            await using (swr.ConfigureAwait(false))
+#endif
+            {
+                using var jwr = new NewtonsoftJsonWriter(swr, JsonSettings.LineEndings, 0)
+                {
+                    Formatting = JsonSettings.PrettyPrint ? Indented : None
+                };
+                Serializer.Serialize(jwr, item);
+            }
+        }
+
         /// <inheritdoc />
-        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class
+        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class
         {
             cancellationToken.ThrowIfCancellationRequested();
             var swr = new StreamWriter

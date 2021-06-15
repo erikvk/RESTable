@@ -11,7 +11,7 @@ namespace RESTable.WebSockets
         /// </summary>
         public static ICombinedTerminal<T> Combine<T>(this IEnumerable<T> terminals) where T : Terminal
         {
-            return new CombinedTerminal<T>(terminals);
+            return CombinedTerminal<T>.Create(terminals);
         }
     }
 }

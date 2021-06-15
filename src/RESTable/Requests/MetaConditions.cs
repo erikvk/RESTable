@@ -96,7 +96,7 @@ namespace RESTable.Requests
 
         internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource, TermFactory termFactory)
         {
-            if (!uriMetaConditions.Any() != true)
+            if (uriMetaConditions.Count == 0)
                 return new MetaConditions();
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
             var others = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));

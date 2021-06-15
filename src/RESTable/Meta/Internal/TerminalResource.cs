@@ -7,7 +7,6 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
 using RESTable.Resources.Operations;
-using RESTable.WebSockets;
 
 namespace RESTable.Meta.Internal
 {
@@ -44,7 +43,7 @@ namespace RESTable.Meta.Internal
 
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
 
-        internal async Task<Terminal> MakeTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
+        internal async Task<Terminal> CreateTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
         {
             var assignmentList = assignments?.ToList() ?? new List<Condition<T>>();
 
@@ -76,6 +75,25 @@ namespace RESTable.Meta.Internal
             return newTerminal;
         }
 
+        private bool TryResolveNonConditionValue(RESTableContext context, Type parameterType, out object? value)
+        {
+            switch (parameterType)
+            {
+                case var _ when parameterType.IsAssignableFrom(typeof(RESTableContext)):
+                    value = context;
+                    return true;
+                case var _ when parameterType.IsAssignableFrom(typeof(Headers)):
+                    value = context.WebSocket.Headers;
+                    return true;
+                case var _ when context.GetService(parameterType) is { } resolvedService:
+                    value = resolvedService;
+                    return true;
+                default:
+                    value = null;
+                    return false;
+            }
+        }
+
         private Terminal InvokeParameterizedConstructor(RESTableContext context, List<Condition<T>> assignmentList)
         {
             var constructorParameterList = new object[ConstructorParameterInfos.Length];
@@ -102,10 +120,8 @@ namespace RESTable.Meta.Internal
                 else
                 {
                     var parameterInfo = ConstructorParameterInfos[i];
-                    if (parameterInfo.ParameterType == typeof(IWebSocket))
-                        constructorParameterList[i] = context.WebSocket!;
-                    else if (context.GetService(parameterInfo.ParameterType) is object service)
-                        constructorParameterList[i] = service;
+                    if (TryResolveNonConditionValue(context, parameterInfo.ParameterType, out value))
+                        constructorParameterList[i] = value!;
                     else if (parameterInfo.IsOptional)
                         constructorParameterList[i] = Missing.Value;
                     else
