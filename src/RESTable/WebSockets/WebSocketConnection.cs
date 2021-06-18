@@ -22,7 +22,7 @@ namespace RESTable.WebSockets
             private set => _webSocket = value;
         }
 
-        internal ITerminalResource Resource { get; }
+        internal ITerminalResource? Resource { get; }
         internal Terminal Terminal { get; private set; }
         public RESTableContext Context { get; private set; }
         private TaskCompletionSource<byte> SuspendTaskSource { get; set; }

@@ -125,7 +125,7 @@ namespace RESTable.AspNetCore
                 context.Response.ContentType = result.Headers.ContentType.ToString();
         }
 
-        private static Client GetClient(HttpContext context, AccessRights accessRights)
+        private static Requests.Client GetClient(HttpContext context, AccessRights accessRights)
         {
             var clientIp = context.Connection.RemoteIpAddress;
             var proxyIp = default(IPAddress);
@@ -136,7 +136,7 @@ namespace RESTable.AspNetCore
                 clientIp = IPAddress.Parse(ip.First().Split(':')[0]);
                 proxyIp = clientIp;
             }
-            return Client.External
+            return Requests.Client.External
             (
                 clientIp: clientIp,
                 proxyIp: proxyIp,

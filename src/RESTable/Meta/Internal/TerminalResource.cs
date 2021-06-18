@@ -43,7 +43,7 @@ namespace RESTable.Meta.Internal
 
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
 
-        internal async Task<Terminal> CreateTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
+        public async Task<Terminal> CreateTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
         {
             var assignmentList = assignments?.ToList() ?? new List<Condition<T>>();
 

@@ -9,16 +9,16 @@ namespace RESTable.AspNetCore
     {
         private HttpContext HttpContext { get; }
 
-        public AspNetCoreRESTableContext(Client client, HttpContext httpContext) : base(client, httpContext.RequestServices)
+        public AspNetCoreRESTableContext(Requests.Client client, HttpContext httpContext) : base(client, httpContext.RequestServices)
         {
             HttpContext = httpContext;
         }
 
         protected override bool IsWebSocketUpgrade => HttpContext.WebSockets.IsWebSocketRequest;
 
-        protected override WebSocket CreateWebSocket()
+        protected override WebSocket CreateServerWebSocket()
         {
-            return new AspNetCoreWebSocket(HttpContext, Guid.NewGuid().ToString("N"), this, Client);
+            return new AspNetCoreServerWebSocket(HttpContext, Guid.NewGuid().ToString("N"), this);
         }
     }
 }

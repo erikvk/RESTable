@@ -15,7 +15,7 @@ namespace RESTable
         /// <summary>
         /// A string cache of the headers
         /// </summary>
-        string HeadersStringCache { get; set; }
+        string? HeadersStringCache { get; set; }
 
         /// <summary>
         /// Should headers be excluded?

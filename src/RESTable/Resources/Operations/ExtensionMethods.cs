@@ -51,7 +51,7 @@ namespace RESTable.Resources.Operations
             (
                 target: target,
                 oldValue: oldValue,
-                newValue: property.GetValue(target)
+                newValue: property.GetValue(target).AsTask().Result
             );
         }
     }

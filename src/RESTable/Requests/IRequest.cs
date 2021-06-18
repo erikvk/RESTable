@@ -155,11 +155,13 @@ namespace RESTable.Requests
 #if !NETSTANDARD2_0
         /// <summary>
         /// Evaluates the request asynchronously and returns the result, or
-        /// throws an exception of the result is an error.
+        /// disposes the result and throws an exception if the result is an error.
         /// </summary>
         public async Task<IResult> GetResultOrThrow(CancellationToken cancellationToken = new())
         {
             var result = await GetResult(cancellationToken).ConfigureAwait(false);
+            if (result.IsError)
+                await result.DisposeAsync();
             result.ThrowIfError();
             return result;
         }

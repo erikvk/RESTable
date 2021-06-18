@@ -27,7 +27,7 @@ namespace RESTable.Results
 
         internal Entities(IRequest request, IAsyncEnumerable<T> enumerable) : base(request)
         {
-            Content = enumerable ?? new T[0].ToAsyncEnumerable();
+            Content = enumerable;
         }
 
         public ValueTask<long> CountAsync() => Content.LongCountAsync();

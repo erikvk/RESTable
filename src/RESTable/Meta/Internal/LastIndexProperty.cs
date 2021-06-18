@@ -15,7 +15,7 @@ namespace RESTable.Meta.Internal
             actualName: "-",
             type: type,
             order: null,
-            attributes: new Attribute[0],
+            attributes: Array.Empty<Attribute>(),
             skipConditions: false,
             hidden: true,
             hiddenIfNull: false,

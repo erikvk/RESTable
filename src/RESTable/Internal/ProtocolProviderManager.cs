@@ -12,7 +12,7 @@ namespace RESTable.Internal
     public class ProtocolProviderManager
     {
         internal IDictionary<string, CachedProtocolProvider> CachedProtocolProviders { get; }
-        internal CachedProtocolProvider DefaultProtocolProvider { get; }
+        public CachedProtocolProvider DefaultProtocolProvider { get; }
         private ContentTypeProviderManager ContentTypeProviderManager { get; }
 
         public ProtocolProviderManager(ContentTypeProviderManager contentTypeProviderManager, IEnumerable<IProtocolProvider> protocolProviders)

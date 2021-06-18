@@ -172,13 +172,10 @@ namespace RESTable.Requests
 
             if (IsWebSocketUpgrade && result is not WebSocketUpgradeSuccessful)
             {
-                var webSocket = Context.WebSocket;
-                await using (webSocket.ConfigureAwait(false))
+                if (result is Forbidden forbidden)
+                    return new WebSocketUpgradeFailed(forbidden);
+                await Context.WebSocket.UseOnce(this, async webSocket =>
                 {
-                    if (result is Forbidden forbidden)
-                        return new WebSocketUpgradeFailed(forbidden);
-                    Context.WebSocket.Upgrade(this);
-                    await Context.WebSocket.Open(false).ConfigureAwait(false);
                     await webSocket.SendResult(result).ConfigureAwait(false);
                     var message = await webSocket.GetMessageStream(false).ConfigureAwait(false);
 #if NETSTANDARD2_0
@@ -189,8 +186,8 @@ namespace RESTable.Requests
                     {
                         await result.Serialize(message, cancellationToken: cancellationToken).ConfigureAwait(false);
                     }
-                    return new WebSocketTransferSuccess(this);
-                }
+                }).ConfigureAwait(false);
+                return new WebSocketTransferSuccess(this);
             }
 
             result = await destinationDelegate(result).ConfigureAwait(false);
@@ -222,13 +219,8 @@ namespace RESTable.Requests
                         if (IsWebSocketUpgrade)
                         {
                             // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
-                            var (webSocket, webSocketContext) = Context.WebSocket.Upgrade(upgradeRequest: this);
-                            var terminalResourceInternal = (TerminalResource<T>) terminalResource;
-                            var terminal = await terminalResourceInternal.CreateTerminal(webSocketContext, Conditions).ConfigureAwait(false);
-                            await webSocket.Open().ConfigureAwait(false);
-                            await webSocket.ConnectTo(terminal).ConfigureAwait(false);
-                            await terminal.OpenTerminal().ConfigureAwait(false);
-                            return new WebSocketUpgradeSuccessful(this, webSocket);
+                            await Context.WebSocket.OpenAndAttachToTerminal(this, terminalResource, Conditions).ConfigureAwait(false);
+                            return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
                         return await SwitchTerminal(terminalResource).ConfigureAwait(false);
                     }
@@ -282,7 +274,7 @@ namespace RESTable.Requests
             }
         }
 
-        private IResult GetQuickErrorResult()
+        private IResult? GetQuickErrorResult()
         {
             if (IsEvaluating)
                 throw new InfiniteLoop();

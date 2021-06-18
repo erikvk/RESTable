@@ -13,7 +13,7 @@ namespace RESTable.Results
         /// </summary>
         public int DeletedCount { get; }
 
-        public DeletedEntities(IRequest request, int count) : base(request, count, new T[0])
+        public DeletedEntities(IRequest request, int count) : base(request, count, System.Array.Empty<T>())
         {
             DeletedCount = count;
             Headers.Info = $"{count} entities deleted from '{request.Resource}'";

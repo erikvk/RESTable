@@ -4,22 +4,16 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using RESTable.Requests;
-using static System.Net.WebSockets.WebSocketMessageType;
-using WebSocket = System.Net.WebSockets.WebSocket;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreWebSocket : WebSockets.WebSocket
+    internal abstract class AspNetCoreWebSocket : WebSockets.WebSocket
     {
-        private HttpContext HttpContext { get; }
-        private WebSocket WebSocket { get; set; }
+        protected WebSocket WebSocket { get; set; }
 
-        public AspNetCoreWebSocket(HttpContext httpContext, string webSocketId, RESTableContext context, Client client)
-            : base(webSocketId, context, client)
+        public AspNetCoreWebSocket(string webSocketId, RESTableContext context) : base(webSocketId, context)
         {
-            HttpContext = httpContext;
             WebSocket = null!;
         }
 
@@ -27,18 +21,18 @@ namespace RESTable.AspNetCore
         {
             var buffer = Encoding.UTF8.GetBytes(text);
             var segment = new ArraySegment<byte>(buffer);
-            await WebSocket.SendAsync(segment, Text, true, cancellationToken).ConfigureAwait(false);
+            await WebSocket.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
         }
 
         protected override async Task Send(ArraySegment<byte> data, bool asText, CancellationToken cancellationToken)
         {
-            await WebSocket.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
+            await WebSocket.SendAsync(data, asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
         }
 
         protected override async Task<long> Send(Stream data, bool asText, CancellationToken token)
         {
             var buffer = new byte[4096];
-            var messageType = asText ? Text : Binary;
+            var messageType = asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary;
             long bytesSent = 0;
             bool lastFrame;
             do
@@ -58,7 +52,7 @@ namespace RESTable.AspNetCore
             var messageStream = new AspNetCoreOutputMessageStream
             (
                 webSocket: WebSocket,
-                messageType: asText ? Text : Binary,
+                messageType: asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
                 webSocketCancelledToken: cancellationToken
             );
             return Task.FromResult<Stream>(messageStream);
@@ -66,10 +60,7 @@ namespace RESTable.AspNetCore
 
         protected override bool IsConnected => WebSocket.State == WebSocketState.Open;
 
-        protected override async Task SendUpgrade()
-        {
-            WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
-        }
+        protected abstract override Task ConnectUnderlyingWebSocket();
 
         protected override async Task InitMessageReceiveListener(CancellationToken cancellationToken)
         {
@@ -77,14 +68,14 @@ namespace RESTable.AspNetCore
             {
                 switch (nextMessage.MessageType)
                 {
-                    case Binary:
+                    case WebSocketMessageType.Binary:
                     {
                         // We await the handling of the entire binary message, and only await the next message 
                         // when the handler has been completed, since streams are not immutable.
                         await HandleBinaryInput(nextMessage).ConfigureAwait(false);
                         break;
                     }
-                    case Text:
+                    case WebSocketMessageType.Text:
                     {
                         // We read the entire message to a string, then fire and forget the handler for that
                         // message. This means we can handle multiple text messages in parallel, which is fine

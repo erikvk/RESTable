@@ -2,7 +2,6 @@
 using System.IO;
 using System.Net.WebSockets;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace RESTable.AspNetCore
 {
@@ -32,7 +31,7 @@ namespace RESTable.AspNetCore
         }
 
 #if NETSTANDARD2_0
-        public virtual ValueTask DisposeAsync()
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync()
         {
             return default;
         }

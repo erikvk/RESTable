@@ -166,6 +166,35 @@ namespace RESTable.Tutorial
         protected override bool SupportsTextInput => true;
     }
 
+    [RESTable]
+    public class ShellChatter : Terminal
+    {
+        protected override async Task Open()
+        {
+            var context = WebSocket.Context.GetRequiredService<RootContext>();
+            await new ClientWebSocketBuilder(context)
+                .WithUri("wss://localhost:5001/restable/")
+                .OnOpen(async ws =>
+                {
+                    await ws.SendText("Hi");
+                })
+                .HandleTextInput(async (ws, text) =>
+                {
+                    await WebSocket.SendText(text);
+                    await Task.Delay(1000);
+                    await ws.SendText("Hi");
+                })
+                .Connect();
+        }
+
+        public override async Task HandleTextInput(string input)
+        {
+            
+        }
+
+        protected override bool SupportsTextInput => true;
+    }
+
     [RESTable(GET)]
     public class Test2 : IAsyncSelector<Test2>
     {

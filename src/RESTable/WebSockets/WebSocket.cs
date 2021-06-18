@@ -9,6 +9,7 @@ using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Internal.Logging;
 using RESTable.Meta;
+using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
@@ -23,8 +24,8 @@ namespace RESTable.WebSockets
     {
         private long BytesReceived { get; set; }
         private long TotalSentBytesCount { get; set; }
-        private WebSocketConnection TerminalConnection { get; set; }
-        private IProtocolHolder ProtocolHolder { get; set; }
+        private WebSocketConnection? TerminalConnection { get; set; }
+        private IProtocolHolder? ProtocolHolder { get; set; }
         private bool _disposed;
         private HashSet<Task> OngoingTasks { get; }
 
@@ -33,8 +34,8 @@ namespace RESTable.WebSockets
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; }
 
-        internal ITerminalResource TerminalResource => TerminalConnection?.Resource;
-        internal Terminal Terminal => TerminalConnection?.Terminal;
+        internal ITerminalResource? TerminalResource => TerminalConnection?.Resource;
+        internal Terminal? Terminal => TerminalConnection?.Terminal;
         internal AppProfile GetAppProfile() => new(this);
 
         /// <summary>
@@ -55,7 +56,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// The client connected to this WebSocket
         /// </summary>
-        public Client Client { get; }
+        public Client Client => Context.Client;
 
         /// <inheritdoc />
         /// <summary>
@@ -99,11 +100,10 @@ namespace RESTable.WebSockets
             set => ProtocolHolder.HeadersStringCache = value;
         }
 
-        protected WebSocket(string webSocketId, RESTableContext context, Client client)
+        protected WebSocket(string webSocketId, RESTableContext context)
         {
             Id = webSocketId;
             Status = WebSocketStatus.Waiting;
-            Client = client;
             Context = context;
             CancellationTokenSource = new CancellationTokenSource();
             OngoingTasks = new HashSet<Task>();
@@ -126,28 +126,51 @@ namespace RESTable.WebSockets
             TerminalConnection = null;
         }
 
-        internal (WebSocket webSocket, RESTableContext webSocketContext) Upgrade(IRequest upgradeRequest)
+        public async Task OpenAndAttachToTerminal<T>(IProtocolHolder protocolHolder, T terminal) where T : Terminal
         {
-            ProtocolHolder = upgradeRequest;
-            Context = new WebSocketContext(this, Client, upgradeRequest);
-            return (this, Context); 
+            ProtocolHolder = protocolHolder;
+            Context = new WebSocketContext(this, Client, protocolHolder.Context);
+            await Open().ConfigureAwait(false);
+            await ConnectTo(terminal).ConfigureAwait(false);
+            await terminal.OpenTerminal().ConfigureAwait(false);
+        }
+
+        public async Task OpenAndAttachToTerminal<T>(IProtocolHolder protocolHolder, ITerminalResource<T> terminalResource, IEnumerable<Condition<T>> assignments)
+            where T : class
+        {
+            ProtocolHolder = protocolHolder;
+            Context = new WebSocketContext(this, Client, protocolHolder.Context);
+            var terminalResourceInternal = (TerminalResource<T>) terminalResource;
+            var terminal = await terminalResourceInternal.CreateTerminal(Context, assignments).ConfigureAwait(false);
+            await Open().ConfigureAwait(false);
+            await ConnectTo(terminal).ConfigureAwait(false);
+            await terminal.OpenTerminal().ConfigureAwait(false);
+        }
+
+        public async Task UseOnce(IProtocolHolder protocolHolder, Func<WebSocket, Task> action)
+        {
+            ProtocolHolder = protocolHolder;
+            Context = new WebSocketContext(this, Client, protocolHolder.Context);
+            await using var webSocket = this;
+            await Context.WebSocket.Open(false).ConfigureAwait(false);
+            await action(this).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Sends the websocket upgrade and open this websocket for a single transfer or
         /// a terminal connection lifetime.
         /// </summary>
-        internal async Task Open(bool acceptIncomingMessages = true)
+        private async Task Open(bool acceptIncomingMessages = true)
         {
             switch (Status)
             {
                 case WebSocketStatus.Waiting:
-                    await SendUpgrade().ConfigureAwait(false);
+                    await ConnectUnderlyingWebSocket().ConfigureAwait(false);
                     if (acceptIncomingMessages)
                         LifetimeTask = InitMessageReceiveListener(CancellationTokenSource.Token);
                     Status = WebSocketStatus.Open;
                     OpenedAt = DateTime.Now;
-                    if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
+                    if (TerminalConnection?.Resource?.Name != Admin.Console.TypeName)
                     {
                         await Admin.Console.Log(Context, new WebSocketEvent(MessageType.WebSocketOpen, this)).ConfigureAwait(false);
                     }
@@ -251,7 +274,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Sends the WebSocket upgrade and initiates the actual underlying WebSocket connection
         /// </summary>
-        protected abstract Task SendUpgrade();
+        protected abstract Task ConnectUnderlyingWebSocket();
 
         /// <summary>
         /// Initiates a task that represents the lifetime of the WebSocket, handling incoming messages and
@@ -355,7 +378,7 @@ namespace RESTable.WebSockets
                 {
                     await Send(textData, CancellationTokenSource.Token).ConfigureAwait(false);
                     TotalSentBytesCount += Encoding.UTF8.GetByteCount(textData);
-                    if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
+                    if (TerminalConnection?.Resource?.Name != Admin.Console.TypeName)
                     {
                         var logEvent = new WebSocketEvent
                         (
@@ -558,7 +581,7 @@ namespace RESTable.WebSockets
         }
 
         internal bool IsStreaming => StreamManifest is not null;
-        private StreamManifest StreamManifest { get; set; }
+        private StreamManifest? StreamManifest { get; set; }
 
         private const int MaxStreamBufferSize = 16_000_000;
         private const int MinStreamBufferSize = 512;

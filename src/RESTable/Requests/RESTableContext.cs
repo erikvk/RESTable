@@ -63,7 +63,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Gets a WebSocket instance for a given Context
         /// </summary>
-        protected virtual WebSocket CreateWebSocket() => throw new NotImplementedException();
+        protected virtual WebSocket CreateServerWebSocket() => throw new NotImplementedException();
 
         #endregion
 
@@ -113,7 +113,7 @@ namespace RESTable.Requests
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
             {
-                WebSocket = CreateWebSocket();
+                WebSocket = CreateServerWebSocket();
             }
             var parameters = new RequestParameters(this, method, uri, headers, body);
             if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
