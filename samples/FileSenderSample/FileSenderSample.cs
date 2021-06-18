@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
-using RESTable.Meta;
 using RESTable.Resources;
 using RESTable.WebSockets;
 
@@ -68,14 +67,13 @@ namespace FileSenderSample
         /// <summary>
         /// The IP of the connected client
         /// </summary>
-        public string ClientIp => WebSocket.Context.Client.ClientIp;
+        public string? ClientIp => WebSocket.Context.Client.ClientIp;
 
         private DateTime OpenedAt { get; set; }
 
-        public FileSenderConnection(string workstationId, ResourceCollection collection)
+        public FileSenderConnection(string workstationId)
         {
             WorkstationId = workstationId;
-            var a = "";
         }
 
         protected override async Task Open()

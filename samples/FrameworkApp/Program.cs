@@ -16,12 +16,12 @@ namespace FrameworkApp
         private static int Counter;
 
         public int Id { get; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public int? FavoriteNumber { get; set; }
         public Dictionary<string, object?> Properties { get; }
         public int? BestFriendId { get; set; }
 
-        public Person BestFriend => InMemoryOperations<Person>
+        public Person? BestFriend => InMemoryOperations<Person>
             .Select()
             .FirstOrDefault(item => item.Id == BestFriendId);
 
@@ -62,7 +62,7 @@ namespace FrameworkApp
                 var input = Console.In.ReadLine()?.TrimStart();
                 if (string.IsNullOrWhiteSpace(input))
                     continue;
-                var args = input.Split(new[] {' '}, 3);
+                var args = input!.Split(new[] {' '}, 3);
                 var method = (Method) Enum.Parse(typeof(Method), args[0], ignoreCase: true);
                 var uri = args[1];
                 var body = args.ElementAtOrDefault(2);

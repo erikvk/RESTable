@@ -9,7 +9,7 @@ namespace RESTable.AspNetCore
     {
         private HttpContext HttpContext { get; }
 
-        public AspNetCoreRESTableContext(Requests.Client client, HttpContext httpContext) : base(client, httpContext.RequestServices)
+        public AspNetCoreRESTableContext(Client client, HttpContext httpContext) : base(client, httpContext.RequestServices)
         {
             HttpContext = httpContext;
         }

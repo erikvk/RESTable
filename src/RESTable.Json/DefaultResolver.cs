@@ -53,7 +53,7 @@ namespace RESTable.Json
             contract.Converter = objectType switch
             {
                 _ when objectType.HasAttribute<JsonConverterAttribute>(out var attribute) => (JsonConverter) Activator
-                    .CreateInstance(attribute!.ConverterType, attribute.ConverterParameters),
+                    .CreateInstance(attribute!.ConverterType, attribute.ConverterParameters)!,
                 _ when objectType.IsSubclassOf(typeof(Type)) => TypeConverter,
                 _ when objectType == typeof(Headers) => HeadersConverter,
                 _ when objectType == typeof(ContentType) => ContentTypeConverter,

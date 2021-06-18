@@ -11,8 +11,9 @@ namespace RESTable.Json
         public override ContentType ReadJson(JsonReader reader, Type o, ContentType e, bool h, JsonSerializer s)
         {
             var contentTypeString = reader.Value as string;
-            if (string.IsNullOrWhiteSpace(contentTypeString)) return default;
-            return ContentType.ParseMany(contentTypeString).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(contentTypeString))
+                return default;
+            return ContentType.ParseMany(contentTypeString!).FirstOrDefault();
         }
     }
 }

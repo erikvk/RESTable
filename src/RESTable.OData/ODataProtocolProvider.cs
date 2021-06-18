@@ -179,7 +179,7 @@ namespace RESTable.OData
                         }
                         break;
                     default:
-                        args.MetaConditions.Add(new UriCondition(optionKey, Operators.EQUALS, optionValue, TypeCode.String));
+                        args.MetaConditions.Add(new UriCondition(optionKey, Operators.EQUALS, optionValue!, TypeCode.String));
                         break;
                 }
             }

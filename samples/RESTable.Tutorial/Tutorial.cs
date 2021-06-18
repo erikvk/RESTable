@@ -75,7 +75,7 @@ namespace RESTable.Tutorial
     [SQLite(customTableName: "Heroes"), RESTable]
     public class Superhero : SQLiteTable
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         public bool HasSecretIdentity
         {
@@ -109,10 +109,10 @@ namespace RESTable.Tutorial
         public int Year { get; set; }
 
         [RESTableMember(hide: true)]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [RESTableMember(hide: true)]
-        public string Sex { get; set; }
+        public string? Sex { get; set; }
     }
 
     public enum Gender
@@ -125,13 +125,13 @@ namespace RESTable.Tutorial
 
     public interface IMyTest
     {
-        string Name { get; }
+        string? Name { get; }
     }
 
     [RESTable, InMemory]
     public class MyTest : IValidator<IMyTest>, IMyTest
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         public IEnumerable<InvalidMember> GetInvalidMembers(IMyTest entity, RESTableContext context)
         {
@@ -139,6 +139,8 @@ namespace RESTable.Tutorial
                 yield return this.MemberInvalid(t => t.Name, "can't be 'Bananas'");
         }
     }
+
+    // ReSharper disable UnusedParameter.Local
 
     [RESTable]
     public class MyTerminal : Terminal
@@ -166,6 +168,8 @@ namespace RESTable.Tutorial
         protected override bool SupportsTextInput => true;
     }
 
+    // ReSharper restore UnusedParameter.Local
+
     [RESTable]
     public class ShellChatter : Terminal
     {
@@ -187,9 +191,9 @@ namespace RESTable.Tutorial
                 .Connect();
         }
 
-        public override async Task HandleTextInput(string input)
+        public override Task HandleTextInput(string input)
         {
-            
+            return Task.CompletedTask;
         }
 
         protected override bool SupportsTextInput => true;
@@ -256,7 +260,7 @@ namespace RESTable.Tutorial
         public int NumberOfFemaleHeroes { get; set; }
         public int NumberOfMaleHeroes { get; set; }
         public int NumberOfOtherGenderHeroes { get; set; }
-        public Superhero NewestSuperhero { get; set; }
+        public Superhero? NewestSuperhero { get; set; }
 
         /// <summary>
         /// This method returns an IEnumerable of the resource type. RESTable will call this
@@ -294,7 +298,7 @@ namespace RESTable.Tutorial
     [RESTable, SQLite]
     public class Person : ElasticSQLiteTable, IValidator<Person>
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         public IEnumerable<InvalidMember> GetInvalidMembers(Person entity, RESTableContext context)
         {
@@ -322,13 +326,13 @@ namespace RESTable.Tutorial
         /// </summary>
         private IEnumerable<ChatRoom> Terminals => Services.GetRequiredService<ITerminalCollection<ChatRoom>>();
 
-        private string _name;
+        private string? _name;
 
         /// <summary>
         /// The name of the connected chat room participant. To change this, we can write
         /// #terminal {"Name": "new name"} while in the chat room.
         /// </summary>
-        public string Name
+        public string? Name
         {
             get => _name;
             set
@@ -343,7 +347,7 @@ namespace RESTable.Tutorial
         /// <summary>
         /// A read-only list of all chat room participants (names).
         /// </summary>
-        public string[] Members => Terminals.Select(t => t.Name).ToArray();
+        public string?[] Members => Terminals.Select(t => t.Name).ToArray();
 
         /// <summary>
         /// The number of connected participants.
@@ -368,16 +372,16 @@ namespace RESTable.Tutorial
         /// Creates a unique name for a participant, or deal with edge cases like a participant naming
         /// themselves nothing or "Chatbot".
         /// </summary>
-        private string GetUniqueName(string Name)
+        private string GetUniqueName(string? name)
         {
-            if (string.IsNullOrWhiteSpace(Name) || string.Equals(Name, "chatbot", OrdinalIgnoreCase))
-                Name = "Chatter";
-            if (!Terminals.Any(c => string.Equals(c.Name, Name, OrdinalIgnoreCase)))
-                return Name;
+            if (string.IsNullOrWhiteSpace(name) || string.Equals(name, "chatbot", OrdinalIgnoreCase))
+                name = "Chatter";
+            if (!Terminals.Any(c => string.Equals(c.Name, name, OrdinalIgnoreCase)))
+                return name;
             var modifier = 2;
-            var tempName = $"{Name} {modifier}";
+            var tempName = $"{name} {modifier}";
             while (Terminals.Any(c => string.Equals(c.Name, tempName, OrdinalIgnoreCase)))
-                tempName = $"{Name} {modifier++}";
+                tempName = $"{name} {modifier++}";
             return tempName;
         }
 

@@ -11,8 +11,8 @@ namespace RESTable.Example
     [RESTable, InMemory]
     public class Person
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
         public string FullName => $"{FirstName} {LastName}";
         public int? DateOfBirth { get; set; }
         public string ObjectID { get; }
@@ -39,22 +39,22 @@ namespace RESTable.Example
             Interests = new List<string>();
         }
 
-        public override bool Equals(object obj) => obj is Person other && other.ObjectID == ObjectID;
+        public override bool Equals(object? obj) => obj is Person other && other.ObjectID == ObjectID;
         public override int GetHashCode() => ObjectID.GetHashCode();
     }
     
     [RESTable, SQLite]
     public class Animal : SQLiteTable
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public int? Age { get; set; }
-        public string Sound { get; set; }
+        public string? Sound { get; set; }
     }
 
     [RESTable, SQLite]
     public class Job : ElasticSQLiteTable
     {
-        public string Title { get; set; }
+        public string? Title { get; set; }
         public int Salary { get; set; }
     }
 
@@ -64,7 +64,7 @@ namespace RESTable.Example
     [RESTable, SQLite]
     public class Toy : ElasticSQLiteTable
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
     
     [RESTable]

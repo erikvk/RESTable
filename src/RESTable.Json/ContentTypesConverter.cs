@@ -12,7 +12,7 @@ namespace RESTable.Json
             var contentTypeString = reader.Value as string;
             if (string.IsNullOrWhiteSpace(contentTypeString))
                 return default;
-            return ContentType.ParseMany(contentTypeString);
+            return ContentType.ParseMany(contentTypeString!);
         }
     }
 }

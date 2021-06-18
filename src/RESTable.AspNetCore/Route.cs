@@ -13,9 +13,9 @@ namespace RESTable.AspNetCore
     [RESTable(Method.GET)]
     public class Route : ISelector<Route>
     {
-        public string Name { get; set; }
-        public string Template { get; set; }
-        public string[] MethodRestrictions { get; set; }
+        public string? Name { get; set; }
+        public string? Template { get; set; }
+        public string[]? MethodRestrictions { get; set; }
 
         public IEnumerable<Route> Select(IRequest<Route> request)
         {
@@ -27,7 +27,7 @@ namespace RESTable.AspNetCore
             for (var i = 0; i < routeCollection.Count; i += 1)
             {
                 var aspNetCoreRoute = (Microsoft.AspNetCore.Routing.Route) routeCollection[i];
-                var methodConstraint = (HttpMethodRouteConstraint) aspNetCoreRoute.Constraints.SafeGet("httpMethod");
+                var methodConstraint = (HttpMethodRouteConstraint?) aspNetCoreRoute.Constraints.SafeGet("httpMethod");
                 yield return new Route
                 {
                     Name = aspNetCoreRoute.Name,

@@ -7,7 +7,6 @@ namespace RESTable.Tests
 {
     public class RESTableFixture : ServiceCollection, IServiceProvider
     {
-        private IServiceProvider _serviceProvider;
         public OperationsTestsFlags OperationsTestsFlags => this.GetRequiredService<OperationsTestsFlags>();
 
         public RESTableContext Context
@@ -18,6 +17,8 @@ namespace RESTable.Tests
                 return new RESTableContext(client, ServiceProvider);
             }
         }
+
+        private IServiceProvider? _serviceProvider;
 
         private IServiceProvider ServiceProvider
         {
@@ -32,7 +33,7 @@ namespace RESTable.Tests
             configurator.ConfigureRESTable();
         }
 
-        public object GetService(Type serviceType) => ServiceProvider.GetService(serviceType);
+        public object? GetService(Type serviceType) => ServiceProvider.GetService(serviceType);
 
         public RESTableFixture()
         {

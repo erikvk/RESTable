@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddExcelProvider(this IServiceCollection serviceCollection, Action<ExcelSettings> excelSettingsAction = null)
+        public static IServiceCollection AddExcelProvider(this IServiceCollection serviceCollection, Action<ExcelSettings>? excelSettingsAction = null)
         {
             var excelSettings = new ExcelSettings();
             excelSettingsAction?.Invoke(excelSettings);

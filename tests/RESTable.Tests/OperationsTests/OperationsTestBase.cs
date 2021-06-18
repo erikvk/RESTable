@@ -20,9 +20,9 @@ namespace RESTable.Tests.OperationsTests
         public OperationsTestBase(RESTableFixture fixture)
         {
             fixture.Configure();
-            Resource = fixture
+            Resource = (IEntityResource<TResourceType>) fixture
                 .GetRequiredService<ResourceCollection>()
-                .GetResource<TResourceType>() as IEntityResource<TResourceType>;
+                .GetResource<TResourceType>();
             OperationsTestsFlags = fixture.OperationsTestsFlags;
             OperationsTestsFlags.Reset();
             Request = fixture.Context.CreateRequest<TResourceType>();

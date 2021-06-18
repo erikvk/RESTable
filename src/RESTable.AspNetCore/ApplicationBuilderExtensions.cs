@@ -13,9 +13,6 @@ namespace RESTable.AspNetCore
 {
     public static class ApplicationBuilderExtensions
     {
-        private static string RootUri { get; set; }
-        private static string Template { get; set; }
-
         /// <summary>
         /// Adds ASP.NET core routings to work according to the existing RESTable configuration. If RESTable is
         /// not configured prior to this method being called, the default configuration is used. 
@@ -31,27 +28,27 @@ namespace RESTable.AspNetCore
             var authenticator = builder.ApplicationServices.GetService<IRequestAuthenticator>() ??
                                 builder.ApplicationServices.GetRequiredService<IAllowAllAuthenticator>();
 
-            RootUri = config.RootUri;
-            Template = RootUri + "/{resource?}/{conditions?}/{metaconditions?}";
+            var rootUri = config.RootUri;
+            var template = rootUri + "/{resource?}/{conditions?}/{metaconditions?}";
 
             builder.UseRouter(router =>
             {
-                router.MapVerb("OPTIONS", Template, HandleOptionsRequest);
+                router.MapVerb("OPTIONS", template, context =>  HandleOptionsRequest(rootUri, context));
 
                 foreach (var method in config.Methods)
                 {
-                    router.MapVerb(method.ToString(), Template, hc => HandleRequest(method, hc, authenticator));
+                    router.MapVerb(method.ToString(), template, hc => HandleRequest(rootUri, method, hc, authenticator));
                 }
             });
 
             return builder;
         }
 
-        private static async Task HandleOptionsRequest(HttpContext aspNetCoreContext)
+        private static async Task HandleOptionsRequest(string rootUri, HttpContext aspNetCoreContext)
         {
-            var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(RootUri);
+            var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(rootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
-            var client = GetClient(aspNetCoreContext, null);
+            var client = GetClient(aspNetCoreContext, new NoAccess());
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
             var options = context.GetOptions(uri, headers);
             WriteResponse(aspNetCoreContext, options);
@@ -67,9 +64,9 @@ namespace RESTable.AspNetCore
             }
         }
 
-        private static async Task HandleRequest(Method method, HttpContext aspNetCoreContext, IRequestAuthenticator authenticator)
+        private static async Task HandleRequest(string rootUri, Method method, HttpContext aspNetCoreContext, IRequestAuthenticator authenticator)
         {
-            var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(RootUri);
+            var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(rootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
             if (!authenticator.TryAuthenticate(ref uri, headers, out var accessRights))
             {
@@ -125,7 +122,7 @@ namespace RESTable.AspNetCore
                 context.Response.ContentType = result.Headers.ContentType.ToString();
         }
 
-        private static Requests.Client GetClient(HttpContext context, AccessRights accessRights)
+        private static Client GetClient(HttpContext context, AccessRights accessRights)
         {
             var clientIp = context.Connection.RemoteIpAddress;
             var proxyIp = default(IPAddress);
@@ -136,7 +133,7 @@ namespace RESTable.AspNetCore
                 clientIp = IPAddress.Parse(ip.First().Split(':')[0]);
                 proxyIp = clientIp;
             }
-            return Requests.Client.External
+            return Client.External
             (
                 clientIp: clientIp,
                 proxyIp: proxyIp,

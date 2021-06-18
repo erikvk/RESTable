@@ -22,22 +22,22 @@ namespace RESTable.Requests
         /// <summary>
         /// The client IP address that made the request (null for internal requests)
         /// </summary>
-        public string ClientIp { get; }
+        public string? ClientIp { get; }
 
         /// <summary>
         /// If the client was forwarded by a proxy, this property contains the proxy's IP address. Otherwise null.
         /// </summary>
-        public string ProxyIp { get; }
+        public string? ProxyIp { get; }
 
         /// <summary>
         /// The host, as defined in the incoming request
         /// </summary>
-        public string Host { get; }
+        public string? Host { get; }
 
         /// <summary>
         /// The user agent, as defined in the incoming request
         /// </summary>
-        public string UserAgent { get; }
+        public string? UserAgent { get; }
 
         /// <summary>
         /// Was the request sent over HTTPS?
@@ -57,16 +57,26 @@ namespace RESTable.Requests
         internal IDictionary<IResource, byte> ResourceAuthMappings { get; }
         internal IDictionary<IResource, IDictionary<string, object?>> ResourceClientDataMappings { get; }
         internal bool IsInWebSocket { get; set; }
-        internal string ShellConfig { get; set; }
+        internal string? ShellConfig { get; set; }
 
         /// <summary>
         /// Creates a new client with the given origin type
         /// </summary>
-        public Client(OriginType origin, string host, IPAddress clientIp, IPAddress proxyIp, string userAgent, bool https, Cookies cookies, AccessRights accessRights)
+        public Client
+        (
+            OriginType origin,
+            string? host,
+            IPAddress clientIp,
+            IPAddress? proxyIp,
+            string? userAgent,
+            bool https,
+            Cookies cookies,
+            AccessRights accessRights
+        )
         {
             Origin = origin;
             Host = host;
-            ClientIp = clientIp?.ToString();
+            ClientIp = clientIp.ToString();
             ProxyIp = proxyIp?.ToString();
             UserAgent = userAgent;
             Https = https;
@@ -86,7 +96,16 @@ namespace RESTable.Requests
         /// <param name="https">Is the client connected with HTTPS?</param>
         /// <param name="cookies">The cookies registered for this client</param>
         /// <returns></returns>
-        public static Client External(IPAddress clientIp, IPAddress proxyIp, string userAgent, string host, bool https, Cookies cookies, AccessRights accessRights) => new
+        public static Client External
+        (
+            IPAddress clientIp,
+            IPAddress? proxyIp,
+            string? userAgent,
+            string? host,
+            bool https,
+            Cookies? cookies,
+            AccessRights accessRights
+        ) => new
         (
             origin: OriginType.External,
             host: host,

@@ -52,7 +52,7 @@ namespace RESTable.Json
         protected abstract Task ProduceJsonArray(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
-        public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest request, CancellationToken cancellationToken) where T : class;
+        public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class;
 
         /// <inheritdoc />
         public abstract Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class;

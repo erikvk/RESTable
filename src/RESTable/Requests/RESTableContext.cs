@@ -108,7 +108,7 @@ namespace RESTable.Requests
         /// <param name="uri">The URI of the request</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public virtual IRequest CreateRequest(Method method = GET, string uri = "/", object? body = null, Headers? headers = null)
+        public virtual IRequest CreateRequest(Method method = GET, string? uri = "/", object? body = null, Headers? headers = null)
         {
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
@@ -190,7 +190,7 @@ namespace RESTable.Requests
         /// <param name="uri">The URI of the request</param>
         /// <param name="headers">The headers of the request</param>
         /// <returns></returns>
-        public IResult GetOptions(string uri, Headers headers)
+        public IResult GetOptions(string? uri, Headers headers)
         {
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, uri, headers);
