@@ -190,6 +190,7 @@ namespace RESTable
             {
                 if (input is IAsyncDisposable asyncDisposable)
                     await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                // ReSharper disable once MethodHasAsyncOverload
                 else input.Dispose();
                 await WebSocket.SendResult(new InvalidShellStateForBinaryInput()).ConfigureAwait(false);
             }

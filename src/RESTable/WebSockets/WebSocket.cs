@@ -303,7 +303,7 @@ namespace RESTable.WebSockets
                     $"Unable to send WebSocket with status '{Status}' to terminal '{resource.Name}'");
             if (resource is null)
                 throw new ArgumentNullException(nameof(resource));
-            var _resource = (Meta.Internal.TerminalResource<T>) resource;
+            var _resource = (TerminalResource<T>) resource;
             var newTerminal = await _resource.CreateTerminal(Context, assignments).ConfigureAwait(false);
             await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal().ConfigureAwait(false);
@@ -648,7 +648,7 @@ namespace RESTable.WebSockets
                 buffer ??= new byte[StreamManifest.BufferSize];
                 while (StreamManifest.CurrentMessageIndex < endIndex)
                 {
-                    var read = StreamManifest.Result.Body.ReadAsync(buffer, 0, buffer.Length);
+                    var read = StreamManifest.Result.Body.ReadAsync(buffer, 0, buffer.Length, CancellationToken);
                     var message = StreamManifest.Messages[StreamManifest.CurrentMessageIndex];
                     await read.ConfigureAwait(false);
                     await SendBinary(new ArraySegment<byte>(buffer, 0, (int) message.Length)).ConfigureAwait(false);
