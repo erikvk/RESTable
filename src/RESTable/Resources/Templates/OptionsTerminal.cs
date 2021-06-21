@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTable.Resources.Templates
@@ -24,7 +25,7 @@ namespace RESTable.Resources.Templates
             Options = new Dictionary<string, Option>(StringComparer.OrdinalIgnoreCase);
         }
 
-        protected override async Task Open()
+        protected override async Task Open(CancellationToken cancellationToken)
         {
             Options.Clear();
             foreach (var option in GetOptions())
@@ -32,32 +33,32 @@ namespace RESTable.Resources.Templates
             await PrintOptions().ConfigureAwait(false);
         }
 
-        public override async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             var (command, args) = input.TupleSplit(" ");
             switch (command.Trim())
             {
                 case var cancel when cancel.EqualsNoCase("cancel"):
-                    await WebSocket.DirectToShell().ConfigureAwait(false);
+                    await WebSocket.DirectToShell(cancellationToken: cancellationToken).ConfigureAwait(false);
                     break;
                 case var _ when Options.TryGetValue(command, out var option):
                     var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
                     if (!RunSilent)
-                        await WebSocket.SendText($"> {option!.Command}").ConfigureAwait(false);
+                        await WebSocket.SendText($"> {option!.Command}", cancellationToken).ConfigureAwait(false);
                     try
                     {
                         await option.Action(argsArray).ConfigureAwait(false);
                         if (!RunSilent)
-                            await WebSocket.SendText($"> Done!{Environment.NewLine}").ConfigureAwait(false);
+                            await WebSocket.SendText($"> Done!{Environment.NewLine}", cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
-                        await WebSocket.SendException(e).ConfigureAwait(false);
+                        await WebSocket.SendException(e, cancellationToken).ConfigureAwait(false);
                     }
                     await PrintOptions().ConfigureAwait(false);
                     break;
                 case var unknown:
-                    await WebSocket.SendText($"Unknown option '{unknown}'.").ConfigureAwait(false);
+                    await WebSocket.SendText($"Unknown option '{unknown}'.", cancellationToken).ConfigureAwait(false);
                     break;
             }
         }

@@ -160,9 +160,9 @@ namespace RESTable.Tutorial
             Version = Version.Parse(version);
         }
 
-        public override Task HandleTextInput(string input)
+        public override Task HandleTextInput(string input,CancellationToken cancellationToken)
         {
-            return WebSocket.SendText(input);
+            return WebSocket.SendText(input, cancellationToken);
         }
 
         protected override bool SupportsTextInput => true;
@@ -173,25 +173,25 @@ namespace RESTable.Tutorial
     [RESTable]
     public class ShellChatter : Terminal
     {
-        protected override async Task Open()
+        protected override async Task Open(CancellationToken cancellationToken)
         {
             var context = WebSocket.Context.GetRequiredService<RootContext>();
             await new ClientWebSocketBuilder(context)
                 .WithUri("wss://localhost:5001/restable/")
-                .OnOpen(async ws =>
+                .OnOpen(async (ws, ct) =>
                 {
-                    await ws.SendText("Hi");
+                    await ws.SendText("Hi", ct);
                 })
-                .HandleTextInput(async (ws, text) =>
+                .HandleTextInput(async (ws, text, ct) =>
                 {
-                    await WebSocket.SendText(text);
-                    await Task.Delay(1000);
-                    await ws.SendText("Hi");
+                    await WebSocket.SendText(text, ct);
+                    await Task.Delay(1000, ct);
+                    await ws.SendText("Hi", ct);
                 })
-                .Connect();
+                .Connect(cancellationToken);
         }
 
-        public override Task HandleTextInput(string input)
+        public override Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -202,7 +202,7 @@ namespace RESTable.Tutorial
     [RESTable(GET)]
     public class Test2 : IAsyncSelector<Test2>
     {
-        public static BufferBlock<int> BufferBlock = new();
+        public static readonly BufferBlock<int> BufferBlock = new();
 
         private static int Count;
 
@@ -272,9 +272,7 @@ namespace RESTable.Tutorial
             var newest = default(Superhero);
             var genderCount = new int[3];
 
-            var innerRequest = request.Context.CreateRequest<Superhero>();
-            await using var superheroes = await innerRequest.GetResultEntities();
-            await foreach (var superhero in superheroes)
+            await foreach (var superhero in request.Context.CreateRequest<Superhero>().GetResultEntities())
             {
                 if (count == 0)
                     newest = superhero;
@@ -359,12 +357,12 @@ namespace RESTable.Tutorial
         /// </summary>
         private bool Initiated;
 
-        protected override async Task Open()
+        protected override async Task Open(CancellationToken cancellationToken)
         {
             Name = GetUniqueName(Name);
-            await SendToAll($"# {Name} has joined the chat room.");
+            await SendToAll($"# {Name} has joined the chat room.", cancellationToken);
             await WebSocket.SendText(
-                $"# Welcome to the chat room! Your name is \"{Name}\" (type QUIT to return to the shell)");
+                $"# Welcome to the chat room! Your name is \"{Name}\" (type QUIT to return to the shell)", cancellationToken);
             Initiated = true;
         }
 
@@ -390,18 +388,18 @@ namespace RESTable.Tutorial
             await SendToAll($"# {Name} left the chat room.");
         }
 
-        public override async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input,CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(input))
                 return;
             if (string.Equals(input, "quit", OrdinalIgnoreCase))
-                await WebSocket.DirectToShell();
+                await WebSocket.DirectToShell(cancellationToken: cancellationToken);
         }
 
-        private async Task SendToAll(string message) => await Terminals
+        private async Task SendToAll(string message, CancellationToken cancellationToken = new()) => await Terminals
             .Combine()
             .CombinedWebSocket
-            .SendText(message);
+            .SendText(message, cancellationToken);
 
         protected override bool SupportsTextInput => true;
     }

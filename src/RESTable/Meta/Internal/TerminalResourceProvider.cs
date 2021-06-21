@@ -8,7 +8,7 @@ namespace RESTable.Meta.Internal
 {
     public class TerminalResourceProvider
     {
-        private MethodInfo BuildTerminalMethod { get; }
+        private MethodInfo? BuildTerminalMethod { get; }
         private TypeCache TypeCache { get; }
         private ResourceCollection ResourceCollection { get; }
 
@@ -27,10 +27,11 @@ namespace RESTable.Meta.Internal
         {
             foreach (var type in terminalTypes.OrderBy(t => t.GetRESTableTypeName()))
             {
-                var resource = (IResource) BuildTerminalMethod.MakeGenericMethod(type).Invoke(this, null);
-                ResourceCollection.AddResource(resource);
+                var resource = (IResource?) BuildTerminalMethod?.MakeGenericMethod(type).Invoke(this, null);
+                if (resource is null)
+                    throw new Exception($"Could not construct terminal resource for type {type}");
+                ResourceCollection.AddResource(resource!);
             }
-            Shell.ShellTerminalResource = ResourceCollection.GetTerminalResource<Shell>();
         }
 
         private IResource MakeTerminalResource<T>() where T : Terminal => new TerminalResource<T>(TypeCache);

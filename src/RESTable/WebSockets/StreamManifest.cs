@@ -24,7 +24,7 @@ namespace RESTable.WebSockets
         public string ContentType { get; }
 
         [RESTableMember(hideIfNull: true)] 
-        public string EntityType { get; }
+        public string? EntityType { get; }
         
         public long EntityCount { get; }
 
@@ -44,7 +44,7 @@ namespace RESTable.WebSockets
         {
             Result = serializedContent;
             var content = serializedContent.Result;
-            ContentType = content.Headers.ContentType?.ToString();
+            ContentType = content.Headers.ContentType!.Value.ToString();
             TotalLength = serializedContent.Body.Length;
             BufferSize = bufferSize;
             BytesRemaining = serializedContent.Body.Length;

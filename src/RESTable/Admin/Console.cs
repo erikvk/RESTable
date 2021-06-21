@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
@@ -36,14 +37,15 @@ namespace RESTable.Admin
             "Use the console to receive pushed updates when the \n" +
             "REST API receives requests and WebSocket events.";
 
-        protected override async Task Open()
+        
+        protected override async Task Open(CancellationToken cancellationToken)
         {
-            await base.Open().ConfigureAwait(false);
+            await base.Open(cancellationToken).ConfigureAwait(false);
         }
 
         #region Console
 
-        private static IJsonProvider JsonProvider { get; set; }
+        private static IJsonProvider? JsonProvider { get; set; }
 
         internal static async Task Log(IRequest request, ISerializedResult serializedResult)
         {

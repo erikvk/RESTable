@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
@@ -76,10 +77,10 @@ namespace FileSenderSample
             WorkstationId = workstationId;
         }
 
-        protected override async Task Open()
+        protected override async Task Open(CancellationToken cancellationToken)
         {
             OpenedAt = DateTime.Now;
-            await WebSocket.SendText($"Hi, I'm a connection named {WorkstationId}!");
+            await WebSocket.SendText($"Hi, I'm a connection named {WorkstationId}!", cancellationToken);
         }
 
         public async Task FileSent(string fileName, long fileLength)
@@ -91,43 +92,43 @@ namespace FileSenderSample
             }
         }
 
-        public override async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             if (Deactivated)
             {
-                await WebSocket.SendText("OOPS, this connection is deactivated! ¯\\_(ツ)_/¯ ");
+                await WebSocket.SendText("OOPS, this connection is deactivated! ¯\\_(ツ)_/¯ ", cancellationToken);
                 return;
             }
 
             switch (input.ToUpper())
             {
                 case "HI":
-                    await WebSocket.SendText("Hello");
+                    await WebSocket.SendText("Hello", cancellationToken);
                     break;
 
                 case "START":
-                    await WebSocket.SendText("Started!");
+                    await WebSocket.SendText("Started!", cancellationToken);
                     Status = "Started";
                     break;
 
                 case "STOP":
-                    await WebSocket.SendText("Stopped!");
+                    await WebSocket.SendText("Stopped!", cancellationToken);
                     Status = "Stopped";
                     break;
 
                 case "SEND ALL":
                     foreach (var file in MockelyMock.GetAllFilePaths().Select(File.OpenRead))
                     {
-                        await WebSocket.SendBinary(file);
+                        await WebSocket.SendBinary(file, cancellationToken);
                         await FileSent(file.Name, file.Length);
                     }
-                    await WebSocket.SendText("All files sent!");
+                    await WebSocket.SendText("All files sent!", cancellationToken);
                     break;
 
                 case var blank when string.IsNullOrWhiteSpace(blank): break;
 
                 default:
-                    await WebSocket.SendText("Unrecognized command " + input);
+                    await WebSocket.SendText("Unrecognized command " + input, cancellationToken);
                     break;
             }
         }
@@ -141,9 +142,9 @@ namespace FileSenderSample
     [RESTable]
     public class FileSenderManager : Terminal
     {
-        protected override async Task Open()
+        protected override async Task Open(CancellationToken cancellationToken)
         {
-            await WebSocket.SendText("I'm a manager!");
+            await WebSocket.SendText("I'm a manager!", cancellationToken);
         }
 
         public async Task Notify(string fileName, long fileLength, FileSenderConnection connection)
@@ -152,7 +153,7 @@ namespace FileSenderSample
             await WebSocket.SendJson(connection);
         }
 
-        public override async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             var commandArg = input.Split(" ");
             var command = commandArg[0].ToUpper();
@@ -163,7 +164,7 @@ namespace FileSenderSample
             switch (command)
             {
                 case "INFO":
-                    await WebSocket.SendJson(activeConnections);
+                    await WebSocket.SendJson(activeConnections, cancellationToken: cancellationToken);
                     break;
 
                 case "DEACTIVATE":
@@ -172,9 +173,9 @@ namespace FileSenderSample
                     if (connection is not null)
                     {
                         connection.Deactivated = true;
-                        await WebSocket.SendText("Done!");
+                        await WebSocket.SendText("Done!", cancellationToken);
                     }
-                    else await WebSocket.SendText($"Found no connection with Id {id}");
+                    else await WebSocket.SendText($"Found no connection with Id {id}", cancellationToken);
 
                     break;
                 }
@@ -184,14 +185,14 @@ namespace FileSenderSample
                     if (connection is not null)
                     {
                         connection.Deactivated = false;
-                        await WebSocket.SendText("Done!");
+                        await WebSocket.SendText("Done!", cancellationToken);
                     }
-                    else await WebSocket.SendText($"Found no connection with Id {id}");
+                    else await WebSocket.SendText($"Found no connection with Id {id}", cancellationToken);
                     break;
                 }
 
                 default:
-                    await WebSocket.SendText("Unrecognized command " + input);
+                    await WebSocket.SendText("Unrecognized command " + input, cancellationToken);
                     break;
             }
         }
@@ -205,13 +206,13 @@ namespace FileSenderSample
     [RESTable]
     public class MockelyMock : Terminal
     {
-        protected override async Task Open() => await WebSocket.SendText("I'm a mockely mock!");
+        protected override async Task Open(CancellationToken cancellationToken) => await WebSocket.SendText("I'm a mockely mock!", cancellationToken);
 
         /// <summary>
         /// This resource just sends a file to all file sender connections without
         /// asking any questions.
         /// </summary>
-        public override async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             var path = $"C:/SampleFiles/{input}.txt";
             FileStream file;
@@ -221,7 +222,7 @@ namespace FileSenderSample
             }
             catch
             {
-                await WebSocket.SendText($"Nope, {path} is not a valid path");
+                await WebSocket.SendText($"Nope, {path} is not a valid path", cancellationToken);
                 return;
             }
             var combinedTerminals = Services
@@ -231,11 +232,11 @@ namespace FileSenderSample
 
             if (combinedTerminals.Count == 0)
             {
-                await WebSocket.SendText("No started connections");
+                await WebSocket.SendText("No started connections", cancellationToken);
                 return;
             }
 
-            await combinedTerminals.CombinedWebSocket.SendBinary(file);
+            await combinedTerminals.CombinedWebSocket.SendBinary(file, cancellationToken);
             foreach (var terminal in combinedTerminals)
             {
                 await terminal.FileSent(file.Name, file.Length);

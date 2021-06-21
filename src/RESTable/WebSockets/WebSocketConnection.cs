@@ -26,8 +26,8 @@ namespace RESTable.WebSockets
         internal Terminal Terminal { get; private set; }
         public RESTableContext Context { get; private set; }
         private TaskCompletionSource<byte> SuspendTaskSource { get; set; }
+
         private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
-        public CancellationToken CancellationToken => WebSocket.CancellationToken;
 
         internal WebSocketConnection(WebSocket webSocket, Terminal terminal)
         {
@@ -79,44 +79,73 @@ namespace RESTable.WebSockets
         #region IWebSocket
 
         /// <inheritdoc />
-        public Task SendText(string data) => WebSocket.SendText(data);
+        public Task SendText(string data, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendText(data, cancellationToken);
+        }
 
         /// <inheritdoc />
-        public Task SendText(ArraySegment<byte> buffer) => WebSocket.SendText(buffer);
+        public Task SendText(ArraySegment<byte> buffer, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendText(buffer, cancellationToken);
+        }
 
         /// <inheritdoc />
-        public Task SendText(Stream stream) => WebSocket.SendText(stream);
+        public Task SendText(Stream stream, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendText(stream, cancellationToken);
+        }
 
         /// <inheritdoc />
-        public Task SendBinary(ArraySegment<byte> buffer) => WebSocket.SendBinary(buffer);
+        public Task SendBinary(ArraySegment<byte> buffer, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendBinary(buffer, cancellationToken);
+        }
 
         /// <inheritdoc />
-        public Task SendBinary(Stream stream) => WebSocket.SendBinary(stream);
+        public Task SendBinary(Stream stream, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendBinary(stream, cancellationToken);
+        }
 
         /// <inheritdoc />
-        public Task<Stream> GetMessageStream(bool asText) => WebSocket.GetMessageStream(asText);
+        public Task<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.GetMessageStream(asText, cancellationToken);
+        }
 
         /// <inheritdoc />
-        public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false) =>
-            WebSocket.SendJson(i, at, p, ig);
+        public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendJson(i, at, p, ig, cancellationToken);
+        }
 
         /// <inheritdoc />
-        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false) => WebSocket.SendResult(r, t, w);
+        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendResult(r, t, w, cancellationToken);
+        }
 
         /// <inheritdoc />
         public Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false,
-            bool d = true) => WebSocket.SendSerializedResult(serializedResult, t, w, d);
+            bool d = true, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendSerializedResult(serializedResult, t, w, d, cancellationToken);
+        }
 
         /// <inheritdoc />
         public Task StreamSerializedResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null,
             bool writeHeaders = false,
-            bool disposeResult = true)
+            bool disposeResult = true, CancellationToken cancellationToken = new())
         {
-            return WebSocket.StreamSerializedResult(result, messageSize, timeElapsed, writeHeaders, disposeResult);
+            return WebSocket.StreamSerializedResult(result, messageSize, timeElapsed, writeHeaders, disposeResult, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task SendException(Exception exception) => WebSocket.SendException(exception);
+        public Task SendException(Exception exception, CancellationToken cancellationToken = new())
+        {
+            return WebSocket.SendException(exception, cancellationToken);
+        }
 
         /// <inheritdoc />
         public Headers Headers => WebSocket.Headers;
@@ -125,24 +154,28 @@ namespace RESTable.WebSockets
         public ReadonlyCookies Cookies => WebSocket.Cookies;
 
         /// <inheritdoc />
-        public Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null) =>
-            WebSocket.DirectToShell(assignments);
-
-        /// <inheritdoc />
-        public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null)
-            where T : Terminal
+        public Task DirectToShell(ICollection<Condition<Shell>>? assignments = null, CancellationToken cancellationToken = new())
         {
-            return WebSocket.DirectTo(terminalResource, assignments);
+            return WebSocket.DirectToShell(assignments, cancellationToken);
         }
 
-        public string HeadersStringCache
+        /// <inheritdoc />
+        public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>>? assignments = null, CancellationToken cancellationToken = new())
+            where T : Terminal
+        {
+            return WebSocket.DirectTo(terminalResource, assignments, cancellationToken);
+        }
+
+        public string? HeadersStringCache
         {
             get => WebSocket.HeadersStringCache;
             set => WebSocket.HeadersStringCache = value;
         }
 
         public bool ExcludeHeaders => WebSocket.ExcludeHeaders;
+
         public string ProtocolIdentifier => WebSocket.ProtocolIdentifier;
+
         public CachedProtocolProvider CachedProtocolProvider => WebSocket.CachedProtocolProvider;
 
         /// <inheritdoc />

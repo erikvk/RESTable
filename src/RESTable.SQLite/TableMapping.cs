@@ -196,32 +196,27 @@ namespace RESTable.SQLite
                            $"DROP TABLE {tempName};" +
                            "COMMIT;PRAGMA foreign_keys=on;";
             var query = new Query(querySql);
-            var rootClient = request.GetRequiredService<RootClient>();
-            var rootContext = new RESTableContext(rootClient, request);
-            var indexRequest = rootContext
+            await using var indexRequest = request
+                .GetRequiredService<RootContext>()
                 .CreateRequest<DatabaseIndex>()
                 .WithCondition(
                     key: nameof(DatabaseIndex.ResourceName),
                     op: Operators.EQUALS,
                     value: Resource.Name
                 );
-            var entities = await indexRequest.GetResultEntities().ConfigureAwait(false);
-            var disposableEntities = (IAsyncDisposable) entities;
-            await using (disposableEntities.ConfigureAwait(false))
+            var entities = indexRequest.GetResultEntities();
+            var tableIndexesToKeep = await entities
+                .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
+                .ToListAsync()
+                .ConfigureAwait(false);
+            await query.Execute().ConfigureAwait(false);
+            indexRequest.Method = Method.POST;
+            indexRequest.Selector = () => tableIndexesToKeep.ToAsyncEnumerable();
+            var result = await indexRequest.GetResult().ConfigureAwait(false);
+            await using (result.ConfigureAwait(false))
             {
-                var tableIndexesToKeep = await entities
-                    .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
-                    .ToListAsync()
-                    .ConfigureAwait(false);
-                await query.Execute().ConfigureAwait(false);
-                indexRequest.Method = Method.POST;
-                indexRequest.Selector = () => tableIndexesToKeep.ToAsyncEnumerable();
-                var result = await indexRequest.GetResult().ConfigureAwait(false);
-                await using (result.ConfigureAwait(false))
-                {
-                    result.ThrowIfError();
-                    await Update().ConfigureAwait(false);
-                }
+                result.ThrowIfError();
+                await Update().ConfigureAwait(false);
             }
         }
 

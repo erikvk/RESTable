@@ -193,7 +193,7 @@ namespace RESTable
             return Uri.UnescapeDataString(str);
         }
 
-        internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, OrdinalIgnoreCase);
+        internal static bool EqualsNoCase(this string? s1, string? s2) => string.Equals(s1, s2, OrdinalIgnoreCase);
         internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
         public static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";

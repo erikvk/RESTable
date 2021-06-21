@@ -21,33 +21,40 @@ namespace RESTable.WebSockets
         /// Sends the string data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
         /// when the WebSocket is opened.
         /// </summary>
-        Task SendText(string data);
+        Task SendText(string data, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Sends the byte array data as text over the WebSocket.
         /// </summary>
-        Task SendText(ArraySegment<byte> buffer);
+        Task SendText(ArraySegment<byte> buffer, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Sends the stream data as text over the WebSocket.
         /// </summary>
-        Task SendText(Stream stream);
+        Task SendText(Stream stream, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Sends the byte array data as binary over the WebSocket.
         /// </summary>
-        Task SendBinary(ArraySegment<byte> buffer);
+        Task SendBinary(ArraySegment<byte> buffer, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Sends the stream data as binary over the WebSocket.
         /// </summary>
-        Task SendBinary(Stream stream);
+        Task SendBinary(Stream stream, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Sends an object over the WebSocket, serialized as JSON text. The output pretty print setting is controlled by
         /// the prettyPrint parameter. If null, the global pretty print setting is used.
         /// </summary>
-        Task SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false);
+        Task SendJson
+        (
+            object item,
+            bool asText = false,
+            bool? prettyPrint = null,
+            bool ignoreNulls = false,
+            CancellationToken cancellationToken = new()
+        );
 
         /// <summary>
         /// Sends a result asynchronously over a WebSocket.
@@ -58,7 +65,13 @@ namespace RESTable.WebSockets
         ///     will be included in the status text message (see writeStatus)</param>
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
         ///     (if any) and before the content is sent.</param>
-        Task SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false);
+        Task SendResult
+        (
+            IResult result,
+            TimeSpan? timeElapsed = null,
+            bool writeHeaders = false,
+            CancellationToken cancellationToken = new()
+        );
 
         /// <summary>
         /// Sends a serialized result asynchronously over a WebSocket, with the body contained in a single binary message. If the result body is larger than
@@ -71,8 +84,14 @@ namespace RESTable.WebSockets
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
         ///     (if any) and before the content is sent.</param>
         /// <param name="disposeResult">Should the serialized result be disposed after it is sent to the WebSocket?</param>
-        Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? timeElapsed = null,
-            bool writeHeaders = false, bool disposeResult = true);
+        Task SendSerializedResult
+        (
+            ISerializedResult serializedResult,
+            TimeSpan? timeElapsed = null,
+            bool writeHeaders = false,
+            bool disposeResult = true,
+            CancellationToken cancellationToken = new()
+        );
 
         /// <summary>
         /// Sends an arbitrarily large result over a WebSocket, with the body split over multiple binary messages. Before sending
@@ -88,18 +107,25 @@ namespace RESTable.WebSockets
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
         ///     (if any) and before the content is sent.</param>
         /// <param name="disposeResult">Should the result be disposed after it is sent to the WebSocket?</param>
-        Task StreamSerializedResult(ISerializedResult serializedResult, int messageSize, TimeSpan? timeElapsed = null,
-            bool writeHeaders = false, bool disposeResult = true);
+        Task StreamSerializedResult
+        (
+            ISerializedResult serializedResult,
+            int messageSize,
+            TimeSpan? timeElapsed = null,
+            bool writeHeaders = false,
+            bool disposeResult = true,
+            CancellationToken cancellationToken = new()
+        );
 
         /// <summary>
         /// Returns a stream that, when written to, writes data over the websocket over a single message until the stream is disposed
         /// </summary>
-        Task<Stream> GetMessageStream(bool asText);
+        Task<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Sends an exception over the WebSocket.
         /// </summary>
-        Task SendException(Exception exception);
+        Task SendException(Exception exception, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// The cookies of the initial HTTP request
@@ -110,20 +136,15 @@ namespace RESTable.WebSockets
         /// Closes the current terminal (if any) and directs the WebSocket to the Shell terminal. Use this to quit from a 
         /// terminal resource and launch the shell.
         /// </summary>
-        Task DirectToShell(IEnumerable<Condition<Shell>> assignments = null);
+        Task DirectToShell(ICollection<Condition<Shell>>? assignments = null, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Closes the current terminal (if any) and directs the WebSocket to the provided terminal. Use this to quit from a 
         /// terminal resource and open another terminal instead.
         /// </summary>
-        Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null)
+        Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>>? assignments = null, CancellationToken cancellationToken = new())
             where T : Terminal;
 
-        /// <summary>
-        /// A cancellation token that is cancelled when this WebSocket is closed
-        /// </summary>
-        CancellationToken CancellationToken { get; }
-        
         /// <summary>
         /// The current status of this WebSocket
         /// </summary>

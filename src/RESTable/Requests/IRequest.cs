@@ -69,10 +69,11 @@ namespace RESTable.Requests
         Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { set; }
 
         /// <summary>
-        /// Evaluates the request asynchronously and returns the result as an entity collection. Only valid for GET requests.
-        /// If an error is encountered while evaluating the request, an exception is thrown.
+        /// Evaluates the request asynchronously and returns the resulting entities as an async enumerable. Only valid for
+        /// GET, PUT, PATCH and POST requests. If an error is encountered while evaluating the request, or the result can
+        /// not be converted to an enumeration of entities, an exception is thrown.
         /// </summary>
-        Task<IEntities<T>> GetResultEntities();
+        IAsyncEnumerable<T> GetResultEntities(CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Gets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTable
@@ -152,20 +153,6 @@ namespace RESTable.Requests
         /// </summary>
         Task<IResult> GetResult(CancellationToken cancellationToken = new());
 
-#if !NETSTANDARD2_0
-        /// <summary>
-        /// Evaluates the request asynchronously and returns the result, or
-        /// disposes the result and throws an exception if the result is an error.
-        /// </summary>
-        public async Task<IResult> GetResultOrThrow(CancellationToken cancellationToken = new())
-        {
-            var result = await GetResult(cancellationToken).ConfigureAwait(false);
-            if (result.IsError)
-                await result.DisposeAsync();
-            result.ThrowIfError();
-            return result;
-        }
-#endif
         /// <summary>
         /// Is this request valid?
         /// </summary>

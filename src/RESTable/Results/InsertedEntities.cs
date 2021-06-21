@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using RESTable.Requests;
 
 namespace RESTable.Results
@@ -9,9 +10,7 @@ namespace RESTable.Results
     /// </summary>
     public class InsertedEntities<T> : Change<T> where T : class
     {
-        
-        
-        public InsertedEntities(IRequest request, int count, T[] entities) : base(request, count, entities)
+        public InsertedEntities(IRequest request, int count, IReadOnlyCollection<T> entities) : base(request, count, entities)
         {
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;
             StatusDescription = StatusCode.ToString();

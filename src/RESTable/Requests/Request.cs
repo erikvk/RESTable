@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -148,11 +149,26 @@ namespace RESTable.Requests
             data[key] = value;
         }
 
-        public async Task<IEntities<T>> GetResultEntities()
+        public async IAsyncEnumerable<T> GetResultEntities([EnumeratorCancellation] CancellationToken cancellationToken = new())
         {
-            var result = await GetResult().ConfigureAwait(false);
-            if (result is Error e) throw e;
-            return (IEntities<T>) result;
+            var result = await GetResult(cancellationToken).ConfigureAwait(false);
+            switch (result)
+            {
+                case Error error: throw error;
+                case Change<T> change:
+                {
+                    foreach (var entity in change.Entities)
+                        yield return entity;
+                    yield break;
+                }
+                case IEntities<T> entities:
+                {
+                    await foreach (var entity in entities)
+                        yield return entity;
+                    yield break;
+                }
+                case var other: throw new InvalidOperationException($"Cannot convert result of type '{other.GetType()}' to an enumeration of entities");
+            }
         }
 
         public async Task<IResult> GetResult(CancellationToken cancellationToken = new())
@@ -176,8 +192,8 @@ namespace RESTable.Requests
                     return new WebSocketUpgradeFailed(forbidden);
                 await Context.WebSocket.UseOnce(this, async webSocket =>
                 {
-                    await webSocket.SendResult(result).ConfigureAwait(false);
-                    var message = await webSocket.GetMessageStream(false).ConfigureAwait(false);
+                    await webSocket.SendResult(result, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    var message = await webSocket.GetMessageStream(false, cancellationToken).ConfigureAwait(false);
 #if NETSTANDARD2_0
                     using (message)
 #else
@@ -186,7 +202,7 @@ namespace RESTable.Requests
                     {
                         await result.Serialize(message, cancellationToken: cancellationToken).ConfigureAwait(false);
                     }
-                }).ConfigureAwait(false);
+                }, cancellationToken).ConfigureAwait(false);
                 return new WebSocketTransferSuccess(this);
             }
 
@@ -219,10 +235,10 @@ namespace RESTable.Requests
                         if (IsWebSocketUpgrade)
                         {
                             // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
-                            await Context.WebSocket.OpenAndAttachToTerminal(this, terminalResource, Conditions).ConfigureAwait(false);
+                            await Context.WebSocket.OpenAndAttachToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
-                        return await SwitchTerminal(terminalResource).ConfigureAwait(false);
+                        return await SwitchTerminal(terminalResource, cancellationToken).ConfigureAwait(false);
                     }
 
                     case IBinaryResource<T> binaryResource:
@@ -298,12 +314,12 @@ namespace RESTable.Requests
         /// This method is called from a websocket, so the context of this request is already a
         /// WebSocket context. This is what it means to not be a WebSocket upgrade request. 
         /// </summary>
-        private async Task<IResult> SwitchTerminal(ITerminalResource<T> resource)
+        private async Task<IResult> SwitchTerminal(ITerminalResource<T> resource, CancellationToken cancellationToken)
         {
             var _resource = (TerminalResource<T>) resource;
             var newTerminal = await _resource.CreateTerminal(Context, Conditions).ConfigureAwait(false);
             await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
-            await newTerminal.OpenTerminal().ConfigureAwait(false);
+            await newTerminal.OpenTerminal(cancellationToken).ConfigureAwait(false);
             return new SwitchedTerminal(this);
         }
 

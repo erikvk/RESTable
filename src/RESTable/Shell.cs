@@ -44,30 +44,13 @@ namespace RESTable
         private bool _autoOptions;
         private string _protocol;
 
-        private IEntities PreviousEntities { get; set; }
+        private IEntities? PreviousEntities { get; set; }
+        private IJsonProvider JsonProvider { get; }
 
         /// <summary>
         /// Signals that there are changes to the query that have been made pre evaluation
         /// </summary>
         private bool queryChangedPreEval;
-
-        internal static ITerminalResource<Shell> ShellTerminalResource { get; set; }
-
-        private void Reset()
-        {
-            streamBufferSize = MaxStreamBufferSize;
-            Unsafe = false;
-            PreviousEntities = null;
-            query = "";
-            previousQuery = "";
-            WriteHeaders = false;
-            AutoOptions = false;
-            AutoGet = false;
-            ReformatQueries = true;
-            _protocol = "";
-            ConfirmSource = new TaskCompletionSource<byte>();
-            ConfirmSource.SetResult(default);
-        }
 
         #endregion
 
@@ -171,20 +154,31 @@ namespace RESTable
 
         #endregion
 
-        public Shell()
+        public Shell(IJsonProvider jsonProvider)
         {
-            Reset();
+            JsonProvider = jsonProvider;
+            streamBufferSize = MaxStreamBufferSize;
+            Unsafe = false;
+            PreviousEntities = null;
+            query = "";
+            previousQuery = "";
+            WriteHeaders = false;
+            AutoOptions = false;
+            AutoGet = false;
+            ReformatQueries = true;
+            _protocol = "";
+            ConfirmSource = new TaskCompletionSource<byte>();
+            ConfirmSource.SetResult(default);
         }
 
         public ValueTask DisposeAsync()
         {
             WebSocket.Context.Client.ShellConfig = JsonProvider.Serialize(this);
-            Reset();
             return default;
         }
 
         /// <inheritdoc />
-        public override async Task HandleBinaryInput(Stream input)
+        public override async Task HandleBinaryInput(Stream input, CancellationToken cancellationToken)
         {
             if (Query.Length == 0 || AwaitingConfirmation)
             {
@@ -192,9 +186,9 @@ namespace RESTable
                     await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                 // ReSharper disable once MethodHasAsyncOverload
                 else input.Dispose();
-                await WebSocket.SendResult(new InvalidShellStateForBinaryInput()).ConfigureAwait(false);
+                await WebSocket.SendResult(new InvalidShellStateForBinaryInput(), cancellationToken: cancellationToken).ConfigureAwait(false);
             }
-            else await SafeOperation(POST, input).ConfigureAwait(false);
+            else await SafeOperation(POST, input, cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -203,31 +197,29 @@ namespace RESTable
         /// <inheritdoc />
         protected override bool SupportsBinaryInput => true;
 
-        private IJsonProvider JsonProvider { get; set; }
 
         /// <inheritdoc />
-        protected override async Task Open()
+        protected override async Task Open(CancellationToken cancellationToken)
         {
-            JsonProvider = Services.GetRequiredService<IJsonProvider>();
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
                 JsonProvider.Populate(config, this);
-                await SendShellInit().ConfigureAwait(false);
+                await SendShellInit(cancellationToken).ConfigureAwait(false);
                 await SendQuery().ConfigureAwait(false);
             }
             else if (Query != "")
                 await Navigate().ConfigureAwait(false);
-            else await SendShellInit().ConfigureAwait(false);
+            else await SendShellInit(cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task Navigate(string input = null, bool sendQuery = true)
+        private async Task Navigate(string? input = null, bool sendQuery = true)
         {
             if (input is not null)
                 Query = input;
             var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
             if (!valid) return;
             PreviousEntities = null;
-            if (AutoOptions) await SendOptions(resource).ConfigureAwait(false);
+            if (AutoOptions) await SendOptions(resource!).ConfigureAwait(false);
             else if (AutoGet) await SafeOperation(GET).ConfigureAwait(false);
             else if (sendQuery) await SendQuery().ConfigureAwait(false);
         }
@@ -243,7 +235,7 @@ namespace RESTable
         }
 
         /// <inheritdoc />
-        public override async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             try
             {
@@ -254,7 +246,7 @@ namespace RESTable
                     {
                         case var _ when input.Length > 1:
                         default:
-                            await SendConfirmRequest().ConfigureAwait(false);
+                            await SendConfirmRequest(cancellationToken: cancellationToken).ConfigureAwait(false);
                             break;
                         case 'Y':
                         case 'y':
@@ -262,7 +254,7 @@ namespace RESTable
                             break;
                         case 'N':
                         case 'n':
-                            ConfirmSource.SetCanceled();
+                            ConfirmSource.TrySetCanceled(CancellationToken.None);
                             break;
                     }
                     return;
@@ -281,10 +273,10 @@ namespace RESTable
                         break;
                     case '[':
                     case '{':
-                        await SafeOperation(POST, input.ToBytes()).ConfigureAwait(false);
+                        await SafeOperation(POST, input.ToBytes(), cancellationToken).ConfigureAwait(false);
                         break;
                     case var _ when input.Length > MaxInputSize:
-                        await SendBadRequest().ConfigureAwait(false);
+                        await SendBadRequest(cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     default:
                         var (command, tail) = input.TupleSplit(' ');
@@ -300,59 +292,61 @@ namespace RESTable
                         switch (command.ToUpperInvariant())
                         {
                             case "GET":
-                                await SafeOperation(GET, tail?.ToBytes()).ConfigureAwait(false);
+                                await SafeOperation(GET, tail?.ToBytes(), cancellationToken).ConfigureAwait(false);
                                 break;
                             case "POST":
-                                await SafeOperation(POST, tail?.ToBytes()).ConfigureAwait(false);
+                                await SafeOperation(POST, tail?.ToBytes(), cancellationToken).ConfigureAwait(false);
                                 break;
                             case "PATCH":
                                 await UnsafeOperation(PATCH, tail?.ToBytes()).ConfigureAwait(false);
                                 break;
                             case "PUT":
-                                await SafeOperation(PUT, tail?.ToBytes()).ConfigureAwait(false);
+                                await SafeOperation(PUT, tail?.ToBytes(), cancellationToken).ConfigureAwait(false);
                                 break;
                             case "DELETE":
                                 await UnsafeOperation(DELETE, tail?.ToBytes()).ConfigureAwait(false);
                                 break;
                             case "REPORT":
-                                await SafeOperation(REPORT, tail?.ToBytes()).ConfigureAwait(false);
+                                await SafeOperation(REPORT, tail?.ToBytes(), cancellationToken).ConfigureAwait(false);
                                 break;
                             case "HEAD":
-                                await SafeOperation(HEAD, tail?.ToBytes()).ConfigureAwait(false);
+                                await SafeOperation(HEAD, tail?.ToBytes(), cancellationToken).ConfigureAwait(false);
                                 break;
                             case "OBSERVE":
                             {
-                                CancellationTokenSource cancellationTokenSource;
+                                CancellationTokenSource timeoutCancellationTokenSource;
                                 if (!string.IsNullOrWhiteSpace(tail) && double.TryParse(tail, out var timeOutSeconds))
-                                    cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(timeOutSeconds));
-                                else cancellationTokenSource = new CancellationTokenSource();
+                                    timeoutCancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(timeOutSeconds));
+                                else timeoutCancellationTokenSource = new CancellationTokenSource();
+                                var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
+                                var _cancellationToken = cancellationTokenSource.Token;
 
-                                await using var result = await GetResult(GET, cancellationToken: cancellationTokenSource.Token).ConfigureAwait(false);
+                                await using var result = await GetResult(GET, cancellationToken: _cancellationToken).ConfigureAwait(false);
                                 if (result is not IEntities<object> entities)
                                 {
-                                    await SendResult(result).ConfigureAwait(false);
+                                    await SendResult(result, cancellationToken: _cancellationToken).ConfigureAwait(false);
                                     break;
                                 }
-                                await foreach (var entity in entities.WithCancellation(cancellationTokenSource.Token))
+                                await foreach (var entity in entities.WithCancellation(_cancellationToken))
                                 {
-                                    await WebSocket.SendJson(entity).ConfigureAwait(false);
+                                    await WebSocket.SendJson(entity, cancellationToken: _cancellationToken).ConfigureAwait(false);
                                 }
                                 break;
                             }
                             case "STREAM":
                             {
-                                await using var result = await GetResult(GET).ConfigureAwait(false);
-                                var serialized = await result.Serialize().ConfigureAwait(false);
+                                await using var result = await GetResult(GET, cancellationToken: cancellationToken).ConfigureAwait(false);
+                                var serialized = await result.Serialize(cancellationToken: cancellationToken).ConfigureAwait(false);
                                 if (result is Content)
-                                    await StreamSerializedResult(serialized, result.TimeElapsed).ConfigureAwait(false);
-                                else await SendSerializedResult(serialized).ConfigureAwait(false);
+                                    await StreamSerializedResult(serialized, result.TimeElapsed, cancellationToken).ConfigureAwait(false);
+                                else await SendSerializedResult(serialized, cancellationToken: cancellationToken).ConfigureAwait(false);
                                 break;
                             }
                             case "OPTIONS":
                             {
                                 var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
                                 if (!valid) break;
-                                await SendOptions(resource).ConfigureAwait(false);
+                                await SendOptions(resource!).ConfigureAwait(false);
                                 break;
                             }
                             case "SCHEMA":
@@ -360,15 +354,15 @@ namespace RESTable
                                 var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
                                 if (!valid) break;
                                 var termFactory = Services.GetRequiredService<TermFactory>();
-                                var term = termFactory.MakeConditionTerm(resource, "resource");
+                                var term = termFactory.MakeConditionTerm(resource!, "resource");
                                 var resourceCondition = new Condition<Schema>
                                 (
                                     term: term,
                                     op: Operators.EQUALS,
-                                    value: resource.Name
+                                    value: resource!.Name
                                 );
                                 var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
-                                await using var schemaResult = await schemaRequest.GetResultEntities().ConfigureAwait(false);
+                                await using var schemaResult = await schemaRequest.GetResultOrThrow<IEntities>(cancellationToken: cancellationToken).ConfigureAwait(false);
                                 await SerializeAndSendResult(schemaResult).ConfigureAwait(false);
                                 break;
                             }
@@ -400,49 +394,48 @@ namespace RESTable
                                 }
                                 else
                                     await WebSocket
-                                        .SendText($"400: Bad request. Cannot read or write reserved header '{key}'.")
+                                        .SendText($"400: Bad request. Cannot read or write reserved header '{key}'.", cancellationToken)
                                         .ConfigureAwait(false);
                                 return;
 
                             case "VAR":
                                 if (string.IsNullOrWhiteSpace(tail))
                                 {
-                                    await WebSocket.SendJson(this).ConfigureAwait(false);
+                                    await WebSocket.SendJson(this, cancellationToken: cancellationToken).ConfigureAwait(false);
                                     break;
                                 }
                                 var (property, valueString) = tail.TupleSplit('=', true);
-                                if (property is null || valueString is null)
+                                if (valueString is null)
                                 {
                                     await WebSocket
-                                        .SendText(
-                                            "Invalid property assignment syntax. Should be: VAR <property> = <value>")
+                                        .SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>", cancellationToken)
                                         .ConfigureAwait(false);
                                     break;
                                 }
                                 if (valueString.EqualsNoCase("null"))
                                     valueString = null;
-                                if (!ShellTerminalResource.Members.TryGetValue(property, out var declaredProperty))
+                                if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
                                 {
                                     await WebSocket
-                                        .SendText($"Unknown shell property '{property}'. To list properties, type VAR")
+                                        .SendText($"Unknown shell property '{property}'. To list properties, type VAR", cancellationToken)
                                         .ConfigureAwait(false);
                                     break;
                                 }
                                 try
                                 {
-                                    await declaredProperty!.SetValue(this, valueString.ParseConditionValue(declaredProperty)).ConfigureAwait(false);
-                                    await WebSocket.SendJson(this).ConfigureAwait(false);
+                                    await declaredProperty!.SetValue(this, valueString?.ParseConditionValue(declaredProperty)).ConfigureAwait(false);
+                                    await WebSocket.SendJson(this, cancellationToken: cancellationToken).ConfigureAwait(false);
                                 }
                                 catch (Exception e)
                                 {
-                                    await WebSocket.SendException(e).ConfigureAwait(false);
+                                    await WebSocket.SendException(e, cancellationToken).ConfigureAwait(false);
                                 }
                                 break;
                             case "EXIT":
                             case "QUIT":
                             case "DISCONNECT":
                             case "CLOSE":
-                                await Close().ConfigureAwait(false);
+                                await Close(cancellationToken).ConfigureAwait(false);
                                 break;
 
                             case "GO":
@@ -453,14 +446,14 @@ namespace RESTable
                                     await Navigate(tail).ConfigureAwait(false);
                                     break;
                                 }
-                                await WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}")
+                                await WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}", cancellationToken)
                                     .ConfigureAwait(false);
                                 break;
                             case "FIRST":
-                                await Permute(p => p.GetFirstLink(tail.ToNumber() ?? 1)).ConfigureAwait(false);
+                                await Permute(p => p.GetFirstLink(tail.AsNumber() ?? 1)).ConfigureAwait(false);
                                 break;
                             case "LAST":
-                                await Permute(p => p.GetLastLink(tail.ToNumber() ?? 1)).ConfigureAwait(false);
+                                await Permute(p => p.GetLastLink(tail.AsNumber() ?? 1)).ConfigureAwait(false);
                                 break;
                             case "ALL":
                                 await Permute(p => p.GetAllLink()).ConfigureAwait(false);
@@ -471,7 +464,7 @@ namespace RESTable
                                     asyncPermuter: async p => p.GetNextPageLink
                                     (
                                         entityCount: await p.CountAsync().ConfigureAwait(false),
-                                        nextPageSize: tail.ToNumber() ?? -1
+                                        nextPageSize: tail.AsNumber() ?? -1
                                     )
                                 ).ConfigureAwait(false);
                                 break;
@@ -482,7 +475,7 @@ namespace RESTable
                                     asyncPermuter: async p => p.GetPreviousPageLink
                                     (
                                         entityCount: await p.CountAsync().ConfigureAwait(false),
-                                        nextPageSize: tail.ToNumber() ?? -1
+                                        nextPageSize: tail.AsNumber() ?? -1
                                     )
                                 ).ConfigureAwait(false);
                                 break;
@@ -502,7 +495,7 @@ namespace RESTable
                                     _ => "The world says: 'why do people keep saying that?'"
                                 };
 
-                                await WebSocket.SendText(getHelloWorld()).ConfigureAwait(false);
+                                await WebSocket.SendText(getHelloWorld(), cancellationToken).ConfigureAwait(false);
                                 break;
 
                             case "HI":
@@ -522,7 +515,7 @@ namespace RESTable
                                     _ => "Oh no, it's you again..."
                                 };
 
-                                await WebSocket.SendText(getGreeting()).ConfigureAwait(false);
+                                await WebSocket.SendText(getGreeting(), cancellationToken).ConfigureAwait(false);
                                 break;
                             case "NICE":
                             case "THANKS":
@@ -539,13 +532,13 @@ namespace RESTable
                                     _ => "✌️"
                                 };
 
-                                await WebSocket.SendText(getYoureWelcome()).ConfigureAwait(false);
+                                await WebSocket.SendText(getYoureWelcome(), cancellationToken).ConfigureAwait(false);
                                 break;
                             case "CREDITS":
-                                await SendCredits().ConfigureAwait(false);
+                                await SendCredits(cancellationToken).ConfigureAwait(false);
                                 break;
                             case var unknown:
-                                await SendUnknownCommand(unknown).ConfigureAwait(false);
+                                await SendUnknownCommand(unknown, cancellationToken).ConfigureAwait(false);
                                 break;
 
                             #endregion
@@ -555,7 +548,7 @@ namespace RESTable
             }
             catch (TaskCanceledException)
             {
-                await SendCancel().ConfigureAwait(false);
+                await SendCancel(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -576,14 +569,14 @@ namespace RESTable
         private async Task Permute(Func<IEntities, IUriComponents> permuter)
         {
             await EnsurePreviousEntities().ConfigureAwait(false);
-            var link = permuter(PreviousEntities);
+            var link = permuter(PreviousEntities!);
             await Navigate(link.ToString()).ConfigureAwait(false);
         }
 
         private async Task Permute(Func<IEntities, ValueTask<IUriComponents>> asyncPermuter)
         {
             await EnsurePreviousEntities().ConfigureAwait(false);
-            var link = await asyncPermuter(PreviousEntities).ConfigureAwait(false);
+            var link = await asyncPermuter(PreviousEntities!).ConfigureAwait(false);
             await Navigate(link.ToString()).ConfigureAwait(false);
         }
 
@@ -641,7 +634,7 @@ namespace RESTable
             return result;
         }
 
-        private async Task<(bool isValid, IResource resource)> ValidateQuery()
+        private async Task<(bool isValid, IResource? resource)> ValidateQuery()
         {
             var localQuery = Query;
             if (!WebSocket.Context.UriIsValid(localQuery, out var error, out var resource, out var components))
@@ -651,8 +644,8 @@ namespace RESTable
                 return (false, null);
             }
             if (ReformatQueries)
-                localQuery = components.ToString();
-            query = localQuery;
+                localQuery = components!.ToString();
+            query = localQuery!;
             queryChangedPreEval = false;
             return (true, resource);
         }
@@ -667,10 +660,10 @@ namespace RESTable
             await SendQuery().ConfigureAwait(false);
         }
 
-        private async Task SafeOperation(Method method, object? body = null)
+        private async Task SafeOperation(Method method, object? body = null, CancellationToken cancellationToken = new())
         {
             var sw = Stopwatch.StartNew();
-            await using var result = await GetResult(method, body).ConfigureAwait(false);
+            await using var result = await GetResult(method, body, cancellationToken).ConfigureAwait(false);
             await SerializeAndSendResult(result, sw.Elapsed).ConfigureAwait(true);
         }
 
@@ -692,7 +685,7 @@ namespace RESTable
                 }
             }
 
-            switch (await PreviousEntities.CountAsync().ConfigureAwait(false))
+            switch (await PreviousEntities!.CountAsync().ConfigureAwait(false))
             {
                 case 0:
                     await SendBadRequest($". No entities to run {method} on").ConfigureAwait(false);
@@ -711,18 +704,18 @@ namespace RESTable
             }
         }
 
-        private async Task SendResult(IResult result, TimeSpan? elapsed = null)
+        private async Task SendResult(IResult result, TimeSpan? elapsed = null, CancellationToken cancellationToken = new())
         {
             if (result is SwitchedTerminal) return;
-            await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
+            await WebSocket.SendResult(result, elapsed, WriteHeaders, cancellationToken).ConfigureAwait(false);
             switch (result)
             {
                 case var _ when Query == "":
                 case ShellNoQuery _:
-                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
+                    await WebSocket.SendText("? <no query>", cancellationToken).ConfigureAwait(false);
                     break;
                 default:
-                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
+                    await WebSocket.SendText("? " + Query, cancellationToken).ConfigureAwait(false);
                     break;
             }
         }
@@ -752,59 +745,60 @@ namespace RESTable
             }
         }
 
-        private async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null)
+        private async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null, CancellationToken cancellationToken = new())
         {
             if (serializedResult.Result is SwitchedTerminal) return;
-            await WebSocket.SendSerializedResult(serializedResult, elapsed, WriteHeaders).ConfigureAwait(false);
+            await WebSocket.SendSerializedResult(serializedResult, elapsed, WriteHeaders, cancellationToken: cancellationToken).ConfigureAwait(false);
             switch (serializedResult.Result)
             {
                 case var _ when Query == "":
                 case ShellNoQuery _:
-                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
+                    await WebSocket.SendText("? <no query>", cancellationToken).ConfigureAwait(false);
                     break;
                 default:
-                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
+                    await WebSocket.SendText("? " + Query, cancellationToken).ConfigureAwait(false);
                     break;
             }
         }
 
-        private async Task StreamSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null)
+        private async Task StreamSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null, CancellationToken cancellationToken = new())
         {
             if (serializedResult.Result is SwitchedTerminal) return;
-            await WebSocket.StreamSerializedResult(serializedResult, StreamBufferSize, elapsed, WriteHeaders)
+            await WebSocket.StreamSerializedResult(serializedResult, StreamBufferSize, elapsed, WriteHeaders, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
             switch (serializedResult.Result)
             {
                 case var _ when Query == "":
                 case ShellNoQuery _:
-                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
+                    await WebSocket.SendText("? <no query>", cancellationToken).ConfigureAwait(false);
                     break;
                 default:
-                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
+                    await WebSocket.SendText("? " + Query, cancellationToken).ConfigureAwait(false);
                     break;
             }
         }
 
-        private async Task SendShellInit() => await WebSocket.SendText("### Entering the RESTable WebSocket shell... ###").ConfigureAwait(false);
+        private async Task SendShellInit(CancellationToken cancellationToken) =>
+            await WebSocket.SendText("### Entering the RESTable WebSocket shell... ###", cancellationToken).ConfigureAwait(false);
 
         private const string ConfirmationText = "Type 'Y' to continue, 'N' to cancel";
         private const string CancelText = "Operation cancelled";
 
-        private Task SendCancel() => WebSocket.SendText(CancelText);
+        private Task SendCancel(CancellationToken cancellationToken) => WebSocket.SendText(CancelText, cancellationToken);
 
-        private Task SendConfirmRequest(string initialInfo = null) =>
-            WebSocket.SendText(initialInfo + ConfirmationText);
+        private Task SendConfirmRequest(string? initialInfo = null, CancellationToken cancellationToken = new()) =>
+            WebSocket.SendText(initialInfo + ConfirmationText, cancellationToken);
 
-        private Task SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
+        private Task SendBadRequest(string? message = null, CancellationToken cancellationToken = new()) => WebSocket.SendText($"400: Bad request{message}", cancellationToken);
 
-        private Task SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
+        private Task SendUnknownCommand(string command, CancellationToken cancellationToken = new()) => WebSocket.SendText($"Unknown command '{command}'", cancellationToken);
 
-        private Task SendCredits() =>
-            WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © {DateTime.Now.Year}");
+        private Task SendCredits(CancellationToken cancellationToken = new()) =>
+            WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © {DateTime.Now.Year}", cancellationToken);
 
-        private async Task Close()
+        private async Task Close(CancellationToken cancellationToken = new())
         {
-            await WebSocket.SendText("### Closing the RESTable WebSocket shell... ###").ConfigureAwait(false);
+            await WebSocket.SendText("### Closing the RESTable WebSocket shell... ###", cancellationToken).ConfigureAwait(false);
             var connection = (WebSocketConnection) WebSocket;
             await connection.WebSocket.DisposeAsync().ConfigureAwait(false);
         }

@@ -294,21 +294,21 @@ namespace RESTable.Resources.Operations
         }
 
 
-        private static async Task<(int count, T[] changedEntities)> ChangeCount
+        private static async Task<(int count, IReadOnlyCollection<T> changedEntities)> ChangeCount
         (
             IAsyncEnumerable<T> changedEntities,
             int maxNumberOfChangedEntities = Change.MaxNumberOfEntitiesInChangeResults
         )
         {
-            var buffer = new List<T>();
+            var entityList = new List<T>();
             var count = 0;
             await foreach (var item in changedEntities.ConfigureAwait(false))
             {
                 if (count < maxNumberOfChangedEntities)
-                    buffer.Add(item);
+                    entityList.Add(item);
                 count += 1;
             }
-            var changedEntitiesArray = count <= maxNumberOfChangedEntities ? buffer.ToArray() : Array.Empty<T>();
+            IReadOnlyCollection<T> changedEntitiesArray = count <= maxNumberOfChangedEntities ? entityList.AsReadOnly() : Array.Empty<T>();
             return (count, changedEntitiesArray);
         }
 
@@ -415,8 +415,8 @@ namespace RESTable.Resources.Operations
                         }
                     }
                     innerRequest.Conditions = conditions;
-                    var result = await innerRequest.GetResultEntities().ConfigureAwait(false);
-                    var resultList = await result.ToListAsync().ConfigureAwait(false);
+                    var resultEntities = innerRequest.GetResultEntities();
+                    var resultList = await resultEntities.ToListAsync().ConfigureAwait(false);
                     switch (resultList.Count)
                     {
                         case 0:

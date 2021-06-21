@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using RESTable.Requests;
 
@@ -8,14 +9,13 @@ namespace RESTable.AspNetCore
     {
         private HttpContext HttpContext { get; }
 
-        public AspNetCoreServerWebSocket(HttpContext httpContext, string webSocketId, RESTableContext context)
-            : base(webSocketId, context)
+        public AspNetCoreServerWebSocket(HttpContext httpContext, string webSocketId, RESTableContext context) : base(webSocketId, context)
         {
             HttpContext = httpContext;
             WebSocket = null!;
         }
 
-        protected override async Task ConnectUnderlyingWebSocket()
+        protected override async Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken)
         {
             WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
         }

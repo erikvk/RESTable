@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.WebSockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
@@ -21,9 +22,9 @@ namespace RESTable.AspNetCore
         public string ProtocolIdentifier { get; }
         public CachedProtocolProvider CachedProtocolProvider { get; }
         private Terminal? Terminal { get; set; }
-        private Func<IWebSocket, string, Task>? TextInputHandler { get; set; }
-        private Func<IWebSocket, Stream, Task>? BinaryInputHandler { get; set; }
-        private Func<IWebSocket, Task>? OpenHandler { get; set; }
+        private Func<IWebSocket, string, CancellationToken, Task>? TextInputHandler { get; set; }
+        private Func<IWebSocket, Stream, CancellationToken, Task>? BinaryInputHandler { get; set; }
+        private Func<IWebSocket, CancellationToken, Task>? OpenHandler { get; set; }
         private Func<IWebSocket, ValueTask>? DisposeHandler { get; set; }
 
         public ClientWebSocketBuilder(RESTableContext context)
@@ -69,19 +70,19 @@ namespace RESTable.AspNetCore
             return this;
         }
 
-        public ClientWebSocketBuilder HandleTextInput(Func<IWebSocket, string, Task> handler)
+        public ClientWebSocketBuilder HandleTextInput(Func<IWebSocket, string, CancellationToken, Task> handler)
         {
             TextInputHandler = handler;
             return this;
         }
 
-        public ClientWebSocketBuilder HandleBinaryInput(Func<IWebSocket, Stream, Task> handler)
+        public ClientWebSocketBuilder HandleBinaryInput(Func<IWebSocket, Stream, CancellationToken, Task> handler)
         {
             BinaryInputHandler = handler;
             return this;
         }
 
-        public ClientWebSocketBuilder OnOpen(Func<IWebSocket, Task> handler)
+        public ClientWebSocketBuilder OnOpen(Func<IWebSocket, CancellationToken, Task> handler)
         {
             OpenHandler = handler;
             return this;
@@ -93,7 +94,7 @@ namespace RESTable.AspNetCore
             return this;
         }
 
-        public async Task Connect()
+        public async Task Connect(CancellationToken cancellationToken)
         {
             if (Uri is null)
                 throw new InvalidOperationException("Missing or invalid Uri");
@@ -113,7 +114,8 @@ namespace RESTable.AspNetCore
             await aspNetCoreWebSocket.OpenAndAttachToTerminal
             (
                 protocolHolder: this,
-                terminal: Terminal ?? new CustomTerminal(this)
+                terminal: Terminal ?? new CustomTerminal(this),
+                cancellationToken: cancellationToken
             ).ConfigureAwait(false);
         }
 
@@ -123,11 +125,11 @@ namespace RESTable.AspNetCore
 
             public CustomTerminal(ClientWebSocketBuilder clientWebSocketBuilder) => ClientWebSocketBuilder = clientWebSocketBuilder;
 
-            protected override async Task Open()
+            protected override async Task Open(CancellationToken cancellationToken)
             {
                 if (ClientWebSocketBuilder.OpenHandler is { } handler)
                 {
-                    await handler(WebSocket).ConfigureAwait(false);
+                    await handler(WebSocket, cancellationToken).ConfigureAwait(false);
                 }
             }
 
@@ -139,8 +141,16 @@ namespace RESTable.AspNetCore
                 }
             }
 
-            public override async Task HandleTextInput(string input) => await ClientWebSocketBuilder.TextInputHandler!(WebSocket, input).ConfigureAwait(false);
-            public override async Task HandleBinaryInput(Stream input) => await ClientWebSocketBuilder.BinaryInputHandler!(WebSocket, input).ConfigureAwait(false);
+            public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
+            {
+                await ClientWebSocketBuilder.TextInputHandler!(WebSocket, input, cancellationToken).ConfigureAwait(false);
+            }
+
+            public override async Task HandleBinaryInput(Stream input, CancellationToken cancellationToken)
+            {
+                await ClientWebSocketBuilder.BinaryInputHandler!(WebSocket, input, cancellationToken).ConfigureAwait(false);
+            }
+
             protected override bool SupportsTextInput => ClientWebSocketBuilder.TextInputHandler is not null;
             protected override bool SupportsBinaryInput => ClientWebSocketBuilder.BinaryInputHandler is not null;
         }

@@ -27,7 +27,7 @@ namespace RESTable.Results
         public Headers Headers => Result.Headers;
 
         /// <inheritdoc />
-        public string HeadersStringCache
+        public string? HeadersStringCache
         {
             get => Result.HeadersStringCache;
             set => Result.HeadersStringCache = value;

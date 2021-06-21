@@ -1,4 +1,5 @@
-﻿using RESTable.Requests;
+﻿using System.Collections.Generic;
+using RESTable.Requests;
 
 namespace RESTable.Results
 {
@@ -18,7 +19,7 @@ namespace RESTable.Results
         /// </summary>
         public int InsertedCount { get; }
 
-        public SafePostedEntities(IRequest request, int updatedCount, int insertedCount, T[] entities) : base(request, updatedCount + insertedCount, entities)
+        public SafePostedEntities(IRequest request, int updatedCount, int insertedCount, IReadOnlyCollection<T> entities) : base(request, updatedCount + insertedCount, entities)
         {
             UpdatedCount = updatedCount;
             InsertedCount = insertedCount;

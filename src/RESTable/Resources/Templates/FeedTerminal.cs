@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTable.Resources.Templates
@@ -47,35 +48,35 @@ namespace RESTable.Resources.Templates
                 $"{Environment.NewLine}> To close, type CLOSE{Environment.NewLine}";
         }
 
-        protected override async Task Open()
+        protected override async Task Open(CancellationToken cancellationToken)
         {
             if (ShowWelcomeText)
-                await WebSocket.SendText(GetWelcomeText()).ConfigureAwait(false);
+                await WebSocket.SendText(GetWelcomeText(), cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         protected override bool SupportsTextInput => true;
 
         /// <inheritdoc />
-        public override async Task HandleTextInput(string input)
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             switch (input.ToUpperInvariant().Trim())
             {
                 case "": break;
                 case "OPEN":
                     Status = FeedStatus.OPEN;
-                    await WebSocket.SendText("> Status: OPEN" + Environment.NewLine).ConfigureAwait(false);
+                    await WebSocket.SendText("> Status: OPEN" + Environment.NewLine, cancellationToken).ConfigureAwait(false);
                     break;
                 case "PAUSE":
                     Status = FeedStatus.PAUSED;
-                    await WebSocket.SendText("> Status: PAUSED" + Environment.NewLine).ConfigureAwait(false);
+                    await WebSocket.SendText("> Status: PAUSED" + Environment.NewLine, cancellationToken).ConfigureAwait(false);
                     break;
                 case "CLOSE":
-                    await WebSocket.SendText("> Status: CLOSED" + Environment.NewLine).ConfigureAwait(false);
-                    await WebSocket.DirectToShell().ConfigureAwait(false);
+                    await WebSocket.SendText("> Status: CLOSED" + Environment.NewLine, cancellationToken).ConfigureAwait(false);
+                    await WebSocket.DirectToShell(cancellationToken: cancellationToken).ConfigureAwait(false);
                     break;
                 case var unrecognized:
-                    await WebSocket.SendText($"> Unknown command '{unrecognized}'").ConfigureAwait(false);
+                    await WebSocket.SendText($"> Unknown command '{unrecognized}'", cancellationToken).ConfigureAwait(false);
                     break;
             }
         }

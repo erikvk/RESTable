@@ -89,7 +89,7 @@ namespace RESTable.Requests
         }
 
         DateTime ILogable.LogTime { get; } = DateTime.Now;
-        public string HeadersStringCache { get; set; }
+        public string? HeadersStringCache { get; set; }
 
         async ValueTask<string> ILogable.GetLogContent()
         {
@@ -132,15 +132,10 @@ namespace RESTable.Requests
             HeadersStringCache = headersStringCache;
         }
 
-        internal void SetBodyObject(object bodyObject)
-        {
-            Body = new Body(this, bodyObject);
-        }
-
         /// <summary>
         /// Used when creating generic requests through the .NET API
         /// </summary>
-        internal RequestParameters(RESTableContext context, Method method, IResource resource, string protocolIdentifier = null, string viewName = null)
+        internal RequestParameters(RESTableContext context, Method method, IResource resource, string? protocolIdentifier = null, string? viewName = null)
         {
             Context = context;
             Method = method;
@@ -202,7 +197,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Used when performing CheckOrigin
         /// </summary>
-        internal RequestParameters(RESTableContext context, string uri, Headers headers)
+        internal RequestParameters(RESTableContext context, string uri, Headers? headers)
         {
             Context = context;
             Headers = headers ?? new Headers();

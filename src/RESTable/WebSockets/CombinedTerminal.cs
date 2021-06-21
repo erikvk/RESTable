@@ -13,6 +13,11 @@ namespace RESTable.WebSockets
 
         private List<T> Terminals { get; }
 
+        private class Empty : CombinedTerminal<T>
+        {
+            private Empty(List<T> terminals, IWebSocket combinedWebSocket) : base(new List<T>(), combinedWebSocket) { }
+        }
+        
         internal static CombinedTerminal<T> Create(IEnumerable<T> terminals)
         {
             var terminalList = new List<T>();
@@ -25,7 +30,7 @@ namespace RESTable.WebSockets
             return new CombinedTerminal<T>
             (
                 terminals: terminalList,
-                combinedWebSocket: new WebSocketCombination(webSockets)
+                combinedWebSocket: new WebSocketCombination(webSockets.ToArray())
             );
         }
 
@@ -48,7 +53,7 @@ namespace RESTable.WebSockets
                 Terminals.Add(terminal);
                 webSockets.Add(terminal.GetWebSocket());
             }
-            CombinedWebSocket = new WebSocketCombination(webSockets);
+            CombinedWebSocket = new WebSocketCombination(webSockets.ToArray());
         }
     }
 }

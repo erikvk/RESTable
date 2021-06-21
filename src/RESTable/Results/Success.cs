@@ -52,7 +52,7 @@ namespace RESTable.Results
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
-        public string HeadersStringCache { get; set; }
+        public string? HeadersStringCache { get; set; }
 
         /// <inheritdoc />
         [RESTableMember(hide: true)]

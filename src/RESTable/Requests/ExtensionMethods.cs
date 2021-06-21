@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
@@ -189,6 +190,33 @@ namespace RESTable.Requests
         {
             editMetaconditions(request.MetaConditions);
             return request;
+        }
+
+        /// <summary>
+        /// Evaluates the request asynchronously and returns the result, or
+        /// disposes the result and throws an exception if the result is an error.
+        /// </summary>
+        public static async Task<IResult> GetResultOrThrow(this IRequest request, CancellationToken cancellationToken = new())
+        {
+            var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
+            if (result.IsError)
+                await result.DisposeAsync();
+            result.ThrowIfError();
+            return result;
+        }
+
+        /// <summary>
+        /// Evaluates the request asynchronously and returns the result, or
+        /// disposes the result and throws an exception if the result is an error
+        /// or not of the given result type.
+        /// </summary>
+        public static async Task<TResult> GetResultOrThrow<TResult>(this IRequest request, CancellationToken cancellationToken = new()) where TResult : IResult
+        {
+            var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
+            if (result.IsError || result is not TResult)
+                await result.DisposeAsync();
+            result.ThrowIfError();
+            return (TResult) result;
         }
     }
 }

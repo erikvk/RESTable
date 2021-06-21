@@ -81,23 +81,21 @@ namespace RESTable.Requests
         /// Creates a request in this context for a resource type, using the given method and optional protocol id and 
         /// view name. If the protocol ID is null, the default protocol will be used. T must be a registered resource type.
         /// </summary>
-        /// <param name="method">The method to perform, for example GET</param>
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
-        public virtual IRequest<T> CreateRequest<T>(Method method = GET, string protocolId = "restable", string? viewName = null) where T : class
+        public virtual IRequest<T> CreateRequest<T>(string protocolId = "restable", string? viewName = null) where T : class
         {
             var resourceCollection = Services.GetRequiredService<ResourceCollection>();
             var resource = resourceCollection.SafeGetResource<T>() ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
             var parameters = new RequestParameters
             (
                 context: this,
-                method: method,
+                method: GET,
                 resource: resource,
                 protocolIdentifier: protocolId,
                 viewName: viewName
             );
-            parameters.SetBodyObject(null);
             return new Request<T>(resource, parameters);
         }
 

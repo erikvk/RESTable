@@ -64,7 +64,7 @@ namespace RESTable.Results
         public DateTime LogTime { get; } = DateTime.Now;
 
         /// <inheritdoc />
-        public string HeadersStringCache { get; set; }
+        public string? HeadersStringCache { get; set; }
 
         /// <inheritdoc />
         public bool ExcludeHeaders { get; }

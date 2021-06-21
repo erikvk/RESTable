@@ -12,7 +12,7 @@ namespace RESTable.Internal.Logging
 
         public MessageType MessageType { get; }
         public Headers Headers { get; }
-        public string HeadersStringCache { get; set; }
+        public string? HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
         public DateTime LogTime { get; }
         public RESTableContext Context { get; }

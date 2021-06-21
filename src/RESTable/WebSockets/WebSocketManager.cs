@@ -38,7 +38,7 @@ namespace RESTable.WebSockets
 
             if (webSocket.IsStreaming)
             {
-                await webSocket.HandleStreamingTextInput(textInput).ConfigureAwait(false);
+                await webSocket.HandleStreamingTextInput(textInput, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -51,42 +51,42 @@ namespace RESTable.WebSockets
                         try
                         {
                             JsonProvider.Populate(json, webSocket.Terminal);
-                            await webSocket.SendText("Terminal updated").ConfigureAwait(false);
-                            await webSocket.SendJson(webSocket.Terminal).ConfigureAwait(false);
+                            await webSocket.SendText("Terminal updated", cancellationToken).ConfigureAwait(false);
+                            await webSocket.SendJson(webSocket.Terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
-                            await webSocket.SendException(e).ConfigureAwait(false);
+                            await webSocket.SendException(e, cancellationToken).ConfigureAwait(false);
                         }
                         break;
                     case "#TERMINAL":
-                        await webSocket.SendJson(webSocket.Terminal).ConfigureAwait(false);
+                        await webSocket.SendJson(webSocket.Terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     case "#INFO" when tail is string json:
                         try
                         {
                             var profile = webSocket.GetAppProfile();
                             JsonProvider.Populate(json, profile);
-                            await webSocket.SendText("Profile updated").ConfigureAwait(false);
-                            await webSocket.SendJson(webSocket.GetAppProfile()).ConfigureAwait(false);
+                            await webSocket.SendText("Profile updated", cancellationToken).ConfigureAwait(false);
+                            await webSocket.SendJson(webSocket.GetAppProfile(), cancellationToken: cancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
-                            await webSocket.SendException(e).ConfigureAwait(false);
+                            await webSocket.SendException(e, cancellationToken).ConfigureAwait(false);
                         }
                         break;
                     case "#INFO":
-                        await webSocket.SendJson(webSocket.GetAppProfile()).ConfigureAwait(false);
+                        await webSocket.SendJson(webSocket.GetAppProfile(), cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     case "#SHELL":
                     case "#HOME":
-                        await webSocket.DirectToShell().ConfigureAwait(false);
+                        await webSocket.DirectToShell(cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     case "#DISCONNECT":
                         await webSocket.DisposeAsync().ConfigureAwait(false);
                         break;
                     default:
-                        await webSocket.SendText($"Unknown global command '{command}'").ConfigureAwait(false);
+                        await webSocket.SendText($"Unknown global command '{command}'", cancellationToken).ConfigureAwait(false);
                         break;
                 }
             }

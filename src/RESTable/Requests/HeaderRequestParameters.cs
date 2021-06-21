@@ -39,7 +39,7 @@ namespace RESTable.Requests
 
         public RESTableContext Context => Request.Context;
 
-        public string HeadersStringCache { get; set; }
+        public string? HeadersStringCache { get; set; }
 
         public bool ExcludeHeaders => false;
 

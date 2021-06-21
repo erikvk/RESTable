@@ -37,7 +37,8 @@ namespace RESTable.Example
 
             var rootContext = new RESTableContext(rootClient, app.ApplicationServices);
             var personPostRequest = rootContext
-                .CreateRequest<Person>(Method.POST)
+                .CreateRequest<Person>()
+                .WithMethod(Method.POST)
                 .WithBody(new object[]
                 {
                     new

@@ -38,12 +38,12 @@ namespace RESTable.Results
         /// <summary>
         /// The changed non-deleted entities in case of TooManyEntities being false. Else this array is empty.
         /// </summary>
-        public T[] Entities { get; }
+        public IReadOnlyCollection<T> Entities { get; }
 
         public override IEnumerable<object> GetEntities() => Entities;
 
         /// <inheritdoc />
-        protected Change(IRequest request, int count, T[] entities) : base(request, count)
+        protected Change(IRequest request, int count, IReadOnlyCollection<T> entities) : base(request, count)
         {
             Entities = entities;
         }

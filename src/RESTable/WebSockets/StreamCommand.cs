@@ -2,7 +2,7 @@
 {
     internal class StreamCommand
     {
-        public string Command;
-        public string Description;
+        public string? Command;
+        public string? Description;
     }
 }

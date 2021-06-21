@@ -1,4 +1,5 @@
-﻿using RESTable.Requests;
+﻿using System.Collections.Generic;
+using RESTable.Requests;
 
 namespace RESTable.Results
 {
@@ -8,7 +9,7 @@ namespace RESTable.Results
     /// </summary>
     public class UpdatedEntities<T> : Change<T> where T :class
     {
-        public UpdatedEntities(IRequest request, int count, T[] entities) : base(request, count, entities)
+        public UpdatedEntities(IRequest request, int count, IReadOnlyCollection<T> entities) : base(request, count, entities)
         {
             Headers.Info = $"{count} entities updated in '{request.Resource}'";
         }
