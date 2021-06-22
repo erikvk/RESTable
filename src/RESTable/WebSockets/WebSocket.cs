@@ -205,7 +205,7 @@ namespace RESTable.WebSockets
 
         /// <inheritdoc />
         /// <summary>
-        /// Disposes the WebSocket. Same as Disconnect()
+        /// Disposes the WebSocket and closes its connection.
         /// </summary>
         public async ValueTask DisposeAsync()
         {

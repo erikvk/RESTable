@@ -199,9 +199,11 @@ namespace RESTable.Requests
         public static async Task<IResult> GetResultOrThrow(this IRequest request, CancellationToken cancellationToken = new())
         {
             var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
-            if (result.IsError)
-                await result.DisposeAsync();
-            result.ThrowIfError();
+            if (result is Error error)
+            {
+                await request.DisposeAsync().ConfigureAwait(false);
+                throw error;
+            }
             return result;
         }
 
@@ -213,10 +215,24 @@ namespace RESTable.Requests
         public static async Task<TResult> GetResultOrThrow<TResult>(this IRequest request, CancellationToken cancellationToken = new()) where TResult : IResult
         {
             var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
-            if (result.IsError || result is not TResult)
-                await result.DisposeAsync();
-            result.ThrowIfError();
-            return (TResult) result;
+            switch (result)
+            {
+                case Error error:
+                {
+                    await request.DisposeAsync().ConfigureAwait(false);
+                    throw error;
+                }
+                case TResult tResult:
+                {
+                    return tResult;
+                }
+                case var other:
+                {
+                    await request.DisposeAsync().ConfigureAwait(false);
+                    throw new InvalidCastException($"Result was of type '{other.GetType()}', " +
+                                                   $"and cannot be converted to '{typeof(TResult)}'");
+                }
+            }
         }
     }
 }

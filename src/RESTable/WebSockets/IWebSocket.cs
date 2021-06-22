@@ -15,7 +15,7 @@ namespace RESTable.WebSockets
     /// <summary>
     /// WebSockets support sending continuous data over a single TCP connection
     /// </summary>
-    public interface IWebSocket : ITraceable, IProtocolHolder
+    public interface IWebSocket : ITraceable, IProtocolHolder, IAsyncDisposable
     {
         /// <summary>
         /// Sends the string data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 

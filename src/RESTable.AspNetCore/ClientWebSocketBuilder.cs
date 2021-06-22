@@ -94,7 +94,7 @@ namespace RESTable.AspNetCore
             return this;
         }
 
-        public async Task Connect(CancellationToken cancellationToken)
+        public async Task<IWebSocket> Connect(CancellationToken cancellationToken)
         {
             if (Uri is null)
                 throw new InvalidOperationException("Missing or invalid Uri");
@@ -117,6 +117,7 @@ namespace RESTable.AspNetCore
                 terminal: Terminal ?? new CustomTerminal(this),
                 cancellationToken: cancellationToken
             ).ConfigureAwait(false);
+            return aspNetCoreWebSocket;
         }
 
         private sealed class CustomTerminal : Terminal, IAsyncDisposable

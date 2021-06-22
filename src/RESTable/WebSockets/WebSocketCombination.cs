@@ -12,7 +12,7 @@ using RESTable.Results;
 
 namespace RESTable.WebSockets
 {
-    internal class WebSocketCombination : IWebSocket
+    internal class WebSocketCombination : IWebSocket, IAsyncDisposable
     {
         #region Not supported for WebSocketCombination
 
@@ -139,6 +139,11 @@ namespace RESTable.WebSockets
             where T : Terminal
         {
             return DoForAll(ws => ws.DirectTo(terminalResource, assignments, cancellationToken));
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return default;
         }
     }
 }

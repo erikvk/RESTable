@@ -17,6 +17,7 @@ namespace RESTable.AspNetCore
 
         protected override async Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
         }
     }

@@ -71,7 +71,8 @@ namespace RESTable.Requests
         /// <summary>
         /// Evaluates the request asynchronously and returns the resulting entities as an async enumerable. Only valid for
         /// GET, PUT, PATCH and POST requests. If an error is encountered while evaluating the request, or the result can
-        /// not be converted to an enumeration of entities, an exception is thrown.
+        /// not be converted to an enumeration of entities, an exception is thrown. The result is disposed when the enumeration
+        /// is completed or aborted.
         /// </summary>
         IAsyncEnumerable<T> GetResultEntities(CancellationToken cancellationToken = new());
 

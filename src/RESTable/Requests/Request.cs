@@ -151,7 +151,7 @@ namespace RESTable.Requests
 
         public async IAsyncEnumerable<T> GetResultEntities([EnumeratorCancellation] CancellationToken cancellationToken = new())
         {
-            var result = await GetResult(cancellationToken).ConfigureAwait(false);
+            await using var result = await GetResult(cancellationToken).ConfigureAwait(false);
             switch (result)
             {
                 case Error error: throw error;
