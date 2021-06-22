@@ -514,8 +514,14 @@ namespace RESTable.WebSockets
         }
 
         /// <inheritdoc />
-        public async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? timeElapsed = null,
-            bool writeHeaders = false, bool disposeResult = true, CancellationToken cancellationToken = new())
+        public async Task SendSerializedResult
+        (
+            ISerializedResult serializedResult,
+            TimeSpan? timeElapsed = null,
+            bool writeHeaders = false,
+            bool disposeResult = true,
+            CancellationToken cancellationToken = new()
+        )
         {
             try
             {
@@ -541,17 +547,17 @@ namespace RESTable.WebSockets
         private WebSocketManager WebSocketManager { get; }
 
         /// <inheritdoc />
-        public async Task SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new())
+        public async Task SendJson(object dataObject, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new())
         {
-            if (item is null) throw new ArgumentNullException(nameof(item));
-            var message = await GetMessageStream(false, cancellationToken).ConfigureAwait(false);
+            if (dataObject is null) throw new ArgumentNullException(nameof(dataObject));
+            var message = await GetMessageStream(asText, cancellationToken).ConfigureAwait(false);
 #if NETSTANDARD2_0
             using (message)
 #else
             await using (message.ConfigureAwait(false))
 #endif
             {
-                JsonProvider.SerializeToStream(message, item, prettyPrint, ignoreNulls);
+                JsonProvider.SerializeToStream(message, dataObject, prettyPrint, ignoreNulls);
             }
         }
 

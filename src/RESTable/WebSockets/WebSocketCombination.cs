@@ -124,9 +124,9 @@ namespace RESTable.WebSockets
             }
         }
 
-        public Task SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new())
+        public Task SendJson(object dataObject, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new())
         {
-            return DoForAll(ws => ws.SendJson(item, asText, prettyPrint, ignoreNulls, cancellationToken));
+            return DoForAll(ws => ws.SendJson(dataObject, asText, prettyPrint, ignoreNulls, cancellationToken));
         }
 
         public Task StreamSerializedResult(ISerializedResult serializedResult, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,

@@ -49,7 +49,7 @@ namespace RESTable.WebSockets
         /// </summary>
         Task SendJson
         (
-            object item,
+            object dataObject,
             bool asText = false,
             bool? prettyPrint = null,
             bool ignoreNulls = false,

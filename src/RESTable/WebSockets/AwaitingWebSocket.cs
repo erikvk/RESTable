@@ -83,10 +83,10 @@ namespace RESTable.WebSockets
             return await WebSocket.GetMessageStream(asText, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task SendJson(object i, bool a = false, bool? p = null, bool ig = false, CancellationToken cancellationToken = new())
+        public async Task SendJson(object dataObject, bool a = false, bool? p = null, bool ig = false, CancellationToken cancellationToken = new())
         {
             await WaitTask.ConfigureAwait(false);
-            await WebSocket.SendJson(i, a, p, ig, cancellationToken).ConfigureAwait(false);
+            await WebSocket.SendJson(dataObject, a, p, ig, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task SendException(Exception exception, CancellationToken cancellationToken = new())

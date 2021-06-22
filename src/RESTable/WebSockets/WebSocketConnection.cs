@@ -115,9 +115,9 @@ namespace RESTable.WebSockets
         }
 
         /// <inheritdoc />
-        public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false, CancellationToken cancellationToken = new())
+        public Task SendJson(object dataObject, bool at = false, bool? p = null, bool ig = false, CancellationToken cancellationToken = new())
         {
-            return WebSocket.SendJson(i, at, p, ig, cancellationToken);
+            return WebSocket.SendJson(dataObject, at, p, ig, cancellationToken);
         }
 
         /// <inheritdoc />
