@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Data.SQLite;
 using System.Threading;
@@ -11,10 +12,15 @@ namespace RESTable.SQLite
 {
     internal class EntityEnumerator<T> : IAsyncEnumerator<T> where T : SQLiteTable
     {
-        private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
+        private static readonly Constructor<T> Constructor;
 
-        private SQLiteConnection Connection { get; set; }
-        private SQLiteCommand Command { get; set; }
+        static EntityEnumerator()
+        {
+            Constructor = typeof(T).MakeStaticConstructor<T>() ?? throw new InvalidOperationException($"Could not create constructor for type '{typeof(T).GetRESTableTypeName()}'");
+        }
+
+        private SQLiteConnection? Connection { get; set; }
+        private SQLiteCommand? Command { get; set; }
         private DbDataReader? Reader { get; set; }
         private string Sql { get; }
         private bool OnlyRowId { get; }
@@ -25,9 +31,9 @@ namespace RESTable.SQLite
         {
             if (Reader is null)
                 return;
-            await Command.DisposeAsync().ConfigureAwait(false);
+            await Command!.DisposeAsync().ConfigureAwait(false);
             await Reader.DisposeAsync().ConfigureAwait(false);
-            await Connection.DisposeAsync().ConfigureAwait(false);
+            await Connection!.DisposeAsync().ConfigureAwait(false);
         }
 
         public async ValueTask<bool> MoveNextAsync()
@@ -35,15 +41,18 @@ namespace RESTable.SQLite
             CancellationToken.ThrowIfCancellationRequested();
             if (Reader is null)
             {
-                Connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
-                Command = Connection.CreateCommand();
-                Command.CommandText = Sql;
-                Reader ??= await Command.ExecuteReaderAsync(CancellationToken).ConfigureAwait(false);
+                var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
+                var command = connection.CreateCommand();
+                command.CommandText = Sql;
+                var reader = await command.ExecuteReaderAsync(CancellationToken).ConfigureAwait(false);
+                Connection = connection;
+                Command = command;
+                Reader = reader;
             }
-            var read = await Reader.ReadAsync(CancellationToken).ConfigureAwait(false);
+            var read = await Reader!.ReadAsync(CancellationToken).ConfigureAwait(false);
             if (!read) return false;
             CurrentRowId = await Reader.GetFieldValueAsync<long>(0, CancellationToken).ConfigureAwait(false);
-            _current = await MakeEntity().ConfigureAwait(false);
+            Current = await MakeEntity(Reader).ConfigureAwait(false);
             return true;
         }
 
@@ -52,13 +61,13 @@ namespace RESTable.SQLite
             CancellationToken = cancellationToken;
             Sql = sql;
             OnlyRowId = onlyRowId;
+            Current = null!;
         }
 
-        private T _current;
 
-        public T Current => _current;
+        public T Current { get; private set; }
 
-        private async ValueTask<T> MakeEntity()
+        private async ValueTask<T> MakeEntity(IDataRecord record)
         {
             var entity = Constructor();
             entity.RowId = CurrentRowId;
@@ -68,7 +77,7 @@ namespace RESTable.SQLite
                 {
                     if (column.CLRProperty.Set is not Setter setter)
                         continue;
-                    var value = Reader[column.SQLColumn.Name];
+                    var value = record[column.SQLColumn.Name];
                     if (value is not DBNull)
                     {
                         await setter.Invoke(entity, value).ConfigureAwait(false);

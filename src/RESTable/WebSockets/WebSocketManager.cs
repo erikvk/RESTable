@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
+using RESTable.Resources;
 
 namespace RESTable.WebSockets
 {
@@ -32,9 +33,17 @@ namespace RESTable.WebSockets
 
         public async Task HandleTextInput(string wsId, string textInput, CancellationToken cancellationToken)
         {
-            if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket))
+            if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket) || webSocket is not WebSocket)
+            {
                 throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
                                                       "application. Disconnecting...");
+            }
+
+            if (webSocket.Terminal is not Terminal terminal)
+            {
+                await webSocket.DisposeAsync().ConfigureAwait(false);
+                throw new Exception($"Cannot handle text input for WebSocket '{wsId}' with no attached terminal");
+            }
 
             if (webSocket.IsStreaming)
             {
@@ -42,27 +51,46 @@ namespace RESTable.WebSockets
                 return;
             }
 
-            if (textInput.ElementAtOrDefault(0) == '#')
+            if (await HandleGlobalCommand(terminal, webSocket, textInput, cancellationToken).ConfigureAwait(false))
+            {
+                return;
+            }
+
+            await webSocket.HandleTextInputInternal(textInput, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Checks the text input for the global command pattern, and executes the command and returns true
+        /// if the input encoded a global command.
+        /// </summary>
+        private async Task<bool> HandleGlobalCommand(Terminal terminal, WebSocket webSocket, string textInput, CancellationToken cancellationToken)
+        {
+            if (textInput.ElementAtOrDefault(0) == '#' && char.IsLetter(textInput.ElementAtOrDefault(1)))
             {
                 var (command, tail) = textInput.Trim().TupleSplit(' ');
                 switch (command.ToUpperInvariant())
                 {
                     case "#TERMINAL" when tail is string json:
+                    {
                         try
                         {
-                            JsonProvider.Populate(json, webSocket.Terminal);
+                            JsonProvider.Populate(json, terminal);
                             await webSocket.SendText("Terminal updated", cancellationToken).ConfigureAwait(false);
-                            await webSocket.SendJson(webSocket.Terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
+                            await webSocket.SendJson(terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
                             await webSocket.SendException(e, cancellationToken).ConfigureAwait(false);
                         }
-                        break;
+                        return true;
+                    }
                     case "#TERMINAL":
-                        await webSocket.SendJson(webSocket.Terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
-                        break;
+                    {
+                        await webSocket.SendJson(terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        return true;
+                    }
                     case "#INFO" when tail is string json:
+                    {
                         try
                         {
                             var profile = webSocket.GetAppProfile();
@@ -74,29 +102,36 @@ namespace RESTable.WebSockets
                         {
                             await webSocket.SendException(e, cancellationToken).ConfigureAwait(false);
                         }
-                        break;
+                        return true;
+                    }
                     case "#INFO":
+                    {
                         await webSocket.SendJson(webSocket.GetAppProfile(), cancellationToken: cancellationToken).ConfigureAwait(false);
-                        break;
+                        return true;
+                    }
                     case "#SHELL":
                     case "#HOME":
+                    {
                         await webSocket.DirectToShell(cancellationToken: cancellationToken).ConfigureAwait(false);
-                        break;
+                        return true;
+                    }
                     case "#DISCONNECT":
+                    {
                         await webSocket.DisposeAsync().ConfigureAwait(false);
-                        break;
-                    default:
-                        await webSocket.SendText($"Unknown global command '{command}'", cancellationToken).ConfigureAwait(false);
-                        break;
+                        return true;
+                    }
                 }
             }
-            else await webSocket.HandleTextInputInternal(textInput, cancellationToken).ConfigureAwait(false);
+            return false;
         }
 
         public async Task HandleBinaryInput(string wsId, Stream binaryInput, CancellationToken cancellationToken)
         {
-            if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket))
-                throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
+            if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket) || webSocket is not WebSocket)
+            {
+                throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
+                                                      "application. Disconnecting...");
+            }
             await webSocket.HandleBinaryInputInternal(binaryInput, cancellationToken).ConfigureAwait(false);
         }
 

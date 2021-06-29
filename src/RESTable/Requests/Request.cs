@@ -235,7 +235,7 @@ namespace RESTable.Requests
                         if (IsWebSocketUpgrade)
                         {
                             // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
-                            await Context.WebSocket.OpenAndAttachToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
+                            await Context.WebSocket.OpenAndAttachServerSocketToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
                             return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
                         }
                         return await SwitchTerminal(terminalResource, cancellationToken).ConfigureAwait(false);

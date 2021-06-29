@@ -20,8 +20,7 @@ namespace RESTable.AspNetCore
         /// </summary>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IApplicationBuilder 
-            UseRESTableAspNetCore(this IApplicationBuilder builder)
+        public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder)
         {
             var configurator = builder.ApplicationServices.GetRequiredService<RESTableConfigurator>();
             if (!configurator.IsConfigured)
@@ -35,7 +34,7 @@ namespace RESTable.AspNetCore
 
             builder.UseRouter(router =>
             {
-                router.MapVerb("OPTIONS", template, context =>  HandleOptionsRequest(rootUri, context));
+                router.MapVerb("OPTIONS", template, context => HandleOptionsRequest(rootUri, context));
 
                 foreach (var method in config.Methods)
                 {
@@ -59,14 +58,15 @@ namespace RESTable.AspNetCore
 #if NETSTANDARD2_0
             using (remote)
 #else
-            await using (remote.ConfigureAwait(false))
+            await using (remote)
 #endif
             {
-                await using var serializedResult = await options.Serialize(remote).ConfigureAwait(false);
+                await using var serializedResult = await options.Serialize(remote);
             }
         }
 
-        private static async Task HandleRequest(string rootUri, Method method, HttpContext aspNetCoreContext, IRequestAuthenticator authenticator, CancellationToken cancellationToken)
+        private static async Task HandleRequest(string rootUri, Method method, HttpContext aspNetCoreContext, IRequestAuthenticator authenticator,
+            CancellationToken cancellationToken)
         {
             var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(rootUri);
             var headers = new Headers(aspNetCoreContext.Request.Headers);
@@ -83,16 +83,15 @@ namespace RESTable.AspNetCore
 
             var body = aspNetCoreContext.Request.Body;
             var request = context.CreateRequest(method, uri, body, headers);
-            await using var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
+            await using var result = await request.GetResult(cancellationToken);
             switch (result)
             {
                 case WebSocketTransferSuccess:
                     return;
                 case WebSocketUpgradeSuccessful ws:
                 {
-                    var webSocket = ws.WebSocket;
-                    await using (webSocket.ConfigureAwait(false))
-                        await webSocket.LifetimeTask.ConfigureAwait(false);
+                    await using var webSocket = ws.WebSocket;
+                    await webSocket.LifetimeTask;
                     break;
                 }
                 default:
@@ -103,10 +102,10 @@ namespace RESTable.AspNetCore
 #if NETSTANDARD2_0
                     using (remote)
 #else
-                    await using (remote.ConfigureAwait(false))
+                    await using (remote)
 #endif
                     {
-                        await using var serializedResult = await result.Serialize(remote, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await using var serializedResult = await result.Serialize(remote, cancellationToken: cancellationToken);
                     }
                     break;
                 }

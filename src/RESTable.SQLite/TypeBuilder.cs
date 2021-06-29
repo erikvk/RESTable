@@ -16,20 +16,20 @@ namespace RESTable.SQLite
         static TypeBuilder()
         {
             AssemblyName = new AssemblyName(AssemblyNameString);
-            AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName,AssemblyBuilderAccess.Run);
+            AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName, AssemblyBuilderAccess.Run);
             ModuleBuilder = AssemblyBuilder.DefineDynamicModule(AssemblyName.Name + ".dll");
         }
 
-        internal static Type GetType(ProceduralResource resource)
+        internal static Type? GetType(ProceduralResource resource)
         {
             var existing = AssemblyBuilder.GetType(resource.Name);
             if (existing is not null) return existing;
-            var baseType = Type.GetType(resource.BaseTypeName);
+            var baseType = resource.BaseTypeName is string baseTypeName ? Type.GetType(baseTypeName) : null;
             if (baseType is null) return null;
             return MakeType(resource.Name, baseType);
         }
 
-        private static Type MakeType(string name, Type baseType) => ModuleBuilder
+        private static Type? MakeType(string name, Type baseType) => ModuleBuilder
             .DefineType(name, Class | Public | Sealed, baseType)
             .CreateType();
     }

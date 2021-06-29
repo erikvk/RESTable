@@ -13,7 +13,7 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.*" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="5.0.*" />
         <PackageReference Include="Microsoft.Extensions.Primitives" Version="5.0.*" />
-        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.1.*" />
+        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.1.2" />
         <PackageReference Include="System.Linq.Async" Version="5.0.*" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.*" />
     </ItemGroup>

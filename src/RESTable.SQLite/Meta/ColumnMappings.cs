@@ -7,7 +7,7 @@ namespace RESTable.SQLite.Meta
 {
     internal class NoCaseComparer : IEqualityComparer<string>
     {
-        public bool Equals(string x, string y) => string.Equals(x, y, StringComparison.CurrentCultureIgnoreCase);
+        public bool Equals(string? x, string? y) => string.Equals(x, y, StringComparison.CurrentCultureIgnoreCase);
         public int GetHashCode(string obj) => obj.ToLower().GetHashCode();
     }
     

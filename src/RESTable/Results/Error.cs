@@ -26,10 +26,10 @@ namespace RESTable.Results
         public Cookies Cookies { get; } = new();
 
         /// <inheritdoc />
-        public bool IsSuccess { get; }
+        public bool IsSuccess => false;
 
         /// <inheritdoc />
-        public bool IsError => !IsSuccess;
+        public bool IsError => true;
 
         #region ITraceable, ILogable
 
@@ -58,7 +58,7 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public ValueTask<string> GetLogContent() => new(_logContent);
+        public ValueTask<string?> GetLogContent() => new(_logContent);
 
         /// <inheritdoc />
         public DateTime LogTime { get; } = DateTime.Now;
@@ -67,24 +67,20 @@ namespace RESTable.Results
         public string? HeadersStringCache { get; set; }
 
         /// <inheritdoc />
-        public bool ExcludeHeaders { get; }
+        public bool ExcludeHeaders => false;
 
         #endregion
 
         internal Error(ErrorCodes code, string message) : base(code, message)
         {
-            ExcludeHeaders = false;
             Headers.Info = Message;
-            IsSuccess = false;
         }
 
         internal Error(ErrorCodes code, string? message, Exception? ie) : base(code, message, ie)
         {
-            ExcludeHeaders = false;
             if (message is null)
                 Headers.Info = ie?.Message;
             else Headers.Info = message;
-            IsSuccess = false;
         }
 
         /// <inheritdoc />

@@ -2,6 +2,6 @@
 {
     internal class SQLiteProceduralResourceData
     {
-        public string BaseTypeName { get; set; }
+        public string? BaseTypeName { get; set; }
     }
 }

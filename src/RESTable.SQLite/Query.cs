@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SQLite;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTable.SQLite
@@ -30,7 +32,7 @@ namespace RESTable.SQLite
             }
         }
 
-        public async IAsyncEnumerable<DbDataReader> GetRows()
+        public async IAsyncEnumerable<DbDataReader> GetRows([EnumeratorCancellation] CancellationToken cancellationToken = new())
         {
             var connection = new SQLiteConnection(ConnectionString).OpenAndReturn();
             await using (connection.ConfigureAwait(false))
@@ -39,10 +41,10 @@ namespace RESTable.SQLite
                 command.CommandText = Sql;
                 await using (command.ConfigureAwait(false))
                 {
-                    var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+                    var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                     await using (reader.ConfigureAwait(false))
                     {
-                        while (await reader.ReadAsync().ConfigureAwait(false))
+                        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                         {
                             yield return reader;
                         }

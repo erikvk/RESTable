@@ -104,6 +104,11 @@ namespace RESTable.AspNetCore
             {
                 clientWebSocket.Options.SetRequestHeader(key, value);
             }
+            // Auth headers are masked in enumeration
+            if (Headers.Authorization is string authHeader)
+            {
+                clientWebSocket.Options.SetRequestHeader("Authorization", authHeader);
+            }
             var aspNetCoreWebSocket = new AspNetCoreClientWebSocket
             (
                 webSocket: clientWebSocket,
@@ -111,7 +116,7 @@ namespace RESTable.AspNetCore
                 webSocketId: WebSocketId,
                 context: Context
             );
-            await aspNetCoreWebSocket.OpenAndAttachToTerminal
+            await aspNetCoreWebSocket.OpenAndAttachClientSocketToTerminal
             (
                 protocolHolder: this,
                 terminal: Terminal ?? new CustomTerminal(this),

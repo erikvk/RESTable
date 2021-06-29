@@ -15,7 +15,7 @@ namespace RESTable.SQLite
         /// <summary>
         /// The name of this resource
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         /// <inheritdoc />
         /// <summary>
@@ -23,7 +23,7 @@ namespace RESTable.SQLite
         /// </summary>
         public Method[] Methods
         {
-            get => AvailableMethodsString.ToMethodsArray();
+            get => AvailableMethodsString?.ToMethodsArray() ?? Array.Empty<Method>();
             set => AvailableMethodsString = value.ToMethodsString();
         }
 
@@ -31,24 +31,25 @@ namespace RESTable.SQLite
         /// <summary>
         /// The description for this resource
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         /// <summary>
         /// The name of the dynamic table (used internally)
         /// </summary>
-        public string TableName { get; set; }
+        public string? TableName { get; set; }
 
         /// <summary>
         /// The name of the base type to generate the CLR type from
         /// </summary>
-        public string BaseTypeName { get; set; }
+        public string? BaseTypeName { get; set; }
 
         /// <summary>
         /// A string representation of the available REST methods
         /// </summary>
-        [RESTableMember(ignore: true)] public string AvailableMethodsString { get; set; }
+        [RESTableMember(ignore: true)]
+        public string? AvailableMethodsString { get; set; }
 
         /// <inheritdoc />
-        public Type Type => TypeBuilder.GetType(this);
+        public Type? Type => TypeBuilder.GetType(this);
     }
 }

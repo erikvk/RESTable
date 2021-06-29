@@ -15,7 +15,7 @@ namespace RESTable.Resources
         /// <summary>
         /// The description to use for the resource
         /// </summary>
-        string Description { get; }
+        string? Description { get; }
 
         /// <summary>
         /// The methods to enable for the resource
@@ -25,6 +25,6 @@ namespace RESTable.Resources
         /// <summary>
         /// The type to bind to this resource. Must be unique for this resource.
         /// </summary>
-        Type Type { get; }
+        Type? Type { get; }
     }
 }

@@ -197,7 +197,7 @@ namespace RESTable.Requests
             if (Origin is not null)
                 yield return new KeyValuePair<string, string>(nameof(Origin), Origin);
             if (Elapsed is not null)
-                yield return new KeyValuePair<string, string>("RESTable-elapsed-ms", Elapsed?.ToStringRESTable());
+                yield return new KeyValuePair<string, string>("RESTable-elapsed-ms", Elapsed.Value.ToStringRESTable());
             foreach (var pair in _dict)
                 yield return pair;
         }

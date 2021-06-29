@@ -50,7 +50,7 @@ namespace RESTable.Requests
                     decimal dec => dec.ToString(CultureInfo.InvariantCulture),
                     double dou => dou.ToString(CultureInfo.InvariantCulture),
                     float flo => flo.ToString(CultureInfo.InvariantCulture),
-                    var other => other.ToString(),
+                    _ => $"{_value}"
                 };
                 ValueTypeCode = Type.GetTypeCode(_value?.GetType());
             }
@@ -97,7 +97,7 @@ namespace RESTable.Requests
             };
         }
 
-        private int Compare(object other, object? value)
+        private int Compare(object? other, object? value)
         {
             try
             {
@@ -110,7 +110,7 @@ namespace RESTable.Requests
             }
         }
 
-        private bool EqualsPredicate(object other)
+        private bool EqualsPredicate(object? other)
         {
             try
             {
@@ -123,7 +123,7 @@ namespace RESTable.Requests
             }
         }
 
-        private bool NotEqualsPredicate(object other)
+        private bool NotEqualsPredicate(object? other)
         {
             try
             {
@@ -136,7 +136,7 @@ namespace RESTable.Requests
             }
         }
 
-        private bool LessThanPredicate(object other)
+        private bool LessThanPredicate(object? other)
         {
             try
             {
@@ -150,7 +150,7 @@ namespace RESTable.Requests
         }
 
 
-        private bool GreaterThanPredicate(object other)
+        private bool GreaterThanPredicate(object? other)
         {
             try
             {
@@ -163,7 +163,7 @@ namespace RESTable.Requests
             }
         }
 
-        private bool LessThanOrEqualsPredicate(object other)
+        private bool LessThanOrEqualsPredicate(object? other)
         {
             try
             {
@@ -176,7 +176,7 @@ namespace RESTable.Requests
             }
         }
 
-        private bool GreaterThanOrEqualsPredicate(object other)
+        private bool GreaterThanOrEqualsPredicate(object? other)
         {
             try
             {
@@ -214,8 +214,8 @@ namespace RESTable.Requests
         (
             IReadOnlyCollection<IUriCondition> uriConditions,
             ITarget<T> target,
-            out List<Condition<T>> conditions,
-            out Error error,
+            out List<Condition<T>>? conditions,
+            out Error? error,
             TermFactory termFactory,
             ConditionCache<T> conditionCache
         )
@@ -249,7 +249,7 @@ namespace RESTable.Requests
                 }
                 var term = termFactory.MakeConditionTerm(target, uriCondition.Key);
                 var last = term.Last;
-                if (!last.AllowedConditionOperators.HasFlag(uriCondition.Operator))
+                if (last!.AllowedConditionOperators.HasFlag(uriCondition.Operator) == false)
                     throw new BadConditionOperator(uriCondition.Key, target, uriCondition.Operator, term, last.AllowedConditionOperators.ToOperators());
                 condition = cache[uriCondition] = new Condition<T>
                 (
@@ -262,7 +262,7 @@ namespace RESTable.Requests
             return list;
         }
 
-        public void Deconstruct(out string key, out object value)
+        public void Deconstruct(out string key, out object? value)
         {
             key = Key;
             value = Value;

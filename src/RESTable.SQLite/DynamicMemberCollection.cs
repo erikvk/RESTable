@@ -75,7 +75,7 @@ namespace RESTable.SQLite
         public bool IsReadOnly => ValueDictionary.IsReadOnly;
 
         /// <inheritdoc />
-        public object this[string key]
+        public object? this[string key]
         {
             get => ValueDictionary[key].Value;
             set => TrySetValue(key, value);
@@ -84,7 +84,7 @@ namespace RESTable.SQLite
         /// <summary>
         /// Returns the value with the given member name, or null if there is no such value
         /// </summary>
-        public object SafeGet(string memberName)
+        public object? SafeGet(string memberName)
         {
             ValueDictionary.TryGetValue(memberName, out var pair);
             return pair.Value;

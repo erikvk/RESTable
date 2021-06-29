@@ -43,6 +43,7 @@ namespace RESTable.SQLite.Meta
             IsRowId = name.EqualsNoCase("rowid");
             Type = type;
             DbType = type.ToDbTypeCode();
+            Mapping = null!;
         }
 
         internal void SetMapping(ColumnMapping mapping) => Mapping = mapping;
@@ -68,9 +69,9 @@ namespace RESTable.SQLite.Meta
         public override string ToString() => ToSql();
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj is SQLColumn col
-                                                   && string.Equals(Name, col.Name, OrdinalIgnoreCase)
-                                                   && Type == col.Type;
+        public override bool Equals(object? obj) => obj is SQLColumn col
+                                                    && string.Equals(Name, col.Name, OrdinalIgnoreCase)
+                                                    && Type == col.Type;
 
         /// <inheritdoc />
         public override int GetHashCode() => (Name.ToUpperInvariant(), Type).GetHashCode();

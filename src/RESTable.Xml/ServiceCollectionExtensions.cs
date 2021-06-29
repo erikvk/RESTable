@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddXmlProvider(this IServiceCollection serviceCollection, Action<XmlSettings> xmlSettingsAction = null)
+        public static IServiceCollection AddXmlProvider(this IServiceCollection serviceCollection, Action<XmlSettings>? xmlSettingsAction = null)
         {
             var xmlSettings = new XmlSettings();
             xmlSettingsAction?.Invoke(xmlSettings);

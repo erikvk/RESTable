@@ -20,7 +20,7 @@ namespace RESTable.SQLite
         /// The name of the column to map this property with. If null, the property name
         /// is used.
         /// </summary>
-        public string ColumnName { get; }
+        public string? ColumnName { get; }
 
         /// <inheritdoc />
         /// <summary>
@@ -30,7 +30,7 @@ namespace RESTable.SQLite
         /// is ignored by RESTable, merely that it is not mapped to an SQLite table column.</param>
         /// <param name="columnName">The name of the column to map this property with. If null, the property name
         /// is used.</param>
-        public SQLiteMemberAttribute(bool ignore = false, string columnName = null)
+        public SQLiteMemberAttribute(bool ignore = false, string? columnName = null)
         {
             Ignored = ignore;
             ColumnName = columnName;

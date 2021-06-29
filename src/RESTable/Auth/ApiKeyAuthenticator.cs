@@ -52,7 +52,7 @@ namespace RESTable.Auth
             {
                 var keyGroup = keyMatch.Groups["key"];
                 uri = uri.Remove(keyGroup.Index, keyGroup.Length);
-                authorizationHeader = $"apikey {keyGroup.Value.Substring(1, keyGroup.Length - 2).UriDecode()}";
+                authorizationHeader = $"ApiKey {keyGroup.Value.Substring(1, keyGroup.Length - 2).UriDecode()}";
             }
             else if (headers?.Authorization is string header && !string.IsNullOrWhiteSpace(header))
                 authorizationHeader = header;

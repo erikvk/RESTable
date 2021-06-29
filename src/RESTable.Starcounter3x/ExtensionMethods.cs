@@ -37,23 +37,23 @@ namespace RESTable.Starcounter3x
                 TypeCode.String => true,
                 TypeCode.Empty => false,
                 TypeCode.DBNull => false,
-                TypeCode.Object when type.IsNullable(out var t) => IsStarcounterCompatible(t),
+                TypeCode.Object when type.IsNullable(out var t) => IsStarcounterCompatible(t!),
                 TypeCode.Object when type == typeof(byte[]) => true,
                 TypeCode.Object => type.IsStarcounterDatabaseType(),
                 _ => false
             };
         }
 
-        internal static (string WhereString, object[] Values) MakeWhereClause<T>
+        internal static (string? WhereString, object[]? Values) MakeWhereClause<T>
         (
             this IEnumerable<Condition<T>> conds,
             string orderByIndexName,
-            out Dictionary<int, int> valuesAssignments,
+            out Dictionary<int, int>? valuesAssignments,
             out bool useOrderBy
         ) where T : class
         {
             var _valuesAssignments = new Dictionary<int, int>();
-            var literals = new List<object>();
+            var literals = new List<object?>();
             var hasOtherIndex = true;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
@@ -80,13 +80,13 @@ namespace RESTable.Starcounter3x
                 return (null, null);
             }
             valuesAssignments = _valuesAssignments;
-            return ($"WHERE {clause}", literals.ToArray());
+            return (WhereString: $"WHERE {clause}", Values: literals.ToArray())!;
         }
 
-        internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds, string orderByIndexName,
+        internal static (string? WhereString, object[]? Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds, string orderByIndexName,
             out bool useOrderBy) where T : class
         {
-            var literals = new List<object>();
+            var literals = new List<object?>();
             var hasOtherIndex = false;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
@@ -106,12 +106,12 @@ namespace RESTable.Starcounter3x
                 return $"t.{key} {c.ParsedOperator.SQL} ? ";
             }));
             useOrderBy = !hasOtherIndex;
-            return clause.Length > 0 ? ($"WHERE {clause} ", literals.ToArray()) : (null, null);
+            return (clause.Length > 0 ? ($"WHERE {clause} ", literals.ToArray()) : (null, null))!;
         }
 
         public static bool IsStarcounterQueryable(this DeclaredProperty declaredProperty)
         {
-            return declaredProperty.Owner.IsStarcounterDatabaseType() && declaredProperty.Type.IsStarcounterCompatible();
+            return declaredProperty.Owner?.IsStarcounterDatabaseType() == true && declaredProperty.Type.IsStarcounterCompatible();
         }
 
         private static bool IsStarcounterQueryable<T>(this Condition<T> condition) where T : class

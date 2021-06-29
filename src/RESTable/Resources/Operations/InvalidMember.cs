@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace RESTable.Resources.Operations
 {
@@ -19,6 +20,8 @@ namespace RESTable.Resources.Operations
             Index = null;
             InvalidMembers = invalidMembers;
         }
+        
+        public override string ToString() => JsonConvert.SerializeObject(this, Formatting.None);
     }
 
     public readonly struct InvalidMember

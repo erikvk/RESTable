@@ -11,9 +11,11 @@ namespace RESTable.Json
             writer.WriteValue(value?.ToString());
         }
 
-        public override Version ReadJson(JsonReader reader, Type objectType, Version? existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override Version? ReadJson(JsonReader reader, Type objectType, Version? existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             var value = JToken.Load(reader);
+            if (value.Type == JTokenType.Null)
+                return null;
             if (value.Type == JTokenType.String && value.Value<string>() is string stringValue)
                 return Version.Parse(stringValue);
             throw new FormatException("Invalid Version syntax");

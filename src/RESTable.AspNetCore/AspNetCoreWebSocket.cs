@@ -77,29 +77,30 @@ namespace RESTable.AspNetCore
                 {
                     var nextMessageResult = await WebSocket.ReceiveAsync(EmptyBuffer, cancellationToken).ConfigureAwait(false);
                     var nextMessage = new AspNetCoreInputMessageStream(WebSocket, nextMessageResult, cancellationToken);
+                    await using var nextMessageDisposable = nextMessage.ConfigureAwait(false);
                     switch (nextMessage.MessageType)
                     {
                         case Binary:
                         {
-                            // We await the handling of the entire binary message, and only await the next message 
-                            // when the handler has been completed, since streams are not immutable.
                             await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
                             break;
                         }
                         case Text:
                         {
-                            // We read the entire message to a string, then fire and forget the handler for that
-                            // message. This means we can handle multiple text messages in parallel, which is fine
-                            // since strings are immutable.
-                            await using (nextMessage)
+                            string stringMessage;
+                            await using (nextMessageDisposable)
+                            using (var reader = new StreamReader(nextMessage, Encoding.Default, true, 4096, leaveOpen: true))
                             {
-                                using var reader = new StreamReader(nextMessage, Encoding.Default);
-                                var stringMessage = await reader.ReadToEndAsync().ConfigureAwait(false);
-                                HandleTextInput(stringMessage, cancellationToken);
+                                stringMessage = await reader.ReadToEndAsync().ConfigureAwait(false);
                             }
+                            await HandleTextInput(stringMessage, cancellationToken).ConfigureAwait(false);
                             break;
                         }
                     }
+                }
+                catch (TaskCanceledException)
+                {
+                    return;
                 }
                 catch (OperationCanceledException)
                 {
@@ -110,7 +111,7 @@ namespace RESTable.AspNetCore
 
         protected override async Task Close(CancellationToken cancellationToken)
         {
-            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None).ConfigureAwait(false);
+            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken).ConfigureAwait(false);
         }
     }
 }

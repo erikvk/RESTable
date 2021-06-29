@@ -340,4 +340,6 @@ ASALocalRun/
 healthchecksdb
 
 *.sqlite
+!RESTable.SQLite
 pack.bat
+*.sqlite

@@ -160,7 +160,7 @@ namespace RESTable.Tutorial
             Version = Version.Parse(version);
         }
 
-        public override Task HandleTextInput(string input,CancellationToken cancellationToken)
+        public override Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             return WebSocket.SendText(input, cancellationToken);
         }
@@ -176,17 +176,17 @@ namespace RESTable.Tutorial
         protected override async Task Open(CancellationToken cancellationToken)
         {
             var context = WebSocket.Context.GetRequiredService<RootContext>();
+            await WebSocket.SendText("Opening ShellChatter!", cancellationToken).ConfigureAwait(false);
             await new ClientWebSocketBuilder(context)
                 .WithUri("wss://localhost:5001/restable/")
-                .OnOpen(async (ws, ct) =>
-                {
-                    await ws.SendText("Hi", ct);
-                })
+                .OnOpen(async (ws, ct) => await ws.SendText("Hi", ct))
                 .HandleTextInput(async (ws, text, ct) =>
                 {
                     await WebSocket.SendText(text, ct);
                     await Task.Delay(1000, ct);
-                    await ws.SendText("Hi", ct);
+                    const string outgoing = "Hi";
+                    await ws.SendText(outgoing, ct);
+                    await WebSocket.SendText($"(sent: '{outgoing}')", ct);
                 })
                 .Connect(cancellationToken);
         }
@@ -388,7 +388,7 @@ namespace RESTable.Tutorial
             await SendToAll($"# {Name} left the chat room.");
         }
 
-        public override async Task HandleTextInput(string input,CancellationToken cancellationToken)
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(input))
                 return;

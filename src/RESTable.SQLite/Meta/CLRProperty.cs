@@ -47,7 +47,7 @@ namespace RESTable.SQLite.Meta
         /// <summary>
         /// The optional SQLiteMemberAttribute associated with this CLR property
         /// </summary>
-        public SQLiteMemberAttribute MemberAttribute { get; }
+        public SQLiteMemberAttribute? MemberAttribute { get; }
 
         internal void SetMapping(ColumnMapping mapping)
         {
@@ -84,7 +84,7 @@ namespace RESTable.SQLite.Meta
                 object? value = null;
                 if (obj is IDynamicMemberValueProvider dm && dm.TryGetValue(Name, out value, out var actualKey))
                 {
-                    Name = actualKey;
+                    Name = actualKey!;
                 }
                 return new ValueTask<object?>(value);
             };

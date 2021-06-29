@@ -16,7 +16,7 @@ namespace RESTable.SQLite
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             return type.GetProperties(Public | Instance)
-                .Where(property => !property.HasAttribute(out SQLiteMemberAttribute attribute) || !attribute.Ignored)
+                .Where(property => !property.HasAttribute<SQLiteMemberAttribute>(out var attribute) || attribute!.Ignored == false)
                 .Where(property =>
                 {
                     var getter = property.GetGetMethod();
@@ -37,7 +37,7 @@ namespace RESTable.SQLite
                                                   $"with a non-compatible type '{property.PropertyType.Name}'. This property cannot be used with SQLite. " +
                                                   "To ignore this property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true. " +
                                                   $"Valid property types: {string.Join(", ", EnumMember<CLRDataType>.Names)}");
-                    if (property.HasAttribute(out SQLiteMemberAttribute attr) && attr.ColumnName.Equals("rowid", StringComparison.OrdinalIgnoreCase))
+                    if (property.HasAttribute<SQLiteMemberAttribute>(out var attr) && attr!.ColumnName?.Equals("rowid", StringComparison.OrdinalIgnoreCase) == true)
                         throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a custom column name 'rowid'. This name is reserved by SQLite and cannot be used.");
                     if (!names.Add(property.Name))
@@ -54,9 +54,9 @@ namespace RESTable.SQLite
         }
 
 
-        private static bool IsNullable(this Type type, out Type baseType) => (baseType = Nullable.GetUnderlyingType(type)) is not null;
+        private static bool IsNullable(this Type type, out Type? baseType) => (baseType = Nullable.GetUnderlyingType(type)) is not null;
 
-        internal static (string, string) TSplit(this string str, char splitCharacter)
+        internal static (string, string?) TSplit(this string str, char splitCharacter)
         {
             var split = str.Split(splitCharacter);
             return (split[0], split.ElementAtOrDefault(1));
@@ -66,9 +66,10 @@ namespace RESTable.SQLite
 
         internal static Method[] ToMethodsArray(this string methodsString)
         {
-            if (methodsString is null) return null;
             if (methodsString.Trim() == "*")
+            {
                 return new[] {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
+            }
             return methodsString.Split(',')
                 .Where(s => s != "")
                 .Select(s => (Method) Enum.Parse(typeof(Method), s))
@@ -77,7 +78,7 @@ namespace RESTable.SQLite
 
         internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase);
 
-        private static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute)
+        private static bool HasAttribute<TAttribute>(this MemberInfo? type, out TAttribute? attribute)
             where TAttribute : Attribute
         {
             attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();

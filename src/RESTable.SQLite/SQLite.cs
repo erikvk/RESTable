@@ -27,7 +27,7 @@ namespace RESTable.SQLite
         /// by "SELECT * FROM {type} " in the actual query</param>
         /// <param name="onlyRowId">Populates only RowIds for the resulting entities</param>
         /// <returns></returns>
-        public static IAsyncEnumerable<T> Select(string where = null, bool onlyRowId = false)
+        public static IAsyncEnumerable<T> Select(string? where = null, bool onlyRowId = false)
         {
             var enumerable = new EntityEnumerable<T>
             (
@@ -46,7 +46,7 @@ namespace RESTable.SQLite
         /// by "SELECT * FROM {type} " in the actual query</param>
         /// <param name="onlyRowId">Populates only RowIds for the resulting entities</param>
         /// <returns></returns>
-        public static async IAsyncEnumerable<T> Select(RESTableContext context, string where = null, bool onlyRowId = false)
+        public static async IAsyncEnumerable<T> Select(RESTableContext? context, string? where = null, bool onlyRowId = false)
         {
             var enumerable = (EntityEnumerable<T>) Select(where, onlyRowId);
             if (context != null)
@@ -65,10 +65,8 @@ namespace RESTable.SQLite
         /// Inserts an IEnumerable of SQLiteTable entities into the appropriate SQLite database
         /// table and returns the inserted rows.
         /// </summary>
-        public static async IAsyncEnumerable<T> Insert(RESTableContext context, IAsyncEnumerable<T> entities, [EnumeratorCancellation] CancellationToken cancellationToken = new())
+        public static async IAsyncEnumerable<T> Insert(RESTableContext? context, IAsyncEnumerable<T> entities, [EnumeratorCancellation] CancellationToken cancellationToken = new())
         {
-            if (entities is null) yield break;
-
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
             var command = connection.CreateCommand();
             var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
@@ -108,11 +106,13 @@ namespace RESTable.SQLite
         /// Updates the corresponding SQLite database table rows for a given IEnumerable 
         /// of updated entities and returns the number of rows affected.
         /// </summary>
-        public static async IAsyncEnumerable<T> Update(RESTableContext context, IAsyncEnumerable<T> updatedEntities,
-            [EnumeratorCancellation] CancellationToken cancellationToken = new())
+        public static async IAsyncEnumerable<T> Update
+        (
+            RESTableContext? context,
+            IAsyncEnumerable<T> updatedEntities,
+            [EnumeratorCancellation] CancellationToken cancellationToken = new()
+        )
         {
-            if (updatedEntities is null) yield break;
-
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
             var command = connection.CreateCommand();
             var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
@@ -158,10 +158,8 @@ namespace RESTable.SQLite
         /// <param name="entities"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public static async Task<int> Delete(RESTableContext context, IAsyncEnumerable<T> entities, CancellationToken cancellationToken = new())
+        public static async Task<int> Delete(RESTableContext? context, IAsyncEnumerable<T> entities, CancellationToken cancellationToken = new())
         {
-            if (entities is null) return 0;
-
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
             var command = connection.CreateCommand();
             var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
@@ -195,7 +193,7 @@ namespace RESTable.SQLite
         /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 
         /// by "SELECT COUNT(*) FROM {type} " in the actual query</param>
         /// <returns></returns>
-        public static async Task<long> Count(RESTableContext context, string where = null)
+        public static async Task<long> Count(RESTableContext? context, string? where = null)
         {
             var sql = $"SELECT COUNT(RowId) FROM {TableMapping<T>.TableName} {where}";
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();

@@ -13,7 +13,7 @@ namespace RESTable.WebSockets
 {
     internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     {
-        private IWebSocketInternal _duringSuspend;
+        private IWebSocketInternal? _duringSuspend;
         private IWebSocketInternal _webSocket;
 
         internal IWebSocketInternal WebSocket
@@ -34,7 +34,7 @@ namespace RESTable.WebSockets
             Context = webSocket.Context;
             if (webSocket is null || webSocket.Status == WebSocketStatus.Closed)
                 throw new WebSocketNotConnectedException();
-            WebSocket = webSocket;
+            _webSocket = webSocket;
             Resource = terminal.TerminalResource;
             Terminal = terminal;
             Terminal.SetWebSocket(this);
@@ -55,7 +55,7 @@ namespace RESTable.WebSockets
         {
             if (!IsSuspended || WebSocket is not AwaitingWebSocket)
                 return;
-            WebSocket = _duringSuspend;
+            WebSocket = _duringSuspend!;
             _duringSuspend = null;
             SuspendTaskSource.SetResult(default);
         }
@@ -71,9 +71,9 @@ namespace RESTable.WebSockets
                     disposable.Dispose();
                     break;
             }
-            WebSocket = null;
-            Terminal = null;
-            Context = null;
+            WebSocket = null!;
+            Terminal = null!;
+            Context = null!;
         }
 
         #region IWebSocket

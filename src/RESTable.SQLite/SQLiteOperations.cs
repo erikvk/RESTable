@@ -49,9 +49,8 @@ namespace RESTable.SQLite
             return await SQLite<T>.Count(request.Context, sql.ToSQLiteWhereClause()).ConfigureAwait(false);
         }
 
-        private static bool IsSQLiteQueryable(ICondition condition)
-        {
-            return condition.Term.Count == 1 && TableMapping<T>.SQLColumnNames.Contains(condition.Term.First.Name);
-        }
+        private static bool IsSQLiteQueryable(ICondition condition) => condition.Term.Count == 1 &&
+                                                                       condition.Term.First?.Name is string firstName &&
+                                                                       TableMapping<T>.SQLColumnNames.Contains(firstName);
     }
 }

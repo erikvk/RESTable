@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace RESTable.SQLite.Meta
 {
@@ -8,12 +9,13 @@ namespace RESTable.SQLite.Meta
     /// <typeparam name="T"></typeparam>
     public static class TableMapping<T> where T : SQLiteTable
     {
-        private static TableMapping mapping;
+        private static TableMapping? mapping;
 
         /// <summary>
         /// Gets the table mapping for the given type
         /// </summary>
-        public static TableMapping Get => mapping ??= TableMapping.GetTableMapping(typeof(T));
+        public static TableMapping Get => mapping ??= TableMapping.GetTableMapping(typeof(T)) ??
+                                                      throw new Exception($"No table mapping for type '{typeof(T).GetRESTableTypeName()}'");
 
         /// <summary>
         /// Gets the name from the table mapping for the given type

@@ -35,7 +35,7 @@ namespace RESTable.SQLite
         }
 
         /// <inheritdoc />
-        protected override bool IsValid(IEntityResource resource, TypeCache typeCache, out string reason)
+        protected override bool IsValid(IEntityResource resource, TypeCache typeCache, out string? reason)
         {
             reason = null;
             return true;
@@ -50,9 +50,6 @@ namespace RESTable.SQLite
                 attribute.FlagStaticMembers = true;
             }
         }
-
-        /// <inheritdoc />
-        protected override IDatabaseIndexer DatabaseIndexer { get; }
 
         /// <summary>
         /// Creates a new instance of the SQLiteProvider class, for use in calls to RESTableConfig.Init()
@@ -98,7 +95,6 @@ namespace RESTable.SQLite
                 DatabaseName = fileName,
                 DatabaseConnectionString = builder.ToString()
             };
-            DatabaseIndexer = new SQLiteIndexer();
             Init();
         }
 
@@ -107,9 +103,12 @@ namespace RESTable.SQLite
         {
             foreach (var claimed in claimedResources)
             {
-                var tableMapping = TableMapping.GetTableMapping(claimed.Type) ?? throw new SQLiteException(
-                    $"A resource '{claimed}' was claimed by the SQLite resource provider, " +
-                    "but had no existing table mapping");
+                var tableMapping = TableMapping.GetTableMapping(claimed.Type);
+                if (tableMapping is null)
+                {
+                    // Skip this type
+                    continue;
+                }
                 tableMapping.Resource = claimed;
             }
         }

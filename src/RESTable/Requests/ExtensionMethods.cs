@@ -147,7 +147,6 @@ namespace RESTable.Requests
             return WithConditions(request, conditions: Converter());
         }
 
-
         /// <summary>
         /// Sets the given selector to the request, and returns the request
         /// </summary>

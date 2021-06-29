@@ -82,7 +82,6 @@ namespace RESTable.Resources
 
         IEnumerable<IProceduralEntityResource> IEntityResourceProviderInternal.SelectProceduralResources(RESTableContext context) => SelectProceduralResources(context);
         bool IEntityResourceProviderInternal.DeleteProceduralResource(RESTableContext context, IProceduralEntityResource resource) => DeleteProceduralResource(context, resource);
-        IDatabaseIndexer IEntityResourceProviderInternal.DatabaseIndexer => DatabaseIndexer;
         void IEntityResourceProviderInternal.ReceiveClaimed(ICollection<IEntityResource> claimedResources) => ReceiveClaimed(claimedResources);
         void IEntityResourceProviderInternal.ModifyResourceAttribute(Type type, RESTableAttribute attribute) => ModifyResourceAttribute(type, attribute);
         bool IEntityResourceProviderInternal.RemoveProceduralResource(Type resourceType) => RemoveProceduralResource(resourceType);
@@ -170,12 +169,6 @@ namespace RESTable.Resources
         /// resource types that should be claimed by this ResourceProvider.
         /// </summary>
         protected abstract Type AttributeType { get; }
-
-        /// <summary>
-        /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
-        /// created by this provider to have database indexes managed by that resource.
-        /// </summary>
-        protected virtual IDatabaseIndexer? DatabaseIndexer => null;
 
         /// <summary>
         /// The ReceiveClaimed method is called by RESTable once one or more resources provided

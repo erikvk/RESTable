@@ -16,7 +16,7 @@ namespace RESTable.SQLite
         internal static CLRDataType ResolveCLRTypeCode(this Type type)
         {
             if (type.IsNullable(out var baseType))
-                type = baseType;
+                type = baseType!;
             return Type.GetTypeCode(type) switch
             {
                 TypeCode.Int16 => CLRDataType.Int16,
@@ -94,7 +94,7 @@ namespace RESTable.SQLite
             _ => CLRDataType.Unsupported
         };
 
-        private static string MakeSQLValueLiteral(this object o)
+        private static string MakeSQLValueLiteral(this object? o)
         {
             switch (o)
             {
@@ -119,12 +119,12 @@ namespace RESTable.SQLite
             _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
         };
 
-        internal static string ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
+        internal static string? ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
         {
             var values = string.Join(" AND ", conditions.Where(c => !c.Skip).Select(c =>
             {
                 var op = GetSQLOperator(c.Operator);
-                var key = c.Term.First.ActualName;
+                var key = c.Term.First!.ActualName;
                 var valueLiteral = MakeSQLValueLiteral(c.Value);
                 if (valueLiteral == "NULL")
                 {

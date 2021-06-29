@@ -1,4 +1,5 @@
-﻿using RESTable.Meta;
+﻿using System;
+using RESTable.Meta;
 using RESTable.Resources;
 
 namespace RESTable.SQLite
@@ -22,7 +23,7 @@ namespace RESTable.SQLite
         /// <summary>
         /// Indexer used for access to dynamic members
         /// </summary>
-        public object this[string memberName]
+        public object? this[string memberName]
         {
             get => DynamicMembers.SafeGet(memberName);
             set => DynamicMembers.TrySetValue(memberName, value);
@@ -33,17 +34,20 @@ namespace RESTable.SQLite
         /// </summary>
         protected ElasticSQLiteTable()
         {
-            DynamicMembers = new DynamicMemberCollection(TableMapping.GetTableMapping(GetType()));
+            var tableMapping = TableMapping.GetTableMapping(GetType());
+            if (tableMapping is null)
+                throw new InvalidOperationException($"No table mapping for type '{GetType().GetRESTableTypeName()}'");
+            DynamicMembers = new DynamicMemberCollection(tableMapping);
         }
 
         /// <inheritdoc />
-        public bool TryGetValue(string memberName, out object value, out string actualMemberName)
+        public bool TryGetValue(string memberName, out object? value, out string? actualMemberName)
         {
             return DynamicMembers.TryGetValue(memberName, out value, out actualMemberName);
         }
 
         /// <inheritdoc />
-        public bool TrySetValue(string memberName, object value)
+        public bool TrySetValue(string memberName, object? value)
         {
             return DynamicMembers.TrySetValue(memberName, value);
         }

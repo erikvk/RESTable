@@ -13,12 +13,6 @@ namespace RESTable.Resources
     internal interface IEntityResourceProviderInternal : IEntityResourceProvider
     {
         /// <summary>
-        /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
-        /// created by this provider to have database indexes managed by that resource.
-        /// </summary>
-        IDatabaseIndexer DatabaseIndexer { get; }
-
-        /// <summary>
         /// Should the given type be included in the claim of this entity resource provider?
         /// </summary>
         bool Include(Type type);

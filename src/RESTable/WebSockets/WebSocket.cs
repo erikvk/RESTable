@@ -27,7 +27,6 @@ namespace RESTable.WebSockets
         private WebSocketConnection? TerminalConnection { get; set; }
         private IProtocolHolder? ProtocolHolder { get; set; }
         private bool _disposed;
-        private HashSet<Task> OngoingTasks { get; }
 
         internal ITerminalResource? TerminalResource => TerminalConnection?.Resource;
         internal Terminal? Terminal => TerminalConnection?.Terminal;
@@ -102,17 +101,18 @@ namespace RESTable.WebSockets
             WebSocketClosed = new CancellationTokenSource();
             Status = WebSocketStatus.Waiting;
             Context = context;
-            OngoingTasks = new HashSet<Task>();
             JsonProvider = context.GetRequiredService<IJsonProvider>();
             WebSocketManager = context.GetRequiredService<WebSocketManager>();
         }
 
-        public object GetService(Type serviceType) => Context.GetService(serviceType);
+        public object? GetService(Type serviceType) => Context.GetService(serviceType);
 
-        internal async Task ConnectTo(Terminal terminal)
+        internal async Task<WebSocketConnection> ConnectTo(Terminal terminal)
         {
             await ReleaseTerminal().ConfigureAwait(false);
-            TerminalConnection = new WebSocketConnection(this, terminal);
+            var terminalConnection = new WebSocketConnection(this, terminal);
+            TerminalConnection = terminalConnection;
+            return terminalConnection;
         }
 
         private async Task ReleaseTerminal()
@@ -122,24 +122,32 @@ namespace RESTable.WebSockets
             TerminalConnection = null;
         }
 
-        public async Task OpenAndAttachToTerminal<T>(IProtocolHolder protocolHolder, T terminal, CancellationToken cancellationToken) where T : Terminal
+        public async Task OpenAndAttachClientSocketToTerminal<T>(IProtocolHolder protocolHolder, T terminal, CancellationToken cancellationToken) where T : Terminal
         {
             ProtocolHolder = protocolHolder;
             Context = new WebSocketContext(this, Client, protocolHolder.Context);
-            await Open(cancellationToken).ConfigureAwait(false);
-            await ConnectTo(terminal).ConfigureAwait(false);
-            await terminal.OpenTerminal(cancellationToken).ConfigureAwait(false);
+            var connection = await ConnectTo(terminal).ConfigureAwait(false);
+            await connection.Suspend().ConfigureAwait(false);
+            var openTerminalTask = terminal.OpenTerminal(cancellationToken);
+            await OpenServerWebSocket(cancellationToken).ConfigureAwait(false);
+            connection.Unsuspend();
+            await openTerminalTask.ConfigureAwait(false);
         }
 
-        public async Task OpenAndAttachToTerminal<T>(IProtocolHolder protocolHolder, ITerminalResource<T> terminalResource, IEnumerable<Condition<T>> assignments,
-            CancellationToken cancellationToken)
+        public async Task OpenAndAttachServerSocketToTerminal<T>
+        (
+            IProtocolHolder protocolHolder,
+            ITerminalResource<T> terminalResource,
+            IEnumerable<Condition<T>> assignments,
+            CancellationToken cancellationToken
+        )
             where T : class
         {
             ProtocolHolder = protocolHolder;
             Context = new WebSocketContext(this, Client, protocolHolder.Context);
             var terminalResourceInternal = (TerminalResource<T>) terminalResource;
             var terminal = await terminalResourceInternal.CreateTerminal(Context, assignments).ConfigureAwait(false);
-            await Open(cancellationToken).ConfigureAwait(false);
+            await OpenServerWebSocket(cancellationToken).ConfigureAwait(false);
             await ConnectTo(terminal).ConfigureAwait(false);
             await terminal.OpenTerminal(cancellationToken).ConfigureAwait(false);
         }
@@ -149,19 +157,44 @@ namespace RESTable.WebSockets
             ProtocolHolder = protocolHolder;
             Context = new WebSocketContext(this, Client, protocolHolder.Context);
             await using var webSocket = this;
-            await Context.WebSocket.Open(cancellationToken, false).ConfigureAwait(false);
+            await Context.WebSocket.OpenServerWebSocket(cancellationToken, false).ConfigureAwait(false);
             await action(this).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Sends the websocket upgrade and open this websocket for a single transfer or
-        /// a terminal connection lifetime.
+        /// Connects the websocket and opens it for a terminal connection lifetime.
         /// </summary>
-        private async Task Open(CancellationToken cancellationToken, bool acceptIncomingMessages = true)
+        private async Task OpenClientWebSocket(CancellationToken cancellationToken, bool acceptIncomingMessages = true)
         {
             switch (Status)
             {
                 case WebSocketStatus.Waiting:
+                {
+                    var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosed.Token);
+                    if (acceptIncomingMessages)
+                        LifetimeTask = InitMessageReceiveListener(cancellationTokenSource.Token);
+                    await ConnectUnderlyingWebSocket(cancellationToken).ConfigureAwait(false);
+                    Status = WebSocketStatus.Open;
+                    OpenedAt = DateTime.Now;
+                    if (TerminalConnection?.Resource?.Name != Admin.Console.TypeName)
+                    {
+                        await Admin.Console.Log(Context, new WebSocketEvent(MessageType.WebSocketOpen, this)).ConfigureAwait(false);
+                    }
+                    break;
+                }
+                default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");
+            }
+        }
+
+        /// <summary>
+        /// Sends the websocket upgrade and open this websocket for a terminal connection lifetime.
+        /// </summary>
+        private async Task OpenServerWebSocket(CancellationToken cancellationToken, bool acceptIncomingMessages = true)
+        {
+            switch (Status)
+            {
+                case WebSocketStatus.Waiting:
+                {
                     await ConnectUnderlyingWebSocket(cancellationToken).ConfigureAwait(false);
                     var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosed.Token);
                     if (acceptIncomingMessages)
@@ -173,34 +206,9 @@ namespace RESTable.WebSockets
                         await Admin.Console.Log(Context, new WebSocketEvent(MessageType.WebSocketOpen, this)).ConfigureAwait(false);
                     }
                     break;
+                }
                 default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");
             }
-        }
-
-        private void RunWebSocketTextMessageTask(Task toRun, CancellationToken cancellationToken)
-        {
-            async Task RunTask()
-            {
-                try
-                {
-                    await toRun.ConfigureAwait(false);
-                }
-                catch (TaskCanceledException)
-                {
-                    // We're currently disposing this websocket
-                }
-                catch (Exception e)
-                {
-                    await Send(e.Message, cancellationToken).ConfigureAwait(false);
-                    await DisposeAsync().ConfigureAwait(false);
-                }
-                finally
-                {
-                    OngoingTasks.Remove(toRun);
-                }
-            }
-
-            OngoingTasks.Add(RunTask());
         }
 
         /// <inheritdoc />
@@ -210,7 +218,6 @@ namespace RESTable.WebSockets
         public async ValueTask DisposeAsync()
         {
             if (_disposed) return;
-            await Task.WhenAll(OngoingTasks).ConfigureAwait(false);
             WebSocketManager.RemoveWebSocket(Id);
             Status = WebSocketStatus.PendingClose;
             if (StreamManifest is not null)
@@ -232,9 +239,9 @@ namespace RESTable.WebSockets
 
         #region Protected API
 
-        protected void HandleTextInput(string textInput, CancellationToken cancellationToken)
+        protected Task HandleTextInput(string textInput, CancellationToken cancellationToken)
         {
-            RunWebSocketTextMessageTask(WebSocketManager.HandleTextInput(Id, textInput, cancellationToken), cancellationToken);
+            return WebSocketManager.HandleTextInput(Id, textInput, cancellationToken);
         }
 
         protected Task HandleBinaryInput(Stream binaryInput, CancellationToken cancellationToken)
