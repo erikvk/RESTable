@@ -341,5 +341,5 @@ healthchecksdb
 
 *.sqlite
 !RESTable.SQLite
-pack.bat
+*.bat
 *.sqlite
