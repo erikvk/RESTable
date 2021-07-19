@@ -20,7 +20,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The value of the cookie
         /// </summary>
-        public string Value { get; }
+        public string? Value { get; }
 
         /// <summary>
         /// The date and time when the cookie expires, as universal time
@@ -35,7 +35,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The domain of the cookie
         /// </summary>
-        public string Domain { get; }
+        public string? Domain { get; }
 
         /// <summary>
         /// HTTP-only cookies aren't accessible via JavaScript through the Document.cookie
@@ -51,7 +51,7 @@ namespace RESTable.Requests
         /// <summary>
         /// The path that this cookie is placed at
         /// </summary>
-        public string Path { get; }
+        public string? Path { get; }
 
         #region In future versions
 
@@ -84,13 +84,13 @@ namespace RESTable.Requests
         public Cookie
         (
             string name,
-            string value,
+            string? value,
             DateTime? expires = null,
             int? maxAge = null,
-            string domain = null,
+            string? domain = null,
             bool httpOnly = false,
             bool secure = false,
-            string path = null
+            string? path = null
         )
         {
             if (!Regex.IsMatch(name, RegEx.CookieName))
@@ -112,14 +112,14 @@ namespace RESTable.Requests
         {
             try
             {
-                string name = null;
-                string value = null;
+                string? name = null;
+                string? value = null;
                 DateTime? expires = null;
                 int? maxAge = null;
-                string domain = null;
+                string? domain = null;
                 var httpOnly = false;
                 var secure = false;
-                string path = null;
+                string? path = null;
 
                 var parts = cookieString
                     .Split(';')
@@ -143,7 +143,7 @@ namespace RESTable.Requests
                                 expires = DateTime.Parse(valuePart).ToUniversalTime();
                                 break;
                             case var _ when keyPart.EqualsNoCase("Max-Age") && !string.IsNullOrWhiteSpace(valuePart):
-                                maxAge = int.Parse(valuePart);
+                                maxAge = int.Parse(valuePart!);
                                 break;
                             case var _ when keyPart.EqualsNoCase("Domain") && !string.IsNullOrWhiteSpace(valuePart):
                                 domain = valuePart;
@@ -160,8 +160,9 @@ namespace RESTable.Requests
                         }
                     }
                 }
-
-                if (!nameAndValueParsed) throw new ArgumentException();
+                if (name is null || !nameAndValueParsed)
+                    throw new ArgumentException("Invalid cookie syntax", nameof(cookieString));
+                
                 return new Cookie(name, value, expires, maxAge, domain, httpOnly, secure, path);
             }
             catch (Exception e)
@@ -195,7 +196,7 @@ namespace RESTable.Requests
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is Cookie cookie && Equals(cookie);
         }
@@ -242,6 +243,16 @@ namespace RESTable.Requests
                 writer.Append(Path);
             }
             return writer.ToString();
+        }
+
+        public static bool operator ==(Cookie left, Cookie right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Cookie left, Cookie right)
+        {
+            return !(left == right);
         }
     }
 }

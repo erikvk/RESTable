@@ -36,7 +36,7 @@ namespace RESTable.Internal
 
         internal bool Equality => OpCode is Operators.EQUALS or Operators.NOT_EQUALS;
         internal bool Compare => !Equality;
-        public override bool Equals(object obj) => obj is Operator op && op.OpCode == OpCode;
+        public override bool Equals(object? obj) => obj is Operator op && op.OpCode == OpCode;
         public bool Equals(Operator other) => OpCode == other.OpCode;
         public override int GetHashCode() => (int) OpCode;
         public override string ToString() => Common;

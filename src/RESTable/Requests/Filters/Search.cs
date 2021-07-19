@@ -14,7 +14,7 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// The case pattern to search for
         /// </summary>
-        public string Pattern { get; }
+        public string? Pattern { get; }
 
         /// <summary>
         /// The selector to use before searching
@@ -29,15 +29,15 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Creates a new Search filter based on a given search pattern
         /// </summary>
-        public Search(string pattern)
+        public Search(string? pattern)
         {
-            var parts = pattern.Split(',');
-            Pattern = parts.ElementAtOrDefault(0);
+            var parts = pattern?.Split(',');
+            Pattern = parts?.ElementAtOrDefault(0);
             if (string.IsNullOrWhiteSpace(Pattern))
                 throw new ArgumentException("Invalid search pattern. Cannot be null or whitespace");
-            Selector = parts.ElementAtOrDefault(1);
+            Selector = parts?.ElementAtOrDefault(1);
             if (Selector == "") Selector = null;
-            switch (parts.ElementAtOrDefault(2))
+            switch (parts?.ElementAtOrDefault(2))
             {
                 case "":
                 case null:
@@ -55,7 +55,7 @@ namespace RESTable.Requests.Filters
             }
         }
 
-        private Search(string pattern, string selector, bool ignoreCase)
+        private Search(string? pattern, string? selector, bool ignoreCase)
         {
             Pattern = pattern;
             Selector = selector;
@@ -70,7 +70,8 @@ namespace RESTable.Requests.Filters
         /// </summary>
         public virtual IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
         {
-            if (string.IsNullOrWhiteSpace(Pattern)) return entities;
+            if (Pattern is null) 
+                return entities;
             var comparison = IgnoreCase ? OrdinalIgnoreCase : Ordinal;
             if (Selector is null)
             {

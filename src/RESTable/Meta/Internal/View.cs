@@ -65,7 +65,7 @@ namespace RESTable.Meta.Internal
         public override string ToString() => $"{EntityResource.Name}-{Name}";
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj is View<TResource> view && view.Name == Name;
+        public override bool Equals(object? obj) => obj is View<TResource> view && view.Name == Name;
 
         /// <inheritdoc />
         public override int GetHashCode() => Name.GetHashCode();

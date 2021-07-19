@@ -706,7 +706,7 @@ namespace RESTable.WebSockets
         public override string ToString() => Id;
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj is WebSocket ws && ws.Id == Id;
+        public override bool Equals(object? obj) => obj is WebSocket ws && ws.Id == Id;
 
         /// <inheritdoc />
         public override int GetHashCode() => Id.GetHashCode();

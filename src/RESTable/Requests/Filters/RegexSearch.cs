@@ -13,7 +13,7 @@ namespace RESTable.Requests.Filters
     public class RegexSearch : Search
     {
         /// <inheritdoc />
-        public RegexSearch(string pattern) : base(pattern) { }
+        public RegexSearch(string? pattern) : base(pattern) { }
 
         /// <inheritdoc />
         /// <summary>
@@ -22,7 +22,8 @@ namespace RESTable.Requests.Filters
         /// </summary>
         public override IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities)
         {
-            if (string.IsNullOrWhiteSpace(Pattern)) return entities;
+            if (Pattern is null)
+                return entities;
             var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             var options = IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             if (Selector is null)

@@ -19,16 +19,15 @@ namespace RESTable.Requests
         }
 
         [Pure]
-        public Condition<T> Redirect<T>(ICondition condition, string newKey = null) where T : class => new
+        public Condition<T> Redirect<T>(ICondition condition, string? newKey = null) where T : class => new
         (
-            term: TermFactory.MakeConditionTerm(ResourceCollection.SafeGetResource<T>(), newKey ?? condition.Key)
-                  ?? TermFactory.MakeOrGetCachedTerm(typeof(T), newKey ?? condition.Key, ".", TermBindingRule.DeclaredWithDynamicFallback),
+            term: TermFactory.MakeConditionTerm(ResourceCollection.GetResource<T>(), newKey ?? condition.Key),
             op: condition.Operator,
             value: condition.Value
         );
 
         [Pure]
-        public bool TryRedirect<TNew>(ICondition condition, out Condition<TNew> newCondition, string newKey = null)
+        public bool TryRedirect<TNew>(ICondition condition, out Condition<TNew>? newCondition, string? newKey = null)
             where TNew : class
         {
             try
@@ -68,19 +67,25 @@ namespace RESTable.Requests
             if (newKeyNames is null)
                 throw new ArgumentNullException(nameof(newKeyNames));
             foreach (var (direct, to) in newKeyNames)
-                newKeyNamesDict[direct ?? throw new ArgumentNullException()] = to ?? throw new ArgumentNullException();
+            {
+                newKeyNamesDict[direct] = to;
+            }
             foreach (var condition in conditions)
             {
                 if (!condition.Term.IsDynamic)
                 {
-                    Condition<T> redirected;
+                    Condition<T>? redirected;
                     if (newKeyNamesDict.TryGetValue(condition.Key, out var newKey))
                     {
                         if (TryRedirect(condition, out redirected, newKey: newKey))
-                            yield return redirected;
+                        {
+                            yield return redirected!;
+                        }
                     }
-                    else if (props.ContainsKey(condition.Term.First.Name) && TryRedirect(condition, out redirected))
-                        yield return redirected;
+                    else if (condition.Term.First?.Name is string name && props.ContainsKey(name) && TryRedirect(condition, out redirected))
+                    {
+                        yield return redirected!;
+                    }
                 }
             }
         }

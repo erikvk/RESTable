@@ -31,7 +31,7 @@ namespace RESTable.Requests.Filters
 
 
         public bool Equals(Limit other) => Number == other.Number;
-        public override bool Equals(object obj) => obj is Limit limit && Equals(limit);
+        public override bool Equals(object? obj) => obj is Limit limit && Equals(limit);
         public override int GetHashCode() => Number.GetHashCode();
         public override string ToString() => Number.ToString();
 

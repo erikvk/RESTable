@@ -77,8 +77,17 @@ namespace RESTable.Requests
         /// <summary>
         /// Adds a new cookie with the given cookie name and value
         /// </summary>
-        public bool Add(string name, string value, DateTime? expires = null, int? maxAge = null, string domain = null, bool httpOnly = false,
-            bool secure = false, string path = null)
+        public bool Add
+        (
+            string name,
+            string value,
+            DateTime? expires = null,
+            int? maxAge = null,
+            string? domain = null,
+            bool httpOnly = false,
+            bool secure = false,
+            string? path = null
+        )
         {
             return Add(new Cookie(name, value, expires, maxAge, domain, httpOnly, secure, path));
         }

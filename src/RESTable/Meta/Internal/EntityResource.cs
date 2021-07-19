@@ -196,10 +196,10 @@ namespace RESTable.Meta.Internal
             }
         }
 
-        public override bool Equals(object obj) => obj is EntityResource<T> resource && resource.Name == Name;
+        public override bool Equals(object? obj) => obj is EntityResource<T> resource && resource.Name == Name;
         public bool Equals(IResource? x, IResource? y) => x?.Name == y?.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
-        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public int CompareTo(IResource? other) => string.Compare(Name, other?.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();
     }
 }

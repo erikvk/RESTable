@@ -41,7 +41,7 @@ namespace RESTable.Meta
         /// </summary>
         public Term Create(PropertyInfo propertyInfo) => MakeOrGetCachedTerm
         (
-            resource: propertyInfo.DeclaringType,
+            resource: propertyInfo.DeclaringType ?? throw new ArgumentException("Unknown type for property", nameof(propertyInfo)),
             key: propertyInfo.Name,
             componentSeparator: ".",
             bindingRule: TermBindingRule.DeclaredWithDynamicFallback
@@ -101,7 +101,7 @@ namespace RESTable.Meta
         /// The main caller is TypeCache.MakeTerm, but it's also called from places that use a 
         /// dynamic domain (processors).
         /// </summary>
-        public Term Parse(Type resource, string key, string componentSeparator, TermBindingRule bindingRule, ICollection<string> dynDomain)
+        public Term Parse(Type resource, string key, string componentSeparator, TermBindingRule bindingRule, ICollection<string>? dynDomain)
         {
             var term = new Term(componentSeparator);
 
@@ -149,7 +149,7 @@ namespace RESTable.Meta
                 };
             }
 
-            foreach (var s in key.Split(componentSeparator)) 
+            foreach (var s in key.Split(componentSeparator))
                 term.Store.Add(propertyMaker(s));
             term.SetCommonProperties();
             return term;

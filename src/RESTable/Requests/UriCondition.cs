@@ -55,10 +55,10 @@ namespace RESTable.Requests
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj is UriCondition u &&
-                                                   string.Equals(u.Key, Key, OrdinalIgnoreCase) &&
-                                                   u.Operator == Operator &&
-                                                   u.ValueLiteral == ValueLiteral;
+        public override bool Equals(object? obj) => obj is UriCondition u &&
+                                                    string.Equals(u.Key, Key, OrdinalIgnoreCase) &&
+                                                    u.Operator == Operator &&
+                                                    u.ValueLiteral == ValueLiteral;
 
         /// <inheritdoc />
         public override int GetHashCode()

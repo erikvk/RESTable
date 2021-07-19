@@ -28,7 +28,7 @@ namespace RESTable.Requests.Filters
         private Offset(int nr) => Number = nr;
 
         public bool Equals(Offset other) => Number == other.Number;
-        public override bool Equals(object obj) => obj is Offset offset && Equals(offset);
+        public override bool Equals(object? obj) => obj is Offset offset && Equals(offset);
         public override int GetHashCode() => Number.GetHashCode();
         public override string ToString() => Number.ToString();
 

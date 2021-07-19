@@ -134,7 +134,7 @@ namespace RESTable
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj is ContentType ct && ct == this;
+        public override bool Equals(object? obj) => obj is ContentType ct && ct == this;
 
         /// <summary>
         /// Converts a header value string to a ContenType

@@ -129,7 +129,7 @@ namespace RESTable
 
         #region Synchronous IO
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
             Stream.BeginRead(buffer, offset, count, callback, state);
 
         public override int EndRead(IAsyncResult asyncResult) => Stream.EndRead(asyncResult);
@@ -147,7 +147,7 @@ namespace RESTable
             Stream.WriteByte(value);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (CheckShouldSwap(count))
                 Swap().Wait();
