@@ -7,7 +7,7 @@ namespace RESTable.Requests
 {
     public static class HeadersExtensions
     {
-        public static IEnumerable<KeyValuePair<string, string>> GetCustom(this IHeadersInternal headers, HashSet<string> whitelist = null)
+        public static IEnumerable<KeyValuePair<string, string?>> GetCustom(this IHeadersInternal headers, HashSet<string>? whitelist = null)
         {
             return headers.Where(pair => whitelist?.Contains(pair.Key) == true || IsCustomHeaderName(pair.Key));
         }
@@ -41,11 +41,11 @@ namespace RESTable.Requests
             {
                 case var _ when key.EqualsNoCase(nameof(IHeaders.Accept)):
                     if (!string.IsNullOrWhiteSpace(value))
-                        headers.Accept = ContentType.ParseMany(value);
+                        headers.Accept = ContentType.ParseMany(value!);
                     break;
                 case var _ when key.EqualsNoCase("Content-Type"):
                     if (!string.IsNullOrWhiteSpace(value))
-                        headers.ContentType = ContentType.Parse(value);
+                        headers.ContentType = ContentType.Parse(value!);
                     break;
                 case var _ when key.EqualsNoCase(nameof(IHeaders.Source)):
                     headers.Source = value;
@@ -75,7 +75,7 @@ namespace RESTable.Requests
             }
         }
 
-        internal static bool _Contains(this IHeadersInternal headers, KeyValuePair<string, string> item) => item.Key switch
+        internal static bool _Contains(this IHeadersInternal headers, KeyValuePair<string, string?> item) => item.Key switch
         {
             _ when item.Key.EqualsNoCase(nameof(IHeaders.Accept)) => headers.Accept?.ToString().EqualsNoCase(item.Value) ?? item.Value is null,
             _ when item.Key.EqualsNoCase("Content-Type") => headers.ContentType?.ToString().EqualsNoCase(item.Value) ?? item.Value is null,
@@ -128,7 +128,7 @@ namespace RESTable.Requests
             }
         }
 
-        internal static bool _Remove(this IHeadersInternal headers, KeyValuePair<string, string> item)
+        internal static bool _Remove(this IHeadersInternal headers, KeyValuePair<string, string?> item)
         {
             switch (item.Key)
             {

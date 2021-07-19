@@ -2,6 +2,6 @@
 {
     internal interface IEntityRequest : IRequest
     {
-        IMacro Macro { get; }
+        IMacro? Macro { get; }
     }
 }

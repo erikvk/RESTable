@@ -35,7 +35,7 @@ namespace RESTable.Admin
         /// <summary>
         /// The number of errors to store in the RESTable.Error resource
         /// </summary>
-        public int NumberOfErrorsToKeep => AppConfiguration?.GetValue<int>("NrOfErrorsToKeep") ?? Error.DefaultNumberOfErrorsToKeep;
+        public int NumberOfErrorsToKeep => AppConfiguration.GetValue<int?>("NrOfErrorsToKeep") ?? Error.DefaultNumberOfErrorsToKeep;
 
         /// <summary>
         /// The RESTable version of the current application

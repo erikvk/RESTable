@@ -26,40 +26,50 @@ namespace RESTable
         /// <summary>
         /// The name of the resource
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         /// Resource descriptions are visible in the AvailableMethods resource
         /// </summary>
-        public string Description { get; set; }
+        public string Description { get; }
 
         /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
-        public Method[] Methods { get; set; }
+        public Method[] Methods { get; }
 
         /// <summary>
         /// The resource type, entity resource or terminal resource
         /// </summary>
-        public ResourceKind Kind { get; set; }
+        public ResourceKind Kind { get; }
 
         /// <summary>
         /// The views for this resource
         /// </summary>
         [RESTableMember(hideIfNull: true)]
-        public ViewInfo[] Views { get; private set; }
+        public ViewInfo[] Views { get; }
 
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
         [RESTableMember(hideIfNull: true)]
-        public AvailableResource[] InnerResources { get; private set; }
+        public AvailableResource[] InnerResources { get; }
+
+        public AvailableResource(string name, string description, Method[] methods, ResourceKind kind, ViewInfo[] views, AvailableResource[] innerResources)
+        {
+            Name = name;
+            Description = description;
+            Methods = methods;
+            Kind = kind;
+            Views = views;
+            InnerResources = innerResources;
+        }
 
         /// <inheritdoc />
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
         {
             if (request is null) throw new ArgumentNullException(nameof(request));
-            return request.Context.Client.AccessRights.Keys?
+            return request.Context.Client.AccessRights.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.Name)
                 .Select(r => Make(r, request));
@@ -75,21 +85,21 @@ namespace RESTable
             /// <summary>
             /// The namespace to match against
             /// </summary>
-            public string Namespace { get; set; }
+            public string? Namespace { get; }
 
             /// <inheritdoc />
             public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
             {
-                var @namespace = request.Conditions.Pop(nameof(Namespace), Operators.EQUALS).Value as string;
+                var @namespace = request.Conditions.Pop(nameof(Namespace), Operators.EQUALS)?.Value as string;
                 if (@namespace is not null)
                     if (!@namespace.EndsWith("."))
                         @namespace += ".";
                 if (@namespace is null)
-                    return request.Context.Client.AccessRights.Keys?
+                    return request.Context.Client.AccessRights.Keys
                         .Where(r => r.IsGlobal && !r.IsInnerResource)
                         .OrderBy(r => r.Name)
                         .Select(r => Make(r, request));
-                return request.Context.Client.AccessRights.Keys?
+                return request.Context.Client.AccessRights.Keys
                     .Where(r => r.IsGlobal && !r.IsInnerResource)
                     .Where(r => r.Name.StartsWith(@namespace, StringComparison.OrdinalIgnoreCase))
                     .OrderBy(r => r.Name)
@@ -97,22 +107,21 @@ namespace RESTable
             }
         }
 
-        internal static AvailableResource Make(IResource iresource, ITraceable trace) => new()
-        {
-            Name = iresource.Name,
-            Description = iresource.Description ?? "No description",
-            Methods = trace.Context.Client.AccessRights
+        internal static AvailableResource Make(IResource iresource, ITraceable trace) => new(
+            name: iresource.Name,
+            description: iresource.Description ?? "No description",
+            methods: trace.Context.Client.AccessRights
                 .SafeGet(iresource)?
                 .Intersect(iresource.AvailableMethods)
                 .ToArray() ?? Array.Empty<Method>(),
-            Kind = iresource.ResourceKind,
-            Views = iresource is IEntityResource er
-                ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray() ?? Array.Empty<ViewInfo>()
-                : null,
-            InnerResources = ((IResourceInternal) iresource)
-                .GetInnerResources()
-                .Select(r => Make(r, trace))
-                .ToArray()
-        };
+            kind: iresource.ResourceKind,
+            views: iresource is IEntityResource er
+                ? er.Views.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
+                : Array.Empty<ViewInfo>(),
+            innerResources: ((IResourceInternal) iresource)
+            .GetInnerResources()
+            .Select(r => Make(r, trace))
+            .ToArray()
+        );
     }
 }

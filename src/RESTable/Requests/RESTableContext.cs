@@ -53,6 +53,20 @@ namespace RESTable.Requests
             }
         }
 
+        /// <summary>
+        /// Does this context have a websocket that is currently waiting to be opened?
+        /// </summary>
+        public bool HasWaitingWebSocket(out WebSocket? waitingWebSocket)
+        {
+            if (webSocket?.Status == WebSocketStatus.Waiting)
+            {
+                waitingWebSocket = webSocket;
+                return true;
+            }
+            waitingWebSocket = null;
+            return false;
+        }
+        
         #region Abstract
 
         /// <summary>
@@ -126,7 +140,7 @@ namespace RESTable.Requests
         /// <param name="error">A RESTableError describing the error, or null if valid</param>
         /// <param name="resource">The resource referenced in the URI</param>
         /// <param name="uriComponents">The URI components of the uri, if valid. Otherwise null</param>
-        public bool UriIsValid(string uri, out Error error, out IResource? resource, out IUriComponents? uriComponents)
+        public bool UriIsValid(string uri, out Error? error, out IResource? resource, out IUriComponents? uriComponents)
         {
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, (Method) (-1), uri, null, null);
@@ -160,11 +174,11 @@ namespace RESTable.Requests
         /// <param name="resource">The resource to check access to</param>
         /// <param name="error">An object describing the error, if the method is not allowed</param>
         /// <returns></returns>
-        public bool MethodIsAllowed(Method method, IResource resource, out MethodNotAllowed error)
+        public bool MethodIsAllowed(Method method, IResource resource, out MethodNotAllowed? error)
         {
             if (method is < GET or > HEAD)
                 throw new ArgumentException($"Invalid method value {method} for request");
-            if (resource?.AvailableMethods.Contains(method) != true)
+            if (resource.AvailableMethods.Contains(method) != true)
             {
                 error = new MethodNotAllowed(method, resource, false);
                 return false;

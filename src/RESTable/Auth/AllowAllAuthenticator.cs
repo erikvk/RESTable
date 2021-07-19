@@ -16,7 +16,7 @@ namespace RESTable.Auth
             RootAccess = rootAccess;
         }
 
-        public bool TryAuthenticate(ref string uri, Headers headers, out AccessRights accessRights)
+        public bool TryAuthenticate(ref string? uri, Headers? headers, out AccessRights accessRights)
         {
             accessRights = RootAccess;
             return true;

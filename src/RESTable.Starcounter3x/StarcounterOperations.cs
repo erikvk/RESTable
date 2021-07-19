@@ -4,7 +4,6 @@ using System.Linq;
 using RESTable.Admin;
 using RESTable.Meta;
 using RESTable.Requests;
-using RESTable.Linq;
 using Starcounter.Database.Data;
 
 namespace RESTable.Starcounter3x
@@ -37,9 +36,17 @@ namespace RESTable.Starcounter3x
                 case 1 when request.Conditions[0] is Condition<T> {Operator: Operators.EQUALS} only:
                     if (string.Equals(ObjectNo, only.Key, StringComparison.OrdinalIgnoreCase))
                     {
-                        var objectNo = only.SafeSelect(_ => (ulong) only.Value!);
+                        var objectNo = 0UL;
+                        try
+                        {
+                            objectNo = (ulong) only.Value!;
+                        }
+                        catch (InvalidCastException)
+                        {
+                            // ignore
+                        }
                         QueryConsole.Publish(request.Context, $"FROMID {objectNo}");
-                        if (objectNo == 0)
+                        if (objectNo == 0UL)
                             yield break;
                         yield return Transaction.Run(db => db.Get<T>(objectNo));
                         yield break;

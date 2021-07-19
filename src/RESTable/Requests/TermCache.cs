@@ -35,7 +35,7 @@ namespace RESTable.Requests
         public void Add((string Type, string Key, TermBindingRule BindingRule) key, Term value) => Cache.Add(key, value);
         public bool ContainsKey((string Type, string Key, TermBindingRule BindingRule) key) => Cache.ContainsKey(key);
         public bool Remove((string Type, string Key, TermBindingRule BindingRule) key) => Cache.Remove(key);
-        public bool TryGetValue((string Type, string Key, TermBindingRule BindingRule) key, out Term value) => Cache.TryGetValue(key, out value);
+        public bool TryGetValue((string Type, string Key, TermBindingRule BindingRule) key, out Term value) => Cache.TryGetValue(key, out value!);
         public ICollection<(string Type, string Key, TermBindingRule BindingRule)> Keys => Cache.Keys;
         public ICollection<Term> Values => Cache.Values;
 

@@ -25,7 +25,7 @@ namespace RESTable.Admin
                                            "in requests for a given resource type.";
 
         private Type Type { get; }
-        
+
         public string ResourceType { get; }
         public ICondition[] Conditions { get; }
 
@@ -42,8 +42,8 @@ namespace RESTable.Admin
             var resources = request.GetRequiredService<ResourceCollection>();
             foreach (var resource in resources)
             {
-                var cache = (IConditionCache) request.GetService(typeof(ConditionCache<>).MakeGenericType(resource.Type));
-                if (cache?.Count > 0)
+                var cacheType = typeof(ConditionCache<>).MakeGenericType(resource.Type);
+                if (request.GetService(cacheType) is IConditionCache {Count: > 0} cache)
                 {
                     yield return new ConditionCache
                     (
@@ -60,8 +60,8 @@ namespace RESTable.Admin
             var count = 0;
             foreach (var resource in request.GetInputEntities())
             {
-                var cache = (IConditionCache) request.GetService(typeof(ConditionCache<>).MakeGenericType(resource.Type));
-                if (cache is not null)
+                var cacheType = typeof(ConditionCache<>).MakeGenericType(resource.Type);
+                if (request.GetService(cacheType) is IConditionCache cache)
                 {
                     cache.Clear();
                     count += 1;

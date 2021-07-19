@@ -23,7 +23,7 @@ namespace RESTable
         private IProtocolHolder ProtocolHolder { get; }
 
         private bool IsIngoing { get; }
-        
+
         public object? UninitializedBodyObject { get; set; }
 
         public ContentType ContentType => IsIngoing
@@ -117,10 +117,11 @@ namespace RESTable
         {
             switch (bodyObject)
             {
-                case var _ when TryGetStream(bodyObject, out var stream): return stream!;
-                case byte[] bytes: return new SwappingStream(bytes);
-                case string str: return new SwappingStream(str.ToBytes());
                 case null: return new SwappingStream();
+                case string str: return new SwappingStream(str.ToBytes());
+                case byte[] bytes: return new SwappingStream(bytes);
+
+                case var _ when TryGetStream(bodyObject, out var stream): return stream!;
                 default:
                     UninitializedBodyObject = bodyObject;
                     return new SwappingStream();

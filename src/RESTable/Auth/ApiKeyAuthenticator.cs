@@ -21,7 +21,7 @@ namespace RESTable.Auth
     {
         private const string AuthHeaderMask = "ApiKey *******";
         private const string ApiKeysConfigSection = "RESTable.ApiKeys";
-        
+
         private IDictionary<string, AccessRights> ApiKeys { get; }
         private ResourceCollection ResourceCollection { get; }
         private WebSocketManager WebSocketManager { get; }
@@ -60,6 +60,8 @@ namespace RESTable.Auth
             if (headers is not null)
                 headers.Authorization = AuthHeaderMask;
             var (method, key) = authorizationHeader.TupleSplit(' ');
+            if (key is null)
+                return new NoAccess();
             switch (method)
             {
                 case var apikey when apikey.EqualsNoCase("apikey"): break;
@@ -73,7 +75,9 @@ namespace RESTable.Auth
                 default: return new NoAccess();
             }
             var keyHash = ComputeHash(key);
-            return ApiKeys.TryGetValue(keyHash, out AccessRights accessRights) ? accessRights : new NoAccess();
+            if (!ApiKeys.TryGetValue(keyHash, out var accessRights))
+                return new NoAccess();
+            return accessRights!;
         }
 
         private void Reload()
@@ -93,10 +97,10 @@ namespace RESTable.Auth
                 .ToList();
             foreach (var key in ApiKeys.Keys.Except(currentKeys).ToList())
             {
-                if (ApiKeys.TryGetValue(key, out AccessRights accessRights))
+                if (ApiKeys.TryGetValue(key, out var accessRights))
                 {
                     WebSocketManager.RevokeAllWithKey(key).Wait();
-                    accessRights.Clear();
+                    accessRights!.Clear();
                 }
                 ApiKeys.Remove(key);
             }
@@ -118,9 +122,9 @@ namespace RESTable.Auth
             var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess ?? Array.Empty<AllowAccess>(), ResourceCollection);
             var accessRights = new AccessRights(keyHash, assignments);
 
-            if (ApiKeys.TryGetValue(keyHash, out AccessRights existing))
+            if (ApiKeys.TryGetValue(keyHash, out var existing))
             {
-                existing.Clear();
+                existing!.Clear();
                 foreach (var (resource, value) in accessRights)
                 {
                     existing[resource] = value;

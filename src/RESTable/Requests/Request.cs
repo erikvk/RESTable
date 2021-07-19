@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,8 +13,7 @@ using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Resources.Operations;
 using RESTable.Results;
-using static RESTable.ErrorCodes;
-using static RESTable.Method;
+using RESTable.WebSockets;
 using Error = RESTable.Results.Error;
 
 namespace RESTable.Requests
@@ -26,7 +24,7 @@ namespace RESTable.Requests
         public IResource<T> Resource { get; }
         public ITarget<T> Target { get; }
         ITarget IRequest.Target => Target;
-        private Exception? Error { get; set; }
+        private Exception? Error { get; }
         private bool IsEvaluating { get; set; }
         private Headers? _responseHeaders;
         public Headers ResponseHeaders => _responseHeaders ??= new Headers();
@@ -57,11 +55,11 @@ namespace RESTable.Requests
         private Stopwatch Stopwatch { get; }
         IEntityResource<T> IEntityRequest<T>.EntityResource => (IEntityResource<T>) Resource;
 
-        public Func<IAsyncEnumerable<T>> GetCustomSelector() => Selector;
-        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> GetCustomUpdater() => Updater;
+        public Func<IAsyncEnumerable<T>>? GetCustomSelector() => Selector;
+        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? GetCustomUpdater() => Updater;
 
-        public Func<IAsyncEnumerable<T>> Selector { private get; set; }
-        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { private get; set; }
+        public Func<IAsyncEnumerable<T>>? Selector { private get; set; }
+        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? Updater { private get; set; }
 
         public Func<IAsyncEnumerable<T>>? EntitiesProducer { get; set; }
 
@@ -77,13 +75,12 @@ namespace RESTable.Requests
         IResource IRequest.Resource => Resource;
         public Headers Headers => Parameters.Headers;
         public RESTableContext Context => Parameters.Context;
-        public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
-        public IMacro Macro => Parameters.UriComponents.Macro;
+        public IMacro? Macro => Parameters.UriComponents.Macro;
         private ILogable LogItem => Parameters;
         private IHeaderHolder HeaderHolder => Parameters;
         MessageType ILogable.MessageType => LogItem.MessageType;
         ValueTask<string> ILogable.GetLogMessage() => LogItem.GetLogMessage();
-        ValueTask<string> ILogable.GetLogContent() => LogItem.GetLogContent();
+        ValueTask<string?> ILogable.GetLogContent() => LogItem.GetLogContent();
         public DateTime LogTime { get; } = DateTime.Now;
         bool IHeaderHolder.ExcludeHeaders => HeaderHolder.ExcludeHeaders;
         private RESTableConfiguration Configuration { get; }
@@ -127,7 +124,7 @@ namespace RESTable.Requests
             macro: Parameters.UriComponents.Macro
         );
 
-        string IHeaderHolder.HeadersStringCache
+        string? IHeaderHolder.HeadersStringCache
         {
             get => HeaderHolder.HeadersStringCache;
             set => HeaderHolder.HeadersStringCache = value;
@@ -137,16 +134,16 @@ namespace RESTable.Requests
 
         public TData? GetClientData<TData>(string key)
         {
-            if (Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data) && data.TryGetValue(key, out var value))
+            if (Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data) && data!.TryGetValue(key, out var value))
                 return (TData?) value;
             return default;
         }
 
         public void SetClientData<TData>(string key, TData value)
         {
-            if (!Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out IDictionary<string, object?> data))
+            if (!Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data))
                 data = Context.Client.ResourceClientDataMappings[Resource] = new ConcurrentDictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            data[key] = value;
+            data![key] = value;
         }
 
         public async IAsyncEnumerable<T> GetResultEntities([EnumeratorCancellation] CancellationToken cancellationToken = new())
@@ -175,25 +172,22 @@ namespace RESTable.Requests
         {
             cancellationToken.ThrowIfCancellationRequested();
             Stopwatch.Restart();
-            var sourceDelegate = GetSourceDelegate();
-            var destinationDelegate = GetDestinationDelegate();
             var result = GetQuickErrorResult();
 
             if (result is null)
             {
-                Body = await sourceDelegate(Body).ConfigureAwait(false);
                 await Body.Initialize(cancellationToken).ConfigureAwait(false);
                 result = await Execute(cancellationToken).ConfigureAwait(false);
             }
 
-            if (IsWebSocketUpgrade && result is not WebSocketUpgradeSuccessful)
+            if (Context.HasWaitingWebSocket(out var webSocket) && result is not WebSocketUpgradeSuccessful)
             {
                 if (result is Forbidden forbidden)
                     return new WebSocketUpgradeFailed(forbidden);
-                await Context.WebSocket.UseOnce(this, async webSocket =>
+                await webSocket!.UseOnce(this, async ws =>
                 {
-                    await webSocket.SendResult(result, cancellationToken: cancellationToken).ConfigureAwait(false);
-                    var message = await webSocket.GetMessageStream(false, cancellationToken).ConfigureAwait(false);
+                    await ws.SendResult(result, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    var message = await ws.GetMessageStream(false, cancellationToken).ConfigureAwait(false);
 #if NETSTANDARD2_0
                     using (message)
 #else
@@ -205,8 +199,6 @@ namespace RESTable.Requests
                 }, cancellationToken).ConfigureAwait(false);
                 return new WebSocketTransferSuccess(this);
             }
-
-            result = await destinationDelegate(result).ConfigureAwait(false);
 
             if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
                 throw loop;
@@ -232,20 +224,20 @@ namespace RESTable.Requests
                     {
                         if (!Context.HasWebSocket)
                             throw new UpgradeRequired(terminalResource.Name);
-                        if (IsWebSocketUpgrade)
+                        if (Context.HasWaitingWebSocket(out var webSocket))
                         {
                             // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
-                            await Context.WebSocket.OpenAndAttachServerSocketToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
-                            return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
+                            await webSocket!.OpenAndAttachServerSocketToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
+                            return new WebSocketUpgradeSuccessful(this, webSocket);
                         }
-                        return await SwitchTerminal(terminalResource, cancellationToken).ConfigureAwait(false);
+                        return await SwitchTerminal(Context.WebSocket!, terminalResource, cancellationToken).ConfigureAwait(false);
                     }
 
                     case IBinaryResource<T> binaryResource:
                     {
                         var binaryResult = binaryResource.SelectBinary(this);
                         if (!this.Accepts(binaryResult.ContentType, out var acceptHeader))
-                            throw new NotAcceptable(acceptHeader, binaryResult.ContentType.ToString());
+                            throw new NotAcceptable(acceptHeader!, binaryResult.ContentType.ToString());
                         var binaryContent = new Binary(this, binaryResult);
                         return binaryContent;
                     }
@@ -294,16 +286,16 @@ namespace RESTable.Requests
         {
             if (IsEvaluating)
                 throw new InfiniteLoop();
-            if (!IsValid)
+            if (Error is not null)
                 return Error.AsResultOf(this);
             if (!Context.MethodIsAllowed(Method, Resource, out var error))
-                return error.AsResultOf(this);
-            if (IsWebSocketUpgrade)
+                return error!.AsResultOf(this);
+            if (Context.HasWaitingWebSocket(out _))
             {
                 try
                 {
                     if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
-                        return new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason).AsResultOf(this);
+                        return new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason!).AsResultOf(this);
                 }
                 catch (NotImplementedException) { }
             }
@@ -314,11 +306,11 @@ namespace RESTable.Requests
         /// This method is called from a websocket, so the context of this request is already a
         /// WebSocket context. This is what it means to not be a WebSocket upgrade request. 
         /// </summary>
-        private async Task<IResult> SwitchTerminal(ITerminalResource<T> resource, CancellationToken cancellationToken)
+        private async Task<IResult> SwitchTerminal(WebSocket webSocket, ITerminalResource<T> resource, CancellationToken cancellationToken)
         {
             var _resource = (TerminalResource<T>) resource;
             var newTerminal = await _resource.CreateTerminal(Context, Conditions).ConfigureAwait(false);
-            await Context.WebSocket.ConnectTo(newTerminal).ConfigureAwait(false);
+            await webSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal(cancellationToken).ConfigureAwait(false);
             return new SwitchedTerminal(this);
         }
@@ -342,9 +334,9 @@ namespace RESTable.Requests
                     MetaConditions = MetaConditions.Parse(parameters.UriComponents.MetaConditions, entityResource, termFactory);
                     if (parameters.UriComponents.ViewName is not null)
                     {
-                        if (!entityResource.ViewDictionary.TryGetValue(parameters.UriComponents.ViewName, out var view))
-                            throw new UnknownView(parameters.UriComponents.ViewName, entityResource);
-                        Target = view;
+                        if (entityResource.ViewDictionary.TryGetValue(parameters.UriComponents.ViewName, out var view) && view is ITarget<T> viewTarget)
+                            Target = viewTarget;
+                        else throw new UnknownView(parameters.UriComponents.ViewName, entityResource);
                     }
                 }
                 if (parameters.UriComponents.Conditions.Count > 0)
@@ -373,7 +365,7 @@ namespace RESTable.Requests
             Body body,
             MetaConditions metaConditions,
             List<Condition<T>> conditions,
-            Exception error
+            Exception? error
         )
         {
             Parameters = parameters;
@@ -385,112 +377,14 @@ namespace RESTable.Requests
             Error = error;
             CachedProtocolProvider = cachedProtocolProvider;
             Stopwatch = new Stopwatch();
+            Configuration = this.GetRequiredService<RESTableConfiguration>();
         }
 
         #region Source and destination
 
-        private Func<IResult, Task<IResult>> SendToDestinationDelegate(string destinationHeader)
-        {
-            if (!HeaderRequestParameters.TryParse(this, nameof(Headers.Destination), destinationHeader, out var parameters, out var parseError))
-            {
-                Error = parseError;
-                return Task.FromResult;
-            }
-
-            if (parameters.IsInternal)
-            {
-                return async result =>
-                {
-                    var serializedResult = await result.Serialize().ConfigureAwait(false);
-                    var internalRequest = serializedResult.Context.CreateRequest
-                    (
-                        method: parameters.Method,
-                        uri: parameters.Uri,
-                        body: serializedResult.Body,
-                        headers: parameters.Headers
-                    );
-                    return await internalRequest.GetResult().ConfigureAwait(false);
-                };
-            }
-            return async result =>
-            {
-                var externalRequest = new HttpRequest(result, parameters, async stream =>
-                {
-                    await result.Serialize(stream).ConfigureAwait(false);
-                });
-                var response = await externalRequest.GetResponseAsync().ConfigureAwait(false)
-                               ?? throw new InvalidExternalDestination(externalRequest, "No response");
-                if (response.StatusCode >= HttpStatusCode.BadRequest)
-                    throw new InvalidExternalDestination(externalRequest,
-                        $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.Info}");
-                if (result.Headers.AccessControlAllowOrigin is string h)
-                    response.Headers.AccessControlAllowOrigin = h;
-                return new ExternalDestinationResult(result.Request, response);
-            };
-        }
-
-        private Func<Body, Task<Body>> GetBodyFromSourceDelegate(string sourceHeader)
-        {
-            if (!HeaderRequestParameters.TryParse(this, nameof(Headers.Source), sourceHeader, out var parameters, out var parseError))
-            {
-                Error = parseError;
-                return Task.FromResult;
-            }
-            if (parameters.Method != GET)
-            {
-                Error = new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
-                return Task.FromResult;
-            }
-
-            return async body =>
-            {
-                if (body is not null)
-                    await body.DisposeAsync().ConfigureAwait(false);
-                if (parameters.IsInternal)
-                {
-                    var internalRequest = Context.CreateRequest
-                    (
-                        method: parameters.Method,
-                        uri: parameters.Uri,
-                        body: null,
-                        headers: parameters.Headers
-                    );
-                    var result = await internalRequest.GetResult().ConfigureAwait(false);
-                    if (result is not IEntities)
-                        throw new InvalidExternalSource(parameters.Uri, await result.GetLogMessage().ConfigureAwait(false));
-                    var serialized = await result.Serialize().ConfigureAwait(false);
-                    if (serialized.Result is Error error) throw error;
-                    if (serialized.EntityCount == 0) throw new InvalidExternalSource(parameters.Uri, "Response was empty");
-                    return serialized.Body;
-                }
-                parameters.Headers.Accept ??= ContentType.JSON;
-                var request = new HttpRequest(this, parameters, null);
-                var response = await request.GetResponseAsync().ConfigureAwait(false);
-                if (response is null)
-                    throw new InvalidExternalSource(parameters.Uri, "No response");
-                if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(parameters.Uri, response.LogMessage);
-
-                if (response.Body.CanSeek && response.Body.Length == 0)
-                    throw new InvalidExternalSource(parameters.Uri, "Response was empty");
-                return new Body(this, response.Body);
-            };
-        }
-
-        private Func<Body, Task<Body>> GetSourceDelegate() => Headers.Source switch
-        {
-            string sourceHeader => GetBodyFromSourceDelegate(sourceHeader),
-            _ => Task.FromResult
-        };
-
-        private Func<IResult, Task<IResult>> GetDestinationDelegate() => Headers.Destination switch
-        {
-            string destinationHeader => SendToDestinationDelegate(destinationHeader),
-            _ => Task.FromResult
-        };
-
         #endregion
 
-        public async Task<IRequest> GetCopy(string newProtocol = null)
+        public async Task<IRequest> GetCopy(string? newProtocol = null)
         {
             var protocolController = this.GetRequiredService<ProtocolProviderManager>();
             return new Request<T>
@@ -508,7 +402,7 @@ namespace RESTable.Requests
             );
         }
 
-        public object GetService(Type serviceType) => Context.GetService(serviceType);
+        public object? GetService(Type serviceType) => Context.GetService(serviceType);
 
         public void Dispose() => Body.Dispose();
 

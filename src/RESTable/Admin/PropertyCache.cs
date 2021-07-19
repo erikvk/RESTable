@@ -22,21 +22,23 @@ namespace RESTable.Admin
         /// <summary>
         /// The type containing the properties
         /// </summary>
-        public Type Type { get; private set; }
+        public Type Type { get; }
 
         /// <summary>
         /// The discovered properties
         /// </summary>
-        public IEnumerable<DeclaredProperty> Properties { get; private set; }
+        public IEnumerable<DeclaredProperty> Properties { get; }
+
+        public PropertyCache(Type type, IEnumerable<DeclaredProperty> properties)
+        {
+            Type = type;
+            Properties = properties;
+        }
 
         /// <inheritdoc />
         public IEnumerable<PropertyCache> Select(IRequest<PropertyCache> request) => request
             .GetRequiredService<TypeCache>()
             .DeclaredPropertyCache
-            .Select(item => new PropertyCache
-            {
-                Type = item.Key,
-                Properties = item.Value.Values
-            });
+            .Select(item => new PropertyCache(item.Key, item.Value.Values));
     }
 }

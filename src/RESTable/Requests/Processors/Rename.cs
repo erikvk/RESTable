@@ -16,6 +16,8 @@ namespace RESTable.Requests.Processors
     {
         internal Rename(IEnumerable<(Term term, string newName)> terms, out ICollection<string> dynamicDomain)
         {
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            Serializer = jsonProvider.GetSerializer();
             foreach (var (term, newName) in terms)
                 Add(term, newName);
             dynamicDomain = Values;

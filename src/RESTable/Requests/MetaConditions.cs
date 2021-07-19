@@ -200,7 +200,7 @@ namespace RESTable.Requests
                                 return
                                 (
                                     termFactory.MakeOutputTerm(resource, termKey.ToLowerInvariant(), null),
-                                    newName
+                                    newName ?? throw new ArgumentException("Missing new name in rename")
                                 );
                             });
                             metaConditions.Rename = new Rename(terms, out dynamicDomain);

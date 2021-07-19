@@ -11,8 +11,12 @@ namespace RESTable.Requests
     {
         public bool IsValid { get; }
         private Exception Error { get; }
-        public Task<IResult> GetResult(CancellationToken cancellationToken = new()) => Task.FromResult<IResult>(Error.AsResultOf(this));
-        
+
+        public Task<IResult> GetResult(CancellationToken cancellationToken = new())
+        {
+            return Task.FromResult<IResult>(Error.AsResultOf(this));
+        }
+
         public ITarget Target { get; }
         public bool HasConditions => false;
 
@@ -22,12 +26,12 @@ namespace RESTable.Requests
         private IHeaderHolder HeaderHolder => Parameters;
         MessageType ILogable.MessageType => LogItem.MessageType;
         ValueTask<string> ILogable.GetLogMessage() => LogItem.GetLogMessage();
-        ValueTask<string> ILogable.GetLogContent() => LogItem.GetLogContent();
+        ValueTask<string?> ILogable.GetLogContent() => LogItem.GetLogContent();
 
         /// <inheritdoc />
         public DateTime LogTime { get; }
 
-        string IHeaderHolder.HeadersStringCache
+        string? IHeaderHolder.HeadersStringCache
         {
             get => HeaderHolder.HeadersStringCache;
             set => HeaderHolder.HeadersStringCache = value;
@@ -47,7 +51,7 @@ namespace RESTable.Requests
         public Headers Headers => Parameters.Headers;
         public IResource Resource { get; }
         public TimeSpan TimeElapsed => default;
-        public object GetService(Type serviceType) => Context.GetService(serviceType);
+        public object? GetService(Type serviceType) => Context.GetService(serviceType);
 
         #endregion
 
@@ -64,8 +68,8 @@ namespace RESTable.Requests
             LogTime = DateTime.Now;
             MetaConditions = null!;
             ResponseHeaders = null!;
-            Error = parameters.Error;
-            Resource = parameters.iresource;
+            Error = parameters.Error!;
+            Resource = parameters.iresource!;
             Method = parameters.Method;
             Body = parameters.Body;
 

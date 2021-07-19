@@ -38,7 +38,7 @@ namespace RESTable.SQLite
         /// <inheritdoc />
         public override IEnumerable<TController> Select(IRequest<TController> request) => base
             .Select(request)
-            .Where(item => item.Type.IsSubclassOf(BaseType))
+            .Where(item => item.Type?.IsSubclassOf(BaseType) == true)
             .Select(item =>
             {
                 item.Definition = TableDefinition.Select().First(s => s.CLRTypeName == item.Name);

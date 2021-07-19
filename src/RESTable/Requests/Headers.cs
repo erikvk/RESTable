@@ -131,19 +131,19 @@ namespace RESTable.Requests
             }
         }
 
-        private IDictionary<string, string> _dict { get; }
+        private IDictionary<string, string?> _dict { get; }
 
-        public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public Headers() => _dict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
         /// <inheritdoc />
-        public Headers(Dictionary<string, string> dictToUse) : this()
+        public Headers(Dictionary<string, string>? dictToUse) : this()
         {
             if (dictToUse is null) return;
             foreach (var (key, value) in dictToUse)
                 this[key] = value;
         }
 
-        public Headers(IDictionary<string, StringValues> dictToUse) : this()
+        public Headers(IDictionary<string, StringValues>? dictToUse) : this()
         {
             if (dictToUse is null) return;
             foreach (var (key, value) in dictToUse)
@@ -166,44 +166,44 @@ namespace RESTable.Requests
 
         #region IHeadersInternal
 
-        private void SetCustomHeader(string key, string value) => _dict[key] = value;
-        bool IHeadersInternal.TryGetCustomHeader(string key, out string value) => _dict.TryGetValue(key, out value);
-        void IHeadersInternal.SetCustomHeader(string key, string value) => SetCustomHeader(key, value);
-        bool IHeadersInternal.ContainsCustomHeader(KeyValuePair<string, string> item) => _dict.Contains(item);
+        private void SetCustomHeader(string key, string? value) => _dict[key] = value;
+        bool IHeadersInternal.TryGetCustomHeader(string key, out string? value) => _dict.TryGetValue(key, out value);
+        void IHeadersInternal.SetCustomHeader(string key, string? value) => SetCustomHeader(key, value);
+        bool IHeadersInternal.ContainsCustomHeader(KeyValuePair<string, string?> item) => _dict.Contains(item);
         bool IHeadersInternal.ContainsCustomHeaderName(string name) => _dict.ContainsKey(name);
         bool IHeadersInternal.RemoveCustomHeader(string name) => _dict.Remove(name);
-        bool IHeadersInternal.RemoveCustomHeader(KeyValuePair<string, string> header) => _dict.Remove(header);
-        IEnumerable<KeyValuePair<string, string>> IHeadersInternal.GetCustomHeaders() => _dict;
+        bool IHeadersInternal.RemoveCustomHeader(KeyValuePair<string, string?> header) => _dict.Remove(header);
+        IEnumerable<KeyValuePair<string, string?>> IHeadersInternal.GetCustomHeaders() => _dict;
 
         #endregion
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <inheritdoc />
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => GetHeaderEnumeration().GetEnumerator(); // new HeadersEnumerator(this, _dict.GetEnumerator());
+        public IEnumerator<KeyValuePair<string, string?>> GetEnumerator() => GetHeaderEnumeration().GetEnumerator(); // new HeadersEnumerator(this, _dict.GetEnumerator());
 
-        private IEnumerable<KeyValuePair<string, string>> GetHeaderEnumeration()
+        private IEnumerable<KeyValuePair<string, string?>> GetHeaderEnumeration()
         {
             if (Accept is not null)
-                yield return new KeyValuePair<string, string>(nameof(Accept), Accept.ToString());
+                yield return new KeyValuePair<string, string?>(nameof(Accept), Accept.ToString());
             if (ContentType is not null)
-                yield return new KeyValuePair<string, string>("Content-Type", ContentType.ToString());
+                yield return new KeyValuePair<string, string?>("Content-Type", ContentType.ToString());
             if (Source is not null)
-                yield return new KeyValuePair<string, string>(nameof(Source), Source);
+                yield return new KeyValuePair<string, string?>(nameof(Source), Source);
             if (Destination is not null)
-                yield return new KeyValuePair<string, string>(nameof(Destination), Destination);
+                yield return new KeyValuePair<string, string?>(nameof(Destination), Destination);
             if (Authorization is not null)
-                yield return new KeyValuePair<string, string>(nameof(Authorization), "*******");
+                yield return new KeyValuePair<string, string?>(nameof(Authorization), "*******");
             if (Origin is not null)
-                yield return new KeyValuePair<string, string>(nameof(Origin), Origin);
+                yield return new KeyValuePair<string, string?>(nameof(Origin), Origin);
             if (Elapsed is not null)
-                yield return new KeyValuePair<string, string>("RESTable-elapsed-ms", Elapsed.Value.ToStringRESTable());
-            foreach (var pair in _dict)
-                yield return pair;
+                yield return new KeyValuePair<string, string?>("RESTable-elapsed-ms", Elapsed.Value.ToStringRESTable());
+            foreach (var (key, value) in _dict)
+                yield return new KeyValuePair<string, string?>(key, value);
         }
 
         /// <inheritdoc />
-        void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> pair) => this._Set(pair.Key, pair.Value);
+        void ICollection<KeyValuePair<string, string?>>.Add(KeyValuePair<string, string?> pair) => this._Set(pair.Key, pair.Value);
 
         /// <inheritdoc />
         public void Clear()
@@ -219,13 +219,13 @@ namespace RESTable.Requests
         }
 
         /// <inheritdoc />
-        public bool Contains(KeyValuePair<string, string> item) => this._Contains(item);
+        public bool Contains(KeyValuePair<string, string?> item) => this._Contains(item);
 
         /// <inheritdoc />
-        public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex) => this._CopyTo(array, arrayIndex);
+        public void CopyTo(KeyValuePair<string, string?>[] array, int arrayIndex) => this._CopyTo(array, arrayIndex);
 
         /// <inheritdoc />
-        public bool Remove(KeyValuePair<string, string> item) => this._Remove(item);
+        public bool Remove(KeyValuePair<string, string?> item) => this._Remove(item);
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         // ReSharper disable once UseCollectionCountProperty
@@ -239,19 +239,19 @@ namespace RESTable.Requests
         public bool ContainsKey(string key) => this._ContainsKey(key);
 
         /// <inheritdoc />
-        public void Add(string key, string value) => this._Set(key, value);
+        public void Add(string key, string? value) => this._Set(key, value);
 
         /// <inheritdoc />
         public bool Remove(string key) => this._Remove(key);
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
-        public bool TryGetValue(string key, out string value) => this._TryGetValue(key, out value);
+        public bool TryGetValue(string key, out string? value) => this._TryGetValue(key, out value);
 
         /// <inheritdoc />
         public ICollection<string> Keys => this._Keys();
 
         /// <inheritdoc />
-        public ICollection<string> Values => this._Keys();
+        public ICollection<string?> Values => this._Values();
 
         internal Headers GetCopy() => new(this);
     }

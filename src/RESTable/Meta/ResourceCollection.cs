@@ -125,7 +125,7 @@ namespace RESTable.Meta
         /// <param name="searchString">The case insensitive string to use for the search</param>
         /// <param name="kind">The resource kind to filter results against</param>
         /// </summary>
-        public IResource FindResource(string searchString, ResourceKind kind = ResourceKind.All)
+        public IResource FindResource(string? searchString, ResourceKind kind = ResourceKind.All)
         {
             if (searchString is null) throw new UnknownResource("null");
             if (!ResourceFinder.TryGetValue(searchString, out var resource))

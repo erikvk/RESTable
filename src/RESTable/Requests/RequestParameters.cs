@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
@@ -63,18 +62,13 @@ namespace RESTable.Requests
         /// </summary>
         public bool IsValid => Error is null;
 
-        /// <summary>
-        /// Has the client requested a WebSocket upgrade for this request?
-        /// </summary>
-        public bool IsWebSocketUpgrade => Context.WebSocket?.Status == WebSocketStatus.Waiting;
-
         #region Private and internal
 
-        private string UnparsedUri { get; }
-        internal IResource iresource;
+        private string? UnparsedUri { get; }
+        internal IResource? iresource;
         internal IResource IResource => iresource ??= Context.GetRequiredService<ResourceCollection>().FindResource(Uri.ResourceSpecifier);
         internal Exception? Error { get; }
-        private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
+        private static bool PercentCharsEscaped(Headers? headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
         bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true};
         public MessageType MessageType { get; } = MessageType.HttpInput;
 
@@ -91,7 +85,7 @@ namespace RESTable.Requests
         DateTime ILogable.LogTime { get; } = DateTime.Now;
         public string? HeadersStringCache { get; set; }
 
-        async ValueTask<string> ILogable.GetLogContent()
+        async ValueTask<string?> ILogable.GetLogContent()
         {
             if (!HasBody) return null;
             return await Body.ToStringAsync().ConfigureAwait(false);
@@ -115,8 +109,8 @@ namespace RESTable.Requests
 
         #endregion
 
-        private RequestParameters(IResource iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, string unparsedUri,
-            Exception error, MessageType messageType, CachedProtocolProvider cachedProtocolProvider, string protocolIdentifier, string headersStringCache)
+        private RequestParameters(IResource? iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, string? unparsedUri,
+            Exception? error, MessageType messageType, CachedProtocolProvider cachedProtocolProvider, string protocolIdentifier, string? headersStringCache)
         {
             this.iresource = iresource;
             Context = context;
@@ -159,8 +153,8 @@ namespace RESTable.Requests
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             _body = new Body(this, body);
-            var hasMacro = Uri?.Macro is not null;
-            if (hasMacro && Uri.Macro.Headers is not null)
+            var hasMacro = Uri.Macro is not null;
+            if (hasMacro && Uri.Macro?.Headers is not null)
             {
                 if (Uri.Macro.OverwriteHeaders)
                 {
@@ -179,7 +173,7 @@ namespace RESTable.Requests
             }
             CachedProtocolProvider = cachedProtocolProvider;
             UnparsedUri = uri;
-            if (Uri?.HasError == true)
+            if (Uri.HasError)
             {
                 Error = Uri.Error;
                 return;
@@ -203,8 +197,9 @@ namespace RESTable.Requests
             Headers = headers ?? new Headers();
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
-            var hasMacro = Uri?.Macro is not null;
-            if (hasMacro && Uri.Macro.Headers is not null)
+            _body = new Body(this);
+            var hasMacro = Uri.Macro is not null;
+            if (hasMacro && Uri.Macro?.Headers is not null)
             {
                 if (Uri.Macro.OverwriteHeaders)
                 {
@@ -231,7 +226,7 @@ namespace RESTable.Requests
             {
                 Error = e.AsError();
             }
-            if (Error is null && Uri?.HasError == true)
+            if (Error is null && Uri.HasError)
                 Error = Uri.Error;
         }
     }

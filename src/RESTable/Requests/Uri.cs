@@ -30,7 +30,7 @@ namespace RESTable.Requests
 
         public IMacro? Macro { get; private set; }
 
-        internal Exception Error { get; private set; }
+        internal Exception? Error { get; private set; }
         internal bool HasError => Error is not null;
 
         public IProtocolProvider ProtocolProvider { get; set; }
@@ -51,13 +51,15 @@ namespace RESTable.Requests
                 protocolString = protocolString.Substring(1);
             var tail = groups["tail"].Value;
             uri.ProtocolIdentifier = protocolString.ToLowerInvariant();
-            var protocolProviders = context.GetRequiredService<ProtocolProviderManager>().CachedProtocolProviders;
-            if (!protocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
+            var protocolProviderManager = context.GetRequiredService<ProtocolProviderManager>();
+            if (!protocolProviderManager.CachedProtocolProviders.TryGetValue(protocolString, out var _cachedProtocolProvider))
             {
                 uri.Error = new UnknownProtocol(protocolString);
+                cachedProtocolProvider = protocolProviderManager.DefaultProtocolProvider;
                 return uri;
             }
-            uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
+            cachedProtocolProvider = _cachedProtocolProvider!;
+            uri.ProtocolProvider = cachedProtocolProvider!.ProtocolProvider;
             try
             {
                 uri.Populate(cachedProtocolProvider.ProtocolProvider.GetUriComponents(tail, context));
@@ -82,9 +84,11 @@ namespace RESTable.Requests
         {
             Conditions = new List<IUriCondition>();
             MetaConditions = new List<IUriCondition>();
+            ProtocolIdentifier = null!;
+            ProtocolProvider = null!;
         }
 
-        internal URI(string resourceSpecifier, string viewName) : this()
+        internal URI(string resourceSpecifier, string? viewName) : this()
         {
             ResourceSpecifier = resourceSpecifier;
             ViewName = viewName;

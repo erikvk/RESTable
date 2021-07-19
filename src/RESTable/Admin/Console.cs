@@ -27,7 +27,7 @@ namespace RESTable.Admin
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
 
-        private IWebSocketInternal ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
+        private IWebSocketInternal ActualSocket => ((WebSocketConnection) WebSocket).WebSocket;
 
         /// <inheritdoc />
         protected override string WelcomeHeader => "RESTable network console";
@@ -137,7 +137,7 @@ namespace RESTable.Admin
                                 item.Client = new ClientInfo(logable.Context.Client);
                             if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
                                 item.CustomHeaders = hh.Headers;
-                            var json = JsonProvider.Serialize(item, true, ignoreNulls: true);
+                            var json = JsonProvider!.Serialize(item, true, ignoreNulls: true);
                             await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;

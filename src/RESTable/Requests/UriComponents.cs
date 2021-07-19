@@ -46,7 +46,7 @@ namespace RESTable.Requests
             string? viewName,
             IEnumerable<IUriCondition> conditions,
             IEnumerable<IUriCondition> metaConditions,
-            IMacro macro
+            IMacro? macro
         )
         {
             ProtocolIdentifier = protocolProvider.ProtocolIdentifier;

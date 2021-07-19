@@ -29,7 +29,7 @@
         /// <summary>
         /// The headers of the macro
         /// </summary>
-        IHeaders Headers { get; }
+        IHeaders? Headers { get; }
 
         /// <summary>
         /// Should the macro overwrite the body of the calling request?

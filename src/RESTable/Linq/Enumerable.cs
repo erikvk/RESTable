@@ -208,30 +208,5 @@ namespace RESTable.Linq
 
             return apply();
         }
-
-        /// <summary>
-        /// Tries to get the target T2 by executing the selector method on the T1 object. If the selector 
-        /// executes successfully, returns the target T2. Else return the default for T2.
-        /// </summary>
-        public static T2 SafeSelect<T1, T2>(this T1 obj, Func<T1, T2> selector)
-        {
-            try
-            {
-                return selector(obj);
-            }
-            catch
-            {
-                return default;
-            }
-        }
-
-        /// <summary>
-        /// For each item in the target enumerable: Tries to get the target T2 by executing the selector method
-        /// on the T1 object. If the selector executes successfully, selects the target T2. Else selects the default for T2.
-        /// </summary>
-        public static IEnumerable<T2> SafeSelect<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector)
-        {
-            return source.Select(s => s.SafeSelect(selector));
-        }
     }
 }

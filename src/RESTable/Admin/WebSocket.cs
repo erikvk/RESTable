@@ -25,29 +25,39 @@ namespace RESTable.Admin
         /// <summary>
         /// The unique WebSocket ID
         /// </summary>
-        public string Id { get; private set; }
+        public string Id { get; }
 
         /// <summary>
         /// The type name of the terminal currently connected to the WebSocket 
         /// </summary>
-        public string TerminalType { get; private set; }
+        public string? TerminalType { get; }
 
         /// <summary>
         /// An object describing the terminal
         /// </summary>
-        public object Terminal { get; private set; }
+        public object? Terminal { get; }
 
         /// <summary>
         /// An object describing the client
         /// </summary>
-        public object Client { get; private set; }
+        public object Client { get; }
 
         /// <summary>
         /// Does this WebSocket instance represent the currently connected client websocket?
         /// </summary>
-        public bool IsThis { get; private set; }
+        public bool IsThis { get; }
 
-        private WebSockets.WebSocket UnderlyingSocket { get; set; }
+        private WebSockets.WebSocket UnderlyingSocket { get; }
+
+        public WebSocket(string id, string? terminalType, object? terminal, object client, bool isThis, WebSockets.WebSocket underlyingSocket)
+        {
+            Id = id;
+            TerminalType = terminalType;
+            Terminal = terminal;
+            Client = client;
+            IsThis = isThis;
+            UnderlyingSocket = underlyingSocket;
+        }
 
         /// <inheritdoc />
         public IEnumerable<WebSocket> Select(IRequest<WebSocket> request)
@@ -58,14 +68,14 @@ namespace RESTable.Admin
                 .ConnectedWebSockets
                 .Values
                 .Select(socket => new WebSocket
-                {
-                    Id = socket.Context.TraceId,
-                    IsThis = socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
-                    TerminalType = socket.TerminalResource?.Name,
-                    Client = JObject.FromObject(socket.GetAppProfile(), jsonSerializer),
-                    Terminal = socket.Terminal is null ? null : JObject.FromObject(socket.Terminal, jsonSerializer),
-                    UnderlyingSocket = socket
-                });
+                (
+                    id: socket.Context.TraceId,
+                    isThis: socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
+                    terminalType: socket.TerminalResource?.Name,
+                    client: JObject.FromObject(socket.GetAppProfile(), jsonSerializer),
+                    terminal: socket.Terminal is null ? null : JObject.FromObject(socket.Terminal, jsonSerializer),
+                    underlyingSocket: socket
+                ));
         }
 
         /// <inheritdoc />

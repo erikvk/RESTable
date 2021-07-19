@@ -45,7 +45,7 @@ namespace RESTable.Admin
         /// <summary>
         /// The headers of the request that generated the error (API keys are not saved here)
         /// </summary>
-        public string Headers { get; }
+        public string? Headers { get; }
 
         /// <summary>
         /// The body of the request that generated the error
@@ -81,7 +81,7 @@ namespace RESTable.Admin
         (
             string uri,
             Method method,
-            string headers,
+            string? headers,
             string body,
             string resourceName,
             DateTime time,
@@ -105,8 +105,8 @@ namespace RESTable.Admin
 
         internal static Error Create(Results.Error errorResult, IRequest request)
         {
-            var resource = request.SafeSelect(a => a.Resource);
-            var uri = request.UriComponents.ToString();
+            var resource = request.Resource;
+            var uri = request.UriComponents.ToString() ?? throw new NullReferenceException("Missing request uri components");
             var errorStackTrace = errorResult.StackTrace;
             var innerStackTrace = errorResult.InnerException?.StackTrace;
             var nl = Environment.NewLine;
@@ -132,11 +132,11 @@ namespace RESTable.Admin
                     ? null
                     : request.Headers.StringJoin(" | ", dict => dict.Select(header => header.Key.ToLower() switch
                     {
-                        "authorization" => "Authorization: apikey *******",
-                        "x-original-url" when header.Value.Contains("key=") => "*******",
+                        "authorization" => "Authorization: *******",
+                        "x-original-url" when header.Value?.Contains("key=") == true => "*******",
                         _ => $"{header.Key}: {header.Value}"
                     })),
-                resourceName: resource?.Name ?? "<unknown>",
+                resourceName: resource.Name,
                 body: request.Body.ToString(),
                 time: DateTime.UtcNow,
                 errorCode: errorResult.ErrorCode,

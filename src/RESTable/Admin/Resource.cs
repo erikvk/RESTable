@@ -24,17 +24,17 @@ namespace RESTable.Admin
         /// <summary>
         /// The name of the resource
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; private set; }
 
         /// <summary>
         /// Resource descriptions are visible in the AvailableMethods resource
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; private set; }
 
         /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
-        public Method[] EnabledMethods { get; set; }
+        public Method[]? EnabledMethods { get; private set; }
 
         /// <summary>
         /// Is this resource declared, as opposed to procedural?
@@ -55,24 +55,24 @@ namespace RESTable.Admin
         /// <summary>
         /// The type targeted by this resource.
         /// </summary>
-        public Type Type { get; internal set; }
+        public Type? Type { get; private set; }
 
         /// <summary>
         /// The views for this resource
         /// </summary>
         [RESTableMember(hideIfNull: true)]
-        public ViewInfo[] Views { get; private set; }
+        public ViewInfo[]? Views { get; private set; }
 
         /// <summary>
         /// The IResource of this resource
         /// </summary>
         [RESTableMember(hide: true)]
-        public IResource IResource { get; private set; }
+        public IResource? IResource { get; private set; }
 
         /// <summary>
         /// The resource provider that generated this resource
         /// </summary>
-        public string Provider { get; private set; }
+        public string? Provider { get; private set; }
 
         /// <summary>
         /// The resource type, entity resource or terminal resource
@@ -83,11 +83,10 @@ namespace RESTable.Admin
         /// Inner resources for this resource
         /// </summary>
         [RESTableMember(hideIfNull: true)]
-        public IEnumerable<Resource> InnerResources { get; private set; }
+        public IEnumerable<Resource>? InnerResources { get; private set; }
 
         internal static T Make<T>(IResource iresource) where T : Resource, new()
         {
-            if (iresource is null) return null;
             var entityResource = iresource as IEntityResource;
             return new T
             {
@@ -98,9 +97,8 @@ namespace RESTable.Admin
                 IsDeclared = entityResource?.IsDeclared ?? true,
                 Type = iresource.Type,
                 Views = entityResource is not null
-                    ? entityResource.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
-                      ?? Array.Empty<ViewInfo>()
-                    : null,
+                    ? entityResource.Views.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
+                    : Array.Empty<ViewInfo>(),
                 IResource = iresource,
                 Provider = entityResource?.Provider ?? (iresource is IBinaryResource ? "Binary" : "Terminal"),
                 Kind = iresource.ResourceKind,
@@ -109,14 +107,10 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<Resource> Select(IRequest<Resource> request)
-        {
-            if (request is null) throw new ArgumentNullException(nameof(request));
-            return request
-                .GetRequiredService<ResourceCollection>()
-                .Where(r => r.IsGlobal)
-                .OrderBy(r => r.Name)
-                .Select(Make<Resource>);
-        }
+        public IEnumerable<Resource> Select(IRequest<Resource> request) => request
+            .GetRequiredService<ResourceCollection>()
+            .Where(r => r.IsGlobal)
+            .OrderBy(r => r.Name)
+            .Select(Make<Resource>);
     }
 }

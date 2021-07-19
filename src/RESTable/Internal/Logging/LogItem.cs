@@ -7,9 +7,9 @@ namespace RESTable.Internal.Logging
     {
         public string Type;
         public string Id;
-        public string Message;
+        public string? Message;
         public ClientInfo? Client;
-        public string Content;
+        public string? Content;
         public Headers CustomHeaders;
         public DateTime? Time;
     }
