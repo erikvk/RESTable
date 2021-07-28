@@ -38,7 +38,7 @@ namespace RESTable.Tests
         public RESTableFixture()
         {
             this.AddRESTable();
-            this.AddJsonProvider();
+            this.AddJson();
             this.AddSingleton<OperationsTestsFlags>();
         }
     }

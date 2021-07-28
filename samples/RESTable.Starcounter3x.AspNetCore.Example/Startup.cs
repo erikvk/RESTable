@@ -8,7 +8,7 @@ namespace RESTable.Example
     {
         public void ConfigureServices(IServiceCollection services) => services
             .AddStarcounter("Database=./database")
-            .AddJsonProvider()
+            .AddJson()
             .AddStarcounterProvider()
             .AddRESTable()
             .AddHttpContextAccessor();

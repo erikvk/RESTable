@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -31,7 +30,7 @@ namespace RESTable.Meta.Internal
         public TermBindingRule OutputBindingRule { get; }
         public bool GETAvailableToAll { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
-        public Type InterfaceType { get; }
+        public Type? InterfaceType { get; }
         public bool DeclaredPropertiesFlagged { get; }
         public override string ToString() => Name;
         public string Provider { get; }
@@ -115,7 +114,7 @@ namespace RESTable.Meta.Internal
             else OutputBindingRule = TermBindingRule.OnlyDeclared;
             RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));
             IsDDictionary = false;
-            IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
+            IsDynamic = IsDDictionary || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.Id;
             Members = typeCache.GetDeclaredProperties(typeof(T));
             Delegates = delegates;

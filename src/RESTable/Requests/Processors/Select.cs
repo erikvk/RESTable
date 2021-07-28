@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using RESTable.Meta;
 
 namespace RESTable.Requests.Processors
@@ -14,34 +13,27 @@ namespace RESTable.Requests.Processors
     /// </summary>
     public class Select : List<Term>, IProcessor
     {
-        private JsonSerializer Serializer { get; }
-
-        public Select(IEnumerable<Term> collection) : base(collection)
-        {
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-            Serializer = jsonProvider.GetSerializer();
-        }
+        public Select(IEnumerable<Term> collection) : base(collection) { }
 
         internal Select GetCopy() => new(this);
 
-        private async ValueTask<JObject> Apply<T>(T entity)
+        private async ValueTask<Dictionary<string, object?>> Apply<T>(T entity) where T : notnull
         {
-            if (entity is null) throw new ArgumentNullException(nameof(entity));
-            var jobj = new JObject();
+            var dictionary = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
             foreach (var term in this)
             {
-                if (jobj[term.Key] is not null) continue;
+                if (dictionary.ContainsKey(term.Key))
+                    continue;
                 var termValue = await term.GetValue(entity).ConfigureAwait(false);
-                var actualKey = termValue.ActualKey;
-                jobj[actualKey] = termValue.Value is null ? null : JToken.FromObject(termValue.Value, Serializer);
+                dictionary[termValue.ActualKey] = termValue.Value;
             }
-            return jobj;
+            return dictionary;
         }
 
         /// <summary>
         /// Selects a set of properties from an IEnumerable of entities
         /// </summary>
-        public async IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities)
+        public async IAsyncEnumerable<object> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
             await foreach (var entity in entities)
             {

@@ -35,7 +35,7 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Applies the offset to an IEnumerable of entities
         /// </summary>
-        public async IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
+        public async IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
             switch (Number)
             {
@@ -68,7 +68,7 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Returns the last items in the IEnumerable (with just one pass over the IEnumerable)
         /// </summary>
-        private static async IAsyncEnumerable<T> NegativeSkip<T>(IAsyncEnumerable<T> source, int count)
+        private static async IAsyncEnumerable<T> NegativeSkip<T>(IAsyncEnumerable<T> source, int count) where T : notnull
         {
             if (source is null)
                 throw new ArgumentNullException(nameof(source));

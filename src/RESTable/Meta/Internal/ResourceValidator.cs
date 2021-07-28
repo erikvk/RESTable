@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Newtonsoft.Json.Linq;
 using RESTable.Admin;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -31,7 +30,7 @@ namespace RESTable.Meta.Internal
             string name;
             if (fullName is not null)
                 name = fullName;
-            else name = type.GetRESTableTypeName() ?? throw new Exception("Could not establish name for a runtime resource");
+            else name = type.GetRESTableTypeName();
             if (name is null)
                 throw new InvalidResourceDeclarationException(
                     "Encountered an unknown type. No further information is available.");
@@ -182,14 +181,15 @@ namespace RESTable.Meta.Internal
                 #region Check for invalid IDictionary implementation
 
                 var validTypes = new[] {typeof(string), typeof(object)};
-                if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out var typeParams)
-                    && !type.IsSubclassOf(typeof(JObject))
-                    && !typeParams.SequenceEqual(validTypes))
+                if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out var typeParams) && !typeParams!.SequenceEqual(validTypes))
+                {
                     throw new InvalidResourceDeclarationException(
                         $"Invalid resource declaration for type '{type.GetRESTableTypeName()}'. All resource types implementing " +
                         "the generic 'System.Collections.Generic.IDictionary`2' interface must either be subclasses of " +
                         "Newtonsoft.Json.Linq.JObject or have System.String as first type parameter and System.Object as " +
-                        $"second type parameter. Found {typeParams[0].GetRESTableTypeName()} and {typeParams[1].GetRESTableTypeName()}");
+                        $"second type parameter. Found {typeParams![0].GetRESTableTypeName()} and {typeParams[1].GetRESTableTypeName()}"
+                    );
+                }
 
                 #endregion
 
@@ -219,11 +219,13 @@ namespace RESTable.Meta.Internal
 
                 #region Check for properties with duplicate case insensitive names
 
-                if (TypeCache.FindAndParseDeclaredProperties(type).ContainsDuplicates(DeclaredProperty.NameComparer, out DeclaredProperty duplicate))
+                if (TypeCache.FindAndParseDeclaredProperties(type).ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
+                {
                     throw new InvalidResourceMemberException(
                         $"Invalid properties for resource '{type.GetRESTableTypeName()}'. Names of public instance properties must " +
-                        $"be unique (case insensitive). Two or more property names were equivalent to '{duplicate.Name}'."
+                        $"be unique (case insensitive). Two or more property names were equivalent to '{duplicate!.Name}'."
                     );
+                }
 
                 #endregion
             }
@@ -237,13 +239,13 @@ namespace RESTable.Meta.Internal
             void ValidateWrapperDeclaration(List<Type> wrappers)
             {
                 if (wrappers.Select(type => (type, wrapped: type.GetWrappedType())).ContainsDuplicates(pair => pair.wrapped, out var dupe))
-                    throw new InvalidResourceWrapperException(dupe, "must wrap unique types. Found multiple wrapper declarations for " +
-                                                                    $"wrapped type '{dupe.wrapped.GetRESTableTypeName()}'.");
+                    throw new InvalidResourceWrapperException(dupe!, "must wrap unique types. Found multiple wrapper declarations for " +
+                                                                    $"wrapped type '{dupe.wrapped!.GetRESTableTypeName()}'.");
 
                 foreach (var wrapper in wrappers)
                 {
                     var wrapped = wrapper.GetWrappedType();
-                    var _types = (wrapper, wrapped);
+                    var _types = (wrapper, wrapped!);
                     var members = wrapper.GetMembers(BindingFlags.Public | BindingFlags.Instance);
                     if (members.OfType<PropertyInfo>().Any() || members.OfType<FieldInfo>().Any())
                         throw new InvalidResourceWrapperException(_types, "cannot contain public instance properties or fields");
@@ -252,8 +254,8 @@ namespace RESTable.Meta.Internal
                         .Where(i => typeof(IOperationsInterface).IsAssignableFrom(i))
                         .Any(i => i.IsGenericType && i.GenericTypeArguments[0] != wrapped))
                         throw new InvalidResourceWrapperException(_types, "cannot implement operations interfaces for types other than " +
-                                                                          $"'{wrapped.GetRESTableTypeName()}'.");
-                    if (wrapped.FullName?.Contains("+") == true)
+                                                                          $"'{wrapped!.GetRESTableTypeName()}'.");
+                    if (wrapped!.FullName?.Contains("+") == true)
                         throw new InvalidResourceWrapperException(_types, "cannot wrap types that are declared within the scope of some other class.");
                     if (wrapped.HasAttribute<RESTableAttribute>())
                         throw new InvalidResourceWrapperException(_types, "cannot wrap types already decorated with the 'RESTableAttribute' attribute");

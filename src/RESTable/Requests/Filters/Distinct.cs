@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
+using RESTable.Meta;
 
 namespace RESTable.Requests.Filters
 {
@@ -10,21 +11,28 @@ namespace RESTable.Requests.Filters
     /// </summary>
     public class Distinct : IFilter
     {
+        private IEqualityComparer<JsonElement> EqualityComparer { get; }
+
+        public Distinct()
+        {
+            EqualityComparer = new JsonElementComparer();
+        }
+
         /// <summary>
         /// Applies the distinct filtering
         /// </summary>
-        public IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
+        public IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
             return DistinctIterator(entities);
         }
 
-        private static async IAsyncEnumerable<TSource> DistinctIterator<TSource>(IAsyncEnumerable<TSource> source)
+        private async IAsyncEnumerable<TSource> DistinctIterator<TSource>(IAsyncEnumerable<TSource> source) where TSource : notnull
         {
-            var set = new HashSet<JObject>(JToken.EqualityComparer);
+            var set = new HashSet<JsonElement>(EqualityComparer);
             await foreach (var element in source.ConfigureAwait(false))
             {
                 if (element is null) throw new ArgumentNullException(nameof(source));
-                var jobject = await element.ToJObject().ConfigureAwait(false);
+                var jobject = element.ToJsonElement();
                 if (set.Add(jobject))
                 {
                     yield return element;

@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
-using RESTable.Requests;
 
 namespace RESTable.Json
 {
@@ -52,10 +51,10 @@ namespace RESTable.Json
         protected abstract Task ProduceJsonArray(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
-        public abstract Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class;
+        public abstract ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken) where T : class;
 
         /// <inheritdoc />
-        public abstract Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class;
+        public abstract Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken) where T : class;
 
         /// <inheritdoc />
         public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream)

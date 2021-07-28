@@ -68,20 +68,26 @@ namespace RESTable.Requests.Filters
         /// Searches the entities for a given case insensitive string pattern, and returns only 
         /// those that contain the pattern.
         /// </summary>
-        public virtual IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
+        public virtual IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
-            if (Pattern is null) 
+            if (Pattern is null)
                 return entities;
             var comparison = IgnoreCase ? OrdinalIgnoreCase : Ordinal;
             if (Selector is null)
             {
                 var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-                return entities.Where(e => jsonProvider.Serialize(e).IndexOf(Pattern, comparison) >= 0);
+
+                return entities.WhereAwait(async e =>
+                {
+                    var sourceJson = await jsonProvider.SerializeAsync(e).ConfigureAwait(false);
+                    return sourceJson.IndexOf(Pattern, comparison) >= 0;
+                });
             }
-            return entities.WhereAwait(async e =>
+            return entities.Where(entity =>
             {
-                var jobject = await e.ToJObject().ConfigureAwait(false);
-                return jobject.GetValue(Selector, OrdinalIgnoreCase)?.ToString().IndexOf(Pattern, comparison) >= 0;
+                var jsonElement = entity.ToJsonElement();
+                var matchingPropertyValue = jsonElement.GetProperty(Selector, OrdinalIgnoreCase)?.Value.ToObject<object>();
+                return matchingPropertyValue?.ToString()?.IndexOf(Pattern, comparison) >= 0;
             });
         }
 

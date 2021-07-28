@@ -136,7 +136,7 @@ namespace RESTable.Requests
         public Headers() => _dict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
         /// <inheritdoc />
-        public Headers(Dictionary<string, string>? dictToUse) : this()
+        public Headers(IDictionary<string, string>? dictToUse) : this()
         {
             if (dictToUse is null) return;
             foreach (var (key, value) in dictToUse)

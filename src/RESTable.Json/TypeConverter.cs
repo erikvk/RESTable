@@ -1,12 +1,19 @@
 ﻿using System;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RESTable.Json
 {
     internal class TypeConverter : JsonConverter<Type>
     {
-        public override bool CanRead => false;
-        public override void WriteJson(JsonWriter writer, Type? value, JsonSerializer _) => writer.WriteValue(value?.GetRESTableTypeName());
-        public override Type ReadJson(JsonReader r, Type o, Type? e, bool h, JsonSerializer _) => throw new NotImplementedException();
+        public override Type Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Write(Utf8JsonWriter writer, Type? value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value?.GetRESTableTypeName());
+        }
     }
 }

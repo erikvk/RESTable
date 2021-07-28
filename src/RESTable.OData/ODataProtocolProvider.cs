@@ -273,7 +273,7 @@ namespace RESTable.OData
                 await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}", cancellationToken).ConfigureAwait(false);
                 await jwr.WritePropertyNameAsync("value", cancellationToken).ConfigureAwait(false);
                 jwr.StartCountObjectsWritten();
-                JsonProvider.Serialize(jwr, entities);
+                await JsonProvider.SerializeAsync(jwr, entities).ConfigureAwait(false);
                 toSerialize.EntityCount = jwr.StopCountObjectsWritten();
                 if (writeMetadata)
                 {

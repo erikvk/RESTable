@@ -1,15 +1,15 @@
 ﻿using System;
 using System.IO;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using RESTable.ContentTypeProviders;
 
 #pragma warning disable 1591
 
 namespace RESTable.Json
 {
-    public class NewtonsoftJsonWriter : JsonTextWriter, IJsonWriter
+    public class SystemTextJsonWriter : IJsonWriter
     {
         private readonly string NewLine;
         private int BaseIndentation;
@@ -31,7 +31,7 @@ namespace RESTable.Json
             return ObjectsWritten;
         }
 
-        public override void WriteStartObject()
+        public void WriteStartObject()
         {
             if (CurrentDepth == LevelToCountObjectsAt)
             {
@@ -43,7 +43,7 @@ namespace RESTable.Json
             base.WriteStartObject();
         }
 
-        public override async Task WriteStartObjectAsync(CancellationToken cancellationToken = new())
+        public async Task WriteStartObjectAsync(CancellationToken cancellationToken = new())
         {
             if (CurrentDepth == LevelToCountObjectsAt)
             {
@@ -55,7 +55,7 @@ namespace RESTable.Json
             await base.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public override void WriteEndObject()
+        public void WriteEndObject()
         {
             CurrentDepth -= 1;
             base.WriteEndObject();
@@ -65,7 +65,7 @@ namespace RESTable.Json
             }
         }
 
-        public override async Task WriteEndObjectAsync(CancellationToken cancellationToken = new())
+        public async Task WriteEndObjectAsync(CancellationToken cancellationToken = new())
         {
             CurrentDepth -= 1;
             await base.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
@@ -75,7 +75,7 @@ namespace RESTable.Json
             }
         }
 
-        public NewtonsoftJsonWriter(TextWriter textWriter, LineEndings lineEndings, int baseIndentation) : base(textWriter)
+        public SystemTextJsonWriter(TextWriter textWriter, LineEndings lineEndings, int baseIndentation)
         {
             BaseIndentation = baseIndentation;
             NewLine = lineEndings switch

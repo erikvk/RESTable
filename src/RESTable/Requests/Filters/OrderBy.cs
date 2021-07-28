@@ -15,7 +15,7 @@ namespace RESTable.Requests.Filters
         internal IEntityResource Resource { get; }
         internal bool Skip { get; set; }
 
-        protected async ValueTask<object?> Selector<T>(T entity)
+        protected async ValueTask<object?> Selector<T>(T entity) where T : notnull
         {
             if (entity is null) throw new ArgumentNullException(nameof(entity));
             try
@@ -38,7 +38,7 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Applies the order by operation on an IEnumerable of entities
         /// </summary>
-        public abstract IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class;
+        public abstract IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull;
 
         internal abstract OrderBy GetCopy();
     }

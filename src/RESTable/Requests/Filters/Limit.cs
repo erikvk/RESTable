@@ -38,7 +38,7 @@ namespace RESTable.Requests.Filters
         /// <summary>
         /// Applies the limiting to an IEnumerable of entities
         /// </summary>
-        public IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : class
+        public IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
             if (Number > -1)
                 return entities.Take(Number);

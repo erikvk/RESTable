@@ -244,7 +244,7 @@ namespace RESTable.ProtocolProviders
                 await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
                 await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
-                var entityCount = await jsonProvider.SerializeCollection(optionsBody.ToAsyncSingleton(), jwr, cancellationToken).ConfigureAwait(false);
+                var entityCount = await jsonProvider.SerializeCollectionAsync(optionsBody.ToAsyncSingleton(), jwr, cancellationToken).ConfigureAwait(false);
                 toSerialize.EntityCount = entityCount;
                 await jwr.WritePropertyNameAsync("DataCount", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteValueAsync(entityCount, cancellationToken).ConfigureAwait(false);
@@ -316,7 +316,7 @@ namespace RESTable.ProtocolProviders
 
             if (contentTypeProvider is not IJsonProvider jsonProvider)
             {
-                await contentTypeProvider.SerializeCollection(dataCollection, toSerialize.Body, content.Request, cancellationToken).ConfigureAwait(false);
+                await contentTypeProvider.SerializeCollectionAsync(toSerialize.Body, dataCollection, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -332,7 +332,7 @@ namespace RESTable.ProtocolProviders
                 await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
                 await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
-                var entityCount = await jsonProvider.SerializeCollection(dataCollection, jwr, cancellationToken).ConfigureAwait(false);
+                var entityCount = await jsonProvider.SerializeCollectionAsync(dataCollection, jwr, cancellationToken).ConfigureAwait(false);
                 toSerialize.EntityCount = entityCount;
                 await jwr.WritePropertyNameAsync("DataCount", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteValueAsync(entityCount, cancellationToken).ConfigureAwait(false);
@@ -378,7 +378,7 @@ namespace RESTable.ProtocolProviders
                 await jwr.WritePropertyNameAsync("Status", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteValueAsync("success", cancellationToken).ConfigureAwait(false);
                 await jwr.WritePropertyNameAsync("Data", cancellationToken).ConfigureAwait(false);
-                var entityCount = await jsonProvider.SerializeCollection(change.Entities.ToAsyncEnumerable(), jwr, cancellationToken).ConfigureAwait(false);
+                var entityCount = await jsonProvider.SerializeCollectionAsync(change.Entities.ToAsyncEnumerable(), jwr, cancellationToken).ConfigureAwait(false);
                 toSerialize.EntityCount = entityCount;
                 await jwr.WritePropertyNameAsync("DataCount", cancellationToken).ConfigureAwait(false);
                 await jwr.WriteValueAsync(entityCount, cancellationToken).ConfigureAwait(false);

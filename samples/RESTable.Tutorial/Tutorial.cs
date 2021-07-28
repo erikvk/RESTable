@@ -58,7 +58,7 @@ namespace RESTable.Tutorial
             .AddODataProvider()
             .AddSqliteProvider(dbPath: "./database")
             .AddExcelProvider()
-            .AddJsonProvider()
+            .AddJson()
             .AddRESTable()
             .AddHttpContextAccessor()
             .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);

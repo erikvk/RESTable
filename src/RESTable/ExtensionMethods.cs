@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -8,11 +9,10 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -292,36 +292,122 @@ namespace RESTable
             return opList;
         }
 
-        /// <summary>
-        /// Converts a resource entitiy to a JSON.net JObject.
-        /// </summary>
-        internal static async ValueTask<JObject> ToJObject(this object entity)
+        private static JsonDocument JsonDocumentFromObject<TValue>(TValue value, JsonSerializerOptions? options = default)
         {
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            return JsonDocumentFromObject(value, typeof(TValue), options);
+        }
 
+        private static JsonDocument JsonDocumentFromObject(object? value, Type type, JsonSerializerOptions? options = default)
+        {
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(value, type, options);
+            return JsonDocument.Parse(bytes);
+        }
+
+        private static JsonElement JsonElementFromObject<TValue>(TValue? value, JsonSerializerOptions? options = default)
+        {
+            return JsonElementFromObject(value, typeof(TValue), options);
+        }
+
+        private static JsonElement JsonElementFromObject(object? value, Type type, JsonSerializerOptions? options = default)
+        {
+            using var doc = JsonDocumentFromObject(value, type, options);
+            return doc.RootElement.Clone();
+        }
+
+#if NETSTANDARD2_0
+        public static T? ToObject<T>(this JsonElement element, JsonSerializerOptions? options = null)
+        {
+            var json = JsonSerializer.SerializeToUtf8Bytes(element, options);
+            return JsonSerializer.Deserialize<T>(json, options);
+        }
+#else
+        public static T? ToObject<T>(this JsonElement element, JsonSerializerOptions? options = null)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+                element.WriteTo(writer);
+            return JsonSerializer.Deserialize<T>(bufferWriter.WrittenSpan, options);
+        }
+
+#endif
+
+        public static T? ToObject<T>(this JsonDocument document, JsonSerializerOptions? options = null)
+        {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+            return document.RootElement.ToObject<T>(options);
+        }
+
+        /// <summary>
+        /// Converts a Dictionary object to a JSON.net JObject
+        /// </summary>
+        public static JsonElement ToJsonElement<T>(this T obj, JsonSerializerOptions? options = default)
+        {
+            return JsonElementFromObject(obj, options);
+        }
+
+        /// <summary>
+        /// Converts a Dictionary object to a JSON.net JObject
+        /// </summary>
+        public static JsonProperty? GetProperty(this JsonElement obj, string name, StringComparison stringComparison = OrdinalIgnoreCase)
+        {
+            foreach (var property in obj.EnumerateObject())
+            {
+                if (string.Equals(property.Name, name, stringComparison))
+                {
+                    return property;
+                }
+            }
+            return default;
+        }
+
+        /// <summary>
+        /// Converts a Dictionary object to a JSON.net JObject
+        /// </summary>
+        public static bool GetProperty(this JsonElement obj, string name, out JsonProperty? jsonProperty, StringComparison stringComparison = OrdinalIgnoreCase)
+        {
+            foreach (var property in obj.EnumerateObject())
+            {
+                if (string.Equals(property.Name, name, stringComparison))
+                {
+                    jsonProperty = property;
+                    return true;
+                }
+            }
+            jsonProperty = null;
+            return false;
+        }
+        
+        public static async ValueTask<Dictionary<string, object?>> MakeShallowDynamic<T>(this T entity) where T : notnull
+        {
             switch (entity)
             {
-                case JObject j: return j;
-                case Dictionary<string, object?> _idict: return _idict.ToJObject();
+                case Dictionary<string, object?> dictionary when Equals(dictionary.Comparer, StringComparer.OrdinalIgnoreCase):
+                {
+                    return dictionary;
+                }
+                case Dictionary<string, object?> dictionary:
+                {
+                    return new Dictionary<string, object?>(dictionary, StringComparer.OrdinalIgnoreCase);
+                }
                 case IDictionary idict:
-                    var _jobj = new JObject();
-                    foreach (DictionaryEntry pair in idict)
+                {
+                    var dict = new Dictionary<string, object?>(idict.Count, StringComparer.OrdinalIgnoreCase);
+                    foreach (var entry in idict.Cast<DictionaryEntry>())
                     {
-                        _jobj[pair.Key.ToString()!] = pair.Value is null
-                            ? null
-                            : JToken.FromObject(pair.Value, jsonProvider.GetSerializer());
+                        dict.Add(entry.Key.ToString()!, entry.Value);
                     }
-                    return _jobj;
+                    return dict;
+                }
+                default:
+                {
+                    var dictionary = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                    var properties = ApplicationServicesAccessor.TypeCache.GetDeclaredProperties(entity.GetType()).Values.Where(p => !p.Hidden);
+                    foreach (var property in properties)
+                        dictionary[property.Name] = await property.GetValue(entity).ConfigureAwait(false);
+                    return dictionary;
+                }
             }
-
-            var jobj = new JObject();
-            var typeCache = ApplicationServicesAccessor.TypeCache;
-            foreach (var property in typeCache.GetDeclaredProperties(entity.GetType()).Values.Where(p => !p.Hidden))
-            {
-                var propertyValue = await property.GetValue(entity).ConfigureAwait(false);
-                jobj[property.Name] = propertyValue is null ? null : JToken.FromObject(propertyValue, jsonProvider.GetSerializer());
-            }
-            return jobj;
         }
 
         internal static string GetEntityResourceProviderId(this Type providerType)
@@ -345,13 +431,12 @@ namespace RESTable
 
         #region Filter and Process
 
-        internal static IAsyncEnumerable<T> Filter<T>(this IAsyncEnumerable<T> entities, IFilter? filter) where T : class
+        internal static IAsyncEnumerable<T> Filter<T>(this IAsyncEnumerable<T> entities, IFilter? filter) where T : notnull
         {
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IAsyncEnumerable<JObject> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors)
-            where T : class
+        internal static IAsyncEnumerable<object> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors) where T : notnull
         {
             var target = processors[0].Apply(entities);
             for (var i = 1; i < processors.Count; i += 1)
@@ -465,38 +550,6 @@ namespace RESTable
             return new string(array);
         }
 
-        /// <summary>
-        /// Converts a Dictionary object to a JSON.net JObject
-        /// </summary>
-        public static JObject ToJObject(this Dictionary<string, object?> dictionary)
-        {
-            var jobj = new JObject();
-            foreach (var (key, value) in dictionary)
-                jobj[key] = MakeJToken(value);
-            return jobj;
-        }
-
-        private static JToken? MakeJToken(dynamic? value)
-        {
-            if (value is null)
-                return null;
-            try
-            {
-                return (JToken?) value;
-            }
-            catch
-            {
-                try
-                {
-                    return new JArray(value);
-                }
-                catch
-                {
-                    return JToken.FromObject(value);
-                }
-            }
-        }
-
         #endregion
 
         #region Requests
@@ -526,7 +579,7 @@ namespace RESTable
         {
             Error re => re,
             FormatException _ => new UnsupportedContent(exception),
-            JsonReaderException jre => new FailedJsonDeserialization(jre),
+            JsonException jre => new FailedJsonDeserialization(jre),
             RuntimeBinderException _ => new BinderPermissions(exception),
             ArgumentException _ => new BadRequest(ErrorCodes.Unknown, exception.Message, exception),
             NotImplementedException _ => new FeatureNotImplemented("RESTable encountered a call to a non-implemented method"),

@@ -44,6 +44,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrameworkApp", "samples\Fra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTable.Json.Tests", "tests\RESTable.Json.Tests\RESTable.Json.Tests.csproj", "{5B52D7FD-77CF-4FBC-B2F9-532BCFFEF551}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncJsonTest", "samples\AsyncJsonTest\AsyncJsonTest.csproj", "{CC77D28D-3883-4F63-A82B-DF8BC6C6F0C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -112,6 +114,10 @@ Global
 		{5B52D7FD-77CF-4FBC-B2F9-532BCFFEF551}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B52D7FD-77CF-4FBC-B2F9-532BCFFEF551}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5B52D7FD-77CF-4FBC-B2F9-532BCFFEF551}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC77D28D-3883-4F63-A82B-DF8BC6C6F0C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC77D28D-3883-4F63-A82B-DF8BC6C6F0C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC77D28D-3883-4F63-A82B-DF8BC6C6F0C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC77D28D-3883-4F63-A82B-DF8BC6C6F0C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -136,5 +142,6 @@ Global
 		{03CFA3EA-4F23-40F4-9948-BF3791D4B05A} = {FB5C6A18-A201-4ABE-9853-5720336A5673}
 		{79A5EA26-28CB-4569-B799-7E4E6A5837F9} = {B5B66ADB-F3EA-4C7C-9227-BCCBB2DFC202}
 		{5B52D7FD-77CF-4FBC-B2F9-532BCFFEF551} = {711DE637-1CC4-45B6-AC0D-828359BE5A45}
+		{CC77D28D-3883-4F63-A82B-DF8BC6C6F0C5} = {B5B66ADB-F3EA-4C7C-9227-BCCBB2DFC202}
 	EndGlobalSection
 EndGlobal

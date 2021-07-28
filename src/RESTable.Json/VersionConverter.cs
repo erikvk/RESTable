@@ -1,24 +1,28 @@
 ﻿using System;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RESTable.Json
 {
     public class VersionConverter : JsonConverter<Version>
     {
-        public override void WriteJson(JsonWriter writer, Version? value, JsonSerializer serializer)
+        public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            writer.WriteValue(value?.ToString());
+            return JsonSerializer.Deserialize<JsonElement>(ref reader, options) switch
+            {
+                {ValueKind: JsonValueKind.Null} => null,
+                {ValueKind: JsonValueKind.String} stringElement => Version.Parse(stringElement.GetString()!),
+                _ => throw new FormatException("Invalid Version syntax")
+            };
         }
 
-        public override Version? ReadJson(JsonReader reader, Type objectType, Version? existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, Version? value, JsonSerializerOptions options)
         {
-            var value = JToken.Load(reader);
-            if (value.Type == JTokenType.Null)
-                return null;
-            if (value.Type == JTokenType.String && value.Value<string>() is string stringValue)
-                return Version.Parse(stringValue);
-            throw new FormatException("Invalid Version syntax");
+            if (value is null)
+                writer.WriteNullValue();
+            else writer.WriteStringValue(value.ToString());
         }
+
+        public override bool HandleNull => true;
     }
 }

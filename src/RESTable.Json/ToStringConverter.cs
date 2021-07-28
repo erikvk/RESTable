@@ -1,5 +1,6 @@
 ﻿using System;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RESTable.Json
 {
@@ -7,30 +8,16 @@ namespace RESTable.Json
     /// <summary>
     /// Converts an object to its string value, by using ToString(), during serialization
     /// </summary>
-    public class ToStringConverter : JsonConverter
+    public class ToStringConverter : JsonConverter<object>
     {
-        /// <inheritdoc />
-        public override bool CanRead => false;
-
-        /// <inheritdoc />
-        public override bool CanWrite => true;
-
-        /// <inheritdoc />
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            writer.WriteValue(value?.ToString());
-        }
-
-        /// <inheritdoc />
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             throw new NotImplementedException();
         }
 
-        /// <inheritdoc />
-        public override bool CanConvert(Type objectType)
+        public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
+            writer.WriteStringValue(value.ToString());
         }
     }
 }

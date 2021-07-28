@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 
 namespace RESTable.Meta
 {
@@ -61,15 +61,21 @@ namespace RESTable.Meta
                     case IDynamicMemberValueProvider dynamicMemberValueProvider:
                         if (dynamicMemberValueProvider.TryGetValue(Name, out value, out actualKey))
                         {
-                            Name = actualKey;
+                            Name = actualKey!;
                             return value;
                         }
                         return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
-                    case JObject jobj:
-                        if (jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is not JProperty property)
-                            return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
-                        Name = property.Name;
-                        return property.Value.ToObject<object?>();
+                    case JsonElement {ValueKind: JsonValueKind.Object} element:
+                        foreach (var jsonProperty in element.EnumerateObject())
+                        {
+                            if (string.Equals(jsonProperty.Name, Name, StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Set the name of this dynamic property after the actual name of the property
+                                Name = jsonProperty.Name;
+                                return jsonProperty.Value.ToObject<object?>();
+                            }
+                        }
+                        return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
                     case IDictionary<string, object?> dict:
                         string capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
@@ -101,9 +107,6 @@ namespace RESTable.Meta
                         break;
                     case IDictionary idict:
                         idict[Name] = value;
-                        break;
-                    case IDictionary<string, JToken?> jobj:
-                        jobj[Name] = (dynamic?) value;
                         break;
                     default:
                         var type = obj.GetType();

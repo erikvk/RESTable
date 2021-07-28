@@ -27,7 +27,7 @@ namespace FileSenderSample
 
         public void ConfigureServices(IServiceCollection services) => services
             .AddRESTable()
-            .AddJsonProvider()
+            .AddJson()
             .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true) // needed since RESTable still uses synchronous JSON serialization (Newtonsoft)
             .AddHttpContextAccessor();
 

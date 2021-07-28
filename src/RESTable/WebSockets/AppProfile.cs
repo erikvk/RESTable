@@ -20,7 +20,7 @@ namespace RESTable.WebSockets
             ClientIP = webSocket.Context.Client.ClientIp;
             ConnectedAt = webSocket.OpenedAt.ToString("yyyy-MM-dd HH:mm:ss");
             CurrentTerminal = webSocket.TerminalResource?.Name ?? "none";
-            CustomHeaders = webSocket.Headers;
+            CustomHeaders = new Headers(webSocket.Headers);
         }
     }
 }

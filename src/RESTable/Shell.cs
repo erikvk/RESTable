@@ -169,10 +169,9 @@ namespace RESTable
             _protocol = "";
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
-            WebSocket.Context.Client.ShellConfig = JsonProvider.Serialize(this);
-            return default;
+            WebSocket.Context.Client.ShellConfig = await JsonProvider.SerializeAsync(this).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -201,7 +200,7 @@ namespace RESTable
         {
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
-                JsonProvider.Populate(config, this);
+                JsonProvider.Populate(this, config);
                 await SendShellInit(cancellationToken).ConfigureAwait(false);
                 await SendQuery().ConfigureAwait(false);
             }

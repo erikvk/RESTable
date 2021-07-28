@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var xmlSettings = new XmlSettings();
             xmlSettingsAction?.Invoke(xmlSettings);
             serviceCollection.AddSingleton<XmlSettings>(xmlSettings);
-            serviceCollection.AddJsonProvider();
+            serviceCollection.AddJson();
             serviceCollection.TryAddSingleton<IContentTypeProvider, XmlContentTypeProvider>();
             return serviceCollection;
         }

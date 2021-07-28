@@ -1,23 +1,34 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using RESTable.ContentTypeProviders;
 using RESTable.Json;
+using System.Text.Json.Serialization;
+using System.Text.Encodings.Web;
+using System.Threading;
+using System.Threading.Tasks;
+using RESTable;
+using RESTable.Requests;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddJsonProvider(this IServiceCollection serviceCollection, Action<JsonSettings>? jsonSettingsAction = null)
+        public static IServiceCollection AddJson(this IServiceCollection serviceCollection, Action<JsonSerializerOptions>? jsonOptionsAction = null)
         {
-            var jsonSettings = new JsonSettings();
-            jsonSettingsAction?.Invoke(jsonSettings);
-            serviceCollection.AddSingleton<JsonSettings>(jsonSettings);
-            serviceCollection.TryAddSingleton<IContractResolver, DefaultResolver>();
-            serviceCollection.TryAddSingleton<IJsonProvider, NewtonsoftJsonProvider>();
-            serviceCollection.TryAddSingleton<IContentTypeProvider>(pr => pr.GetRequiredService<IJsonProvider>());
-            serviceCollection.TryAddSingleton<JsonSerializer>(pr => pr.GetRequiredService<IJsonProvider>().GetSerializer());
+            var jsonSettings = new JsonSerializerOptions
+            {
+                AllowTrailingCommas = false,
+                IncludeFields = false,
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+            jsonOptionsAction?.Invoke(jsonSettings);
+            serviceCollection.AddSingleton<JsonSerializerOptions>(jsonSettings);
+            serviceCollection.TryAddSingleton<IJsonProvider, SystemTextJsonProvider>();
+            serviceCollection.AddSingleton<IContentTypeProvider>(pr => pr.GetRequiredService<IJsonProvider>());
             return serviceCollection;
         }
     }

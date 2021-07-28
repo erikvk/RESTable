@@ -113,7 +113,7 @@ namespace RESTable
                         break;
 
                     case var _ when type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>):
-                    case var _ when IsPrimitive(type):
+                    case var _ when type.IsPrimitive:
                     case var _ when type == typeof(object):
                         break;
 
@@ -161,31 +161,6 @@ namespace RESTable
                 entityResourceTypes: new ReadOnlyDictionary<Type, Member[]>(entityResourceTypes),
                 peripheralTypes: new ReadOnlyDictionary<Type, Member[]>(peripheralTypes)
             );
-        }
-
-        private static bool IsPrimitive(Type type)
-        {
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Empty:
-                case TypeCode.DBNull:
-                case TypeCode.Boolean:
-                case TypeCode.Char:
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                case TypeCode.Single:
-                case TypeCode.Double:
-                case TypeCode.Decimal:
-                case TypeCode.DateTime:
-                case TypeCode.String: return true;
-                default: return false;
-            }
         }
     }
 }

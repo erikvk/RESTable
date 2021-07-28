@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using RESTable.Requests;
 
 namespace RESTable.Json
@@ -22,33 +22,34 @@ namespace RESTable.Json
 
         /// <inheritdoc />
         /// <summary>
-        /// Writes only custom headers to JSON
-        /// </summary>s
-        public override void WriteJson(JsonWriter writer, Headers? headers, JsonSerializer s)
+        /// Reads only custom headers from JSON
+        /// </summary>
+        public override Headers Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var jobj = new JObject();
-
-            if (headers is IHeadersInternal headersInternal)
-            {
-                foreach (var (key, value) in headersInternal.GetCustom(WhitelistedNonCustomHeaders))
-                    jobj[key] = value;
-            }
-
-            jobj.WriteTo(writer);
+            var headers = new Headers();
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(ref reader, options);
+            var values = jsonElement.EnumerateObject();
+            var headersToRead = values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Name) || pair.Name.IsCustomHeaderName());
+            foreach (var pair in headersToRead)
+                headers[pair.Name] = pair.Value.ToObject<string>();
+            return headers;
         }
 
         /// <inheritdoc />
         /// <summary>
-        /// Reads only custom headers from JSON
-        /// </summary>
-        public override Headers ReadJson(JsonReader reader, Type o, Headers? headers, bool h, JsonSerializer s)
+        /// Writes only custom headers to JSON
+        /// </summary>s
+        public override void Write(Utf8JsonWriter writer, Headers headers, JsonSerializerOptions options)
         {
-            IEnumerable<KeyValuePair<string, JToken?>> values = JObject.Load(reader);
-            headers ??= new Headers();
-            var headersToRead = values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Key) || pair.Key.IsCustomHeaderName());
-            foreach (var (key, value) in headersToRead)
-                headers[key] = value?.ToObject<string>();
-            return headers;
+            writer.WriteStartObject();
+            if (headers is IHeadersInternal headersInternal)
+            {
+                foreach (var (key, value) in headersInternal.GetCustom(WhitelistedNonCustomHeaders))
+                {
+                    writer.WriteString(key, value);
+                }
+            }
+            writer.WriteEndObject();
         }
     }
 }

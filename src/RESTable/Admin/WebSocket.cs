@@ -2,8 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -49,7 +47,7 @@ namespace RESTable.Admin
 
         private WebSockets.WebSocket UnderlyingSocket { get; }
 
-        public WebSocket(string id, string? terminalType, object? terminal, object client, bool isThis, WebSockets.WebSocket underlyingSocket)
+        private WebSocket(string id, string? terminalType, object? terminal, object client, bool isThis, WebSockets.WebSocket underlyingSocket)
         {
             Id = id;
             TerminalType = terminalType;
@@ -62,7 +60,6 @@ namespace RESTable.Admin
         /// <inheritdoc />
         public IEnumerable<WebSocket> Select(IRequest<WebSocket> request)
         {
-            var jsonSerializer = request.GetRequiredService<JsonSerializer>();
             var webSocketController = request.GetRequiredService<WebSocketManager>();
             return webSocketController
                 .ConnectedWebSockets
@@ -72,8 +69,8 @@ namespace RESTable.Admin
                     id: socket.Context.TraceId,
                     isThis: socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
                     terminalType: socket.TerminalResource?.Name,
-                    client: JObject.FromObject(socket.GetAppProfile(), jsonSerializer),
-                    terminal: socket.Terminal is null ? null : JObject.FromObject(socket.Terminal, jsonSerializer),
+                    client: socket.GetAppProfile(),
+                    terminal: socket.Terminal,
                     underlyingSocket: socket
                 ));
         }

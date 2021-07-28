@@ -207,7 +207,7 @@ namespace RESTable.Meta
             if (!isDictionary && typeof(IEnumerable).IsAssignableFrom(type))
             {
                 var elementType = type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p)
-                    ? p[0]
+                    ? p![0]
                     : typeof(object);
                 var collectionReadonly = typeof(IList).IsAssignableFrom(type) || type.ImplementsGenericInterface(typeof(IList<>));
                 switch (key)

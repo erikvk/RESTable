@@ -96,7 +96,7 @@ namespace RESTable.Admin
                                 item.In.Content = await request.GetLogContent().ConfigureAwait(false);
                                 item.Out.Content = await serializedResult.GetLogContent().ConfigureAwait(false);
                             }
-                            var json = JsonProvider.Serialize(item, true, ignoreNulls: true);
+                            var json = await JsonProvider.SerializeAsync<bool>(item, true, ignoreNulls: true).ConfigureAwait(false);
                             await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;
@@ -137,7 +137,7 @@ namespace RESTable.Admin
                                 item.Client = new ClientInfo(logable.Context.Client);
                             if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
                                 item.CustomHeaders = hh.Headers;
-                            var json = JsonProvider!.Serialize(item, true, ignoreNulls: true);
+                            var json = await JsonProvider!.SerializeAsync<bool>(item, true, ignoreNulls: true).ConfigureAwait(false);
                             await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
                         }
                         break;

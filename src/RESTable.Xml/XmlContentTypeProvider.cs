@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using RESTable.ContentTypeProviders;
 using RESTable.Linq;
 using RESTable.Requests;
@@ -50,13 +49,13 @@ namespace RESTable.Xml
             XMLHeader = xmlSettings.Encoding.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         }
 
-        public Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class
+        public async Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class
         {
-            return SerializeCollection(item.ToAsyncSingleton(), stream, request, cancellationToken);
+            await SerializeCollection(item.ToAsyncSingleton(), stream, request, cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class
+        public async ValueTask<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken) where T : class
         {
             var count = await JsonProvider.SerializeCollection(collection, stream, request, cancellationToken).ConfigureAwait(false);
             stream.Seek(0, SeekOrigin.Begin);

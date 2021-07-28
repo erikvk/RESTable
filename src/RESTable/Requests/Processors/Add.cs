@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using RESTable.Meta;
 
 namespace RESTable.Requests.Processors
@@ -19,27 +18,19 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Adds properties to entities in an IEnumerable
         /// </summary>
-        public async IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities)
+        public async IAsyncEnumerable<object> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-            var serializer = jsonProvider.GetSerializer();
             await foreach (var entity in entities.ConfigureAwait(false))
             {
-                if (entity is null)
-                {
-                    continue;
-                }
-                var jobj = await entity.ToJObject().ConfigureAwait(false);
+                var dictionary = await entity.MakeShallowDynamic().ConfigureAwait(false);
                 foreach (var term in this)
                 {
-                    if (jobj[term.Key] is not null)
+                    if (dictionary.ContainsKey(term.Key))
                         continue;
                     var termValue = await term.GetValue(entity).ConfigureAwait(false);
-                    var actualKey = termValue.ActualKey;
-                    var value = termValue.Value;
-                    jobj[actualKey] = value is null ? null : JToken.FromObject(termValue, serializer);
+                    dictionary[termValue.ActualKey] = termValue.Value;
                 }
-                yield return jobj;
+                yield return dictionary;
             }
         }
     }

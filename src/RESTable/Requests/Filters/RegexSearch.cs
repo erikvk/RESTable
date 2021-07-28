@@ -28,12 +28,17 @@ namespace RESTable.Requests.Filters
             var options = IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             if (Selector is null)
             {
-                return entities.Where(e => Regex.IsMatch(jsonProvider.Serialize(e), Pattern, options));
+                return entities.WhereAwait(async e =>
+                {
+                    var sourceJson = await jsonProvider.SerializeAsync(e).ConfigureAwait(false);
+                    return Regex.IsMatch(sourceJson, Pattern, options);
+                });
             }
-            return entities.WhereAwait(async e =>
+            return entities.Where(entity =>
             {
-                var jobject = await e.ToJObject().ConfigureAwait(false);
-                return jobject.GetValue(Selector, OrdinalIgnoreCase)?.ToString() is string s && Regex.IsMatch(s, Pattern, options);
+                var jsonElement = entity.ToJsonElement();
+                var matchingPropertyValue = jsonElement.GetProperty(Selector, OrdinalIgnoreCase)?.Value.ToObject<object>();
+                return matchingPropertyValue?.ToString() is string s && Regex.IsMatch(s, Pattern, options);
             });
         }
     }

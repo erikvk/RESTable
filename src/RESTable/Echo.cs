@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -17,37 +16,37 @@ namespace RESTable
     /// request conditions as an object.
     /// </summary>
     [RESTable(GET, POST, PATCH, PUT, REPORT, HEAD, AllowDynamicConditions = true, Description = description)]
-    public class Echo : ResourceWrapper<JObject>, IAsyncSelector<JObject>, IAsyncInserter<JObject>, IAsyncUpdater<JObject>
+    public class Echo : Dictionary<string, object?>, IAsyncSelector<Echo>, IAsyncInserter<Echo>, IAsyncUpdater<Echo>
     {
         private const string description = "The Echo resource is a test and utility entity resource that " +
                                            "returns the request conditions as an entity.";
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<JObject> SelectAsync(IRequest<JObject> request)
+        public async IAsyncEnumerable<Echo> SelectAsync(IRequest<Echo> request)
         {
             if (request is null)
                 throw new ArgumentNullException(nameof(request));
 
             if (request.Conditions.Any())
             {
-                var conditionEcho = new JObject();
+                var conditionEcho = new Echo();
                 foreach (var (key, value) in request.Conditions)
-                    conditionEcho[key] = new JValue(value);
+                    conditionEcho[key] = value;
                 request.Conditions.Clear();
                 yield return conditionEcho;
             }
 
-            await foreach (var bodyObject in request.Body.Deserialize<JObject>().ConfigureAwait(false))
+            await foreach (var bodyObject in request.Body.Deserialize<Echo>().ConfigureAwait(false))
             {
-                var bodyEcho = new JObject();
-                foreach (var property in bodyObject.Properties())
-                    bodyEcho[property.Name] = property.Value;
+                var bodyEcho = new Echo();
+                foreach (var (key, value) in bodyObject)
+                    bodyEcho[key] = value;
                 yield return bodyEcho;
             }
         }
 
-        public IAsyncEnumerable<JObject> InsertAsync(IRequest<JObject> request) => request.GetInputEntitiesAsync();
-        public IAsyncEnumerable<JObject> UpdateAsync(IRequest<JObject> request) => request.GetInputEntitiesAsync();
+        public IAsyncEnumerable<Echo> InsertAsync(IRequest<Echo> request) => request.GetInputEntitiesAsync();
+        public IAsyncEnumerable<Echo> UpdateAsync(IRequest<Echo> request) => request.GetInputEntitiesAsync();
     }
 
 //    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />

@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
 using RESTable.ContentTypeProviders;
 using RESTable.Json;
@@ -49,13 +49,13 @@ namespace RESTable.Excel
             ExcelSettings = excelSettings;
         }
 
-        public override Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken)
+        public override async Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken)
         {
-            return SerializeCollection(Linq.Enumerable.ToAsyncSingleton(item), stream, request, cancellationToken);
+            await SerializeCollection(Linq.Enumerable.ToAsyncSingleton(item), stream, request, cancellationToken);
         }
 
         /// <inheritdoc />
-        public override async Task<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken)
+        public override async ValueTask<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken)
             where T : class
         {
             try
@@ -84,25 +84,6 @@ namespace RESTable.Excel
                                         cell.Value = key;
                                     }
                                     WriteExcelCell(worksheet.Cells[currentRow, column], value);
-                                }
-                            }
-                            break;
-                        case IAsyncEnumerable<JObject> jobjects:
-                            var _columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            await foreach (var jobject in jobjects.ConfigureAwait(false))
-                            {
-                                currentRow += 1;
-                                foreach (var (key, value) in jobject)
-                                {
-                                    if (!_columns.TryGetValue(key, out var column))
-                                    {
-                                        column = _columns.Count + 1;
-                                        _columns[key] = column;
-                                        var cell = worksheet.Cells[1, column];
-                                        cell.Style.Font.Bold = true;
-                                        cell.Value = key;
-                                    }
-                                    WriteExcelCell(worksheet.Cells[currentRow, column], value?.ToObject<object>());
                                 }
                             }
                             break;
@@ -177,8 +158,14 @@ namespace RESTable.Excel
                 case char @char:
                     target.Value = @char.ToString();
                     break;
-                case JObject _:
-                    target.Value = typeof(JObject).FullName;
+                case JsonElement {ValueKind: JsonValueKind.Array} jarr:
+                    target.Value = string.Join(", ", jarr.EnumerateArray().Select(o => o.ToString()));
+                    break;
+                case JsonElement {ValueKind: JsonValueKind.Object}:
+                    target.Value = typeof(JsonElement).FullName;
+                    break;
+                case JsonElement element:
+                    target.Value = element.ToObject<object>();
                     break;
                 case IDictionary other:
                     target.Value = other.GetType().GetRESTableTypeName();

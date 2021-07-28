@@ -44,7 +44,7 @@ namespace FrameworkApp
             // Build services
             using var services = new ServiceCollection()
                 .AddRESTable()
-                .AddJsonProvider()
+                .AddJson()
                 .BuildServiceProvider();
             var configurator = services.GetRequiredService<RESTableConfigurator>();
             configurator.ConfigureRESTable();

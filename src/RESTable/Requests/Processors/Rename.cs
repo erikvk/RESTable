@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using RESTable.Meta;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace RESTable.Requests.Processors
 {
@@ -16,39 +14,26 @@ namespace RESTable.Requests.Processors
     {
         internal Rename(IEnumerable<(Term term, string newName)> terms, out ICollection<string> dynamicDomain)
         {
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-            Serializer = jsonProvider.GetSerializer();
             foreach (var (term, newName) in terms)
                 Add(term, newName);
             dynamicDomain = Values;
         }
 
-        private JsonSerializer Serializer { get; }
-
-        private Rename(Rename other) : base(other)
-        {
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-            Serializer = jsonProvider.GetSerializer();
-        }
+        private Rename(Rename other) : base(other) { }
 
         internal Rename GetCopy() => new(this);
 
-        private async ValueTask<JObject> Renamed(JObject entity)
+        private async ValueTask<Dictionary<string, object?>> Renamed(Dictionary<string, object?> entity)
         {
-            foreach (var pair in this)
+            foreach (var (key, newName) in this)
             {
-                var (key, newName) = pair;
-                var value = entity.GetValue(key.Key, StringComparison.OrdinalIgnoreCase);
-                if (value is null)
+                if (!entity.TryGetValue(key.Key, out var value))
                 {
                     var termValue = await key.GetValue(entity).ConfigureAwait(false);
-                    entity[newName] = termValue.Value is null ? null : JToken.FromObject(termValue.Value, Serializer);
+                    entity[newName] = termValue.Value;
                     continue;
                 }
-                var property = (JProperty?) value.Parent;
-                var actualKey = property?.Name;
-                if (actualKey is not null)
-                    entity.Remove(actualKey);
+                entity.Remove(key.Key);
                 entity[newName] = value;
             }
             return entity;
@@ -57,13 +42,13 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Renames properties in an IEnumerable
         /// </summary>
-        public async IAsyncEnumerable<JObject> Apply<T>(IAsyncEnumerable<T> entities)
+        public async IAsyncEnumerable<object> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
             await foreach (var entity in entities)
             {
                 if (entity is null) throw new ArgumentNullException(nameof(entities));
-                var jobject = await entity.ToJObject().ConfigureAwait(false);
-                yield return await Renamed(jobject).ConfigureAwait(false);
+                var dictionary = await entity.MakeShallowDynamic().ConfigureAwait(false);
+                yield return await Renamed(dictionary).ConfigureAwait(false);
             }
         }
     }

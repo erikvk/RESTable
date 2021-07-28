@@ -2,11 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -35,9 +33,6 @@ namespace RESTable
                 errorMessage: "Expected an aggregator template as request body"
             ).ConfigureAwait(false);
 
-            var jsonProvider = request.GetRequiredService<IJsonProvider>();
-            JsonSerializer serializer = jsonProvider.GetSerializer();
-
             async Task<object> Populator(object node)
             {
                 switch (node)
@@ -61,10 +56,10 @@ namespace RESTable
                             aggregator[key] = value;
                         }
                         return aggregator;
-                    case JArray array:
+                    case JsonElement {ValueKind: JsonValueKind.Array} array:
                     {
                         var list = new List<object>();
-                        foreach (var item in array)
+                        foreach (var item in array.EnumerateArray())
                         {
                             var obj = item.ToObject<object>();
                             var populated = await Populator(obj!).ConfigureAwait(false);
@@ -72,8 +67,14 @@ namespace RESTable
                         }
                         return list;
                     }
-                    case JObject jobj: return await Populator(jobj.ToObject<Aggregator>(serializer)!).ConfigureAwait(false);
-                    case string empty when string.IsNullOrWhiteSpace(empty): return empty;
+                    case JsonElement {ValueKind: JsonValueKind.Object} jobj:
+                    {
+                        return await Populator(jobj.ToObject<Aggregator>()!).ConfigureAwait(false);
+                    }
+                    case string empty when string.IsNullOrWhiteSpace(empty):
+                    {
+                        return empty;
+                    }
                     case string stringValue:
                     {
                         Method method;

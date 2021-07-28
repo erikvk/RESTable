@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 
 namespace RESTable.Meta
 {
@@ -163,12 +163,12 @@ namespace RESTable.Meta
                 // will be JObject. In that case, the object may contain the entire term key
                 // as member, even if the term has multiple properties (common result of add 
                 // and select). This code handles those cases.
-                if (target is JObject jobj)
+                if (target is JsonElement element)
                 {
-                    if (jobj.GetValue(term.Key, StringComparison.OrdinalIgnoreCase)?.Parent is JProperty jproperty)
+                    if (element.GetProperty(term.Key, StringComparison.OrdinalIgnoreCase) is JsonProperty jproperty)
                     {
                         actualKey = jproperty.Name;
-                        parent = jobj;
+                        parent = element;
                         property = DynamicProperty.Parse(term.Key);
                         value = jproperty.Value.ToObject<object>();
                         return new TermValue(value, actualKey, parent, property);

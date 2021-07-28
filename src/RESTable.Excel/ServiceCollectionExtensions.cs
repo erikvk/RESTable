@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var excelSettings = new ExcelSettings();
             excelSettingsAction?.Invoke(excelSettings);
             serviceCollection.AddSingleton<ExcelSettings>(excelSettings);
-            serviceCollection.AddJsonProvider();
+            serviceCollection.AddJson();
             serviceCollection.TryAddSingleton<IContentTypeProvider, ExcelContentTypeProvider>();
             return serviceCollection;
         }

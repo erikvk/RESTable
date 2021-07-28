@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using RESTable.ContentTypeProviders;
 using RESTable.Results;
 
@@ -169,22 +168,19 @@ namespace RESTable
             switch (UninitializedBodyObject)
             {
                 case IDictionary<string, object?> dict:
-                    await contentTypeProvider.Serialize(dict, Stream, null, cancellationToken).ConfigureAwait(false);
-                    break;
-                case JObject jo:
-                    await contentTypeProvider.Serialize(jo, Stream, null, cancellationToken).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeAsync(Stream, dict, cancellationToken).ConfigureAwait(false);
                     break;
                 case IAsyncEnumerable<object> aie:
-                    await contentTypeProvider.SerializeCollection(aie, Stream, null, cancellationToken).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeCollectionAsync(Stream, aie, cancellationToken).ConfigureAwait(false);
                     break;
                 case IEnumerable<object> ie:
-                    await contentTypeProvider.SerializeCollection(ie.ToAsyncEnumerable(), Stream, null, cancellationToken).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeCollectionAsync(Stream, ie.ToAsyncEnumerable(), cancellationToken).ConfigureAwait(false);
                     break;
                 case IEnumerable ie:
-                    await contentTypeProvider.SerializeCollection(ie.Cast<object>().ToAsyncEnumerable(), Stream, null, cancellationToken).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeCollectionAsync(Stream, ie.Cast<object>().ToAsyncEnumerable(), cancellationToken).ConfigureAwait(false);
                     break;
                 case { } other:
-                    await contentTypeProvider.Serialize(other, Stream, null, cancellationToken).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeAsync(Stream, other, cancellationToken).ConfigureAwait(false);
                     break;
             }
             Stream.Rewind();

@@ -23,7 +23,7 @@ namespace RESTable.Example
             .AddHttpContextAccessor()
             .AddSingleton<IProtocolProvider, ODataProtocolProvider>()
             .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("./database"))
-            .AddJsonProvider()
+            .AddJson()
             .AddExcelProvider()
             .AddSingleton<IEntityTypeContractResolver, MyStringPropertiesResolver>()
             .AddRESTable()
