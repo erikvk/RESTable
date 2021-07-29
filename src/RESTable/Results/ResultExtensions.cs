@@ -10,7 +10,7 @@ namespace RESTable.Results
         /// <summary>
         /// Serializes the result into an instance of ISerializedResult
         /// </summary>
-        public static async Task<ISerializedResult> Serialize(this IResult result, Stream customOutputStream = null, CancellationToken cancellationToken = new())
+        public static async Task<ISerializedResult> Serialize(this IResult result, Stream? customOutputStream = null, CancellationToken cancellationToken = new())
         {
             var serializedResult = new SerializedResult(result, customOutputStream);
             try

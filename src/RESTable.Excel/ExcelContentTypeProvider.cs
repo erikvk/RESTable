@@ -49,20 +49,20 @@ namespace RESTable.Excel
             ExcelSettings = excelSettings;
         }
 
-        public override async Task Serialize<T>(T item, Stream stream, IRequest? request, CancellationToken cancellationToken)
+        public override async Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken)
         {
-            await SerializeCollection(Linq.Enumerable.ToAsyncSingleton(item), stream, request, cancellationToken);
+            await SerializeCollectionAsync(stream, Linq.Enumerable.ToAsyncSingleton(item), cancellationToken);
         }
 
         /// <inheritdoc />
-        public override async ValueTask<long> SerializeCollection<T>(IAsyncEnumerable<T> collection, Stream stream, IRequest? request, CancellationToken cancellationToken)
+        public override async ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken)
             where T : class
         {
             try
             {
                 using var package = new ExcelPackage(stream);
                 var currentRow = 1;
-                var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheet 1");
+                var worksheet = package.Workbook.Worksheets.Add("Sheet 1");
 
                 async Task writeEntities(IAsyncEnumerable<object> entities)
                 {
@@ -184,49 +184,90 @@ namespace RESTable.Excel
         }
 
         /// <inheritdoc />
-        protected override async Task ProduceJsonArray(Stream excelStream, Stream jsonStream)
+        protected override async Task ProduceJsonArrayAsync(Stream excelStream, Stream jsonStream)
         {
             try
             {
-                var swr = new StreamWriter(jsonStream, ExcelSettings.Encoding, 4096, true);
-#if NETSTANDARD2_0
-                using (swr)
-#else
-                await using (swr.ConfigureAwait(false))
-#endif
+                await using var jwr = new Utf8JsonWriter(jsonStream);
+                using var package = new ExcelPackage(excelStream);
+
+                jwr.WriteStartArray();
+
+                var worksheet = package.Workbook?.Worksheets?.FirstOrDefault();
+                if (worksheet?.Dimension is not null)
                 {
-                    using var jwr = new RESTableFromExcelJsonTextWriter(swr);
-                    using var package = new ExcelPackage(excelStream);
-
-                    await jwr.WriteStartArrayAsync().ConfigureAwait(false);
-
-                    var worksheet = package.Workbook?.Worksheets?.FirstOrDefault();
-                    if (worksheet?.Dimension is not null)
+                    var (rows, columns) = (worksheet.Dimension.Rows, worksheet.Dimension.Columns);
+                    if (rows > 1)
                     {
-                        var (rows, columns) = (worksheet.Dimension.Rows, worksheet.Dimension.Columns);
-                        if (rows > 1)
+                        var propertyNames = new string[columns + 1];
+                        for (var col = 1; col <= columns; col += 1)
+                            propertyNames[col] = worksheet.Cells[1, col].GetValue<string>();
+                        for (var row = 2; row <= rows; row += 1)
                         {
-                            var propertyNames = new string[columns + 1];
+                            jwr.WriteStartObject();
                             for (var col = 1; col <= columns; col += 1)
-                                propertyNames[col] = worksheet.Cells[1, col].GetValue<string>();
-                            for (var row = 2; row <= rows; row += 1)
                             {
-                                await jwr.WriteStartObjectAsync().ConfigureAwait(false);
-                                for (var col = 1; col <= columns; col += 1)
+                                if (propertyNames[col] is string propertyName)
                                 {
-                                    if (propertyNames[col] is string propertyName)
+                                    jwr.WritePropertyName(propertyName);
+                                    switch (worksheet.Cells[row, col].Value)
                                     {
-                                        await jwr.WritePropertyNameAsync(propertyName).ConfigureAwait(false);
-                                        await jwr.WriteValueAsync(worksheet.Cells[row, col].Value).ConfigureAwait(false);
+                                        case null:
+                                            jwr.WriteNullValue();
+                                            break;
+                                        case string str:
+                                            jwr.WriteStringValue(str);
+                                            break;
+                                        case char ch:
+                                            jwr.WriteStringValue(ch.ToString());
+                                            break;
+                                        case bool b:
+                                            jwr.WriteBooleanValue(b);
+                                            break;
+                                        case decimal d:
+                                            jwr.WriteNumberValue(d);
+                                            break;
+                                        case long l:
+                                            jwr.WriteNumberValue(l);
+                                            break;
+                                        case sbyte s:
+                                            jwr.WriteNumberValue(s);
+                                            break;
+                                        case byte b:
+                                            jwr.WriteNumberValue(b);
+                                            break;
+                                        case short sh:
+                                            jwr.WriteNumberValue(sh);
+                                            break;
+                                        case ushort us:
+                                            jwr.WriteNumberValue(us);
+                                            break;
+                                        case int i:
+                                            jwr.WriteNumberValue(i);
+                                            break;
+                                        case uint ui:
+                                            jwr.WriteNumberValue(ui);
+                                            break;
+                                        case ulong ul:
+                                            jwr.WriteNumberValue(ul);
+                                            break;
+                                        case float f:
+                                            jwr.WriteNumberValue(f);
+                                            break;
+                                        case double de:
+                                            jwr.WriteNumberValue(de);
+                                            break;
+                                        case DateTime dt:
+                                            jwr.WriteStringValue(dt.ToString("O"));
+                                            break;
                                     }
                                 }
-                                await jwr.WriteEndObjectAsync().ConfigureAwait(false);
                             }
+                            jwr.WriteEndObject();
                         }
                     }
-
-                    await jwr.WriteEndArrayAsync().ConfigureAwait(false);
                 }
+                jwr.WriteEndArray();
             }
             catch (Exception e)
             {

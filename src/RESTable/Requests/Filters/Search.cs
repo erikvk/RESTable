@@ -76,12 +76,7 @@ namespace RESTable.Requests.Filters
             if (Selector is null)
             {
                 var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-
-                return entities.WhereAwait(async e =>
-                {
-                    var sourceJson = await jsonProvider.SerializeAsync(e).ConfigureAwait(false);
-                    return sourceJson.IndexOf(Pattern, comparison) >= 0;
-                });
+                return entities.Where(e => jsonProvider.Serialize(e).IndexOf(Pattern, comparison) >= 0);
             }
             return entities.Where(entity =>
             {

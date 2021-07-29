@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -260,32 +261,36 @@ namespace RESTable.OData
                     writeMetadata = true;
                     break;
             }
-            var swr = new StreamWriter(toSerialize.Body, Encoding.Default, 4096, true);
-#if NETSTANDARD2_0
-            using (swr)
-#else
-            await using (swr.ConfigureAwait(false))
-#endif
+            await using var writer = new Utf8JsonWriter(toSerialize.Body);
+            writer.WriteStartObject();
+            writer.WritePropertyName("@odata.context");
+            writer.WriteStringValue($"{GetServiceRoot(entities)}/$metadata{contextFragment}");
+            writer.WritePropertyName("value");
+            writer.WriteStartArray();
+
+            var objectsWritten = await SerializeEntities(writer, (dynamic) entities).ConfigureAwait(false);
+
+            writer.WriteEndArray();
+
+            toSerialize.EntityCount = writer.StopCountObjectsWritten();
+            if (writeMetadata)
             {
-                using var jwr = JsonProvider.GetJsonWriter(swr);
-                await jwr.WriteStartObjectAsync(cancellationToken).ConfigureAwait(false);
-                await jwr.WritePropertyNameAsync("@odata.context", cancellationToken).ConfigureAwait(false);
-                await jwr.WriteValueAsync($"{GetServiceRoot(entities)}/$metadata{contextFragment}", cancellationToken).ConfigureAwait(false);
-                await jwr.WritePropertyNameAsync("value", cancellationToken).ConfigureAwait(false);
-                jwr.StartCountObjectsWritten();
-                await JsonProvider.SerializeAsync(jwr, entities).ConfigureAwait(false);
-                toSerialize.EntityCount = jwr.StopCountObjectsWritten();
-                if (writeMetadata)
+                await writer.WritePropertyNameAsync("@odata.count", cancellationToken).ConfigureAwait(false);
+                await writer.WriteValueAsync(toSerialize.EntityCount, cancellationToken).ConfigureAwait(false);
+                if (toSerialize.HasNextPage)
                 {
-                    await jwr.WritePropertyNameAsync("@odata.count", cancellationToken).ConfigureAwait(false);
-                    await jwr.WriteValueAsync(toSerialize.EntityCount, cancellationToken).ConfigureAwait(false);
-                    if (toSerialize.HasNextPage)
-                    {
-                        await jwr.WritePropertyNameAsync("@odata.nextLink", cancellationToken).ConfigureAwait(false);
-                        await jwr.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink(toSerialize.EntityCount, -1)), cancellationToken).ConfigureAwait(false);
-                    }
+                    await writer.WritePropertyNameAsync("@odata.nextLink", cancellationToken).ConfigureAwait(false);
+                    await writer.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink(toSerialize.EntityCount, -1)), cancellationToken).ConfigureAwait(false);
                 }
-                await jwr.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+            }
+            await writer.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private async ValueTask<long> SerializeEntities<T>(Stream stream, IAsyncEnumerable<T> asyncEnumeration, CancellationToken cancellationToken)
+        {
+            await foreach (var entity in asyncEnumeration.WithCancellation(cancellationToken))
+            {
+                await JsonSerializer.SerializeAsync(stream, entity, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
         }
     }

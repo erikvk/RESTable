@@ -28,11 +28,7 @@ namespace RESTable.Requests.Filters
             var options = IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             if (Selector is null)
             {
-                return entities.WhereAwait(async e =>
-                {
-                    var sourceJson = await jsonProvider.SerializeAsync(e).ConfigureAwait(false);
-                    return Regex.IsMatch(sourceJson, Pattern, options);
-                });
+                return entities.Where(e => Regex.IsMatch(jsonProvider.Serialize(e), Pattern, options));
             }
             return entities.Where(entity =>
             {

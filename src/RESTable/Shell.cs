@@ -169,9 +169,10 @@ namespace RESTable
             _protocol = "";
         }
 
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
-            WebSocket.Context.Client.ShellConfig = await JsonProvider.SerializeAsync(this).ConfigureAwait(false);
+            WebSocket.Context.Client.ShellConfig = JsonProvider.Serialize(this);
+            return default;
         }
 
         /// <inheritdoc />

@@ -15,26 +15,26 @@ namespace RESTable.Json.Tests
     public class VersionConverterTests : RESTableTestBase
     {
         [Fact]
-        public async Task ReadVersionFromString()
+        public void ReadVersionFromString()
         {
             var jsonProvider = Fixture.GetRequiredService<IJsonProvider>();
             var versionString = "12.1.2.3";
             var version = new Version(versionString);
             var jsonString = $"{{\"Version\":\"{versionString}\"}}";
-            var versionHolder = await jsonProvider.DeserializeAsync<VersionHolder>(jsonString).ConfigureAwait(false);
+            var versionHolder = jsonProvider.Deserialize<VersionHolder>(jsonString);
             Assert.NotNull(versionHolder?.Version);
             Assert.Equal(version, versionHolder.Version);
         }
 
         [Fact]
-        public async Task WriteVersionToString()
+        public void WriteVersionToString()
         {
             var jsonProvider = Fixture.GetRequiredService<IJsonProvider>();
             var versionString = "12.1.2.3";
             var version = new Version(versionString);
             var jsonString = $"{{\"Version\":\"{versionString}\"}}";
             var versionHolder = new VersionHolder {Version = version};
-            var str = await jsonProvider.SerializeAsync((IJsonWriter) versionHolder, (object) false).ConfigureAwait(false);
+            var str = jsonProvider.Serialize(versionHolder, false);
             Assert.Equal(jsonString, str);
         }
 

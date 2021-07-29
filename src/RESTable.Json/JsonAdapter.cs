@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
+using RESTable.Requests;
 
 namespace RESTable.Json
 {
@@ -48,7 +50,7 @@ namespace RESTable.Json
         /// Include true in the isSingularEntity property when the produced JSON encodes a single 
         /// entity (as opposed to an array of entities).
         /// </summary>
-        protected abstract Task ProduceJsonArray(Stream inputStream, Stream outputStream);
+        protected abstract Task ProduceJsonArrayAsync(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
         public abstract ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken) where T : class;
@@ -57,13 +59,13 @@ namespace RESTable.Json
         public abstract Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken) where T : class;
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream)
+        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var jsonStream = new SwappingStream();
             await using (jsonStream.ConfigureAwait(false))
             {
-                await ProduceJsonArray(stream, jsonStream).ConfigureAwait(false);
-                await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()).ConfigureAwait(false))
+                await ProduceJsonArrayAsync(stream, jsonStream).ConfigureAwait(false);
+                await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind(), cancellationToken).ConfigureAwait(false))
                     yield return item;
             }
         }
@@ -81,7 +83,7 @@ namespace RESTable.Json
                 await using (populateStream.ConfigureAwait(false))
 #endif
                 {
-                    await ProduceJsonArray(populateStream, jsonStream).ConfigureAwait(false);
+                    await ProduceJsonArrayAsync(populateStream, jsonStream).ConfigureAwait(false);
                     await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
                         yield return item;
                 }

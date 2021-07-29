@@ -564,7 +564,7 @@ namespace RESTable.WebSockets
             await using (message.ConfigureAwait(false))
 #endif
             {
-                await JsonProvider.SerializeAsync(message, dataObject, prettyPrint, ignoreNulls).ConfigureAwait(false);
+                await JsonProvider.SerializeAsync(message, dataObject, prettyPrint, ignoreNulls, cancellationToken).ConfigureAwait(false);
             }
         }
 

@@ -67,9 +67,9 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the declared properties for a given type
         /// </summary>
-        public IReadOnlyDictionary<string, DeclaredProperty> GetDeclaredProperties(Type type, bool groupByActualName = false)
+        public IReadOnlyDictionary<string, DeclaredProperty> GetDeclaredProperties(Type? type, bool groupByActualName = false)
         {
-            IEnumerable<DeclaredProperty> Make(Type _type)
+            IEnumerable<DeclaredProperty> Make(Type? _type)
             {
                 switch (_type)
                 {

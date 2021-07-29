@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -76,8 +78,6 @@ namespace RESTable.Json
             return JsonSerializer.Serialize(value, options);
         }
 
-        public Task SerializeAsync(IJsonWriter jsonWriter, object value) { }
-
         /// <summary>
         /// Serializes an object into a stream
         /// </summary>
@@ -100,49 +100,30 @@ namespace RESTable.Json
         /// <inheritdoc />
         public async ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken) where T : class
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var swr = new StreamWriter
-            (
-                stream: stream,
-                encoding: Options.JsonSettings.Encoding,
-                bufferSize: 4096,
-                leaveOpen: true
-            );
-#if NETSTANDARD2_0
-            using (swr)
-#else
-            await using (swr.ConfigureAwait(false))
-#endif
+            await using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartArray();
+            var count = 0L;
+            await foreach (var item in collection.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
-                using var jwr = new NewtonsoftJsonWriter(swr, Options.JsonSettings.LineEndings, 0)
-                {
-                    Formatting = Options.JsonSettings.PrettyPrint ? Indented : None
-                };
-                jwr.StartCountObjectsWritten();
-                Serializer.Serialize(jwr, collection.ToEnumerable());
-                return jwr.StopCountObjectsWritten();
+                JsonSerializer.Serialize(writer, item, Options);
+                count += 1;
             }
+            writer.WriteEndArray();
+            return count;
         }
 
-        /// <inheritdoc />
-        public ValueTask<long> SerializeCollectionAsync<T>(IJsonWriter textWriter, IAsyncEnumerable<T> collectionObject, CancellationToken cancellationToken)
-            where T : class
+        public async ValueTask<long> SerializeCollectionAsync<T>(Utf8JsonWriter writer, IAsyncEnumerable<T> collectionObject, CancellationToken cancellationToken) where T : class
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            textWriter.StartCountObjectsWritten();
-            Serializer.Serialize((NewtonsoftJsonWriter) textWriter, collectionObject.ToEnumerable());
-            var objectsWritten = textWriter.StopCountObjectsWritten();
-            return Task.FromResult(objectsWritten);
-        }
-
-        public IJsonWriter GetJsonWriter(TextWriter writer)
-        {
-            return new NewtonsoftJsonWriter(writer, Options.JsonSettings.LineEndings, 0)
+            writer.WriteStartArray();
+            var count = 0L;
+            await foreach (var item in collectionObject.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
-                Formatting = Options.JsonSettings.PrettyPrint ? Indented : None
-            };
+                JsonSerializer.Serialize(writer, item, Options);
+                count += 1;
+            }
+            writer.WriteEndArray();
+            return count;
         }
-
 
         /// <summary>
         /// Populates JSON data onto an object
@@ -150,24 +131,15 @@ namespace RESTable.Json
         public void Populate(object target, string json)
         {
             if (string.IsNullOrWhiteSpace(json)) return;
-            JsonConvert.PopulateObject(json, target, Options.SerializerSettings);
         }
 
         /// <inheritdoc />
         public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body)
         {
-            var json = Encoding.UTF8.GetString(body);
-            await foreach (var entity in entities.ConfigureAwait(false))
-            {
-                JsonConvert.PopulateObject(json, entity!, Options.SerializerSettings);
-                yield return entity;
-            }
+            yield break;
         }
 
-        public void Populate(object target, JsonElement json)
-        {
-            throw new NotImplementedException();
-        }
+        public void Populate(object target, JsonElement json) { }
 
         public T? Deserialize<T>(byte[] bytes)
         {
@@ -206,43 +178,55 @@ namespace RESTable.Json
             return JsonSerializer.DeserializeAsync(stream, targetType, Options);
         }
 
+#if NET6_0
         /// <inheritdoc />
-        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream body)
+        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream body, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            using var streamReader = new StreamReader
-            (
-                stream: body,
-                encoding: Options.JsonSettings.Encoding,
-                detectEncodingFromByteOrderMarks: false,
-                bufferSize: 1024,
-                leaveOpen: true
-            );
-            using var jsonReader = new JsonTextReader(streamReader);
-            await jsonReader.ReadAsync().ConfigureAwait(false);
-            switch (jsonReader.TokenType)
+            await foreach (var item in JsonSerializer.DeserializeAsyncEnumerable<T>(body, cancellationToken: cancellationToken).ConfigureAwait(false))
             {
-                case JsonToken.None: yield break;
-                case JsonToken.StartObject:
-                {
-                    var value = Serializer.Deserialize<T>(jsonReader);
-                    if (value is not null)
-                        yield return value;
-                    break;
-                }
-                case JsonToken.StartArray:
-                {
-                    await jsonReader.ReadAsync().ConfigureAwait(false);
-                    while (jsonReader.TokenType != JsonToken.EndArray)
-                    {
-                        var value = Serializer.Deserialize<T>(jsonReader);
-                        if (value is not null)
-                            yield return value;
-                        await jsonReader.ReadAsync().ConfigureAwait(false);
-                    }
-                    break;
-                }
-                case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");
+                yield return item!;
             }
         }
+#else
+        /// <inheritdoc />
+        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream body, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            IEnumerable<T> ReadEnumeration()
+            {
+                using var reader = new Utf8JsonStreamReader(body);
+                reader.Read();
+                switch (reader.TokenType)
+                {
+                    case JsonTokenType.None: yield break;
+                    case JsonTokenType.StartObject:
+                    {
+                        var value = reader.Deserialize<T>();
+                        if (value is not null)
+                            yield return value;
+                        break;
+                    }
+                    case JsonTokenType.StartArray:
+                    {
+                        reader.Read();
+                        while (reader.TokenType != JsonTokenType.EndArray)
+                        {
+                            var value = reader.Deserialize<T>();
+                            if (value is not null)
+                                yield return value;
+                            reader.Read();
+                        }
+                        break;
+                    }
+                    case var other: throw new JsonException($"Invalid JSON data. Expected array or object. Found {other}");
+                }
+            }
+
+            foreach (var item in ReadEnumeration())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return item;
+            }
+        }
+#endif
     }
 }

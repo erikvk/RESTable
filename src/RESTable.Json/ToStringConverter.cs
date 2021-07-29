@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RESTable.Resources;
 
 namespace RESTable.Json
 {

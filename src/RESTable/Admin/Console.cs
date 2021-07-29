@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -37,7 +38,7 @@ namespace RESTable.Admin
             "Use the console to receive pushed updates when the \n" +
             "REST API receives requests and WebSocket events.";
 
-        
+
         protected override async Task Open(CancellationToken cancellationToken)
         {
             await base.Open(cancellationToken).ConfigureAwait(false);
@@ -61,7 +62,7 @@ namespace RESTable.Admin
                     case ConsoleFormat.Line:
                     {
                         var requestStub = await GetLogLineStub(request).ConfigureAwait(false);
-                        var responseStub = await  GetLogLineStub(result, milliseconds).ConfigureAwait(false);
+                        var responseStub = await GetLogLineStub(result, milliseconds).ConfigureAwait(false);
                         foreach (var console in group)
                         {
                             await console.PrintLines(
@@ -96,8 +97,15 @@ namespace RESTable.Admin
                                 item.In.Content = await request.GetLogContent().ConfigureAwait(false);
                                 item.Out.Content = await serializedResult.GetLogContent().ConfigureAwait(false);
                             }
-                            var json = await JsonProvider.SerializeAsync<bool>(item, true, ignoreNulls: true).ConfigureAwait(false);
-                            await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
+                            var outputStream = await console.ActualSocket.GetMessageStream(true).ConfigureAwait(false);
+#if NETSTANDARD2_0
+                            using (outputStream)
+#else
+                            await using (outputStream)
+#endif
+                            {
+                                await JsonProvider!.SerializeAsync(outputStream, item, prettyPrint: true, ignoreNulls: true).ConfigureAwait(false);
+                            }
                         }
                         break;
                     }
@@ -137,8 +145,15 @@ namespace RESTable.Admin
                                 item.Client = new ClientInfo(logable.Context.Client);
                             if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
                                 item.CustomHeaders = hh.Headers;
-                            var json = await JsonProvider!.SerializeAsync<bool>(item, true, ignoreNulls: true).ConfigureAwait(false);
-                            await console.ActualSocket.SendTextRaw(json).ConfigureAwait(false);
+                            var outputStream = await console.ActualSocket.GetMessageStream(true).ConfigureAwait(false);
+#if NETSTANDARD2_0
+                            using (outputStream)
+#else
+                            await using (outputStream)
+#endif
+                            {
+                                await JsonProvider!.SerializeAsync(outputStream, item, prettyPrint: true, ignoreNulls: true).ConfigureAwait(false);
+                            }
                         }
                         break;
                     }

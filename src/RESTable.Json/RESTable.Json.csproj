@@ -1,12 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\pack.props" />
-
-    <PropertyGroup>
-        <TargetFrameworks>netstandard2.1;netstandard2.0;net5.0</TargetFrameworks>
-        <LangVersion>latest</LangVersion>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+    <Import Project="..\common.props" />
 
     <ItemGroup>
         <PackageReference Include="System.Text.Json" Version="5.0.*" />
