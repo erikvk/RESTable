@@ -60,8 +60,7 @@ namespace RESTable.Tutorial
             .AddExcelProvider()
             .AddJson()
             .AddRESTable()
-            .AddHttpContextAccessor()
-            .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
+            .AddHttpContextAccessor();
 
         public void Configure(IApplicationBuilder app) => app
             .UseWebSockets()

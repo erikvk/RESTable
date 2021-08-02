@@ -2,16 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
+using RESTable.DefaultProtocol;
 using RESTable.Meta;
-using RESTable.ProtocolProviders;
 using RESTable.Requests;
 using RESTable.Results;
 using static RESTable.ErrorCodes;
@@ -261,37 +259,22 @@ namespace RESTable.OData
                     writeMetadata = true;
                     break;
             }
-            await using var writer = new Utf8JsonWriter(toSerialize.Body);
-            writer.WriteStartObject();
-            writer.WritePropertyName("@odata.context");
-            writer.WriteStringValue($"{GetServiceRoot(entities)}/$metadata{contextFragment}");
-            writer.WritePropertyName("value");
-            writer.WriteStartArray();
 
-            var objectsWritten = await SerializeEntities(writer, (dynamic) entities).ConfigureAwait(false);
 
-            writer.WriteEndArray();
-
-            toSerialize.EntityCount = writer.StopCountObjectsWritten();
-            if (writeMetadata)
-            {
-                await writer.WritePropertyNameAsync("@odata.count", cancellationToken).ConfigureAwait(false);
-                await writer.WriteValueAsync(toSerialize.EntityCount, cancellationToken).ConfigureAwait(false);
-                if (toSerialize.HasNextPage)
-                {
-                    await writer.WritePropertyNameAsync("@odata.nextLink", cancellationToken).ConfigureAwait(false);
-                    await writer.WriteValueAsync(MakeRelativeUri(entities.GetNextPageLink(toSerialize.EntityCount, -1)), cancellationToken).ConfigureAwait(false);
-                }
-            }
-            await writer.WriteEndObjectAsync(cancellationToken).ConfigureAwait(false);
+            var context = $"{GetServiceRoot(entities)}/$metadata{contextFragment}";
+            Task SerializeTask = SerializeEntities((dynamic) entities, toSerialize, context, writeMetadata, cancellationToken);
+            await SerializeTask.ConfigureAwait(false);
         }
 
-        private async ValueTask<long> SerializeEntities<T>(Stream stream, IAsyncEnumerable<T> asyncEnumeration, CancellationToken cancellationToken)
+        private Task SerializeEntities<T>(IEntities<T> entities, ISerializedResult toSerialize, string context, bool writeMetadata, CancellationToken cancellationToken)
+            where T : class
         {
-            await foreach (var entity in asyncEnumeration.WithCancellation(cancellationToken))
-            {
-                await JsonSerializer.SerializeAsync(stream, entity, cancellationToken: cancellationToken).ConfigureAwait(false);
-            }
+#if NET6_0_OR_GREATER
+            var serializedContent = new OdataResponseBodyAsyncEnumerable<T>(entities, toSerialize, context, writeMetadata);
+#else
+            var serializedContent = new OdataResponseBodyEnumerable<T>(entities, toSerialize, context, writeMetadata);
+#endif
+            return JsonProvider.SerializeAsync(toSerialize.Body, serializedContent, cancellationToken: cancellationToken);
         }
     }
 }

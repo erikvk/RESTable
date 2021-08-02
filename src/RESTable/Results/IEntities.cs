@@ -43,5 +43,7 @@ namespace RESTable.Results
         /// Marks this result as 204 NoContent
         /// </summary>
         void MakeNoContent();
+
+        public IEntities<T> Result { get; }
     }
 }

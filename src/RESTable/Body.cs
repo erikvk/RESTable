@@ -47,7 +47,7 @@ namespace RESTable
         /// <summary>
         /// Deserializes the body to an IEnumerable of entities of the given type
         /// </summary>
-        public IAsyncEnumerable<T> Deserialize<T>(CancellationToken cancellationToken = new())
+        public IAsyncEnumerable<T?> Deserialize<T>(CancellationToken cancellationToken = new())
         {
             if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
             try

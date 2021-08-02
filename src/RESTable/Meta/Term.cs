@@ -150,9 +150,11 @@ namespace RESTable.Meta
         /// the actual key for this property (matching is case insensitive), the parent
         /// of the denoted value, and the property representing the denoted value.
         /// </summary>
-        public ValueTask<TermValue> GetValue(object target)
+        public ValueTask<TermValue> GetValue(object? target)
         {
-            static async ValueTask<TermValue> getTermValue(Term term, object? target)
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+
+            async ValueTask<TermValue> getTermValue(Term term)
             {
                 object? parent = null;
                 Property? property = null;
@@ -170,7 +172,7 @@ namespace RESTable.Meta
                         actualKey = jproperty.Name;
                         parent = element;
                         property = DynamicProperty.Parse(term.Key);
-                        value = jproperty.Value.ToObject<object>();
+                        value = jsonProvider.ToObject<object>(jproperty.Value);
                         return new TermValue(value, actualKey, parent, property);
                     }
                     term = MakeDynamic(term);
@@ -197,7 +199,7 @@ namespace RESTable.Meta
                 return new TermValue(value, actualKey, parent, property);
             }
 
-            return getTermValue(this, target);
+            return getTermValue(this);
         }
 
         internal static Term Create(IEnumerable<DeclaredProperty> properties, string componentSeparator)

@@ -32,8 +32,9 @@ namespace RESTable.Requests.Filters
             }
             return entities.Where(entity =>
             {
-                var jsonElement = entity.ToJsonElement();
-                var matchingPropertyValue = jsonElement.GetProperty(Selector, OrdinalIgnoreCase)?.Value.ToObject<object>();
+                var jsonElement = jsonProvider.ToJsonElement(entity);
+                var selectedValue = jsonElement.GetProperty(Selector, OrdinalIgnoreCase)?.Value;
+                var matchingPropertyValue = !selectedValue.HasValue ? null : jsonProvider.ToObject<object>(selectedValue.Value);
                 return matchingPropertyValue?.ToString() is string s && Regex.IsMatch(s, Pattern, options);
             });
         }

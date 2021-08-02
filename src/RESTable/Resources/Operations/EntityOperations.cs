@@ -357,6 +357,7 @@ namespace RESTable.Resources.Operations
         {
             try
             {
+                var jsonProvider = request.GetRequiredService<IJsonProvider>();
                 var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
                 var (toInsert, toUpdate) = await GetSafePostTasks(request, innerRequest).ConfigureAwait(false);
                 var (insertedEntities, updatedEntities) = (EmptyEnumeration, EmptyEnumeration);
@@ -367,7 +368,7 @@ namespace RESTable.Resources.Operations
                 if (toInsert.Any())
                 {
                     innerRequest.Selector = () => toInsert
-                        .Select(item => item.ToObject<T>()!)
+                        .Select(item => jsonProvider.ToObject<T>(item)!)
                         .ToAsyncEnumerable();
                     insertedEntities = Insert(innerRequest);
                 }

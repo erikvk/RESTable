@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -44,6 +45,8 @@ namespace RESTable
                 errorMessage: "Expected expression tree as request body"
             ).ConfigureAwait(false);
 
+            var jsonProvider = request.GetRequiredService<IJsonProvider>();
+
             async IAsyncEnumerable<JsonElement> Recursor(JsonElement jsonElement)
             {
                 switch (jsonElement)
@@ -73,7 +76,7 @@ namespace RESTable
                                     {
                                         await foreach (var entity in entities.ConfigureAwait(false))
                                         {
-                                            yield return entity.ToJsonElement();
+                                            yield return jsonProvider!.ToJsonElement(entity);
                                         }
                                         yield break;
                                     }
@@ -138,7 +141,7 @@ namespace RESTable
                                 if (arrayLength != 2)
                                     throw new ArgumentException("Map takes two and only two arguments");
                                 var mapper = arrayValue[1].GetString() ?? throw new ArgumentException("Missing mapper");
-                                await foreach (var item in Map(Recursor(arrayValue[0]), mapper, request).ConfigureAwait(false))
+                                await foreach (var item in Map(Recursor(arrayValue[0]), mapper, request, jsonProvider).ConfigureAwait(false))
                                     yield return item;
                                 yield break;
                             default:
@@ -158,7 +161,7 @@ namespace RESTable
             {
                 var populated = element switch
                 {
-                    {ValueKind: JsonValueKind.Object} objectElement => objectElement.ToObject<SetOperations>(),
+                    {ValueKind: JsonValueKind.Object} objectElement => jsonProvider.ToObject<SetOperations>(objectElement),
                     var value => new SetOperations {["Value"] = value}
                 };
                 yield return populated!;
@@ -185,7 +188,7 @@ namespace RESTable
             return Checked(arrays).Aggregate((x, y) => x.Except(y, EqualityComparer));
         }
 
-        private static async IAsyncEnumerable<JsonElement> Map(IAsyncEnumerable<JsonElement> set, string mapper, IRequest request)
+        private static async IAsyncEnumerable<JsonElement> Map(IAsyncEnumerable<JsonElement> set, string mapper, IRequest request, IJsonProvider jsonProvider)
         {
             if (set is null) throw new ArgumentException(nameof(set));
             if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
@@ -229,7 +232,7 @@ namespace RESTable
                     }
                     if (skip)
                         break;
-                    valueBuffer[i] = value.UriEncode()!;
+                    valueBuffer[i] = value!.UriEncode()!;
                 }
                 if (skip) continue;
                 localMapper = string.Format(localMapper, valueBuffer);
@@ -239,7 +242,7 @@ namespace RESTable
                 {
                     await foreach (var entity in entities)
                     {
-                        var jobject = entity.ToJsonElement();
+                        var jobject = jsonProvider.ToJsonElement(entity);
                         mapped.Add(jobject);
                     }
                 }

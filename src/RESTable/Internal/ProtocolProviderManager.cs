@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RESTable.ContentTypeProviders;
-using RESTable.ProtocolProviders;
+using RESTable.DefaultProtocol;
 using RESTable.Resources;
 using RESTable.Results;
 

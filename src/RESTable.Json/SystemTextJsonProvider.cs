@@ -1,13 +1,14 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 
 // Async disposal differs between target frameworks
@@ -48,13 +49,11 @@ namespace RESTable.Json
         /// <summary>
         /// Creates a new instance of the <see cref="SystemTextJsonProvider"/> type
         /// </summary>
-        public SystemTextJsonProvider(JsonSerializerOptions options)
+        public SystemTextJsonProvider(JsonSerializerOptionsAccessor optionsAccessor, ConverterResolver resolver)
         {
-            Options = options;
-            OptionsIgnoreNulls = new JsonSerializerOptions(options)
-            {
-                IgnoreNullValues = true
-            };
+            Options = optionsAccessor.Options;
+            Options.Converters.Add(resolver);
+            OptionsIgnoreNulls = new JsonSerializerOptions(Options) {DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull};
             MatchStrings = new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
             ContentDispositionFileExtension = ".json";
             CanWrite = true;
@@ -62,7 +61,6 @@ namespace RESTable.Json
             ContentType = "application/json; charset=utf-8";
             Name = "JSON";
         }
-
 
         private JsonSerializerOptions GetOptions(bool? prettyPrint, bool ignoreNulls)
         {
@@ -82,19 +80,19 @@ namespace RESTable.Json
         /// Serializes an object into a stream
         /// </summary>
         /// <returns></returns>
-        public async Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken = new()) where T : class
+        public Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken = new()) where T : class
         {
-            await JsonSerializer.SerializeAsync(stream, item, Options, cancellationToken).ConfigureAwait(false);
+            return JsonSerializer.SerializeAsync(stream, item, Options, cancellationToken);
         }
 
         /// <summary>
         /// Serializes an object into a stream
         /// </summary>
         /// <returns></returns>
-        public async Task SerializeAsync<T>(Stream stream, T entity, bool? prettyPrint, bool ignoreNulls = false, CancellationToken cancellationToken = new())
+        public Task SerializeAsync<T>(Stream stream, T entity, bool? prettyPrint, bool ignoreNulls = false, CancellationToken cancellationToken = new())
         {
             var options = GetOptions(prettyPrint, ignoreNulls);
-            await JsonSerializer.SerializeAsync(stream, entity, options, cancellationToken).ConfigureAwait(false);
+            return JsonSerializer.SerializeAsync(stream, entity, options, cancellationToken);
         }
 
         /// <inheritdoc />
@@ -104,19 +102,6 @@ namespace RESTable.Json
             writer.WriteStartArray();
             var count = 0L;
             await foreach (var item in collection.WithCancellation(cancellationToken).ConfigureAwait(false))
-            {
-                JsonSerializer.Serialize(writer, item, Options);
-                count += 1;
-            }
-            writer.WriteEndArray();
-            return count;
-        }
-
-        public async ValueTask<long> SerializeCollectionAsync<T>(Utf8JsonWriter writer, IAsyncEnumerable<T> collectionObject, CancellationToken cancellationToken) where T : class
-        {
-            writer.WriteStartArray();
-            var count = 0L;
-            await foreach (var item in collectionObject.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 JsonSerializer.Serialize(writer, item, Options);
                 count += 1;
@@ -141,30 +126,19 @@ namespace RESTable.Json
 
         public void Populate(object target, JsonElement json) { }
 
-        public T? Deserialize<T>(byte[] bytes)
-        {
-            return JsonSerializer.Deserialize<T>(bytes, Options);
-        }
-
-        public T? Deserialize<T>(byte[] bytes, int offset, int count)
-        {
-            var span = new ReadOnlySpan<byte>(bytes, offset, count);
-            return JsonSerializer.Deserialize<T>(span, Options);
-        }
 
         public T? Deserialize<T>(string json)
         {
             return JsonSerializer.Deserialize<T>(json, Options);
         }
 
-        public object? Deserialize(Type targetType, byte[] bytes)
+        public T? Deserialize<T>(Span<byte> span)
         {
-            return JsonSerializer.Deserialize(bytes, targetType, Options);
+            return JsonSerializer.Deserialize<T>(span, Options);
         }
 
-        public object? Deserialize(Type targetType, byte[] bytes, int offset, int count)
+        public object? Deserialize(Type targetType, Span<byte> span)
         {
-            var span = new ReadOnlySpan<byte>(bytes, offset, count);
             return JsonSerializer.Deserialize(span, targetType, Options);
         }
 
@@ -178,55 +152,71 @@ namespace RESTable.Json
             return JsonSerializer.DeserializeAsync(stream, targetType, Options);
         }
 
-#if NET6_0
-        /// <inheritdoc />
-        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream body, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public T? ToObject<T>(JsonElement element) => element.ToObject<T>(Options);
+        public JsonElement ToJsonElement<T>(T obj) => obj.ToJsonElement(Options);
+
+        public async IAsyncEnumerable<T?> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await foreach (var item in JsonSerializer.DeserializeAsyncEnumerable<T>(body, cancellationToken: cancellationToken).ConfigureAwait(false))
+            var buffer = new byte[1_024 * 4];
+            JsonReaderState state = default;
+            var leftOver = 0;
+            while (true)
             {
-                yield return item!;
+#if NETSTANDARD2_0
+                var dataLength = await stream.ReadAsync(buffer, leftOver, buffer.Length - leftOver, cancellationToken).ConfigureAwait(false);
+#else
+                var dataLength = await stream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken).ConfigureAwait(false);
+#endif
+                var dataSize = dataLength + leftOver;
+                var isFinalBlock = dataSize == 0;
+                if (isFinalBlock)
+                    yield break;
+                var (bytesConsumed, next, hasValue, isLast) = GetNext<T>(buffer.AsSpan(0, dataSize), ref state);
+                if (!hasValue)
+                    yield break;
+                yield return next;
+                if (isLast)
+                    yield break;
+                leftOver = dataSize - (int) bytesConsumed;
+                if (leftOver != 0)
+                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
             }
         }
-#else
-        /// <inheritdoc />
-        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream body, [EnumeratorCancellation] CancellationToken cancellationToken)
+
+        private (long bytesConsumed, T? next, bool any, bool isLast) GetNext<T>(ReadOnlySpan<byte> dataUtf8, ref JsonReaderState state)
         {
-            IEnumerable<T> ReadEnumeration()
+            bool hasValue;
+            bool isLast;
+            T? next = default;
+            var reader = new Utf8JsonReader(dataUtf8, false, state);
+            reader.Read();
+            switch (reader.TokenType)
             {
-                using var reader = new Utf8JsonStreamReader(body);
-                reader.Read();
-                switch (reader.TokenType)
+                case JsonTokenType.EndArray:
+                case JsonTokenType.None:
+                    hasValue = false;
+                    isLast = true;
+                    break;
+                case JsonTokenType.StartObject:
                 {
-                    case JsonTokenType.None: yield break;
-                    case JsonTokenType.StartObject:
-                    {
-                        var value = reader.Deserialize<T>();
-                        if (value is not null)
-                            yield return value;
-                        break;
-                    }
-                    case JsonTokenType.StartArray:
-                    {
-                        reader.Read();
-                        while (reader.TokenType != JsonTokenType.EndArray)
-                        {
-                            var value = reader.Deserialize<T>();
-                            if (value is not null)
-                                yield return value;
-                            reader.Read();
-                        }
-                        break;
-                    }
-                    case var other: throw new JsonException($"Invalid JSON data. Expected array or object. Found {other}");
+                    next = JsonSerializer.Deserialize<T>(ref reader, Options);
+                    hasValue = true;
+                    isLast = true;
+                    break;
                 }
+                case JsonTokenType.StartArray:
+                {
+                    reader.Read();
+                    next = JsonSerializer.Deserialize<T>(ref reader, Options);
+                    hasValue = true;
+                    isLast = false;
+                    break;
+                }
+                case var other: throw new JsonException($"Invalid JSON data. Expected array or object. Found {other}");
             }
 
-            foreach (var item in ReadEnumeration())
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                yield return item;
-            }
+            state = reader.CurrentState;
+            return (reader.BytesConsumed, next, hasValue, isLast);
         }
-#endif
     }
 }

@@ -93,7 +93,7 @@ namespace RESTable.Results
         public IProtocolHolder ProtocolHolder => Request;
 
         /// <inheritdoc />
-        public IRequest Request { get; set; }
+        public IRequest? Request { get; set; }
 
         /// <inheritdoc />
         public void Dispose() => Request?.Dispose();

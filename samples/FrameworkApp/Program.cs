@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable;
 using RESTable.Requests;
@@ -22,8 +23,8 @@ namespace FrameworkApp
         public int? BestFriendId { get; set; }
 
         public Person? BestFriend => InMemoryOperations<Person>
-            .Select()
-            .FirstOrDefault(item => item.Id == BestFriendId);
+            .Select(item => item.Id == BestFriendId)
+            .FirstOrDefault();
 
         public Person()
         {
@@ -39,10 +40,10 @@ namespace FrameworkApp
     /// </summary>
     public class Program
     {
-        public static void Main()
+        public static async Task Main()
         {
             // Build services
-            using var services = new ServiceCollection()
+            await using var services = new ServiceCollection()
                 .AddRESTable()
                 .AddJson()
                 .BuildServiceProvider();
@@ -59,7 +60,7 @@ namespace FrameworkApp
             while (true)
             {
                 // Handle input
-                var input = Console.In.ReadLine()?.TrimStart();
+                var input = (await Console.In.ReadLineAsync())?.TrimStart();
                 if (string.IsNullOrWhiteSpace(input))
                     continue;
                 var args = input!.Split(new[] {' '}, 3);
@@ -69,16 +70,16 @@ namespace FrameworkApp
 
                 // Make request
                 var request = context.CreateRequest(method, uri, body);
-                using var result = request.GetResult().Result;
-                using var serializedResult = result.Serialize().Result;
+                await using var result = await request.GetResult();
+                await using var serializedResult = await result.Serialize();
 
                 // Write output
-                Console.WriteLine($"=> {request.GetLogMessage().AsTask().Result} {request.GetLogContent().Result}");
-                Console.WriteLine($"<= {result.GetLogMessage().AsTask().Result}");
+                Console.WriteLine($"=> {await request.GetLogMessage()} {await request.GetLogContent()}");
+                Console.WriteLine($"<= {await result.GetLogMessage()}");
                 foreach (var (key, value) in result.Headers)
                     Console.WriteLine($"{key}: {value}");
                 using var streamReader = new StreamReader(serializedResult.Body);
-                var resultBody = streamReader.ReadToEnd();
+                var resultBody = await streamReader.ReadToEndAsync();
                 if (!string.IsNullOrWhiteSpace(resultBody))
                     Console.WriteLine(resultBody);
                 Console.WriteLine("- - - - - - - - - - - - - - - - -");

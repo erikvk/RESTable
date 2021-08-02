@@ -13,9 +13,9 @@ namespace RESTable.Results
     /// </summary>
     internal class Options : Success
     {
-        public IResource Resource { get; }
+        public IResource? Resource { get; }
 
-        public sealed override IRequest Request => null;
+        public sealed override IRequest? Request => null;
 
         internal static Options Create(RequestParameters parameters)
         {

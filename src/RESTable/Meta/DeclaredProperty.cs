@@ -31,7 +31,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Hidden properties are not included in regular output, but can be added and queried on.
         /// </summary>
-        public bool Hidden { get; }
+        public bool Hidden { get; internal set; }
 
         /// <summary>
         /// Should this property be hidden in output if the value is null? Only applies to JSON output.

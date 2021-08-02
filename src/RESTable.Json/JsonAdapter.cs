@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
-using RESTable.Requests;
 
 namespace RESTable.Json
 {
@@ -36,7 +35,7 @@ namespace RESTable.Json
         /// <inheritdoc />
         public abstract string ContentDispositionFileExtension { get; }
 
-        private IJsonProvider JsonProvider { get; }
+        protected IJsonProvider JsonProvider { get; }
 
         protected JsonAdapter(IJsonProvider jsonProvider)
         {
@@ -59,7 +58,7 @@ namespace RESTable.Json
         public abstract Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken) where T : class;
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<T?> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var jsonStream = new SwappingStream();
             await using (jsonStream.ConfigureAwait(false))

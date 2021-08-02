@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using RESTable.ContentTypeProviders;
+﻿using RESTable.ContentTypeProviders;
 
 namespace RESTable.Meta
 {

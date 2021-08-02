@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using RESTable.ProtocolProviders;
 using RESTable.Requests;
 
 namespace RESTable.OData

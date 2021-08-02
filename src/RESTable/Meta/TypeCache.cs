@@ -145,6 +145,14 @@ namespace RESTable.Meta
                     {
                         return FindAndParseDeclaredProperties(_type).Union(Make(_type.DeclaringType));
                     }
+                    case var _ when _type.IsDynamic():
+                    {
+                        return FindAndParseDeclaredProperties(_type, flag: true).Select(p =>
+                        {
+                            p.Hidden = true;
+                            return p;
+                        });
+                    }
                     default:
                     {
                         return FindAndParseDeclaredProperties(_type);
@@ -152,7 +160,8 @@ namespace RESTable.Meta
                 }
             }
 
-            if (type?.GetRESTableTypeName() is null) return null;
+            if (type?.GetRESTableTypeName() is null)
+                throw new Exception("Could not get declared properties for unknown type");
 
             if (!groupByActualName)
             {
@@ -169,7 +178,7 @@ namespace RESTable.Meta
                         resolver.ResolveContract(contract);
                     propsByName = DeclaredPropertyCache[type] = propertyList.SafeToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
                 }
-                return propsByName;
+                return propsByName!;
             }
 
             if (!DeclaredPropertyCacheByActualName.TryGetValue(type, out var propsByActualName))
@@ -178,7 +187,7 @@ namespace RESTable.Meta
                     .Values
                     .SafeToDictionary(p => p.ActualName, StringComparer.OrdinalIgnoreCase);
             }
-            return propsByActualName;
+            return propsByActualName!;
         }
 
         /// <summary>
@@ -224,7 +233,7 @@ namespace RESTable.Meta
                     type = underlying!;
                 var resource = ResourceCollection.GetResource(type!);
                 throw new UnknownProperty(type, resource, key);
-            }   
+            }
             return prop!;
         }
 

@@ -3,7 +3,7 @@ using RESTable.Meta;
 
 namespace RESTable.Results
 {
-    internal class OptionsBody
+    public class OptionsBody
     {
         public string Resource { get; }
         public ResourceKind ResourceKind { get; }

@@ -23,7 +23,7 @@ namespace RESTable.Requests.Processors
 
         internal Rename GetCopy() => new(this);
 
-        private async ValueTask<Dictionary<string, object?>> Renamed(Dictionary<string, object?> entity)
+        private async ValueTask<ProcessedEntity> Renamed(ProcessedEntity entity)
         {
             foreach (var (key, newName) in this)
             {
@@ -42,12 +42,12 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Renames properties in an IEnumerable
         /// </summary>
-        public async IAsyncEnumerable<object> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
+        public async IAsyncEnumerable<ProcessedEntity> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
             await foreach (var entity in entities)
             {
                 if (entity is null) throw new ArgumentNullException(nameof(entities));
-                var dictionary = await entity.MakeShallowDynamic().ConfigureAwait(false);
+                var dictionary = await entity.MakeProcessedEntity().ConfigureAwait(false);
                 yield return await Renamed(dictionary).ConfigureAwait(false);
             }
         }

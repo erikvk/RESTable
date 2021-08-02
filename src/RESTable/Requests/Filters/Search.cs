@@ -73,15 +73,16 @@ namespace RESTable.Requests.Filters
             if (Pattern is null)
                 return entities;
             var comparison = IgnoreCase ? OrdinalIgnoreCase : Ordinal;
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
             if (Selector is null)
             {
-                var jsonProvider = ApplicationServicesAccessor.JsonProvider;
                 return entities.Where(e => jsonProvider.Serialize(e).IndexOf(Pattern, comparison) >= 0);
             }
             return entities.Where(entity =>
             {
-                var jsonElement = entity.ToJsonElement();
-                var matchingPropertyValue = jsonElement.GetProperty(Selector, OrdinalIgnoreCase)?.Value.ToObject<object>();
+                var jsonElement = jsonProvider.ToJsonElement(entity);
+                var selectedValue = jsonElement.GetProperty(Selector, OrdinalIgnoreCase)?.Value;
+                var matchingPropertyValue = !selectedValue.HasValue ? null : jsonProvider.ToObject<object>(selectedValue.Value);
                 return matchingPropertyValue?.ToString()?.IndexOf(Pattern, comparison) >= 0;
             });
         }

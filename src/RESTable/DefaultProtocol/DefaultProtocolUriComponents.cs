@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using RESTable.Requests;
 
-namespace RESTable.ProtocolProviders
+namespace RESTable.DefaultProtocol
 {
     internal class DefaultProtocolUriComponents : IUriComponents
     {

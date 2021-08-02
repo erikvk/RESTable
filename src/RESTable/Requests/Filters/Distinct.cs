@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 
 namespace RESTable.Requests.Filters
@@ -12,10 +13,12 @@ namespace RESTable.Requests.Filters
     public class Distinct : IFilter
     {
         private IEqualityComparer<JsonElement> EqualityComparer { get; }
+        private IJsonProvider JsonProvider { get; }
 
         public Distinct()
         {
             EqualityComparer = new JsonElementComparer();
+            JsonProvider = ApplicationServicesAccessor.JsonProvider;
         }
 
         /// <summary>
@@ -32,7 +35,7 @@ namespace RESTable.Requests.Filters
             await foreach (var element in source.ConfigureAwait(false))
             {
                 if (element is null) throw new ArgumentNullException(nameof(source));
-                var jobject = element.ToJsonElement();
+                var jobject = JsonProvider.ToJsonElement(element);
                 if (set.Add(jobject))
                 {
                     yield return element;

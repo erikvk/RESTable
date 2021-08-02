@@ -25,6 +25,8 @@ namespace RESTable.Results
 
         public Type EntityType => typeof(T);
 
+        IEntities<T> IEntities<T>.Result => this;
+
         internal Entities(IRequest request, IAsyncEnumerable<T> enumerable) : base(request)
         {
             Content = enumerable;

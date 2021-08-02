@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTable.ContentTypeProviders;
-using RESTable.ProtocolProviders;
 
 namespace RESTable.Internal
 {

@@ -31,7 +31,7 @@ namespace RESTable.Json
             var values = jsonElement.EnumerateObject();
             var headersToRead = values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Name) || pair.Name.IsCustomHeaderName());
             foreach (var pair in headersToRead)
-                headers[pair.Name] = pair.Value.ToObject<string>();
+                headers[pair.Name] = pair.Value.ToObject<string>(options);
             return headers;
         }
 

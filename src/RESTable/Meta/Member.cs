@@ -14,7 +14,7 @@ namespace RESTable.Meta
         /// </summary>
         [RESTableMember(order: -5)]
         public string Name { get; internal set; }
-
+        
         /// <summary>
         /// The type that owns this member
         /// </summary>

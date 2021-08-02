@@ -10,7 +10,6 @@ using OfficeOpenXml;
 using RESTable.ContentTypeProviders;
 using RESTable.Json;
 using RESTable.Meta;
-using RESTable.Requests;
 
 namespace RESTable.Excel
 {
@@ -130,7 +129,7 @@ namespace RESTable.Excel
             _ => await prop.GetValue(target).ConfigureAwait(false)
         };
 
-        private static void WriteExcelCell(ExcelRange target, object? value)
+        private void WriteExcelCell(ExcelRange target, object? value)
         {
             switch (value)
             {
@@ -159,13 +158,13 @@ namespace RESTable.Excel
                     target.Value = @char.ToString();
                     break;
                 case JsonElement {ValueKind: JsonValueKind.Array} jarr:
-                    target.Value = string.Join(", ", jarr.EnumerateArray().Select(o => o.ToString()));
+                    target.Value = string.Join(", ", jarr.EnumerateArray().Select(o => JsonProvider.ToObject<object>(o)?.ToString()));
                     break;
                 case JsonElement {ValueKind: JsonValueKind.Object}:
                     target.Value = typeof(JsonElement).FullName;
                     break;
                 case JsonElement element:
-                    target.Value = element.ToObject<object>();
+                    target.Value = JsonProvider.ToObject<object>(element);
                     break;
                 case IDictionary other:
                     target.Value = other.GetType().GetRESTableTypeName();

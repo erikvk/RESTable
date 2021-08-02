@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading.Tasks;
 using RESTable.Meta;
 
@@ -17,9 +15,9 @@ namespace RESTable.Requests.Processors
 
         internal Select GetCopy() => new(this);
 
-        private async ValueTask<Dictionary<string, object?>> Apply<T>(T entity) where T : notnull
+        private async ValueTask<ProcessedEntity> Apply<T>(T entity) where T : notnull
         {
-            var dictionary = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            var dictionary = new ProcessedEntity();
             foreach (var term in this)
             {
                 if (dictionary.ContainsKey(term.Key))
@@ -33,7 +31,7 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Selects a set of properties from an IEnumerable of entities
         /// </summary>
-        public async IAsyncEnumerable<object> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
+        public async IAsyncEnumerable<ProcessedEntity> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
             await foreach (var entity in entities)
             {

@@ -2,10 +2,11 @@
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
+using RESTable.DefaultProtocol;
 using RESTable.Requests;
 using RESTable.Results;
 
-namespace RESTable.ProtocolProviders
+namespace RESTable
 {
     /// <summary>
     /// Interface for RESTable protocol providers. Protocol providers provide the logic for 

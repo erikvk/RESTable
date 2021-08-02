@@ -1,6 +1,4 @@
-﻿using RESTable.ProtocolProviders;
-
-namespace RESTable.Results
+﻿namespace RESTable.Results
 {
     /// <inheritdoc />
     /// <summary>

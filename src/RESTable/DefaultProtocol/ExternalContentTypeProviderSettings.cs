@@ -1,4 +1,4 @@
-﻿namespace RESTable.ProtocolProviders
+﻿namespace RESTable.DefaultProtocol
 {
     /// <summary>
     /// Enumeration used to configure how a RESTable protocol provider works with external 

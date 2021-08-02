@@ -3,8 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Resources;
-using RESTable.OData;
-using RESTable.ProtocolProviders;
 using RESTable.SQLite;
 
 namespace RESTable.Example

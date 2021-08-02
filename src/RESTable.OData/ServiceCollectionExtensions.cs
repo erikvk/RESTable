@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+using RESTable;
 using RESTable.OData;
-using RESTable.ProtocolProviders;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

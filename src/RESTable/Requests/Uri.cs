@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
-using RESTable.ProtocolProviders;
 using RESTable.Results;
 
 namespace RESTable.Requests

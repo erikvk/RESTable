@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RESTable.Resources
 {
@@ -10,6 +12,8 @@ namespace RESTable.Resources
         static InMemoryOperations() => Store = new ConcurrentDictionary<T, byte>();
 
         public static IEnumerable<T> Select() => Store.Keys;
+
+        public static IEnumerable<T> Select(Func<T, bool> predicate) => Store.Keys.Where(predicate);
 
         public static IEnumerable<T> Insert(params T[] entities) => Insert((IEnumerable<T>) entities);
 

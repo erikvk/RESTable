@@ -2,7 +2,6 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using RESTable.Requests;
 
 namespace RESTable.ContentTypeProviders
 {
@@ -61,7 +60,7 @@ namespace RESTable.ContentTypeProviders
         /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, CancellationToken cancellationToken);
+        IAsyncEnumerable<T?> DeserializeCollection<T>(Stream stream, CancellationToken cancellationToken);
 
         /// <summary>
         /// Populates the data from the byte array to all entities in the given collection. Populate calls can only be made with 

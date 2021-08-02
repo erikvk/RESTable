@@ -16,7 +16,7 @@ namespace RESTable.Results
 
         public MessageType MessageType => Result.MessageType;
         public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
-        public async ValueTask<string> GetLogContent() => await Body.ToStringAsync().ConfigureAwait(false);
+        public async ValueTask<string?> GetLogContent() => await Body.ToStringAsync().ConfigureAwait(false);
         public DateTime LogTime => Result.LogTime;
 
         public IResult Result { get; }

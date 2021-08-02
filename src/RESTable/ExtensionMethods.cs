@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -14,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
+using RESTable.DefaultProtocol;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
@@ -22,7 +22,6 @@ using RESTable.Requests.Filters;
 using RESTable.Requests.Processors;
 using RESTable.Resources;
 using RESTable.Results;
-using RESTable.ProtocolProviders;
 using static System.Globalization.DateTimeStyles;
 using static System.StringComparison;
 using static RESTable.ErrorCodes;
@@ -181,15 +180,13 @@ namespace RESTable
 
         #region Other
 
-        internal static string? UriEncode(this string? str)
+        internal static string UriEncode(this string str)
         {
-            if (str is null) return null;
             return Uri.EscapeDataString(str);
         }
 
-        internal static string? UriDecode(this string? str)
+        internal static string UriDecode(this string str)
         {
-            if (str is null) return null;
             return Uri.UnescapeDataString(str);
         }
 
@@ -292,60 +289,6 @@ namespace RESTable
             return opList;
         }
 
-        private static JsonDocument JsonDocumentFromObject<TValue>(TValue value, JsonSerializerOptions? options = default)
-        {
-            return JsonDocumentFromObject(value, typeof(TValue), options);
-        }
-
-        private static JsonDocument JsonDocumentFromObject(object? value, Type type, JsonSerializerOptions? options = default)
-        {
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(value, type, options);
-            return JsonDocument.Parse(bytes);
-        }
-
-        private static JsonElement JsonElementFromObject<TValue>(TValue? value, JsonSerializerOptions? options = default)
-        {
-            return JsonElementFromObject(value, typeof(TValue), options);
-        }
-
-        private static JsonElement JsonElementFromObject(object? value, Type type, JsonSerializerOptions? options = default)
-        {
-            using var doc = JsonDocumentFromObject(value, type, options);
-            return doc.RootElement.Clone();
-        }
-
-#if NETSTANDARD2_0
-        public static T? ToObject<T>(this JsonElement element, JsonSerializerOptions? options = null)
-        {
-            var json = JsonSerializer.SerializeToUtf8Bytes(element, options);
-            return JsonSerializer.Deserialize<T>(json, options);
-        }
-#else
-        public static T? ToObject<T>(this JsonElement element, JsonSerializerOptions? options = null)
-        {
-            var bufferWriter = new ArrayBufferWriter<byte>();
-            using (var writer = new Utf8JsonWriter(bufferWriter))
-                element.WriteTo(writer);
-            return JsonSerializer.Deserialize<T>(bufferWriter.WrittenSpan, options);
-        }
-
-#endif
-
-        public static T? ToObject<T>(this JsonDocument document, JsonSerializerOptions? options = null)
-        {
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
-            return document.RootElement.ToObject<T>(options);
-        }
-
-        /// <summary>
-        /// Converts a Dictionary object to a JSON.net JObject
-        /// </summary>
-        public static JsonElement ToJsonElement<T>(this T obj, JsonSerializerOptions? options = default)
-        {
-            return JsonElementFromObject(obj, options);
-        }
-
         /// <summary>
         /// Converts a Dictionary object to a JSON.net JObject
         /// </summary>
@@ -377,35 +320,35 @@ namespace RESTable
             jsonProperty = null;
             return false;
         }
-        
-        public static async ValueTask<Dictionary<string, object?>> MakeShallowDynamic<T>(this T entity) where T : notnull
+
+        public static async ValueTask<ProcessedEntity> MakeProcessedEntity<T>(this T entity) where T : notnull
         {
             switch (entity)
             {
-                case Dictionary<string, object?> dictionary when Equals(dictionary.Comparer, StringComparer.OrdinalIgnoreCase):
+                case ProcessedEntity processedEntity:
                 {
-                    return dictionary;
+                    return processedEntity;
                 }
                 case Dictionary<string, object?> dictionary:
                 {
-                    return new Dictionary<string, object?>(dictionary, StringComparer.OrdinalIgnoreCase);
+                    return new ProcessedEntity(dictionary);
                 }
                 case IDictionary idict:
                 {
-                    var dict = new Dictionary<string, object?>(idict.Count, StringComparer.OrdinalIgnoreCase);
+                    var processedEntity = new ProcessedEntity(idict.Count);
                     foreach (var entry in idict.Cast<DictionaryEntry>())
                     {
-                        dict.Add(entry.Key.ToString()!, entry.Value);
+                        processedEntity.Add(entry.Key.ToString()!, entry.Value);
                     }
-                    return dict;
+                    return processedEntity;
                 }
                 default:
                 {
-                    var dictionary = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                    var processedEntity = new ProcessedEntity();
                     var properties = ApplicationServicesAccessor.TypeCache.GetDeclaredProperties(entity.GetType()).Values.Where(p => !p.Hidden);
                     foreach (var property in properties)
-                        dictionary[property.Name] = await property.GetValue(entity).ConfigureAwait(false);
-                    return dictionary;
+                        processedEntity[property.Name] = await property.GetValue(entity).ConfigureAwait(false);
+                    return processedEntity;
                 }
             }
         }
@@ -436,7 +379,7 @@ namespace RESTable
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IAsyncEnumerable<object> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors) where T : notnull
+        internal static IAsyncEnumerable<ProcessedEntity> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors) where T : notnull
         {
             var target = processors[0].Apply(entities);
             for (var i = 1; i < processors.Count; i += 1)

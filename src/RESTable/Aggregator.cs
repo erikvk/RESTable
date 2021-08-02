@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.ContentTypeProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -32,6 +33,8 @@ namespace RESTable
                 selector: async r => await r.Body.Deserialize<Aggregator>().FirstAsync().ConfigureAwait(false),
                 errorMessage: "Expected an aggregator template as request body"
             ).ConfigureAwait(false);
+
+            var jsonProvider = request.GetRequiredService<IJsonProvider>();
 
             async Task<object> Populator(object node)
             {
@@ -61,15 +64,15 @@ namespace RESTable
                         var list = new List<object>();
                         foreach (var item in array.EnumerateArray())
                         {
-                            var obj = item.ToObject<object>();
+                            var obj = jsonProvider!.ToObject<object>(item);
                             var populated = await Populator(obj!).ConfigureAwait(false);
                             list.Add(populated);
                         }
                         return list;
                     }
-                    case JsonElement {ValueKind: JsonValueKind.Object} jobj:
+                    case JsonElement {ValueKind: JsonValueKind.Object} obj:
                     {
-                        return await Populator(jobj.ToObject<Aggregator>()!).ConfigureAwait(false);
+                        return await Populator(jsonProvider!.ToObject<Aggregator>(obj)!).ConfigureAwait(false);
                     }
                     case string empty when string.IsNullOrWhiteSpace(empty):
                     {

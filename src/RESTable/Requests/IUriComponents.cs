@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;   
-using RESTable.ProtocolProviders;
+﻿using System.Collections.Generic;
 
 namespace RESTable.Requests
 {

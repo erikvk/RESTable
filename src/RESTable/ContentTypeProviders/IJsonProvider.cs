@@ -14,15 +14,15 @@ namespace RESTable.ContentTypeProviders
 
         string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false);
         Task SerializeAsync<T>(Stream stream, T entity, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new());
-        ValueTask<long> SerializeCollectionAsync<T>(Utf8JsonWriter writer, IAsyncEnumerable<T> collectionObject, CancellationToken cancellationToken) where T : class;
 
-        T? Deserialize<T>(byte[] bytes);
-        T? Deserialize<T>(byte[] bytes, int offset, int count);
+        T? Deserialize<T>(Span<byte> span);
         T? Deserialize<T>(string json);
-        object? Deserialize(Type targetType, byte[] bytes);
-        object? Deserialize(Type targetType, byte[] bytes, int offset, int count);
+        object? Deserialize(Type targetType, Span<byte> span);
 
         ValueTask<T?> DeserializeAsync<T>(Stream stream);
         ValueTask<object?> DeserializeAsync(Stream stream, Type targetType);
+
+        T? ToObject<T>(JsonElement element);
+        JsonElement ToJsonElement<T>(T obj);
     }
 }

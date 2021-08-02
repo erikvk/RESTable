@@ -38,6 +38,7 @@ namespace RESTable.Meta
             DeclaredFallback = declaredFallback;
             Type = typeof(object);
             var typeCache = ApplicationServicesAccessor.TypeCache;
+            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
 
             async ValueTask<object?> getValue(object obj)
             {
@@ -72,7 +73,7 @@ namespace RESTable.Meta
                             {
                                 // Set the name of this dynamic property after the actual name of the property
                                 Name = jsonProperty.Name;
-                                return jsonProperty.Value.ToObject<object?>();
+                                return jsonProvider.ToObject<object?>(jsonProperty.Value);
                             }
                         }
                         return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
