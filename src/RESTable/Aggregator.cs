@@ -2,7 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
@@ -26,11 +28,11 @@ namespace RESTable
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<Aggregator> SelectAsync(IRequest<Aggregator> request)
+        public async IAsyncEnumerable<Aggregator> SelectAsync(IRequest<Aggregator> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var template = await request.Expecting
             (
-                selector: async r => await r.Body.Deserialize<Aggregator>().FirstAsync().ConfigureAwait(false),
+                selector: async r => await r.Body.Deserialize<Aggregator>(cancellationToken).FirstAsync(cancellationToken).ConfigureAwait(false),
                 errorMessage: "Expected an aggregator template as request body"
             ).ConfigureAwait(false);
 
@@ -101,7 +103,7 @@ namespace RESTable
                             uri: uri,
                             headers: request.Headers
                         );
-                        await using var result = await internalRequest.GetResult().ConfigureAwait(false);
+                        await using var result = await internalRequest.GetResult(cancellationToken).ConfigureAwait(false);
                         return result switch
                         {
                             Error error => throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}"),

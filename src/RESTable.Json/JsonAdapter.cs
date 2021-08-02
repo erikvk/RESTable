@@ -52,10 +52,10 @@ namespace RESTable.Json
         protected abstract Task ProduceJsonArrayAsync(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
-        public abstract ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken) where T : class;
+        public abstract ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken);
 
         /// <inheritdoc />
-        public abstract Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken) where T : class;
+        public abstract Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken);
 
         /// <inheritdoc />
         public async IAsyncEnumerable<T?> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -70,7 +70,7 @@ namespace RESTable.Json
         }
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body)
+        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var jsonStream = new SwappingStream();
             await using (jsonStream.ConfigureAwait(false))
@@ -83,7 +83,7 @@ namespace RESTable.Json
 #endif
                 {
                     await ProduceJsonArrayAsync(populateStream, jsonStream).ConfigureAwait(false);
-                    await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync()).ConfigureAwait(false))
+                    await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync(), cancellationToken).ConfigureAwait(false))
                         yield return item;
                 }
             }

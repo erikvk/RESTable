@@ -58,7 +58,6 @@ namespace RESTable.Tutorial
             .AddODataProvider()
             .AddSqliteProvider(dbPath: "./database")
             .AddExcelProvider()
-            .AddXmlProvider()
             .AddJson()
             .AddRESTable()
             .AddHttpContextAccessor();
@@ -208,12 +207,12 @@ namespace RESTable.Tutorial
 
         public int Number { get; set; }
 
-        public async IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request)
+        public async IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
             for (var i = 0; i < number; i += 1)
             {
-                await BufferBlock.SendAsync(Count += 1).ConfigureAwait(false);
+                await BufferBlock.SendAsync(Count += 1, cancellationToken).ConfigureAwait(false);
             }
             yield break;
         }
@@ -224,9 +223,9 @@ namespace RESTable.Tutorial
     {
         public int Value { get; set; }
 
-        public async IAsyncEnumerable<Test> SelectAsync(IRequest<Test> request)
+        public async IAsyncEnumerable<Test> SelectAsync(IRequest<Test> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await foreach (var value in Test2.BufferBlock.ToAsyncEnumerable())
+            await foreach (var value in Test2.BufferBlock.ToAsyncEnumerable(cancellationToken: cancellationToken))
             {
                 yield return new Test {Value = value};
             }
@@ -238,18 +237,18 @@ namespace RESTable.Tutorial
     {
         public int Value { get; set; }
 
-        public async IAsyncEnumerable<Test3> SelectAsync(IRequest<Test3> request)
+        public async IAsyncEnumerable<Test3> SelectAsync(IRequest<Test3> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             yield return new Test3 {Value = 0};
-            await Task.Delay(2000);
+            await Task.Delay(2000, cancellationToken);
             yield return new Test3 {Value = 1};
-            await Task.Delay(2000);
+            await Task.Delay(2000, cancellationToken);
             yield return new Test3 {Value = 2};
-            await Task.Delay(2000);
+            await Task.Delay(2000, cancellationToken);
             yield return new Test3 {Value = 3};
-            await Task.Delay(2000);
+            await Task.Delay(2000, cancellationToken);
             yield return new Test3 {Value = 4};
-            await Task.Delay(2000);
+            await Task.Delay(2000, cancellationToken);
         }
     }
 
@@ -266,13 +265,13 @@ namespace RESTable.Tutorial
         /// This method returns an IEnumerable of the resource type. RESTable will call this
         /// on GET requests and send the results back to the client as e.g. JSON.
         /// </summary>
-        public async IAsyncEnumerable<SuperheroReport> SelectAsync(IRequest<SuperheroReport> request)
+        public async IAsyncEnumerable<SuperheroReport> SelectAsync(IRequest<SuperheroReport> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var count = 0;
             var newest = default(Superhero);
             var genderCount = new int[3];
 
-            await foreach (var superhero in request.Context.CreateRequest<Superhero>().GetResultEntities())
+            await foreach (var superhero in request.Context.CreateRequest<Superhero>().GetResultEntities(cancellationToken))
             {
                 if (count == 0)
                     newest = superhero;

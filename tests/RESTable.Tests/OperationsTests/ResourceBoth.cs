@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
@@ -25,37 +27,37 @@ namespace RESTable.Tests.OperationsTests
         ICounter<ResourceBoth>,
         IAuthenticatable<ResourceBoth>
     {
-        public async IAsyncEnumerable<ResourceBoth> SelectAsync(IRequest<ResourceBoth> request)
+        public async IAsyncEnumerable<ResourceBoth> SelectAsync(IRequest<ResourceBoth> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncSelectorWasCalled = true;
             yield break;
         }
 
-        public async IAsyncEnumerable<ResourceBoth> InsertAsync(IRequest<ResourceBoth> request)
+        public async IAsyncEnumerable<ResourceBoth> InsertAsync(IRequest<ResourceBoth> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncInserterWasCalled = true;
             yield break;
         }
 
-        public async IAsyncEnumerable<ResourceBoth> UpdateAsync(IRequest<ResourceBoth> request)
+        public async IAsyncEnumerable<ResourceBoth> UpdateAsync(IRequest<ResourceBoth> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncUpdaterWasCalled = true;
             yield break;
         }
 
-        public async ValueTask<int> DeleteAsync(IRequest<ResourceBoth> request)
+        public async ValueTask<int> DeleteAsync(IRequest<ResourceBoth> request, CancellationToken cancellationToken)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncDeleterWasCalled = true;
             return 0;
         }
 
-        public async ValueTask<long> CountAsync(IRequest<ResourceBoth> request)
+        public async ValueTask<long> CountAsync(IRequest<ResourceBoth> request, CancellationToken cancellationToken)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncCounterWasCalled = true;
             return 1;
         }
 
-        public async ValueTask<AuthResults> AuthenticateAsync(IRequest<ResourceBoth> request)
+        public async ValueTask<AuthResults> AuthenticateAsync(IRequest<ResourceBoth> request, CancellationToken cancellationToken)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncAuthenticatorWasCalled = true;
             return request.Headers["FailMe"] != "yes";

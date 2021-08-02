@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Admin;
 using RESTable.Meta.Internal;
@@ -129,7 +131,7 @@ namespace RESTable.Resources
         /// <inheritdoc />
         public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select(request.Context);
 
-        public virtual async IAsyncEnumerable<TController> InsertAsync(IRequest<TController> request)
+        public virtual async IAsyncEnumerable<TController> InsertAsync(IRequest<TController> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
@@ -138,7 +140,7 @@ namespace RESTable.Resources
             }
         }
 
-        public virtual async IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request)
+        public virtual async IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
             {
@@ -147,10 +149,10 @@ namespace RESTable.Resources
             }
         }
 
-        public virtual async ValueTask<int> DeleteAsync(IRequest<TController> request)
+        public virtual async ValueTask<int> DeleteAsync(IRequest<TController> request, CancellationToken cancellationToken)
         {
             var i = 0;
-            await foreach (var resource in request.GetInputEntitiesAsync().ConfigureAwait(false))
+            await foreach (var resource in request.GetInputEntitiesAsync().WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 resource.Delete(request.Context);
                 i += 1;

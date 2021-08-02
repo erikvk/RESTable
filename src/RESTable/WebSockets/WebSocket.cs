@@ -353,8 +353,11 @@ namespace RESTable.WebSockets
             if (TerminalConnection is null) return;
             if (!TerminalConnection.Terminal.SupportsBinaryInputInternal)
             {
-                await SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support binary input"),
-                    cancellationToken: cancellationToken).ConfigureAwait(false);
+                await SendResult
+                (
+                    result: new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support binary input"),
+                    cancellationToken: cancellationToken
+                ).ConfigureAwait(false);
                 return;
             }
             await TerminalConnection.Terminal.HandleBinaryInput(binaryData, cancellationToken).ConfigureAwait(false);

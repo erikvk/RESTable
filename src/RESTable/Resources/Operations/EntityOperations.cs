@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
@@ -21,9 +22,9 @@ namespace RESTable.Resources.Operations
             EmptyEnumeration = AsyncEnumerable.Empty<T>();
         }
 
-        private static IAsyncEnumerable<T> SelectFilter(IEntityRequest<T> request)
+        private static IAsyncEnumerable<T> SelectFilter(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
-            IAsyncEnumerable<T> DefaultSelector() => request.Target.SelectAsync(request);
+            IAsyncEnumerable<T> DefaultSelector() => request.Target.SelectAsync(request, cancellationToken);
 
             var selector = request.GetCustomSelector() ?? DefaultSelector;
             return selector()
@@ -35,9 +36,9 @@ namespace RESTable.Resources.Operations
                 .Filter(request.MetaConditions.Limit);
         }
 
-        private static IAsyncEnumerable<object> SelectProcessFilter(IEntityRequest<T> request)
+        private static IAsyncEnumerable<object> SelectProcessFilter(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
-            IAsyncEnumerable<T> DefaultSelector() => request.Target.SelectAsync(request);
+            IAsyncEnumerable<T> DefaultSelector() => request.Target.SelectAsync(request, cancellationToken);
 
             var selector = request.GetCustomSelector() ?? DefaultSelector;
             return selector()
@@ -50,13 +51,13 @@ namespace RESTable.Resources.Operations
                 .Filter(request.MetaConditions.Limit);
         }
 
-        private static IAsyncEnumerable<T> TrySelectFilter(IEntityRequest<T> request)
+        private static IAsyncEnumerable<T> TrySelectFilter(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
             var producer = request.EntitiesProducer;
             try
             {
                 request.EntitiesProducer = () => EmptyEnumeration;
-                return SelectFilter(request);
+                return SelectFilter(request, cancellationToken);
             }
             catch (InfiniteLoop)
             {
@@ -72,15 +73,15 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static IAsyncEnumerable<object> TrySelectProcessFilter(IEntityRequest<T> request)
+        private static IAsyncEnumerable<object> TrySelectProcessFilter(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
             var producer = request.EntitiesProducer;
             try
             {
                 request.EntitiesProducer = () => EmptyEnumeration;
                 if (!request.MetaConditions.HasProcessors)
-                    return SelectFilter(request);
-                return SelectProcessFilter(request);
+                    return SelectFilter(request, cancellationToken);
+                return SelectProcessFilter(request, cancellationToken);
             }
             catch (InfiniteLoop)
             {
@@ -96,18 +97,18 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static async Task<long> TryCount(IEntityRequest<T> request)
+        private static async Task<long> TryCount(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
             try
             {
                 request.EntitiesProducer = () => EmptyEnumeration;
                 if (request.EntityResource.CanCount &&
                     request.MetaConditions.CanUseExternalCounter)
-                    return await request.EntityResource.CountAsync(request).ConfigureAwait(false);
+                    return await request.EntityResource.CountAsync(request, cancellationToken).ConfigureAwait(false);
                 var entities = request.MetaConditions.HasProcessors
-                    ? SelectProcessFilter(request)
-                    : SelectFilter(request);
-                return await entities.LongCountAsync().ConfigureAwait(false);
+                    ? SelectProcessFilter(request, cancellationToken)
+                    : SelectFilter(request, cancellationToken);
+                return await entities.LongCountAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (InfiniteLoop)
             {
@@ -119,19 +120,19 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static IAsyncEnumerable<T> Insert(IEntityRequest<T> request, bool limit = false)
+        private static IAsyncEnumerable<T> Insert(IEntityRequest<T> request, CancellationToken cancellationToken, bool limit = false)
         {
             try
             {
                 IAsyncEnumerable<T> RequestEntitiesProducer()
                 {
-                    var selector = request.GetCustomSelector() ?? (() => request.Body.Deserialize<T>());
+                    var selector = request.GetCustomSelector() ?? (() => request.Body.Deserialize<T>(cancellationToken));
                     var entities = selector();
-                    return entities.InputLimit(limit).Validate(request.EntityResource, request.Context);
+                    return entities.InputLimit(limit).Validate(request.EntityResource, request.Context, cancellationToken);
                 }
 
                 request.EntitiesProducer = RequestEntitiesProducer;
-                return request.EntityResource.InsertAsync(request);
+                return request.EntityResource.InsertAsync(request, cancellationToken);
             }
             catch (InvalidInputEntity)
             {
@@ -143,21 +144,21 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static IAsyncEnumerable<T> Update(IEntityRequest<T> request)
+        private static IAsyncEnumerable<T> Update(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
             try
             {
                 IAsyncEnumerable<T> RequestEntitiesProducer()
                 {
-                    IAsyncEnumerable<T> DefaultUpdater(IAsyncEnumerable<T> inputEntities) => request.Body.PopulateTo(inputEntities);
+                    IAsyncEnumerable<T> DefaultUpdater(IAsyncEnumerable<T> inputEntities) => request.Body.PopulateTo(inputEntities, cancellationToken);
 
                     var updater = request.GetCustomUpdater() ?? DefaultUpdater;
-                    var entities = TrySelectFilter(request).UnsafeLimit(!request.MetaConditions.Unsafe);
-                    return updater(entities).Validate(request.EntityResource, request.Context);
+                    var entities = TrySelectFilter(request, cancellationToken).UnsafeLimit(!request.MetaConditions.Unsafe);
+                    return updater(entities).Validate(request.EntityResource, request.Context, cancellationToken);
                 }
 
                 request.EntitiesProducer = RequestEntitiesProducer;
-                return request.EntityResource.UpdateAsync(request);
+                return request.EntityResource.UpdateAsync(request, cancellationToken);
             }
             catch (InvalidInputEntity)
             {
@@ -169,7 +170,7 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static IAsyncEnumerable<T> SafePostUpdate(IEntityRequest<T> request, ICollection<(T source, JsonElement json)> items)
+        private static IAsyncEnumerable<T> SafePostUpdate(IEntityRequest<T> request, ICollection<(T source, JsonElement json)> items, CancellationToken cancellationToken)
         {
             try
             {
@@ -183,10 +184,10 @@ namespace RESTable.Resources.Operations
                         return item.source;
                     })
                     .ToAsyncEnumerable()
-                    .Validate(request.EntityResource, request.Context);
+                    .Validate(request.EntityResource, request.Context, cancellationToken);
 
                 request.EntitiesProducer = RequestEntitiesProducer;
-                return request.EntityResource.UpdateAsync(request);
+                return request.EntityResource.UpdateAsync(request, cancellationToken);
             }
             catch (InvalidInputEntity)
             {
@@ -198,17 +199,17 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static async Task<int> Delete(IEntityRequest<T> request)
+        private static async Task<int> Delete(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
             try
             {
                 IAsyncEnumerable<T> RequestEntitiesProducer()
                 {
-                    return TrySelectFilter(request).UnsafeLimit(!request.MetaConditions.Unsafe);
+                    return TrySelectFilter(request, cancellationToken).UnsafeLimit(!request.MetaConditions.Unsafe);
                 }
 
                 request.EntitiesProducer = RequestEntitiesProducer;
-                return await request.EntityResource.DeleteAsync(request).ConfigureAwait(false);
+                return await request.EntityResource.DeleteAsync(request, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -218,36 +219,36 @@ namespace RESTable.Resources.Operations
 
         #region Operation resolvers
 
-        internal static Func<IEntityRequest<T>, Task<RequestSuccess>> GetMethodEvaluator(Method method)
+        internal static Func<IEntityRequest<T>, CancellationToken, Task<RequestSuccess>> GetMethodEvaluator(Method method)
         {
-            Task<RequestSuccess> GetEvaluator(IEntityRequest<T> request)
+            Task<RequestSuccess> GetEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken)
             {
-                var entities = TrySelectProcessFilter(request);
+                var entities = TrySelectProcessFilter(request, cancellationToken);
                 RequestSuccess result = MakeEntities(request, (dynamic) entities);
                 return Task.FromResult(result);
             }
 
-            async Task<RequestSuccess> PostEvaluator(IEntityRequest<T> request)
+            async Task<RequestSuccess> PostEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken)
             {
                 if (request.MetaConditions.SafePost is not null)
-                    return await SafePost(request).ConfigureAwait(false);
-                var insertedEntities = Insert(request);
-                var (count, entities) = await ChangeCount(insertedEntities).ConfigureAwait(false);
+                    return await SafePost(request, cancellationToken).ConfigureAwait(false);
+                var insertedEntities = Insert(request, cancellationToken);
+                var (count, entities) = await ChangeCount(insertedEntities, cancellationToken).ConfigureAwait(false);
                 return new InsertedEntities<T>(request, count, entities);
             }
 
-            async Task<RequestSuccess> PutEvaluator(IEntityRequest<T> request)
+            async Task<RequestSuccess> PutEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken)
             {
-                var source = await TrySelectFilter(request)
+                var source = await TrySelectFilter(request, cancellationToken)
                     .InputLimit()
-                    .ToListAsync()
+                    .ToListAsync(cancellationToken)
                     .ConfigureAwait(false);
                 switch (source.Count)
                 {
                     case 0:
                     {
-                        var insertedEntities = Insert(request);
-                        var (count, entities) = await ChangeCount(insertedEntities).ConfigureAwait(false);
+                        var insertedEntities = Insert(request, cancellationToken);
+                        var (count, entities) = await ChangeCount(insertedEntities, cancellationToken).ConfigureAwait(false);
                         return new InsertedEntities<T>(request, count, entities);
                     }
                     case 1 when request.GetCustomUpdater() is null && !request.Body.CanRead:
@@ -257,29 +258,33 @@ namespace RESTable.Resources.Operations
                     default:
                     {
                         request.Selector = () => source.ToAsyncEnumerable();
-                        var updatedEntities = Update(request);
-                        var (count, entities) = await ChangeCount(updatedEntities).ConfigureAwait(false);
+                        var updatedEntities = Update(request, cancellationToken);
+                        var (count, entities) = await ChangeCount(updatedEntities, cancellationToken).ConfigureAwait(false);
                         return new UpdatedEntities<T>(request, count, entities);
                     }
                 }
             }
 
-            async Task<RequestSuccess> HeadEvaluator(IEntityRequest<T> request)
+            async Task<RequestSuccess> HeadEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken)
             {
-                var count = await TryCount(request).ConfigureAwait(false);
+                var count = await TryCount(request, cancellationToken).ConfigureAwait(false);
                 return new Head(request, count);
             }
 
-            async Task<RequestSuccess> PatchEvaluator(IEntityRequest<T> request)
+            async Task<RequestSuccess> PatchEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken)
             {
-                var updatedEntities = Update(request);
-                var (count, entities) = await ChangeCount(updatedEntities).ConfigureAwait(false);
+                var updatedEntities = Update(request, cancellationToken);
+                var (count, entities) = await ChangeCount(updatedEntities, cancellationToken).ConfigureAwait(false);
                 return new UpdatedEntities<T>(request, count, entities);
             }
 
-            async Task<RequestSuccess> DeleteEvaluator(IEntityRequest<T> request) => new DeletedEntities<T>(request, await Delete(request).ConfigureAwait(false));
-            async Task<RequestSuccess> ReportEvaluator(IEntityRequest<T> request) => new Report(request, await TryCount(request).ConfigureAwait(false));
-            Task<RequestSuccess> ImATeapotEvaluator(IEntityRequest<T> request) => Task.FromResult<RequestSuccess>(new ImATeapot(request));
+            async Task<RequestSuccess> DeleteEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken) =>
+                new DeletedEntities<T>(request, await Delete(request, cancellationToken).ConfigureAwait(false));
+
+            async Task<RequestSuccess> ReportEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken) =>
+                new Report(request, await TryCount(request, cancellationToken).ConfigureAwait(false));
+
+            Task<RequestSuccess> ImATeapotEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken) => Task.FromResult<RequestSuccess>(new ImATeapot(request));
 
             return method switch
             {
@@ -298,12 +303,13 @@ namespace RESTable.Resources.Operations
         private static async Task<(int count, IReadOnlyCollection<T> changedEntities)> ChangeCount
         (
             IAsyncEnumerable<T> changedEntities,
+            CancellationToken cancellationToken,
             int maxNumberOfChangedEntities = Change.MaxNumberOfEntitiesInChangeResults
         )
         {
             var entityList = new List<T>();
             var count = 0;
-            await foreach (var item in changedEntities.ConfigureAwait(false))
+            await foreach (var item in changedEntities.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 if (count < maxNumberOfChangedEntities)
                     entityList.Add(item);
@@ -319,19 +325,20 @@ namespace RESTable.Resources.Operations
         (
             IAsyncEnumerable<T> updatedEntities,
             IAsyncEnumerable<T> insertedEntities,
+            CancellationToken cancellationToken,
             int maxNumberOfChangedEntities = MaxNumberOfEntitiesInSafePostResults
         )
         {
             var buffer = new List<T>();
             var (updatedCount, insertedCount, totalCount) = (0, 0, 0);
-            await foreach (var item in updatedEntities.ConfigureAwait(false))
+            await foreach (var item in updatedEntities.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 if (totalCount < maxNumberOfChangedEntities)
                     buffer.Add(item);
                 updatedCount += 1;
                 totalCount += 1;
             }
-            await foreach (var item in insertedEntities.ConfigureAwait(false))
+            await foreach (var item in insertedEntities.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 if (totalCount < maxNumberOfChangedEntities)
                     buffer.Add(item);
@@ -353,7 +360,7 @@ namespace RESTable.Resources.Operations
 
         #region SafePost
 
-        private static async Task<RequestSuccess> SafePost(IRequest request)
+        private static async Task<RequestSuccess> SafePost(IRequest request, CancellationToken cancellationToken)
         {
             try
             {
@@ -363,16 +370,16 @@ namespace RESTable.Resources.Operations
                 var (insertedEntities, updatedEntities) = (EmptyEnumeration, EmptyEnumeration);
                 if (toUpdate.Any())
                 {
-                    updatedEntities = SafePostUpdate(innerRequest, toUpdate);
+                    updatedEntities = SafePostUpdate(innerRequest, toUpdate, cancellationToken);
                 }
                 if (toInsert.Any())
                 {
                     innerRequest.Selector = () => toInsert
                         .Select(item => jsonProvider.ToObject<T>(item)!)
                         .ToAsyncEnumerable();
-                    insertedEntities = Insert(innerRequest);
+                    insertedEntities = Insert(innerRequest, cancellationToken);
                 }
-                var (updatedCount, insertedCount, changedEntities) = await SafePostCount(updatedEntities, insertedEntities).ConfigureAwait(false);
+                var (updatedCount, insertedCount, changedEntities) = await SafePostCount(updatedEntities, insertedEntities, cancellationToken).ConfigureAwait(false);
                 return new SafePostedEntities<T>(request, updatedCount, insertedCount, changedEntities);
             }
             catch (Exception e)

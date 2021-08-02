@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
@@ -288,7 +289,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -298,7 +299,7 @@ namespace RESTable.Resources
         /// </summary>
         ///  <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual IAsyncEnumerable<T> DefaultInsertAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual IAsyncEnumerable<T> DefaultInsertAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -308,7 +309,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual IAsyncEnumerable<T> DefaultUpdateAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual IAsyncEnumerable<T> DefaultUpdateAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -318,7 +319,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -328,7 +329,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual ValueTask<long> DefaultCountAsync<T>(IRequest<T> request) where T : class, TBase
+        protected virtual ValueTask<long> DefaultCountAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class, TBase
         {
             throw new NotImplementedException();
         }
@@ -423,16 +424,16 @@ namespace RESTable.Resources
             InsertResourceWrappedMethod = methods.First(m => m.Name == nameof(_InsertWrapperResource) && m.IsGenericMethod);
         }
 
-        private IEntityResource _InsertResource(Type type, string fullName = null, RESTableAttribute attribute = null)
+        private IEntityResource _InsertResource(Type type, string? fullName = null, RESTableAttribute? attribute = null)
         {
             var method = InsertResourceMethod.MakeGenericMethod(type);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null});
+            return (IEntityResource) method.Invoke(this, new object?[] {fullName, attribute, null});
         }
 
-        private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string fullName = null, RESTableAttribute attribute = null)
+        private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string? fullName = null, RESTableAttribute? attribute = null)
         {
             var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null});
+            return (IEntityResource) method.Invoke(this, new object?[] {fullName, attribute, null});
         }
 
         private IEntityResource<TResource> _InsertResource<TResource>

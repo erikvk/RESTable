@@ -9,8 +9,8 @@ namespace RESTable.ContentTypeProviders
 {
     public interface IJsonProvider : IContentTypeProvider
     {
-        void Populate(object target, string json);
-        void Populate(object target, JsonElement json);
+        void Populate<T>(T target, string json);
+        void Populate<T>(T target, JsonElement json);
 
         string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false);
         Task SerializeAsync<T>(Stream stream, T entity, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new());

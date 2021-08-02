@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using RESTable.Requests;
 using RESTable.Resources;
 
@@ -46,9 +48,9 @@ namespace RESTable.SQLite
             });
 
         /// <inheritdoc />
-        public override async IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request)
+        public override async IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            foreach (var resource in await request.GetInputEntitiesAsync().ToListAsync().ConfigureAwait(false))
+            foreach (var resource in await request.GetInputEntitiesAsync().ToListAsync(cancellationToken).ConfigureAwait(false))
             {
                 resource.Update(request.Context);
                 await resource.Definition.Update().ConfigureAwait(false);

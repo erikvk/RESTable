@@ -4,6 +4,7 @@ using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -117,19 +118,34 @@ namespace RESTable.SQLite
         protected override Type AttributeType => typeof(SQLiteAttribute);
 
         /// <inheritdoc />
-        protected override IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request) => SQLiteOperations<T>.SelectAsync(request);
+        protected override IAsyncEnumerable<T> DefaultSelectAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class
+        {
+            return SQLiteOperations<T>.SelectAsync(request, cancellationToken);
+        }
 
         /// <inheritdoc />
-        protected override IAsyncEnumerable<T> DefaultInsertAsync<T>(IRequest<T> request) => SQLiteOperations<T>.InsertAsync(request);
+        protected override IAsyncEnumerable<T> DefaultInsertAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class
+        {
+            return SQLiteOperations<T>.InsertAsync(request, cancellationToken);
+        }
 
         /// <inheritdoc />
-        protected override IAsyncEnumerable<T> DefaultUpdateAsync<T>(IRequest<T> request) => SQLiteOperations<T>.UpdateAsync(request);
+        protected override IAsyncEnumerable<T> DefaultUpdateAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class
+        {
+            return SQLiteOperations<T>.UpdateAsync(request, cancellationToken);
+        }
 
         /// <inheritdoc />
-        protected override ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request) => SQLiteOperations<T>.DeleteAsync(request);
+        protected override ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class
+        {
+            return SQLiteOperations<T>.DeleteAsync(request, cancellationToken);
+        }
 
         /// <inheritdoc />
-        protected override ValueTask<long> DefaultCountAsync<T>(IRequest<T> request) => SQLiteOperations<T>.CountAsync(request);
+        protected override ValueTask<long> DefaultCountAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class
+        {
+            return SQLiteOperations<T>.CountAsync(request, cancellationToken);
+        }
 
         /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources(RESTableContext context)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -33,7 +34,7 @@ namespace RESTable.Meta.Internal
 
         public IEnumerable<TResource> Select(IRequest<TResource> request) => ViewSelector(request);
 
-        public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request) => AsyncViewSelector(request);
+        public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncViewSelector(request, cancellationToken);
 
         /// <inheritdoc />
         [RESTableMember(hide: true)]

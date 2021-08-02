@@ -247,7 +247,7 @@ namespace RESTable.Requests
                         if (entityResource.RequiresAuthentication)
                         {
                             var authenticator = this.GetRequiredService<ResourceAuthenticator>();
-                            await authenticator.ResourceAuthenticate(this, entityResource).ConfigureAwait(false);
+                            await authenticator.ResourceAuthenticate(this, entityResource, cancellationToken).ConfigureAwait(false);
                         }
                         if (MetaConditions.SafePost is not null)
                         {
@@ -255,7 +255,7 @@ namespace RESTable.Requests
                             if (!entityResource.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
                         }
                         var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
-                        var result = await evaluator(this).ConfigureAwait(false);
+                        var result = await evaluator(this, cancellationToken).ConfigureAwait(false);
                         foreach (var (key, value) in ResponseHeaders)
                             result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
                         if (this.GetRequiredService<IAllowedCorsOriginsFilter>() is AllCorsOriginsAllowed)

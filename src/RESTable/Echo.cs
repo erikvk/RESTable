@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -22,7 +24,7 @@ namespace RESTable
                                            "returns the request conditions as an entity.";
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<Echo> SelectAsync(IRequest<Echo> request)
+        public async IAsyncEnumerable<Echo> SelectAsync(IRequest<Echo> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             if (request is null)
                 throw new ArgumentNullException(nameof(request));
@@ -36,7 +38,7 @@ namespace RESTable
                 yield return conditionEcho;
             }
 
-            await foreach (var bodyObject in request.Body.Deserialize<Echo>().ConfigureAwait(false))
+            await foreach (var bodyObject in request.Body.Deserialize<Echo>(cancellationToken).ConfigureAwait(false))
             {
                 var bodyEcho = new Echo();
                 foreach (var (key, value) in bodyObject)
@@ -45,8 +47,8 @@ namespace RESTable
             }
         }
 
-        public IAsyncEnumerable<Echo> InsertAsync(IRequest<Echo> request) => request.GetInputEntitiesAsync();
-        public IAsyncEnumerable<Echo> UpdateAsync(IRequest<Echo> request) => request.GetInputEntitiesAsync();
+        public IAsyncEnumerable<Echo> InsertAsync(IRequest<Echo> request, CancellationToken cancellationToken) => request.GetInputEntitiesAsync();
+        public IAsyncEnumerable<Echo> UpdateAsync(IRequest<Echo> request, CancellationToken cancellationToken) => request.GetInputEntitiesAsync();
     }
 
 //    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />

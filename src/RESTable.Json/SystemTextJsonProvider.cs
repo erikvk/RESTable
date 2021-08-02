@@ -84,7 +84,7 @@ namespace RESTable.Json
         /// Serializes an object into a stream
         /// </summary>
         /// <returns></returns>
-        public Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken = new()) where T : class
+        public Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken = new())
         {
             return JsonSerializer.SerializeAsync(stream, item, Options, cancellationToken);
         }
@@ -100,7 +100,7 @@ namespace RESTable.Json
         }
 
         /// <inheritdoc />
-        public async ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken) where T : class
+        public async ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken)
         {
             await using var writer = new Utf8JsonWriter(stream);
             writer.WriteStartArray();
@@ -114,22 +114,25 @@ namespace RESTable.Json
             return count;
         }
 
-        /// <summary>
-        /// Populates JSON data onto an object
-        /// </summary>
-        public void Populate(object target, string json)
-        {
-            if (string.IsNullOrWhiteSpace(json)) return;
-        }
-
         /// <inheritdoc />
-        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body)
+        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            yield break;
+            await foreach (var item in entities.ConfigureAwait(false))
+            {
+                yield return item;
+            }
         }
 
-        public void Populate(object target, JsonElement json) { }
+        public void Populate<T>(T target, string json)
+        {
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(json, Options);
+            Populate(target, jsonElement);
+        }
 
+        public void Populate<T>(T target, JsonElement json)
+        {
+            throw new NotImplementedException();
+        }
 
         public T? Deserialize<T>(string json)
         {

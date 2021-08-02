@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
@@ -8,5 +9,5 @@ namespace RESTable.Resources.Operations
     /// them into the resource, and returns the entities successfully inserted.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    internal delegate IAsyncEnumerable<T> AsyncInserter<T>(IRequest<T> request) where T : class;
+    internal delegate IAsyncEnumerable<T> AsyncInserter<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class;
 }

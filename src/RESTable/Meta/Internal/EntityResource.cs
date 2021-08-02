@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -59,13 +60,15 @@ namespace RESTable.Meta.Internal
         public bool CanUpdate => Delegates.CanUpdate;
         public bool CanDelete => Delegates.CanDelete;
         public bool CanCount => Delegates.CanCount;
-        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => Delegates.SelectAsync(request);
-        public IAsyncEnumerable<T> InsertAsync(IRequest<T> request) => Delegates.InsertAsync(request);
-        public IAsyncEnumerable<T> UpdateAsync(IRequest<T> request) => Delegates.UpdateAsync(request);
-        public ValueTask<int> DeleteAsync(IRequest<T> request) => Delegates.DeleteAsync(request);
-        public ValueTask<AuthResults> AuthenticateAsync(IRequest<T> request) => Delegates.AuthenticateAsync(request);
-        public ValueTask<long> CountAsync(IRequest<T> request) => Delegates.CountAsync(request);
-        public IAsyncEnumerable<T> Validate(IAsyncEnumerable<T> entities, RESTableContext context) => Delegates.Validate(entities, context);
+        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.SelectAsync(request, cancellationToken);
+        public IAsyncEnumerable<T> InsertAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.InsertAsync(request, cancellationToken);
+        public IAsyncEnumerable<T> UpdateAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.UpdateAsync(request, cancellationToken);
+        public ValueTask<int> DeleteAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.DeleteAsync(request, cancellationToken);
+        public ValueTask<AuthResults> AuthenticateAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.AuthenticateAsync(request, cancellationToken);
+        public ValueTask<long> CountAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.CountAsync(request, cancellationToken);
+
+        public IAsyncEnumerable<T> Validate(IAsyncEnumerable<T> entities, RESTableContext context, CancellationToken cancellationToken) =>
+            Delegates.Validate(entities, context, cancellationToken);
 
         private DelegateSet<T> Delegates { get; }
 

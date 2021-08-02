@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -41,7 +42,7 @@ namespace RESTable.Meta.Internal
         public void AddInnerResource(IResource resource) => InnerResources.Add(resource);
         public IEnumerable<IResource> GetInnerResources() => InnerResources.AsReadOnly();
 
-        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
+        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken) => throw new InvalidOperationException();
 
         public async Task<Terminal> CreateTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
         {

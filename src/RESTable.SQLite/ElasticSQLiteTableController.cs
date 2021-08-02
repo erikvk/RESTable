@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources.Operations;
@@ -42,10 +43,10 @@ namespace RESTable.SQLite
         public string[] DroppedColumns { get; set; }
 
         /// <inheritdoc />
-        public virtual IAsyncEnumerable<TController> SelectAsync(IRequest<TController> request) => Select().ToAsyncEnumerable();
+        public virtual IAsyncEnumerable<TController> SelectAsync(IRequest<TController> request, CancellationToken cancellationToken) => Select().ToAsyncEnumerable();
 
         /// <inheritdoc />
-        public virtual IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request) => request
+        public virtual IAsyncEnumerable<TController> UpdateAsync(IRequest<TController> request, CancellationToken cancellationToken) => request
             .GetInputEntitiesAsync()
             .WhereAwait(async entity => await entity.Update().ConfigureAwait(false));
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -90,11 +91,11 @@ namespace RESTable.Meta
         bool CanDelete { get; }
         bool CanCount { get; }
 
-        IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request);
-        IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request);
-        ValueTask<int> DeleteAsync(IRequest<TResource> request);
-        ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request);
-        ValueTask<long> CountAsync(IRequest<TResource> request);
-        IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context);
+        IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
+        IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
+        ValueTask<int> DeleteAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
+        ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
+        ValueTask<long> CountAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
+        IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context, CancellationToken cancellationToken = new());
     }
 }

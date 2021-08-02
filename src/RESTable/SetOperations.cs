@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
@@ -37,11 +39,14 @@ namespace RESTable
         private SetOperations(IDictionary<string, object?> other) : base(other) { }
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<SetOperations> SelectAsync(IRequest<SetOperations> request)
+        public async IAsyncEnumerable<SetOperations> SelectAsync(IRequest<SetOperations> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var inputElement = await request.Expecting
             (
-                selector: async r => await r.Body.Deserialize<JsonElement>().FirstAsync().ConfigureAwait(false),
+                selector: async r => await r.Body
+                    .Deserialize<JsonElement>(cancellationToken)
+                    .FirstAsync(cancellationToken)
+                    .ConfigureAwait(false),
                 errorMessage: "Expected expression tree as request body"
             ).ConfigureAwait(false);
 
@@ -69,7 +74,7 @@ namespace RESTable
                             case '/':
                             {
                                 var innerRequest = request.Context.CreateRequest(uri: argument);
-                                await using var result = await innerRequest.GetResult().ConfigureAwait(false);
+                                await using var result = await innerRequest.GetResult(cancellationToken).ConfigureAwait(false);
                                 switch (result)
                                 {
                                     case IAsyncEnumerable<object> entities:

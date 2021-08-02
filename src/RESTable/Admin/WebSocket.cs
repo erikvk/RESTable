@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
@@ -76,10 +77,10 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public async ValueTask<int> DeleteAsync(IRequest<WebSocket> request)
+        public async ValueTask<int> DeleteAsync(IRequest<WebSocket> request, CancellationToken cancellationToken)
         {
             var count = 0;
-            await foreach (var entity in request.GetInputEntitiesAsync().ConfigureAwait(false))
+            await foreach (var entity in request.GetInputEntitiesAsync().WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 await entity.UnderlyingSocket.DisposeAsync().ConfigureAwait(false);
                 count += 1;

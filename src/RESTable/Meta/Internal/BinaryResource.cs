@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -32,7 +33,7 @@ namespace RESTable.Meta.Internal
         public string? ParentResourceName { get; }
         public bool GETAvailableToAll { get; }
         public Type InterfaceType { get; }
-        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request) => throw new InvalidOperationException();
+        public IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken) => throw new InvalidOperationException();
         public BinaryResult SelectBinary(IRequest<T> request) => BinarySelector(request);
         private List<IResource> InnerResources { get; }
         public void AddInnerResource(IResource resource) => InnerResources.Add(resource);

@@ -45,8 +45,15 @@ namespace RESTable.SQLite
         /// <param name="where">The WHERE clause of the SQL squery to execute. Will be preceded 
         /// by "SELECT * FROM {type} " in the actual query</param>
         /// <param name="onlyRowId">Populates only RowIds for the resulting entities</param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public static async IAsyncEnumerable<T> Select(RESTableContext? context, string? where = null, bool onlyRowId = false)
+        public static async IAsyncEnumerable<T> Select
+        (
+            RESTableContext? context,
+            string? where = null,
+            bool onlyRowId = false,
+            [EnumeratorCancellation] CancellationToken cancellationToken = new()
+        )
         {
             var enumerable = (EntityEnumerable<T>) Select(where, onlyRowId);
             if (context != null)

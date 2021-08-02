@@ -47,7 +47,7 @@ namespace RESTable
         /// <summary>
         /// Deserializes the body to an IEnumerable of entities of the given type
         /// </summary>
-        public IAsyncEnumerable<T?> Deserialize<T>(CancellationToken cancellationToken = new())
+        public IAsyncEnumerable<T> Deserialize<T>(CancellationToken cancellationToken = new())
         {
             if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
             try
@@ -67,13 +67,13 @@ namespace RESTable
         /// Populates the body onto each entity in a source collection. If the body is empty,
         /// returns null.
         /// </summary>
-        public IAsyncEnumerable<T> PopulateTo<T>(IAsyncEnumerable<T> source) where T : class
+        public IAsyncEnumerable<T> PopulateTo<T>(IAsyncEnumerable<T> source, CancellationToken cancellationToken)
         {
             if (IsClosed)
                 throw new ObjectDisposedException(nameof(Stream));
             try
             {
-                return ContentTypeProvider.Populate(source, Stream.GetBytes());
+                return ContentTypeProvider.Populate(source, Stream.GetBytes(), cancellationToken);
             }
             finally
             {

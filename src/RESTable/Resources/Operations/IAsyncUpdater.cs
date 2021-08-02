@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using RESTable.Requests;
 
 namespace RESTable.Resources.Operations
@@ -13,6 +14,6 @@ namespace RESTable.Resources.Operations
         /// The update method for this IUpdater instance. Defines the Update
         /// operation for a given resource.
         /// </summary>
-        IAsyncEnumerable<T> UpdateAsync(IRequest<T> request);
+        IAsyncEnumerable<T> UpdateAsync(IRequest<T> request, CancellationToken cancellationToken);
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Results;
@@ -9,23 +11,23 @@ namespace RESTable.Resources.Operations
 {
     internal class DelegateSet<TResource> : IEntityResourceOperationDefinition<TResource> where TResource : class
     {
-        private Selector<TResource> SyncSelector { get; set; }
-        private Inserter<TResource> SyncInserter { get; set; }
-        private Updater<TResource> SyncUpdater { get; set; }
-        private Deleter<TResource> SyncDeleter { get; set; }
-        private Authenticator<TResource> SyncAuthenticator { get; set; }
-        private Counter<TResource> SyncCounter { get; set; }
+        private Selector<TResource>? SyncSelector { get; set; }
+        private Inserter<TResource>? SyncInserter { get; set; }
+        private Updater<TResource>? SyncUpdater { get; set; }
+        private Deleter<TResource>? SyncDeleter { get; set; }
+        private Authenticator<TResource>? SyncAuthenticator { get; set; }
+        private Counter<TResource>? SyncCounter { get; set; }
 
         // All non-async operations are transformed into async delegates on resolve
 
-        private AsyncSelector<TResource> AsyncSelector { get; set; }
-        private AsyncInserter<TResource> AsyncInserter { get; set; }
-        private AsyncUpdater<TResource> AsyncUpdater { get; set; }
-        private AsyncDeleter<TResource> AsyncDeleter { get; set; }
-        private AsyncAuthenticator<TResource> AsyncAuthenticator { get; set; }
-        private AsyncCounter<TResource> AsyncCounter { get; set; }
+        private AsyncSelector<TResource>? AsyncSelector { get; set; }
+        private AsyncInserter<TResource>? AsyncInserter { get; set; }
+        private AsyncUpdater<TResource>? AsyncUpdater { get; set; }
+        private AsyncDeleter<TResource>? AsyncDeleter { get; set; }
+        private AsyncAuthenticator<TResource>? AsyncAuthenticator { get; set; }
+        private AsyncCounter<TResource>? AsyncCounter { get; set; }
 
-        private Validator<TResource> Validator { get; set; }
+        private Validator<TResource>? Validator { get; set; }
 
         public bool RequiresAuthentication => AsyncAuthenticator is not null;
         public bool CanSelect => AsyncSelector is not null;
@@ -34,14 +36,15 @@ namespace RESTable.Resources.Operations
         public bool CanDelete => AsyncDeleter is not null;
         public bool CanCount => AsyncCounter is not null;
 
-        public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request) => AsyncSelector(request);
-        public IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request) => AsyncInserter(request);
-        public IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request) => AsyncUpdater(request);
-        public ValueTask<int> DeleteAsync(IRequest<TResource> request) => AsyncDeleter(request);
-        public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request) => AsyncAuthenticator(request);
-        public ValueTask<long> CountAsync(IRequest<TResource> request) => AsyncCounter(request);
+        public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncSelector!(request, cancellationToken);
+        public IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncInserter!(request, cancellationToken);
+        public IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncUpdater!(request, cancellationToken);
+        public ValueTask<int> DeleteAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncDeleter!(request, cancellationToken);
+        public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncAuthenticator!(request, cancellationToken);
+        public ValueTask<long> CountAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncCounter!(request, cancellationToken);
 
-        public async IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context)
+        public async IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource>? entities, RESTableContext context,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             if (entities is null) yield break;
             if (Validator is null)
@@ -65,7 +68,7 @@ namespace RESTable.Resources.Operations
 
 #pragma warning disable 1998
 
-        private static async IAsyncEnumerable<TResource> CallAsync(IEnumerable<TResource> entities)
+        private static async IAsyncEnumerable<TResource> CallAsync(IEnumerable<TResource>? entities)
         {
             if (entities is null) yield break;
             foreach (var item in entities)
@@ -82,17 +85,17 @@ namespace RESTable.Resources.Operations
         internal DelegateSet<TResource> SetAsyncDelegatesToSyncWhereNull()
         {
             if (AsyncSelector is null && SyncSelector is Selector<TResource> selector)
-                AsyncSelector = request => CallAsync(selector(request));
+                AsyncSelector = (request, _) => CallAsync(selector(request));
             if (AsyncInserter is null && SyncInserter is Inserter<TResource> inserter)
-                AsyncInserter = request => inserter(request).ToAsyncEnumerable();
+                AsyncInserter = (request, _) => inserter(request).ToAsyncEnumerable();
             if (AsyncUpdater is null && SyncUpdater is Updater<TResource> updater)
-                AsyncUpdater = request => updater(request).ToAsyncEnumerable();
+                AsyncUpdater = (request, _) => updater(request).ToAsyncEnumerable();
             if (AsyncDeleter is null && SyncDeleter is Deleter<TResource> deleter)
-                AsyncDeleter = request => new ValueTask<int>(deleter(request));
+                AsyncDeleter = (request, _) => new ValueTask<int>(deleter(request));
             if (AsyncAuthenticator is null && SyncAuthenticator is Authenticator<TResource> authenticator)
-                AsyncAuthenticator = request => new ValueTask<AuthResults>(authenticator(request));
+                AsyncAuthenticator = (request, _) => new ValueTask<AuthResults>(authenticator(request));
             if (AsyncCounter is null && SyncCounter is Counter<TResource> counter)
-                AsyncCounter = request => new ValueTask<long>(counter(request));
+                AsyncCounter = (request, _) => new ValueTask<long>(counter(request));
             return this;
         }
 
@@ -116,19 +119,19 @@ namespace RESTable.Resources.Operations
 
         internal DelegateSet<TResource> SetDelegatesToDefaultsWhereNull
         (
-            Selector<TResource> selector = null,
-            Inserter<TResource> inserter = null,
-            Updater<TResource> updater = null,
-            Deleter<TResource> deleter = null,
-            Authenticator<TResource> authenticator = null,
-            Counter<TResource> counter = null,
-            Validator<TResource> validator = null,
-            AsyncSelector<TResource> asyncSelector = null,
-            AsyncInserter<TResource> asyncInserter = null,
-            AsyncUpdater<TResource> asyncUpdater = null,
-            AsyncDeleter<TResource> asyncDeleter = null,
-            AsyncAuthenticator<TResource> asyncAuthenticator = null,
-            AsyncCounter<TResource> asyncCounter = null
+            Selector<TResource>? selector = null,
+            Inserter<TResource>? inserter = null,
+            Updater<TResource>? updater = null,
+            Deleter<TResource>? deleter = null,
+            Authenticator<TResource>? authenticator = null,
+            Counter<TResource>? counter = null,
+            Validator<TResource>? validator = null,
+            AsyncSelector<TResource>? asyncSelector = null,
+            AsyncInserter<TResource>? asyncInserter = null,
+            AsyncUpdater<TResource>? asyncUpdater = null,
+            AsyncDeleter<TResource>? asyncDeleter = null,
+            AsyncAuthenticator<TResource>? asyncAuthenticator = null,
+            AsyncCounter<TResource>? asyncCounter = null
         )
         {
             SyncSelector ??= selector;
@@ -165,7 +168,7 @@ namespace RESTable.Resources.Operations
             return this;
         }
 
-        private static T AsImplemented<T>(T @delegate) where T : Delegate => @delegate?
+        private static T? AsImplemented<T>(T? @delegate) where T : Delegate => @delegate?
             .Method
             .HasAttribute<MethodNotImplementedAttribute>() == false
             ? @delegate

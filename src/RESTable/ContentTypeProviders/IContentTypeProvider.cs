@@ -49,23 +49,23 @@ namespace RESTable.ContentTypeProviders
         /// <summary>
         /// Serializes the entity collection to the given Stream and returns the number of entities serialized.
         /// </summary>
-        ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken) where T : class;
+        ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken);
 
         /// <summary>
         /// Serializes the entity to the given Stream and returns the number of entities serialized.
         /// </summary>
-        Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken) where T : class;
+        Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken);
 
         /// <summary>
         /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        IAsyncEnumerable<T?> DeserializeCollection<T>(Stream stream, CancellationToken cancellationToken);
+        IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, CancellationToken cancellationToken);
 
         /// <summary>
         /// Populates the data from the byte array to all entities in the given collection. Populate calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body);
+        IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body, CancellationToken cancellationToken);
     }
 }

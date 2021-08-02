@@ -50,12 +50,11 @@ namespace RESTable.Excel
 
         public override async Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken)
         {
-            await SerializeCollectionAsync(stream, Linq.Enumerable.ToAsyncSingleton(item), cancellationToken);
+            await SerializeCollectionAsync(stream, Linq.Enumerable.ToAsyncSingleton(item), cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public override async ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken)
-            where T : class
         {
             try
             {
@@ -63,7 +62,7 @@ namespace RESTable.Excel
                 var currentRow = 1;
                 var worksheet = package.Workbook.Worksheets.Add("Sheet 1");
 
-                async Task writeEntities(IAsyncEnumerable<object> entities)
+                async Task writeEntities(IAsyncEnumerable<T> entities)
                 {
                     switch (entities)
                     {
