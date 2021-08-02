@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -22,6 +23,8 @@ namespace RESTable.Json
     {
         private JsonSerializerOptions Options { get; }
         private JsonSerializerOptions OptionsIgnoreNulls { get; }
+
+        private ArrayPool<byte> BufferPool { get; }
 
         private const string JsonMimeType = "application/json";
         private const string RESTableSpecific = "application/restable-json";
@@ -54,6 +57,7 @@ namespace RESTable.Json
             Options = optionsAccessor.Options;
             Options.Converters.Add(resolver);
             OptionsIgnoreNulls = new JsonSerializerOptions(Options) {DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull};
+            BufferPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
             MatchStrings = new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
             ContentDispositionFileExtension = ".json";
             CanWrite = true;
@@ -157,51 +161,54 @@ namespace RESTable.Json
 
         public async IAsyncEnumerable<T?> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            var buffer = new byte[1_024 * 4];
+            var buffer = BufferPool.Rent(Options.DefaultBufferSize);
             JsonReaderState state = default;
             var leftOver = 0;
-            while (true)
+            try
             {
+                while (true)
+                {
 #if NETSTANDARD2_0
-                var dataLength = await stream.ReadAsync(buffer, leftOver, buffer.Length - leftOver, cancellationToken).ConfigureAwait(false);
+                    var dataLength = await stream.ReadAsync(buffer, leftOver, buffer.Length - leftOver, cancellationToken).ConfigureAwait(false);
 #else
-                var dataLength = await stream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken).ConfigureAwait(false);
+                    var dataLength = await stream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken).ConfigureAwait(false);
 #endif
-                var dataSize = dataLength + leftOver;
-                var isFinalBlock = dataSize == 0;
-                if (isFinalBlock)
-                    yield break;
-                var (bytesConsumed, next, hasValue, isLast) = GetNext<T>(buffer.AsSpan(0, dataSize), ref state);
-                if (!hasValue)
-                    yield break;
-                yield return next;
-                if (isLast)
-                    yield break;
-                leftOver = dataSize - (int) bytesConsumed;
-                if (leftOver != 0)
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    var dataSize = dataLength + leftOver;
+                    var isFinalBlock = dataSize == 0;
+                    if (isFinalBlock)
+                        yield break;
+                    var (bytesConsumed, next, hasValue) = GetNext<T>(buffer.AsSpan(0, dataSize), ref state);
+                    if (!hasValue)
+                        yield break;
+                    yield return next;
+                    leftOver = dataSize - (int) bytesConsumed;
+                    if (leftOver != 0)
+                        buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                }
+            }
+            finally
+            {
+                BufferPool.Return(buffer);
             }
         }
 
-        private (long bytesConsumed, T? next, bool any, bool isLast) GetNext<T>(ReadOnlySpan<byte> dataUtf8, ref JsonReaderState state)
+        private (long bytesConsumed, T? next, bool any) GetNext<T>(ReadOnlySpan<byte> dataUtf8, ref JsonReaderState state)
         {
             bool hasValue;
-            bool isLast;
-            T? next = default;
+            T? next;
             var reader = new Utf8JsonReader(dataUtf8, false, state);
             reader.Read();
             switch (reader.TokenType)
             {
                 case JsonTokenType.EndArray:
                 case JsonTokenType.None:
+                    next = default;
                     hasValue = false;
-                    isLast = true;
                     break;
                 case JsonTokenType.StartObject:
                 {
                     next = JsonSerializer.Deserialize<T>(ref reader, Options);
                     hasValue = true;
-                    isLast = true;
                     break;
                 }
                 case JsonTokenType.StartArray:
@@ -209,14 +216,12 @@ namespace RESTable.Json
                     reader.Read();
                     next = JsonSerializer.Deserialize<T>(ref reader, Options);
                     hasValue = true;
-                    isLast = false;
                     break;
                 }
                 case var other: throw new JsonException($"Invalid JSON data. Expected array or object. Found {other}");
             }
-
             state = reader.CurrentState;
-            return (reader.BytesConsumed, next, hasValue, isLast);
+            return (reader.BytesConsumed, next, hasValue);
         }
     }
 }

@@ -24,8 +24,6 @@ namespace RESTable.DefaultProtocol
     /// </summary>
     internal sealed class DefaultProtocolProvider : IProtocolProvider
     {
-        private const int StreamWriterBufferSize = 4096;
-
         /// <inheritdoc />
         public string ProtocolName => "RESTable";
 

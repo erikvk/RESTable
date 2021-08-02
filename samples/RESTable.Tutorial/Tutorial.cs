@@ -58,6 +58,7 @@ namespace RESTable.Tutorial
             .AddODataProvider()
             .AddSqliteProvider(dbPath: "./database")
             .AddExcelProvider()
+            .AddXmlProvider()
             .AddJson()
             .AddRESTable()
             .AddHttpContextAccessor();
