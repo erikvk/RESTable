@@ -133,12 +133,7 @@ namespace RESTable.Tutorial
 
         private Dictionary<string, object> dict;
 
-        [RESTableMember(replaceOnUpdate: true)]
-        public Dictionary<string, object> Dict
-        {
-            get => dict;
-            set => dict = value;
-        }
+        public Dictionary<string, object> Dict => dict;
 
         public int DictId => dict.GetHashCode();
 
