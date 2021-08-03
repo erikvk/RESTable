@@ -13,22 +13,22 @@ namespace RESTable.Meta
         /// The name of the property
         /// </summary>
         [RESTableMember(order: -5)]
-        public string Name { get; internal set; }
-        
+        public abstract string Name { get; internal set; }
+
         /// <summary>
         /// The type that owns this member
         /// </summary>
         public Type? Owner { get; }
-        
+
         /// <summary>
         /// The name of the property, as defined in the type declaration
         /// </summary>
-        public string ActualName { get; internal set; }
+        public abstract string ActualName { get; internal set; }
 
         /// <summary>
         /// The type of this member
         /// </summary>
-        public Type Type { get; protected set; }
+        public abstract Type Type { get; protected set; }
 
         /// <summary>
         /// Is this property nullable?

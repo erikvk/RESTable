@@ -30,9 +30,9 @@ namespace RESTable.Internal
                     CachedProtocolProviders[""] = cachedProvider;
                 }
                 var protocolId = provider.ProtocolIdentifier;
-                if (CachedProtocolProviders.TryGetValue(protocolId, out CachedProtocolProvider existing))
+                if (CachedProtocolProviders.TryGetValue(protocolId, out var existing))
                 {
-                    if (existing.GetType() == provider.GetType())
+                    if (existing!.GetType() == provider.GetType())
                         throw new InvalidProtocolProviderException(
                             $"A protocol provider of type '{existing.GetType()}' has already been added");
                     throw new InvalidProtocolProviderException(

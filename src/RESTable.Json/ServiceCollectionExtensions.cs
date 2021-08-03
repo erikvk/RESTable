@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using RESTable.ContentTypeProviders;
 using RESTable.Json;
 

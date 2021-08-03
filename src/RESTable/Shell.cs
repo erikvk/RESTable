@@ -365,7 +365,7 @@ namespace RESTable
                                 await SendHeaders().ConfigureAwait(false);
                                 break;
                             }
-                            var (key, value) = tail.TupleSplit('=', true);
+                            var (key, value) = tail!.TupleSplit('=', true);
                             if (value is null)
                             {
                                 await SendHeaders().ConfigureAwait(false);
@@ -394,7 +394,7 @@ namespace RESTable
                                 await WebSocket.SendJson(this, cancellationToken: cancellationToken).ConfigureAwait(false);
                                 break;
                             }
-                            var (property, valueString) = tail.TupleSplit('=', true);
+                            var (property, valueString) = tail!.TupleSplit('=', true);
                             if (valueString is null)
                             {
                                 await WebSocket
@@ -625,7 +625,7 @@ namespace RESTable
             if (!WebSocket.Context.UriIsValid(localQuery, out var error, out var resource, out var components))
             {
                 query = previousQuery;
-                await SendResult(error).ConfigureAwait(false);
+                await SendResult(error!).ConfigureAwait(false);
                 return (false, null);
             }
             if (ReformatQueries)

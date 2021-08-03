@@ -462,7 +462,7 @@ namespace RESTable
         /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
         /// not contain the key. The actual key is returned in the actualKey out parameter.
         /// </summary>
-        internal static bool TryFindInDictionary<T>(this IDictionary<string, T> dict, string key, out string? actualKey, out T? result)
+        internal static bool TryFindInDictionary<T>(this IDictionary<string, T?> dict, string key, out string? actualKey, out T? result)
         {
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
             switch (matches.Count)

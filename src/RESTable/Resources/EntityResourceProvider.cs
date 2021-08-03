@@ -33,7 +33,7 @@ namespace RESTable.Resources
         private void InsertProcedural(IProceduralEntityResource resource, ResourceValidator validator)
         {
             var attribute = new RESTableProceduralAttribute(resource.Methods) {Description = resource.Description};
-            var type = resource.Type;
+            var type = resource.Type ?? throw new InvalidOperationException("Could not establish type for procedural resource");
             validator.ValidateRuntimeInsertion(type, resource.Name, attribute);
             validator.Validate(type);
             var inserted = _InsertResource(type, resource.Name, attribute);
@@ -65,11 +65,11 @@ namespace RESTable.Resources
             set => ResourceCollection = value;
         }
 
-        private ResourceValidator ResourceValidator { get; set; }
-        private TypeCache TypeCache { get; set; }
-        private ResourceCollection ResourceCollection { get; set; }
+        private ResourceValidator ResourceValidator { get; set; } = null!;
+        private TypeCache TypeCache { get; set; } = null!;
+        private ResourceCollection ResourceCollection { get; set; } = null!;
 
-        private bool RemoveResource(IResource resource)
+        private bool RemoveResource(IResource? resource)
         {
             if (resource is IEntityResource er && er.Provider == Id)
             {
@@ -91,7 +91,7 @@ namespace RESTable.Resources
 
         void IEntityResourceProviderInternal.MakeClaimProcedural()
         {
-            foreach (var resource in SelectProceduralResources(context: null))
+            foreach (var resource in SelectProceduralResources(context: null!))
                 InsertProcedural(resource, ResourceValidator);
         }
 
@@ -395,9 +395,9 @@ namespace RESTable.Resources
         /// <returns></returns>
         private IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>
         (
-            string fullName = null,
-            RESTableAttribute attribute = null,
-            DelegateSet<TWrapped> delegates = null
+            string? fullName = null,
+            RESTableAttribute? attribute = null,
+            DelegateSet<TWrapped>? delegates = null
         )
             where TWrapper : ResourceWrapper<TWrapped> where TWrapped : class, TBase
         {
@@ -427,13 +427,15 @@ namespace RESTable.Resources
         private IEntityResource _InsertResource(Type type, string? fullName = null, RESTableAttribute? attribute = null)
         {
             var method = InsertResourceMethod.MakeGenericMethod(type);
-            return (IEntityResource) method.Invoke(this, new object?[] {fullName, attribute, null});
+            var entityResource = (IEntityResource?) method.Invoke(this, new object?[] {fullName, attribute, null});
+            return entityResource!;
         }
 
         private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string? fullName = null, RESTableAttribute? attribute = null)
         {
             var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
-            return (IEntityResource) method.Invoke(this, new object?[] {fullName, attribute, null});
+            var entityResource = (IEntityResource?) method.Invoke(this, new object?[] {fullName, attribute, null});
+            return entityResource!;
         }
 
         private IEntityResource<TResource> _InsertResource<TResource>
@@ -443,8 +445,8 @@ namespace RESTable.Resources
             DelegateSet<TResource>? delegates = null
         ) where TResource : class, TBase => new EntityResource<TResource>
         (
-            fullName: fullName ?? typeof(TResource).GetRESTableTypeName() ?? throw new Exception("Could not establish name for inserted resource"),
-            attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTableAttribute>(),
+            fullName: fullName ?? typeof(TResource).GetRESTableTypeName(),
+            attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTableAttribute>() ?? throw new Exception("Could not get RESTableAttribute from resource type"),
             delegates: ResolveDelegateSet<TResource, TResource>(delegates),
             views: GetViews<TResource>(),
             provider: this,
@@ -454,15 +456,15 @@ namespace RESTable.Resources
 
         private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>
         (
-            string fullName = null,
-            RESTableAttribute attribute = null,
-            DelegateSet<TWrapped> delegates = null
+            string? fullName = null,
+            RESTableAttribute? attribute = null,
+            DelegateSet<TWrapped>? delegates = null
         )
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new EntityResource<TWrapped>
         (
             fullName: fullName ?? typeof(TWrapper).GetRESTableTypeName(),
-            attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTableAttribute>(),
+            attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTableAttribute>() ?? throw new Exception("Could not get RESTableAttribute from resource type"),
             delegates: ResolveDelegateSet<TWrapper, TWrapped>(delegates),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this,

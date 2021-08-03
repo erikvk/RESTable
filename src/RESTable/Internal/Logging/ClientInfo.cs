@@ -3,15 +3,15 @@ using RESTable.Resources;
 
 namespace RESTable.Internal.Logging
 {
-    internal struct ClientInfo
+    internal readonly struct ClientInfo
     {
-        public string ClientIP;
+        public string? ClientIP { get; }
 
-        [RESTableMember(hideIfNull: true)] 
-        public string ProxyIP { get; set; }
+        [RESTableMember(hideIfNull: true)]
+        public string? ProxyIP { get; }
 
-        public string Protocol;
-        public string UserAgent;
+        public string? Protocol { get; }
+        public string? UserAgent { get; }
 
         internal ClientInfo(Client client)
         {

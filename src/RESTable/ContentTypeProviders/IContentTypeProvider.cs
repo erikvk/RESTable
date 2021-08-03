@@ -28,7 +28,7 @@ namespace RESTable.ContentTypeProviders
         /// these are used as MIME types in request headers, they will map to this content type provider.
         /// Protocol providers can change these in order to make custom mappings to content types.
         /// </summary>
-        string[] MatchStrings { get; set; }
+        string[] MatchStrings { get; }
 
         /// <summary>
         /// Can this content type provider read data?

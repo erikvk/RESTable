@@ -11,7 +11,7 @@ namespace RESTable.Meta
 
         public JsonElementComparer(int maxHashDepth) => MaxHashDepth = maxHashDepth;
 
-        int MaxHashDepth { get; } = -1;
+        int MaxHashDepth { get; }
 
         public bool Equals(JsonElement x, JsonElement y)
         {

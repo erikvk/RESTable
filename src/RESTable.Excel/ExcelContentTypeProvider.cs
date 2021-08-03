@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -28,7 +30,7 @@ namespace RESTable.Excel
         public override ContentType ContentType => ExcelMimeType;
 
         /// <inheritdoc />
-        public override string[] MatchStrings { get; set; } = {ExcelMimeType, RESTableSpecific, Brief};
+        public override string[] MatchStrings => new[] {ExcelMimeType, RESTableSpecific, Brief};
 
         /// <inheritdoc />
         public override bool CanRead => true;
@@ -101,7 +103,7 @@ namespace RESTable.Excel
                                 columnIndex = 1;
                                 foreach (var property in properties)
                                 {
-                                    WriteExcelCell(worksheet.Cells[currentRow, columnIndex], await GetCellValue(property, entity).ConfigureAwait(false));
+                                    WriteExcelCell(worksheet.Cells[currentRow, columnIndex], await GetCellValue(property, entity!).ConfigureAwait(false));
                                     columnIndex += 1;
                                 }
                             }

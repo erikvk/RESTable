@@ -190,63 +190,70 @@ namespace RESTable.Meta
             return propsByActualName!;
         }
 
-        /// <summary>
-        /// Gets the DeclaredProperty for a given PropertyInfo
-        /// </summary>
-        public DeclaredProperty? GetDeclaredProperty(PropertyInfo member)
-        {
-            var declaringType = member.DeclaringType;
-            if (declaringType?.GetRESTableTypeName() is null)
-                throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
-            GetDeclaredProperties(declaringType, true).TryGetValue(member.Name, out var property);
-            return property;
-        }
-
-
-        /// <summary>
-        /// Parses a declared property from a key string and a type
-        /// </summary>
-        /// <param name="type">The type to match the property from</param>
-        /// <param name="key">The string to match a property from</param>
-        /// <returns></returns>
         public DeclaredProperty FindDeclaredProperty(Type type, string key)
         {
-            var isDictionary = typeof(IDictionary).IsAssignableFrom(type) ||
-                               type.ImplementsGenericInterface(typeof(IDictionary<,>));
-            if (!isDictionary && typeof(IEnumerable).IsAssignableFrom(type))
+            if (TryFindDeclaredProperty(type, key, out var property))
             {
-                var elementType = type.ImplementsGenericInterface(typeof(IEnumerable<>), out var p)
-                    ? p![0]
-                    : typeof(object);
+                return property!;
+            }
+            if (type.IsNullable(out var underlying))
+                type = underlying!;
+            var resource = ResourceCollection.GetResource(type!);
+            throw new UnknownProperty(type, resource, key);
+        }
+
+        public bool TryFindDeclaredProperty(Type type, string key, out DeclaredProperty? declaredProperty)
+        {
+            if (!IsDictionary(type) && ImplementsEnumerableInterface(type, out var parameter))
+            {
                 var collectionReadonly = typeof(IList).IsAssignableFrom(type) || type.ImplementsGenericInterface(typeof(IList<>));
                 switch (key)
                 {
-                    case "-": return new LastIndexProperty(elementType, collectionReadonly, type);
+                    case "-":
+                    {
+                        declaredProperty = new LastIndexProperty(parameter!, collectionReadonly, type);
+                        return true;
+                    }
                     case var _ when int.TryParse(key, out var integer):
-                        return new IndexProperty(integer, key, elementType, collectionReadonly, type);
+                    {
+                        declaredProperty = new IndexProperty(integer, key, parameter!, collectionReadonly, type);
+                        return true;
+                    }
+                    default:
+                    {
+                        declaredProperty = null;
+                        return false;
+                    }
                 }
             }
 
-            if (!GetDeclaredProperties(type).TryGetValue(key, out var prop))
+            if (GetDeclaredProperties(type).TryGetValue(key, out var prop))
             {
-                if (type.IsNullable(out var underlying))
-                    type = underlying!;
-                var resource = ResourceCollection.GetResource(type!);
-                throw new UnknownProperty(type, resource, key);
+                declaredProperty = prop!;
+                return true;
             }
-            return prop!;
+            declaredProperty = null;
+            return false;
         }
 
-        /// <summary>
-        /// Parses a declared property from a key string and a type
-        /// </summary>
-        /// <param name="type">The type to match the property from</param>
-        /// <param name="key">The string to match a property from</param>
-        /// <param name="declaredProperty">The declared property found</param>
-        /// <returns></returns>
-        public bool TryFindDeclaredProperty(Type type, string key, out DeclaredProperty declaredProperty)
+        private static bool IsDictionary(Type type) => typeof(IDictionary).IsAssignableFrom(type) ||
+                                                       type.ImplementsGenericInterface(typeof(IDictionary<,>));
+
+        private static bool ImplementsEnumerableInterface(Type type, out Type? parameter)
         {
-            return GetDeclaredProperties(type).TryGetValue(key, out declaredProperty);
+            if (type.ImplementsGenericInterface(typeof(IEnumerable<>), out var parameters) ||
+                type.ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out parameters))
+            {
+                parameter = parameters![0];
+                return true;
+            }
+            if (typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                parameter = typeof(object);
+                return true;
+            }
+            parameter = null;
+            return false;
         }
 
         internal void EstablishPropertyDependancies(DeclaredProperty property)

@@ -58,7 +58,7 @@ namespace RESTable.Meta
                 if (!discoveredTypes.Add(owner)) return;
                 if (owner.ImplementsGenericInterface(typeof(IEnumerable<>), out var p))
                 {
-                    var elementType = p[0];
+                    var elementType = p![0];
                     var link = new PropertyLink(this, rootWard, new AnyIndexProperty(elementType, owner));
                     recurseTree(elementType, link);
                 }

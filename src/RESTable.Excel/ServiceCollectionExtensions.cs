@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using RESTable.ContentTypeProviders;
 using RESTable.Excel;

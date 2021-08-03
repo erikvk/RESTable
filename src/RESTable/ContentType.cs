@@ -18,12 +18,20 @@ namespace RESTable
         /// <summary>
         /// The additional data contained in the header
         /// </summary>
-        public IReadOnlyDictionary<string, string> Data { get; }
+        public IReadOnlyDictionary<string, string>? Data { get; }
 
         /// <summary>
         /// The character set defined in the content type
         /// </summary>
-        public string CharSet => Data.TryGetValue("charset", out var charset) ? charset : null;
+        public string? CharSet
+        {
+            get
+            {
+                if (Data is null)
+                    return null;
+                return Data.TryGetValue("charset", out var charset) ? charset : null;
+            }
+        }
 
         /// <summary>
         /// The Q value for the MIME type
@@ -112,7 +120,7 @@ namespace RESTable
             foreach (var pair in parts.Skip(1).Select(i => i.TupleSplit('=', true)))
             {
                 data ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                data.TuplePut(pair);
+                data!.TuplePut(pair);
             }
             if (data is null)
             {
@@ -174,7 +182,7 @@ namespace RESTable
         {
             unchecked
             {
-                var hashCode = MediaType is not null ? MediaType.GetHashCode() : 0;
+                var hashCode = MediaType.GetHashCode();
                 hashCode = (hashCode * 397) ^ (Data is not null ? Data.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ Q.GetHashCode();
                 return hashCode;

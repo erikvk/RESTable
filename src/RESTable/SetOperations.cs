@@ -173,9 +173,9 @@ namespace RESTable
             }
         }
 
-        private static IAsyncEnumerable<JsonElement>? Distinct(IAsyncEnumerable<JsonElement>? array)
+        private static IAsyncEnumerable<JsonElement> Distinct(IAsyncEnumerable<JsonElement> array)
         {
-            return array?.Distinct(EqualityComparer);
+            return array.Distinct(EqualityComparer);
         }
 
         private static IAsyncEnumerable<JsonElement> Intersect(params IAsyncEnumerable<JsonElement>[] arrays)

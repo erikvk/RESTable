@@ -7,6 +7,6 @@ namespace RESTable.Meta.Internal
     {
         protected override bool Include(Type type) => !type.HasResourceProviderAttribute();
         protected override void Validate() { }
-        protected override Type AttributeType => null;
+        protected override Type AttributeType => null!;
     }
 }

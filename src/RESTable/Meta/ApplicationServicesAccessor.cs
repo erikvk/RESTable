@@ -4,8 +4,8 @@ namespace RESTable.Meta
 {
     internal static class ApplicationServicesAccessor
     {
-        internal static IJsonProvider JsonProvider { get; set; }
-        internal static TypeCache TypeCache { get; set; }
-        internal static ResourceCollection ResourceCollection { get; set; }
+        internal static IJsonProvider JsonProvider { get; set; } = null!;
+        internal static TypeCache TypeCache { get; set; } = null!;
+        internal static ResourceCollection ResourceCollection { get; set; } = null!;
     }
 }

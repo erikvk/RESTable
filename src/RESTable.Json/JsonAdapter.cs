@@ -24,7 +24,7 @@ namespace RESTable.Json
         public abstract ContentType ContentType { get; }
 
         /// <inheritdoc />
-        public abstract string[] MatchStrings { get; set; }
+        public abstract string[] MatchStrings { get; }
 
         /// <inheritdoc />
         public abstract bool CanRead { get; }
@@ -58,14 +58,17 @@ namespace RESTable.Json
         public abstract Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken);
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<T?> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var jsonStream = new SwappingStream();
             await using (jsonStream.ConfigureAwait(false))
             {
                 await ProduceJsonArrayAsync(stream, jsonStream).ConfigureAwait(false);
                 await foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind(), cancellationToken).ConfigureAwait(false))
-                    yield return item;
+                {
+                    if (item is not null)
+                        yield return item;
+                }
             }
         }
 

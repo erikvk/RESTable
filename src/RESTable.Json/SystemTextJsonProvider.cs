@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -31,39 +29,22 @@ namespace RESTable.Json
         private const string Brief = "json";
         private const string TextPlain = "text/plain";
 
-        /// <inheritdoc />
-        public string Name { get; }
-
-        /// <inheritdoc />
-        public ContentType ContentType { get; }
-
-        /// <inheritdoc />
-        public bool CanRead { get; }
-
-        /// <inheritdoc />
-        public bool CanWrite { get; }
-
-        /// <inheritdoc />
-        public string ContentDispositionFileExtension { get; }
-
-        /// <inheritdoc />
-        public string[] MatchStrings { get; set; }
+        public string Name => "JSON";
+        public ContentType ContentType => "application/json; charset=utf-8";
+        public bool CanRead => true;
+        public bool CanWrite => true;
+        public string ContentDispositionFileExtension => ".json";
+        public string[] MatchStrings => new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
 
         /// <summary>
         /// Creates a new instance of the <see cref="SystemTextJsonProvider"/> type
         /// </summary>
         public SystemTextJsonProvider(JsonSerializerOptionsAccessor optionsAccessor, ConverterResolver resolver)
         {
-            Options = optionsAccessor.Options;
+            Options = new JsonSerializerOptions(optionsAccessor.Options);
             Options.Converters.Add(resolver);
             OptionsIgnoreNulls = new JsonSerializerOptions(Options) {DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull};
             BufferPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
-            MatchStrings = new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
-            ContentDispositionFileExtension = ".json";
-            CanWrite = true;
-            CanRead = true;
-            ContentType = "application/json; charset=utf-8";
-            Name = "JSON";
         }
 
         private JsonSerializerOptions GetOptions(bool? prettyPrint, bool ignoreNulls)
@@ -162,7 +143,7 @@ namespace RESTable.Json
         public T? ToObject<T>(JsonElement element) => element.ToObject<T>(Options);
         public JsonElement ToJsonElement<T>(T obj) => obj.ToJsonElement(Options);
 
-        public async IAsyncEnumerable<T?> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var buffer = BufferPool.Rent(Options.DefaultBufferSize);
             JsonReaderState state = default;
@@ -183,7 +164,8 @@ namespace RESTable.Json
                     var (bytesConsumed, next, hasValue) = GetNext<T>(buffer.AsSpan(0, dataSize), ref state);
                     if (!hasValue)
                         yield break;
-                    yield return next;
+                    if (next is not null)
+                        yield return next;
                     leftOver = dataSize - (int) bytesConsumed;
                     if (leftOver != 0)
                         buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -221,21 +220,22 @@ namespace RESTable.DefaultProtocol
             }
         }
 
-        private static Task SerializeOptions(Options options, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        private static async Task SerializeOptions(Options options, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
             if (contentTypeProvider is not IJsonProvider jsonProvider)
-                return Task.CompletedTask;
+                return;
             if (options.Resource is not IResource resource)
-                return Task.CompletedTask;
+                return;
             var optionsBody = new OptionsBody(resource.Name, resource.ResourceKind, resource.AvailableMethods);
             var serializedOptions = new SerializedOptions(optionsBody);
-            return jsonProvider.SerializeAsync(toSerialize.Body, serializedOptions, cancellationToken: cancellationToken);
+            await jsonProvider.SerializeAsync(toSerialize.Body, serializedOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+            toSerialize.EntityCount = serializedOptions.DataCount;
         }
 
-        private static Task SerializeError(Error error, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        private static async Task SerializeError(Error error, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
             if (contentTypeProvider is not IJsonProvider jsonProvider)
-                return Task.CompletedTask;
+                return;
 
             string? uri = null;
             if (error.Request?.UriComponents is IUriComponents uriComponents)
@@ -245,13 +245,18 @@ namespace RESTable.DefaultProtocol
             if (error is InvalidInputEntity invalidInputEntity)
             {
                 var serializedInvalidInputEntity = new SerializedInvalidEntity(invalidInputEntity, uri);
-                return jsonProvider.SerializeAsync(toSerialize.Body, serializedInvalidInputEntity, cancellationToken: cancellationToken);
+                await jsonProvider.SerializeAsync(toSerialize.Body, serializedInvalidInputEntity, cancellationToken: cancellationToken).ConfigureAwait(false);
+                toSerialize.EntityCount = 1;
             }
-            var serializedError = new SerializedError(error, uri);
-            return jsonProvider.SerializeAsync(toSerialize.Body, serializedError, cancellationToken: cancellationToken);
+            else
+            {
+                var serializedError = new SerializedError(error, uri);
+                await jsonProvider.SerializeAsync(toSerialize.Body, serializedError, cancellationToken: cancellationToken).ConfigureAwait(false);
+                toSerialize.EntityCount = 0;
+            }
         }
 
-        private static Task SerializeEntities<T>
+        private static async Task SerializeEntities<T>
         (
             IEntities<T> entities,
             ISerializedResult toSerialize,
@@ -263,19 +268,23 @@ namespace RESTable.DefaultProtocol
 
             if (contentTypeProvider is not IJsonProvider jsonProvider)
             {
-                return contentTypeProvider.SerializeCollectionAsync(toSerialize.Body, entities, cancellationToken).AsTask();
+                var count = await contentTypeProvider.SerializeCollectionAsync(toSerialize.Body, entities, cancellationToken).ConfigureAwait(false);
+                toSerialize.EntityCount = count;
+                return;
             }
 #if NET6_0_OR_GREATER
             var serializedContent = new SerializedEntitiesAsyncEnumerable<T>(entities, toSerialize);
 #else
             var serializedContent = new SerializedEntitiesEnumerable<T>(entities, toSerialize);
 #endif
-            return jsonProvider.SerializeAsync(toSerialize.Body, serializedContent, cancellationToken: cancellationToken);
+            await jsonProvider.SerializeAsync(toSerialize.Body, serializedContent, cancellationToken: cancellationToken).ConfigureAwait(false);
+            toSerialize.EntityCount = serializedContent.DataCount;
         }
 
         private static Task SerializeChange<T>(Change<T> change, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
             where T : class
         {
+            toSerialize.EntityCount = change.Count;
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return Task.CompletedTask;
 
@@ -286,6 +295,7 @@ namespace RESTable.DefaultProtocol
 
         private static Task SerializeReport(Report report, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
+            toSerialize.EntityCount = 1;
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return Task.CompletedTask;
             var serializedReport = new SerializedReport(report);

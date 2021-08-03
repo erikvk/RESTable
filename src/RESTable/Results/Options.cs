@@ -25,7 +25,7 @@ namespace RESTable.Results
             var allowedOrigins = parameters.Context.GetRequiredService<IAllowedCorsOriginsFilter>();
             if (allowedOrigins is AllCorsOriginsAllowed)
                 options.Headers.AccessControlAllowOrigin = "*";
-            else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && allowedOrigins.IsAllowed(origin))
+            else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && allowedOrigins.IsAllowed(origin!))
             {
                 options.Headers.AccessControlAllowOrigin = origin.ToString();
                 options.Headers.Vary = "Origin";

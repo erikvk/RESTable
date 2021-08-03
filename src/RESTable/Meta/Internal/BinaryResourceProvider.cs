@@ -23,8 +23,9 @@ namespace RESTable.Meta.Internal
         {
             foreach (var type in binaryTypes.OrderBy(t => t.GetRESTableTypeName()))
             {
-                var resource = (IResource) BuildBinaryMethod.MakeGenericMethod(type).Invoke(this, null);
-                ResourceCollection.AddResource(resource);
+                var resource = (IResource?) BuildBinaryMethod.MakeGenericMethod(type).Invoke(this, null);
+                if (resource is not null)
+                    ResourceCollection.AddResource(resource);
             }
         }
 

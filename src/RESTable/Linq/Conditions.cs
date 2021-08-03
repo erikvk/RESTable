@@ -16,10 +16,11 @@ namespace RESTable.Linq
         public static async IAsyncEnumerable<T> Where<T>(this IAsyncEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
             where T : class
         {
+            var conditionsArray = conditions.ToArray();
             await foreach (T entity in entities)
             {
                 var allHold = true;
-                foreach (var condition in conditions)
+                foreach (var condition in conditionsArray)
                 {
                     if (!await condition.HoldsFor(entity).ConfigureAwait(false))
                     {
@@ -33,7 +34,7 @@ namespace RESTable.Linq
                 }
             }
         }
-        
+
         /// <summary>
         /// Access all conditions with a given key (case insensitive)
         /// </summary>

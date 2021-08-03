@@ -14,6 +14,15 @@ namespace RESTable.Meta
     public class DynamicProperty : Property
     {
         /// <inheritdoc />
+        public sealed override string Name { get; internal set; }
+
+        /// <inheritdoc />
+        public sealed override string ActualName { get; internal set; }
+
+        /// <inheritdoc />
+        public sealed override Type Type { get; protected set; }
+
+        /// <inheritdoc />
         public override bool IsDynamic => true;
 
         /// <summary>
@@ -48,7 +57,7 @@ namespace RESTable.Meta
                 async ValueTask<object?> getFromDeclared()
                 {
                     var type = obj.GetType();
-                    var prop = typeCache.FindDeclaredProperty(type, Name);
+                    typeCache.TryFindDeclaredProperty(type, Name, out var prop);
                     actualKey = prop?.Name;
                     if (prop is null)
                         value = null;
@@ -113,7 +122,7 @@ namespace RESTable.Meta
                         var type = obj.GetType();
                         try
                         {
-                            var property = typeCache.FindDeclaredProperty(type, Name);
+                            typeCache.TryFindDeclaredProperty(type, Name, out var property);
                             if (property is null) return;
                             await property.SetValue(obj, value).ConfigureAwait(false);
                         }

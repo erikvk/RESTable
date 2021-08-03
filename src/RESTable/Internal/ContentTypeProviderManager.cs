@@ -21,8 +21,6 @@ namespace RESTable.Internal
             foreach (var provider in contentTypeProvidersList)
             {
                 ValidateContentTypeProvider(provider);
-                if (provider.MatchStrings is null)
-                    continue;
                 if (provider.CanRead)
                 {
                     foreach (var mimeType in provider.MatchStrings)

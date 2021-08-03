@@ -44,10 +44,10 @@ namespace RESTable.Resources.Operations
                                                                       "context of the call to NotifyChange, and consider providing an explicit " +
                                                                       "'propertyName' parameter.");
             var typeCache = ApplicationServicesAccessor.TypeCache;
-            if (!typeCache.GetDeclaredProperties(typeof(T), groupByActualName: true).TryGetValue(propertyName, out DeclaredProperty property))
+            if (!typeCache.GetDeclaredProperties(typeof(T), groupByActualName: true).TryGetValue(propertyName, out var property))
                 throw new ArgumentException($"Could not find a property with actual name '{propertyName}' in type '{typeof(T)}'.");
 
-            property.NotifyChange
+            property!.NotifyChange
             (
                 target: target,
                 oldValue: oldValue,

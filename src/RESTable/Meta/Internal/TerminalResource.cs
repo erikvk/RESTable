@@ -84,7 +84,7 @@ namespace RESTable.Meta.Internal
                     value = context;
                     return true;
                 case var _ when parameterType.IsAssignableFrom(typeof(Headers)):
-                    value = context.WebSocket.Headers;
+                    value = context.WebSocket!.Headers;
                     return true;
                 case var _ when context.GetService(parameterType) is { } resolvedService:
                     value = resolvedService;

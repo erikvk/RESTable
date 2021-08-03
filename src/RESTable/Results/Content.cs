@@ -22,7 +22,7 @@ namespace RESTable.Results
         /// <summary>
         /// Sets the ContentDisposition header to a unique file name of a given extension
         /// </summary>
-        public void SetContentDisposition(string extension)
+        public void SetContentDisposition(string? extension)
         {
             if (extension is null) return;
             Headers["Content-Disposition"] = $"attachment;filename={Request.Resource}_{DateTime.UtcNow:yyMMddHHmmssfff}{extension}";

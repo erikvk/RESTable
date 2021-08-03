@@ -60,7 +60,7 @@ namespace RESTable
             Swapped = false;
         }
 
-        public SwappingStream(Stream existing)
+        public SwappingStream(Stream? existing)
         {
             Stream = existing ?? MemoryStreamManager.GetStream();
             Swapped = Stream is not MemoryStream;

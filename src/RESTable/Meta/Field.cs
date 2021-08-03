@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 
 namespace RESTable.Meta
@@ -8,6 +9,15 @@ namespace RESTable.Meta
     /// </summary>
     public class Field : Member
     {
+        /// <inheritdoc />
+        public sealed override string Name { get; internal set; }
+
+        /// <inheritdoc />
+        public sealed override string ActualName { get; internal set; }
+
+        /// <inheritdoc />
+        public sealed override Type Type { get; protected set; }
+
         /// <inheritdoc />
         public override bool IsReadable { get; }
 
@@ -23,7 +33,7 @@ namespace RESTable.Meta
                 IsWritable = false;
             Type = fieldInfo.FieldType;
             IsNullable = !fieldInfo.FieldType.IsValueType || fieldInfo.FieldType.IsNullable(out _);
-            IsEnum = fieldInfo.FieldType.IsEnum || fieldInfo.FieldType.IsNullable(out var @base) && @base.IsEnum;
+            IsEnum = fieldInfo.FieldType.IsEnum || fieldInfo.FieldType.IsNullable(out var @base) && @base!.IsEnum;
         }
     }
 }

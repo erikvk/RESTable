@@ -15,6 +15,15 @@ namespace RESTable.Meta
     /// </summary>
     public class DeclaredProperty : Property
     {
+        /// <inheritdoc />
+        public sealed override string Name { get; internal set; }
+
+        /// <inheritdoc />
+        public sealed override string ActualName { get; internal set; }
+
+        /// <inheritdoc />
+        public sealed override Type Type { get; protected set; }
+
         /// <summary>
         /// A unique identifier for this property
         /// </summary>
