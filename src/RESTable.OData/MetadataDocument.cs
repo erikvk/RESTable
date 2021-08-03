@@ -118,7 +118,7 @@ namespace RESTable.OData
                     foreach (var (type, members) in complexTypes)
                     {
                         var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
-                        var isOpenType = type.IsDynamic() || dynamicMembers.Any();
+                        var isOpenType = type.IsDictionary() || dynamicMembers.Any();
                         await swr.WriteAsync($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
                         await WriteMembers(swr, declaredMembers).ConfigureAwait(false);
                         await swr.WriteAsync("</ComplexType>").ConfigureAwait(false);
@@ -131,7 +131,7 @@ namespace RESTable.OData
                     foreach (var (type, members) in metadata.EntityResourceTypes.Where(t => t.Key != typeof(Metadata)))
                     {
                         var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
-                        var isOpenType = type.IsDynamic() || dynamicMembers.Any();
+                        var isOpenType = type.IsDictionary() || dynamicMembers.Any();
                         await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
                         var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
                         if (key is not null)

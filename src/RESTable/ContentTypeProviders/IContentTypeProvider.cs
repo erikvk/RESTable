@@ -63,9 +63,9 @@ namespace RESTable.ContentTypeProviders
         IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Populates the data from the byte array to all entities in the given collection. Populate calls can only be made with 
+        /// Populates the data from the stream to all entities in the given collection. Populate calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body, CancellationToken cancellationToken);
+        IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, CancellationToken cancellationToken);
     }
 }

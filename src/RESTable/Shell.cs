@@ -201,7 +201,7 @@ namespace RESTable
         {
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
-                JsonProvider.Populate(this, config);
+                await JsonProvider.PopulateAsync(this, config, cancellationToken).ConfigureAwait(false);
                 await SendShellInit(cancellationToken).ConfigureAwait(false);
                 await SendQuery().ConfigureAwait(false);
             }

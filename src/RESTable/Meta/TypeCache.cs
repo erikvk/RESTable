@@ -145,7 +145,7 @@ namespace RESTable.Meta
                     {
                         return FindAndParseDeclaredProperties(_type).Union(Make(_type.DeclaringType));
                     }
-                    case var _ when _type.IsDynamic():
+                    case var _ when _type.IsDictionary():
                     {
                         return FindAndParseDeclaredProperties(_type, flag: true).Select(p =>
                         {

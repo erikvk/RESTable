@@ -73,7 +73,7 @@ namespace RESTable
                 throw new ObjectDisposedException(nameof(Stream));
             try
             {
-                return ContentTypeProvider.Populate(source, Stream.GetBytes(), cancellationToken);
+                return ContentTypeProvider.Populate(source, Stream, cancellationToken);
             }
             finally
             {

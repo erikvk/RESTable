@@ -54,7 +54,7 @@ namespace RESTable.Json
             _ when objectType == typeof(Version) => typeof(VersionConverter),
             _ when objectType.IsEnum => typeof(JsonStringEnumConverter),
             _ when objectType == typeof(ProcessedEntity) => typeof(ProcessedEntityConverter),
-            _ when objectType.IsDynamic() => typeof(DefaultDynamicConverter<>).MakeGenericType(objectType),
+            _ when objectType.IsDictionary() => typeof(DefaultDynamicConverter<>).MakeGenericType(objectType),
             _ when TypeCache.GetDeclaredProperties(objectType).Values.All(p => !p.HasAttribute<RESTableMemberAttribute>()) => null,
             _ => typeof(DefaultDeclaredConverter<>).MakeGenericType(objectType)
         };

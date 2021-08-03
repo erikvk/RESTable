@@ -112,7 +112,7 @@ namespace RESTable.Meta.Internal
             ResourceKind = ResourceKind.EntityResource;
             if (DeclaredPropertiesFlagged)
                 OutputBindingRule = TermBindingRule.DeclaredWithDynamicFallback;
-            else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)
+            else if (typeof(T).IsDictionary() && !DeclaredPropertiesFlagged)
                 OutputBindingRule = TermBindingRule.DynamicWithDeclaredFallback;
             else OutputBindingRule = TermBindingRule.OnlyDeclared;
             RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));

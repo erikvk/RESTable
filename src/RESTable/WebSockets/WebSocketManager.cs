@@ -74,7 +74,7 @@ namespace RESTable.WebSockets
                     {
                         try
                         {
-                            JsonProvider.Populate(terminal, json);
+                            await JsonProvider.PopulateAsync(terminal, json, cancellationToken).ConfigureAwait(false);
                             await webSocket.SendText("Terminal updated", cancellationToken).ConfigureAwait(false);
                             await webSocket.SendJson(terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
                         }
@@ -94,7 +94,7 @@ namespace RESTable.WebSockets
                         try
                         {
                             var profile = webSocket.GetAppProfile();
-                            JsonProvider.Populate(profile, json);
+                            await JsonProvider.PopulateAsync(profile, json, cancellationToken).ConfigureAwait(false);
                             await webSocket.SendText("Profile updated", cancellationToken).ConfigureAwait(false);
                             await webSocket.SendJson(webSocket.GetAppProfile(), cancellationToken: cancellationToken).ConfigureAwait(false);
                         }

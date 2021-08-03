@@ -69,13 +69,16 @@ namespace RESTable.Meta
                 switch (obj)
                 {
                     case IDynamicMemberValueProvider dynamicMemberValueProvider:
+                    {
                         if (dynamicMemberValueProvider.TryGetValue(Name, out value, out actualKey))
                         {
                             Name = actualKey!;
                             return value;
                         }
                         return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
+                    }
                     case JsonElement {ValueKind: JsonValueKind.Object} element:
+                    {
                         foreach (var jsonProperty in element.EnumerateObject())
                         {
                             if (string.Equals(jsonProperty.Name, Name, StringComparison.OrdinalIgnoreCase))
@@ -86,7 +89,9 @@ namespace RESTable.Meta
                             }
                         }
                         return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
+                    }
                     case IDictionary<string, object?> dict:
+                    {
                         string capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
                         {
@@ -99,6 +104,7 @@ namespace RESTable.Meta
                             return value;
                         }
                         return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
+                    }
                     default: return await getFromDeclared().ConfigureAwait(false);
                 }
             }

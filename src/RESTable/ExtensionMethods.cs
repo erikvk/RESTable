@@ -57,8 +57,19 @@ namespace RESTable
         /// <summary>
         /// Can this type hold dynamic members? Defined as implementing the IDictionary`2 interface
         /// </summary>
-        public static bool IsDynamic(this Type type) => type.ImplementsGenericInterface(typeof(IDictionary<,>))
-                                                        || typeof(IDynamicMemberValueProvider).IsAssignableFrom(type);
+        public static bool IsDictionary(this Type type) => type.ImplementsGenericInterface(typeof(IDictionary<string, object?>));
+
+        public static bool CanBePopulated(this Type type) =>
+
+            // It must have typecode object
+            Type.GetTypeCode(type) == TypeCode.Object &&
+
+            // If it's an IEnumerable type, it must either have elements that can be populated, or 
+            // also be an ICollection type.
+            (!type.ImplementsGenericInterface(typeof(IEnumerable<>), out var pe) || pe![0]!.CanBePopulated() || type.ImplementsGenericInterface(typeof(ICollection<>))) &&
+
+            // If it's an IAsyncEnumerable type, it must have elements that can be populated
+            (!type.ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out var pa) || pa![0]!.CanBePopulated());
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)

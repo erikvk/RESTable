@@ -28,6 +28,8 @@ namespace RESTable.Meta.Internal
             customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
             owner: owner,
+            canBePopulated: type.CanBePopulated(),
+            isCollection: false,
             getter: null,
             setter: null,
             mergeOntoOwner: false,

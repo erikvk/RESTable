@@ -40,9 +40,14 @@ namespace RESTable.Json
             }
 
             reader.Read();
+
             switch (reader.TokenType)
             {
                 case JsonTokenType.Null: return default;
+                case JsonTokenType.EndObject:
+                {
+                    return ParameterLessConstructor() ?? throw new Exception($"Could not instantiate type '{typeToConvert.GetRESTableTypeName()}' while reading JSON");
+                }
                 case JsonTokenType.PropertyName:
                 {
                     var instance = ParameterLessConstructor() ?? throw new Exception($"Could not instantiate type '{typeToConvert.GetRESTableTypeName()}' while reading JSON");

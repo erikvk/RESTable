@@ -73,20 +73,19 @@ namespace RESTable.Json
         }
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, byte[] body, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var jsonStream = new SwappingStream();
             await using (jsonStream.ConfigureAwait(false))
             {
-                var populateStream = new MemoryStream(body);
 #if NETSTANDARD2_0
-                using (populateStream)
+                using (stream)
 #else
-                await using (populateStream.ConfigureAwait(false))
+                await using (stream.ConfigureAwait(false))
 #endif
                 {
-                    await ProduceJsonArrayAsync(populateStream, jsonStream).ConfigureAwait(false);
-                    await foreach (var item in JsonProvider.Populate(entities, await jsonStream.GetBytesAsync(), cancellationToken).ConfigureAwait(false))
+                    await ProduceJsonArrayAsync(stream, jsonStream).ConfigureAwait(false);
+                    await foreach (var item in JsonProvider.Populate(entities, jsonStream, cancellationToken).ConfigureAwait(false))
                         yield return item;
                 }
             }

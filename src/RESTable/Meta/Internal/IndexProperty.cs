@@ -27,6 +27,8 @@ namespace RESTable.Meta.Internal
             hidden: true,
             hiddenIfNull: false,
             isEnum: type.IsEnum,
+            isCollection: false,
+            canBePopulated: type.CanBePopulated(),
             customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
             readOnly: false,

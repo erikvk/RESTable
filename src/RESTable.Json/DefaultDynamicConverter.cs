@@ -35,9 +35,11 @@ namespace RESTable.Json
             }
 
             reader.Read();
+
             switch (reader.TokenType)
             {
                 case JsonTokenType.Null: return default;
+                case JsonTokenType.EndObject: return ParameterLessConstructor();
                 case JsonTokenType.PropertyName:
                 {
                     var instance = ParameterLessConstructor();

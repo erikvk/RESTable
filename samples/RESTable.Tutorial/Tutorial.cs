@@ -131,6 +131,24 @@ namespace RESTable.Tutorial
     {
         public string? Name { get; set; }
 
+        private Dictionary<string, object> dict;
+
+        [RESTableMember(replaceOnUpdate: true)]
+        public Dictionary<string, object> Dict
+        {
+            get => dict;
+            set => dict = value;
+        }
+
+        public int DictId => dict.GetHashCode();
+
+        public MyTest Testy { get; set; }
+
+        public MyTest()
+        {
+            dict = new Dictionary<string, object>();
+        }
+
         public IEnumerable<InvalidMember> GetInvalidMembers(IMyTest entity, RESTableContext context)
         {
             if (entity.Name == "Bananas")

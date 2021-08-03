@@ -79,6 +79,16 @@ namespace RESTable.Meta
         public bool MergeOntoOwner { get; }
 
         /// <summary>
+        /// Does this property type implement the generic ICollection{T} interface?
+        /// </summary>
+        public bool IsCollection { get; }
+
+        /// <summary>
+        /// Can this property be populated?
+        /// </summary>
+        public bool CanBePopulated { get; }
+
+        /// <summary>
         /// Does the value of this property define the values of other properties?
         /// </summary>
         public bool DefinesOtherProperties { get; internal set; }
@@ -156,6 +166,8 @@ namespace RESTable.Meta
             bool isEnum,
             bool mergeOntoOwner,
             bool readOnly,
+            bool isCollection,
+            bool canBePopulated,
             string? customDateTimeFormat,
             Operators allowedConditionOperators,
             object? excelReducer,
@@ -176,6 +188,8 @@ namespace RESTable.Meta
             Hidden = hidden;
             HiddenIfNull = hiddenIfNull;
             IsEnum = isEnum;
+            IsCollection = isCollection;
+            CanBePopulated = canBePopulated;
             AllowedConditionOperators = allowedConditionOperators;
             IsNullable = !type.IsValueType || type.IsNullable(out _) || hidden;
             CustomDateTimeFormat = customDateTimeFormat;
@@ -202,18 +216,19 @@ namespace RESTable.Meta
             ReadOnly = memberAttribute?.ReadOnly ?? false;
             Order = memberAttribute?.Order;
             ExcelReducer = null!;
-
+            IsCollection = Type.ImplementsGenericInterface(typeof(ICollection<>));
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTableViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true;
+            CanBePopulated = p.PropertyType.CanBePopulated();
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base!.IsEnum;
             IsDateTime = p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(DateTime?);
             if (memberAttribute?.ExcelReducerName is not null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
-            Getter = p.MakeDynamicGetter();
-            Setter = p.MakeDynamicSetter();
+            Getter = p.CanRead ? p.MakeDynamicGetter() : null;
+            Setter = p.CanWrite ? p.MakeDynamicSetter() : null;
             ReplaceOnUpdate = memberAttribute?.ReplaceOnUpdate == true;
         }
 

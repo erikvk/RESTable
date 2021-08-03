@@ -177,13 +177,13 @@ namespace RESTable.Resources.Operations
                 var jsonProvider = request.GetRequiredService<IJsonProvider>();
 
                 IAsyncEnumerable<T> RequestEntitiesProducer() => items
-                    .Select(item =>
+                    .ToAsyncEnumerable()
+                    .SelectAwait(async item =>
                     {
                         var (source, json) = item;
-                        jsonProvider.Populate(source, json);
+                        await jsonProvider.PopulateAsync(source, json, cancellationToken).ConfigureAwait(false);
                         return item.source;
                     })
-                    .ToAsyncEnumerable()
                     .Validate(request.EntityResource, request.Context, cancellationToken);
 
                 request.EntitiesProducer = RequestEntitiesProducer;
