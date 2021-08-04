@@ -19,10 +19,7 @@ namespace RESTable.Meta
             bool skipConditions = false,
             bool hidden = false,
             bool hiddenIfNull = false,
-            bool isEnum = false,
             bool mergeOntoOwner = false,
-            bool isCollection = false,
-            bool canBePopulated = false,
             bool readOnly = false,
             string? customDateTimeFormat = null,
             Operators allowedConditionOperators = Operators.All
@@ -37,9 +34,6 @@ namespace RESTable.Meta
             skipConditions: skipConditions,
             hidden: hidden,
             hiddenIfNull: hiddenIfNull,
-            isEnum: isEnum,
-            isCollection: isCollection,
-            canBePopulated: canBePopulated,
             customDateTimeFormat: customDateTimeFormat,
             allowedConditionOperators: allowedConditionOperators,
             owner: owner,
@@ -64,9 +58,6 @@ namespace RESTable.Meta
             bool skipConditions = false,
             bool hidden = false,
             bool hiddenIfNull = false,
-            bool isEnum = false,
-            bool isCollection = false,
-            bool canBePopulated = false,
             bool mergeOntoOwner = false,
             bool readOnly = false,
             string? customDateTimeFormat = null,
@@ -82,9 +73,6 @@ namespace RESTable.Meta
             skipConditions: skipConditions,
             hidden: hidden,
             hiddenIfNull: hiddenIfNull,
-            isEnum: isEnum,
-            isCollection: isCollection,
-            canBePopulated: canBePopulated,
             customDateTimeFormat: customDateTimeFormat,
             allowedConditionOperators: allowedConditionOperators,
             owner: typeof(TOwner),
@@ -93,14 +81,14 @@ namespace RESTable.Meta
                 ? default(Getter)
                 : async o =>
                 {
-                    var value = await getter((TOwner) o).ConfigureAwait(false);
+                    var value = await getter((TOwner)o).ConfigureAwait(false);
                     return value;
                 },
             setter: setter is null
                 ? default(Setter)
                 : async (o, v) =>
                 {
-                    await setter((TOwner) o, (TPropertyType) v!).ConfigureAwait(false);
+                    await setter((TOwner)o, (TPropertyType)v!).ConfigureAwait(false);
                 },
             mergeOntoOwner: mergeOntoOwner,
             readOnly: readOnly

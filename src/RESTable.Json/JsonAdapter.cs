@@ -73,7 +73,7 @@ namespace RESTable.Json
         }
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken) where T : notnull
         {
             var jsonStream = new SwappingStream();
             await using (jsonStream.ConfigureAwait(false))

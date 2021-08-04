@@ -89,6 +89,11 @@ namespace RESTable.Meta
         public bool CanBePopulated { get; }
 
         /// <summary>
+        /// Is this property of a value type?
+        /// </summary>
+        public bool IsValueType { get; }
+
+        /// <summary>
         /// Does the value of this property define the values of other properties?
         /// </summary>
         public bool DefinesOtherProperties { get; internal set; }
@@ -163,11 +168,8 @@ namespace RESTable.Meta
             bool skipConditions,
             bool hidden,
             bool hiddenIfNull,
-            bool isEnum,
             bool mergeOntoOwner,
             bool readOnly,
-            bool isCollection,
-            bool canBePopulated,
             string? customDateTimeFormat,
             Operators allowedConditionOperators,
             object? excelReducer,
@@ -187,9 +189,10 @@ namespace RESTable.Meta
             SkipConditions = skipConditions;
             Hidden = hidden;
             HiddenIfNull = hiddenIfNull;
-            IsEnum = isEnum;
-            IsCollection = isCollection;
-            CanBePopulated = canBePopulated;
+            IsEnum = type.IsEnum || type.IsNullable(out var @base) && @base!.IsEnum;
+            IsCollection = Type.ImplementsGenericInterface(typeof(ICollection<>));
+            CanBePopulated = type.CanBePopulated();
+            IsValueType = type.IsValueType;
             AllowedConditionOperators = allowedConditionOperators;
             IsNullable = !type.IsValueType || type.IsNullable(out _) || hidden;
             CustomDateTimeFormat = customDateTimeFormat;
@@ -225,6 +228,7 @@ namespace RESTable.Meta
             IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base!.IsEnum;
             IsDateTime = p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(DateTime?);
+            IsValueType = p.PropertyType.IsValueType;
             if (memberAttribute?.ExcelReducerName is not null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
             Getter = p.CanRead ? p.MakeDynamicGetter() : null;

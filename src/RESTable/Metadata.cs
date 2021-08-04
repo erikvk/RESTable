@@ -104,10 +104,10 @@ namespace RESTable
                         checkedTypes.Add(type);
                         break;
                     case var _ when type.IsNullable(out var baseType):
-                        parseType(baseType);
+                        parseType(baseType!);
                         break;
-                    case var _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var param) && param.Any():
-                        if (param[0].ImplementsGenericInterface(typeof(IEnumerable<>)))
+                    case var _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var param) && param!.Any():
+                        if (param![0].ImplementsGenericInterface(typeof(IEnumerable<>)))
                             break;
                         parseType(param[0]);
                         break;

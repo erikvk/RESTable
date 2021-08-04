@@ -42,10 +42,10 @@ namespace RESTable.Meta
                 var definesTarget = termValue.Parent;
                 var definesProperty = termValue.Property;
                 var definesNewValue = termValue.Value;
-                var definesDeclaredProperty = (DeclaredProperty) definesProperty;
-                definesDeclaredProperty.NotifyChange
+                var definesDeclaredProperty = (DeclaredProperty?)definesProperty;
+                definesDeclaredProperty?.NotifyChange
                 (
-                    target: definesTarget,
+                    target: definesTarget!,
                     oldValue: default(UnknownValue),
                     newValue: definesNewValue
                 );
@@ -55,10 +55,10 @@ namespace RESTable.Meta
         /// <summary>
         /// Activates this property link by registering its event listener
         /// </summary>
-        public void Activate() => Property.PropertyChanged += OnPropertyChanged;
+        public void Activate() => Property.PropertyChanged += OnPropertyChanged!;
 
         /// <inheritdoc />
-        public void Dispose() => Property.PropertyChanged -= OnPropertyChanged;
+        public void Dispose() => Property.PropertyChanged -= OnPropertyChanged!;
 
         private Term GetTermFromRoot(string componentSeparator)
         {

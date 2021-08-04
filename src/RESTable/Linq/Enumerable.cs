@@ -173,7 +173,7 @@ namespace RESTable.Linq
             return (trues, falses);
         }
 
-        internal static IAsyncEnumerable<T> UnsafeLimit<T>(this IAsyncEnumerable<T> source, bool limit = true)
+        internal static IAsyncEnumerable<T> UnsafeLimit<T>(this IAsyncEnumerable<T> source, bool limit = true) where T : notnull
         {
             if (!limit) return source;
 
@@ -191,7 +191,7 @@ namespace RESTable.Linq
             return apply();
         }
 
-        internal static IAsyncEnumerable<T> InputLimit<T>(this IAsyncEnumerable<T> source, bool limit = true)
+        internal static IAsyncEnumerable<T> InputLimit<T>(this IAsyncEnumerable<T> source, bool limit = true) where T : notnull
         {
             if (!limit) return source;
 

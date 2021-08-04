@@ -66,6 +66,6 @@ namespace RESTable.ContentTypeProviders
         /// Populates the data from the stream to all entities in the given collection. Populate calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, CancellationToken cancellationToken);
+        IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, CancellationToken cancellationToken) where T : notnull;
     }
 }

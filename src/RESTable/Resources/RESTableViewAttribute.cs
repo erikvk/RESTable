@@ -12,7 +12,7 @@ namespace RESTable.Resources
         /// <summary>
         /// A custom name for the view
         /// </summary>
-        public string CustomName { get; }
+        public string? CustomName { get; }
 
         /// <summary>
         /// If true, unknown conditions encountered when handling incoming requests
@@ -25,10 +25,10 @@ namespace RESTable.Resources
         /// <summary>
         /// View descriptions are visible in the AvailableResource resource
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         /// <inheritdoc />
-        public RESTableViewAttribute(string customName = null)
+        public RESTableViewAttribute(string? customName = null)
         {
             CustomName = customName;
         }

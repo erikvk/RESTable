@@ -67,7 +67,7 @@ namespace RESTable
         /// Populates the body onto each entity in a source collection. If the body is empty,
         /// returns null.
         /// </summary>
-        public IAsyncEnumerable<T> PopulateTo<T>(IAsyncEnumerable<T> source, CancellationToken cancellationToken)
+        public IAsyncEnumerable<T> PopulateTo<T>(IAsyncEnumerable<T> source, CancellationToken cancellationToken) where T : notnull
         {
             if (IsClosed)
                 throw new ObjectDisposedException(nameof(Stream));
@@ -204,7 +204,8 @@ namespace RESTable
         /// <returns></returns>
         public async Task<string> ToStringAsync()
         {
-            if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
+            if (IsClosed)
+                return "<The body has been disposed>";
             TryRewind();
             try
             {

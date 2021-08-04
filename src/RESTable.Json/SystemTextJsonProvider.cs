@@ -36,7 +36,7 @@ namespace RESTable.Json
         public bool CanRead => true;
         public bool CanWrite => true;
         public string ContentDispositionFileExtension => ".json";
-        public string[] MatchStrings => new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
+        public string[] MatchStrings => new[] { JsonMimeType, RESTableSpecific, Brief, TextPlain };
 
         /// <summary>
         /// Creates a new instance of the <see cref="SystemTextJsonProvider"/> type
@@ -45,7 +45,7 @@ namespace RESTable.Json
         {
             Options = new JsonSerializerOptions(optionsAccessor.Options);
             Options.Converters.Add(resolver);
-            OptionsIgnoreNulls = new JsonSerializerOptions(Options) {DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull};
+            OptionsIgnoreNulls = new JsonSerializerOptions(Options) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
             BufferPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
             TypeCache = typeCache;
         }
@@ -54,7 +54,7 @@ namespace RESTable.Json
         {
             var options = ignoreNulls ? OptionsIgnoreNulls : Options;
             if (prettyPrint.HasValue && prettyPrint.Value != options.WriteIndented)
-                options = new JsonSerializerOptions(options) {WriteIndented = prettyPrint.Value};
+                options = new JsonSerializerOptions(options) { WriteIndented = prettyPrint.Value };
             return options;
         }
 
@@ -99,7 +99,7 @@ namespace RESTable.Json
         }
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken) where T : notnull
         {
 #if NETSTANDARD2_0
             using (stream)
@@ -108,24 +108,22 @@ namespace RESTable.Json
 #endif
             {
                 var jsonElement = await JsonSerializer.DeserializeAsync<JsonElement>(stream, Options, cancellationToken).ConfigureAwait(false);
-                if (jsonElement.ValueKind != JsonValueKind.Object)
-                    throw new JsonException("Expected Object when populating from JSON");
                 var populator = new Populator(typeof(T), jsonElement, TypeCache, Options);
                 await foreach (var item in entities.ConfigureAwait(false))
                 {
                     var populated = await populator.PopulateAsync(item).ConfigureAwait(false);
-                    yield return (T) populated!;
+                    yield return (T)populated!;
                 }
             }
         }
 
-        public ValueTask PopulateAsync<T>(T target, string json, CancellationToken cancellationToken)
+        public ValueTask PopulateAsync<T>(T target, string json, CancellationToken cancellationToken) where T : notnull
         {
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(json, Options);
             return PopulateAsync(target, jsonElement, cancellationToken);
         }
 
-        public async ValueTask PopulateAsync<T>(T target, JsonElement json, CancellationToken cancellationToken)
+        public async ValueTask PopulateAsync<T>(T target, JsonElement json, CancellationToken cancellationToken) where T : notnull
         {
             var populator = new Populator(typeof(T), json, TypeCache, Options);
             await populator.PopulateAsync(target).ConfigureAwait(false);
@@ -184,7 +182,7 @@ namespace RESTable.Json
                         yield break;
                     if (next is not null)
                         yield return next;
-                    leftOver = dataSize - (int) bytesConsumed;
+                    leftOver = dataSize - (int)bytesConsumed;
                     if (leftOver != 0)
                         buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
                 }
@@ -217,6 +215,13 @@ namespace RESTable.Json
                 case JsonTokenType.StartArray:
                 {
                     reader.Read();
+                    if (reader.TokenType == JsonTokenType.EndArray)
+                    {
+                        // Empty array
+                        hasValue = false;
+                        next = default;
+                        break;
+                    }
                     next = JsonSerializer.Deserialize<T>(ref reader, Options);
                     hasValue = true;
                     break;

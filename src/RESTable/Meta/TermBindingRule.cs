@@ -12,12 +12,6 @@
         DeclaredWithDynamicFallback,
 
         /// <summary>
-        /// First finds dynamic properties, then (at runtime) searches for 
-        /// declared properties if no dynamic property was found
-        /// </summary>
-        DynamicWithDeclaredFallback,
-
-        /// <summary>
         /// Binds only declared properties, and throws an exception if no 
         /// declared property was found
         /// </summary>

@@ -25,14 +25,14 @@ namespace RESTable.Meta.Internal
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         public bool Equals(IResource? x, IResource? y) => x?.Name == y?.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
-        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public int CompareTo(IResource? other) => string.Compare(Name, other?.Name, StringComparison.Ordinal);
         public IReadOnlyCollection<Method> AvailableMethods { get; set; }
         public bool IsInternal { get; }
         public bool IsGlobal => !IsInternal;
         public bool IsInnerResource { get; }
         public string? ParentResourceName { get; }
         public bool GETAvailableToAll { get; }
-        public Type InterfaceType { get; }
+        public Type? InterfaceType { get; }
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken) => throw new InvalidOperationException();
         public BinaryResult SelectBinary(IRequest<T> request) => BinarySelector(request);
         private List<IResource> InnerResources { get; }
@@ -43,7 +43,7 @@ namespace RESTable.Meta.Internal
 
         internal BinaryResource(BinarySelector<T> binarySelector, TypeCache typeCache)
         {
-            Name = typeof(T).GetRESTableTypeName() ?? throw new Exception("Could not establish binary resource name");
+            Name = typeof(T).GetRESTableTypeName();
             Type = typeof(T);
             AvailableMethods = new[] {Method.GET};
             var attribute = typeof(T).GetCustomAttribute<RESTableAttribute>();

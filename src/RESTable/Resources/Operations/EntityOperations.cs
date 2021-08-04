@@ -73,30 +73,6 @@ namespace RESTable.Resources.Operations
             }
         }
 
-        private static IAsyncEnumerable<object> TrySelectProcessFilter(IEntityRequest<T> request, CancellationToken cancellationToken)
-        {
-            var producer = request.EntitiesProducer;
-            try
-            {
-                request.EntitiesProducer = () => EmptyEnumeration;
-                if (!request.MetaConditions.HasProcessors)
-                    return SelectFilter(request, cancellationToken);
-                return SelectProcessFilter(request, cancellationToken);
-            }
-            catch (InfiniteLoop)
-            {
-                throw;
-            }
-            catch (Exception e)
-            {
-                throw new AbortedOperation(request, ErrorCodes.AbortedSelect, e);
-            }
-            finally
-            {
-                request.EntitiesProducer = producer;
-            }
-        }
-
         private static async Task<long> TryCount(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
             try
@@ -219,13 +195,55 @@ namespace RESTable.Resources.Operations
 
         #region Operation resolvers
 
+        private static Entities<T1> MakeEntitiesDynamic<T1>(IRequest r, IAsyncEnumerable<T1> e) where T1 : class => new(r, e);
+        private static InsertedEntities<T1> MakeInsertedEntitiesDynamic<T1>(IRequest r, int c, IReadOnlyCollection<T1> e) where T1 : class => new(r, c, e);
+        private static UpdatedEntities<T1> MakeUpdatedEntitiesDynamic<T1>(IRequest r, int c, IReadOnlyCollection<T1> e) where T1 : class => new(r, c, e);
+        private static SafePostedEntities<T1> MakeSafePostedEntitiesDynamic<T1>(IRequest r, int cu, int ci, IReadOnlyCollection<T1> e) where T1 : class => new(r, cu, ci, e);
+
+        private static async Task<IReadOnlyCollection<object>> ProcessChangedEntities(IRequest request, IEnumerable<T> entities, CancellationToken cancellationToken)
+        {
+            var list = await entities
+                .ToAsyncEnumerable()
+                .Process(request.MetaConditions.Processors)
+                .Filter(request.MetaConditions.OrderBy)
+                .ToListAsync(cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            return list.AsReadOnly();
+        }
+
         internal static Func<IEntityRequest<T>, CancellationToken, Task<RequestSuccess>> GetMethodEvaluator(Method method)
         {
             Task<RequestSuccess> GetEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken)
             {
-                var entities = TrySelectProcessFilter(request, cancellationToken);
-                RequestSuccess result = MakeEntities(request, (dynamic) entities);
-                return Task.FromResult(result);
+                var producer = request.EntitiesProducer;
+                try
+                {
+                    request.EntitiesProducer = () => EmptyEnumeration;
+                    if (request.MetaConditions.HasProcessors)
+                    {
+                        var entities = SelectProcessFilter(request, cancellationToken);
+                        RequestSuccess result = MakeEntitiesDynamic(request, (dynamic)entities);
+                        return Task.FromResult(result);
+                    }
+                    else
+                    {
+                        var entities = SelectFilter(request, cancellationToken);
+                        RequestSuccess result = new Entities<T>(request, entities);
+                        return Task.FromResult(result);
+                    }
+                }
+                catch (InfiniteLoop)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    throw new AbortedOperation(request, ErrorCodes.AbortedSelect, e);
+                }
+                finally
+                {
+                    request.EntitiesProducer = producer;
+                }
             }
 
             async Task<RequestSuccess> PostEvaluator(IEntityRequest<T> request, CancellationToken cancellationToken)
@@ -234,6 +252,12 @@ namespace RESTable.Resources.Operations
                     return await SafePost(request, cancellationToken).ConfigureAwait(false);
                 var insertedEntities = Insert(request, cancellationToken);
                 var (count, entities) = await ChangeCount(insertedEntities, cancellationToken).ConfigureAwait(false);
+                if (request.MetaConditions.HasProcessors)
+                {
+                    var processedEntities = await ProcessChangedEntities(request, entities, cancellationToken).ConfigureAwait(false);
+                    RequestSuccess requestSuccess = MakeInsertedEntitiesDynamic(request, count, (dynamic)processedEntities);
+                    return requestSuccess;
+                }
                 return new InsertedEntities<T>(request, count, entities);
             }
 
@@ -249,6 +273,12 @@ namespace RESTable.Resources.Operations
                     {
                         var insertedEntities = Insert(request, cancellationToken);
                         var (count, entities) = await ChangeCount(insertedEntities, cancellationToken).ConfigureAwait(false);
+                        if (request.MetaConditions.HasProcessors)
+                        {
+                            var processedEntities = await ProcessChangedEntities(request, entities, cancellationToken).ConfigureAwait(false);
+                            RequestSuccess requestSuccess = MakeInsertedEntitiesDynamic(request, count, (dynamic)processedEntities);
+                            return requestSuccess;
+                        }
                         return new InsertedEntities<T>(request, count, entities);
                     }
                     case 1 when request.GetCustomUpdater() is null && !request.Body.CanRead:
@@ -260,6 +290,12 @@ namespace RESTable.Resources.Operations
                         request.Selector = () => source.ToAsyncEnumerable();
                         var updatedEntities = Update(request, cancellationToken);
                         var (count, entities) = await ChangeCount(updatedEntities, cancellationToken).ConfigureAwait(false);
+                        if (request.MetaConditions.HasProcessors)
+                        {
+                            var processedEntities = await ProcessChangedEntities(request, entities, cancellationToken).ConfigureAwait(false);
+                            RequestSuccess requestSuccess = MakeUpdatedEntitiesDynamic(request, count, (dynamic)processedEntities);
+                            return requestSuccess;
+                        }
                         return new UpdatedEntities<T>(request, count, entities);
                     }
                 }
@@ -275,6 +311,12 @@ namespace RESTable.Resources.Operations
             {
                 var updatedEntities = Update(request, cancellationToken);
                 var (count, entities) = await ChangeCount(updatedEntities, cancellationToken).ConfigureAwait(false);
+                if (request.MetaConditions.HasProcessors)
+                {
+                    var processedEntities = await ProcessChangedEntities(request, entities, cancellationToken).ConfigureAwait(false);
+                    RequestSuccess requestSuccess = MakeUpdatedEntitiesDynamic(request, count, (dynamic)processedEntities);
+                    return requestSuccess;
+                }
                 return new UpdatedEntities<T>(request, count, entities);
             }
 
@@ -300,7 +342,7 @@ namespace RESTable.Resources.Operations
         }
 
 
-        private static async Task<(int count, IReadOnlyCollection<T> changedEntities)> ChangeCount
+        private static async Task<(int count, T[] changedEntities)> ChangeCount
         (
             IAsyncEnumerable<T> changedEntities,
             CancellationToken cancellationToken,
@@ -315,7 +357,7 @@ namespace RESTable.Resources.Operations
                     entityList.Add(item);
                 count += 1;
             }
-            IReadOnlyCollection<T> changedEntitiesArray = count <= maxNumberOfChangedEntities ? entityList.AsReadOnly() : Array.Empty<T>();
+            var changedEntitiesArray = count <= maxNumberOfChangedEntities ? entityList.ToArray() : Array.Empty<T>();
             return (count, changedEntitiesArray);
         }
 
@@ -349,23 +391,16 @@ namespace RESTable.Resources.Operations
             return (updatedCount, insertedCount, changedEntitiesArray);
         }
 
-
-        /// <summary>
-        /// Needed since some <see cref="Entities{T}"/> instances are created using dynamic binding, which requires
-        /// a separate static method in a non-generic class.
-        /// </summary>
-        private static Entities<T1> MakeEntities<T1>(IRequest r, IAsyncEnumerable<T1> e) where T1 : class => new(r, e);
-
         #endregion
 
         #region SafePost
 
-        private static async Task<RequestSuccess> SafePost(IRequest request, CancellationToken cancellationToken)
+        private static async Task<RequestSuccess> SafePost(IEntityRequest<T> request, CancellationToken cancellationToken)
         {
             try
             {
                 var jsonProvider = request.GetRequiredService<IJsonProvider>();
-                var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
+                var innerRequest = (IEntityRequest<T>)request.Context.CreateRequest<T>();
                 var (toInsert, toUpdate) = await GetSafePostTasks(request, innerRequest).ConfigureAwait(false);
                 var (insertedEntities, updatedEntities) = (EmptyEnumeration, EmptyEnumeration);
                 if (toUpdate.Any())
@@ -380,6 +415,13 @@ namespace RESTable.Resources.Operations
                     insertedEntities = Insert(innerRequest, cancellationToken);
                 }
                 var (updatedCount, insertedCount, changedEntities) = await SafePostCount(updatedEntities, insertedEntities, cancellationToken).ConfigureAwait(false);
+
+                if (request.MetaConditions.HasProcessors)
+                {
+                    var processedEntities = await ProcessChangedEntities(request, changedEntities, cancellationToken).ConfigureAwait(false);
+                    RequestSuccess requestSuccess = MakeSafePostedEntitiesDynamic(request, updatedCount, insertedCount, (dynamic)processedEntities);
+                    return requestSuccess;
+                }
                 return new SafePostedEntities<T>(request, updatedCount, insertedCount, changedEntities);
             }
             catch (Exception e)

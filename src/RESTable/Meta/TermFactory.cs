@@ -125,7 +125,6 @@ namespace RESTable.Meta
                             {
                                 return DynamicProperty.Parse(str);
                             }
-                        case TermBindingRule.DynamicWithDeclaredFallback: return DynamicProperty.Parse(str, true);
                         case TermBindingRule.OnlyDeclared:
                             try
                             {

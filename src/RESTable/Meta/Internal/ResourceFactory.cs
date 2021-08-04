@@ -94,8 +94,6 @@ namespace RESTable.Meta.Internal
 
         private void ValidateEntityResourceProviders()
         {
-            if (ExternalResourceProviders is null) return;
-
             var entityResourceProviders = ExternalResourceProviders
                 .Select(p => p as IEntityResourceProviderInternal ??
                              throw new InvalidEntityResourceProviderException(p.GetType(),
@@ -109,11 +107,11 @@ namespace RESTable.Meta.Internal
                 provider.Validate();
             }
             if (entityResourceProviders.ContainsDuplicates(p => p.GetType().GetRESTableTypeName(), out var typeDupe))
-                throw new InvalidEntityResourceProviderException(typeDupe.GetType(),
+                throw new InvalidEntityResourceProviderException(typeDupe!.GetType(),
                     $"Two or more external ResourceProviders with the same type '{typeDupe.GetType().GetRESTableTypeName()}' was found. Include " +
                     "only one in the call to RESTableConfig.Init()");
             if (entityResourceProviders.Select(p => p.Id.ToLower()).ContainsDuplicates(out var idDupe))
-                throw new InvalidEntityResourceProviderException(idDupe.GetType(),
+                throw new InvalidEntityResourceProviderException(idDupe!.GetType(),
                     "Two or more external ResourceProviders had simliar type names, which could lead to confusion. Only one provider " +
                     $"should be associated with '{idDupe}'");
             foreach (var provider in entityResourceProviders.OfType<IProceduralEntityResourceProvider>())
@@ -154,7 +152,7 @@ namespace RESTable.Meta.Internal
             var allTypes = typeof(object).GetSubclasses().ToList();
             var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTableAttribute>(out var a) && a is not RESTableProceduralAttribute).ToArray();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTableViewAttribute>()).ToArray();
-            if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.GetRESTableTypeName()?.ToLower() ?? "unknown", out var dupe))
+            if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.GetRESTableTypeName().ToLower(), out var dupe))
                 throw new InvalidResourceDeclarationException("Types used by RESTable must have unique case insensitive names. Found " +
                                                               $"multiple types with case insensitive name '{dupe}'.");
 
@@ -172,11 +170,11 @@ namespace RESTable.Meta.Internal
                     if (typeof(IResourceWrapper).IsAssignableFrom(resource))
                     {
                         var wrapped = resource.GetWrappedType();
-                        if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != wrapped)
+                        if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param![0] != wrapped)
                             throw new InvalidResourceViewDeclarationException(viewType,
-                                $"Expected view type to implement ISelector<{wrapped.GetRESTableTypeName()}>");
+                                $"Expected view type to implement ISelector<{wrapped!.GetRESTableTypeName()}>");
                     }
-                    else if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != resource)
+                    else if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param![0] != resource)
                         throw new InvalidResourceViewDeclarationException(viewType,
                             $"Expected view type to implement ISelector<{resource.GetRESTableTypeName()}>");
                     var resourceProperties = TypeCache.GetDeclaredProperties(resource);
@@ -199,7 +197,7 @@ namespace RESTable.Meta.Internal
                 .Where(group => group.Key is not null);
             foreach (var group in resourceGroups)
             {
-                var parentResource = (IResourceInternal) ResourceCollection.SafeGetResource(group.Key);
+                var parentResource = (IResourceInternal?)ResourceCollection.SafeGetResource(group.Key!);
                 if (parentResource is null)
                     throw new InvalidResourceDeclarationException(
                         $"Resource type(s) {string.Join(", ", group.Select(item => $"'{item.Name}'"))} is/are declared " +
@@ -226,8 +224,7 @@ namespace RESTable.Meta.Internal
                             return (provider, @class, baseType);
                     }
                     return default;
-                })
-                .Where(t => t.provider is not null))
+                }))
             {
                 var resourceProvider = EntityResourceProviders.Values
                     .Where(_provider => _provider is IProceduralEntityResourceProvider)

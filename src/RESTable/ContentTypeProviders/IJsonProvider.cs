@@ -8,8 +8,8 @@ namespace RESTable.ContentTypeProviders
 {
     public interface IJsonProvider : IContentTypeProvider
     {
-        ValueTask PopulateAsync<T>(T target, string json, CancellationToken cancellationToken);
-        ValueTask PopulateAsync<T>(T target, JsonElement json, CancellationToken cancellationToken);
+        ValueTask PopulateAsync<T>(T target, string json, CancellationToken cancellationToken) where T : notnull;
+        ValueTask PopulateAsync<T>(T target, JsonElement json, CancellationToken cancellationToken) where T : notnull;
 
         string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false);
         Task SerializeAsync<T>(Stream stream, T entity, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new());

@@ -127,6 +127,15 @@ namespace RESTable.Tutorial
     }
 
     [RESTable, InMemory]
+    public class MyDict : Dictionary<string, object?>
+    {
+        public string Name { get; set; }
+        public MyDict? Inner { get; set; }
+        public int? InnerId => Inner?.GetHashCode();
+        public List<MyDict> Inners { get; } = new();
+    }
+
+    [RESTable, InMemory]
     public class MyTest : IValidator<IMyTest>, IMyTest
     {
         public string? Name { get; set; }
@@ -221,7 +230,7 @@ namespace RESTable.Tutorial
 
         public async IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
+            var number = (int)(request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
             for (var i = 0; i < number; i += 1)
             {
                 await BufferBlock.SendAsync(Count += 1, cancellationToken).ConfigureAwait(false);
@@ -239,7 +248,7 @@ namespace RESTable.Tutorial
         {
             await foreach (var value in Test2.BufferBlock.ToAsyncEnumerable(cancellationToken: cancellationToken))
             {
-                yield return new Test {Value = value};
+                yield return new Test { Value = value };
             }
         }
     }
@@ -251,15 +260,15 @@ namespace RESTable.Tutorial
 
         public async IAsyncEnumerable<Test3> SelectAsync(IRequest<Test3> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            yield return new Test3 {Value = 0};
+            yield return new Test3 { Value = 0 };
             await Task.Delay(2000, cancellationToken);
-            yield return new Test3 {Value = 1};
+            yield return new Test3 { Value = 1 };
             await Task.Delay(2000, cancellationToken);
-            yield return new Test3 {Value = 2};
+            yield return new Test3 { Value = 2 };
             await Task.Delay(2000, cancellationToken);
-            yield return new Test3 {Value = 3};
+            yield return new Test3 { Value = 3 };
             await Task.Delay(2000, cancellationToken);
-            yield return new Test3 {Value = 4};
+            yield return new Test3 { Value = 4 };
             await Task.Delay(2000, cancellationToken);
         }
     }
@@ -288,7 +297,7 @@ namespace RESTable.Tutorial
                 if (count == 0)
                     newest = superhero;
                 count += 1;
-                genderCount[(int) superhero.Gender] += 1;
+                genderCount[(int)superhero.Gender] += 1;
                 if (superhero.Year > newest?.Year)
                     newest = superhero;
             }
@@ -296,9 +305,9 @@ namespace RESTable.Tutorial
             yield return new SuperheroReport
             {
                 NumberOfSuperheroes = count,
-                NumberOfFemaleHeroes = genderCount[(int) Female],
-                NumberOfMaleHeroes = genderCount[(int) Male],
-                NumberOfOtherGenderHeroes = genderCount[(int) Other],
+                NumberOfFemaleHeroes = genderCount[(int)Female],
+                NumberOfMaleHeroes = genderCount[(int)Male],
+                NumberOfOtherGenderHeroes = genderCount[(int)Other],
                 NewestSuperhero = newest
             };
         }

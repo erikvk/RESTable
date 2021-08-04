@@ -97,10 +97,10 @@ namespace RESTable.Meta
             {
                 switch (resource)
                 {
-                    case var _ when resource.IsInternal: return new[] {resource.Name};
+                    case var _ when resource.IsInternal: return new[] { resource.Name };
                     case var _ when resource.IsInnerResource:
                         var dots = resource.Name.Count('.');
-                        return resource.Name.Split(new[] {'.'}, dots);
+                        return resource.Name.Split(new[] { '.' }, dots);
                     default: return resource.Name.Split('.');
                 }
             }
@@ -144,7 +144,7 @@ namespace RESTable.Meta
         /// <param name="error">Describes the error that occured when locating the resource (if any)</param>
         /// <param name="kind">The resource kind to filter results against</param>
         /// </summary>
-        public bool TryFindResource(string searchString, out IResource resource, out Error error, ResourceKind kind = ResourceKind.All)
+        public bool TryFindResource(string searchString, out IResource? resource, out Error? error, ResourceKind kind = ResourceKind.All)
         {
             searchString = searchString.ToLower();
             error = null;
@@ -172,7 +172,7 @@ namespace RESTable.Meta
         /// <param name="resource">The found resource (if any)</param>
         /// <param name="error">Describes the error that occured when locating the resource (if any)</param>
         /// </summary>
-        public bool TryFindResource<T>(string searchString, out T resource, out Error error) where T : IResource
+        public bool TryFindResource<T>(string searchString, out T? resource, out Error? error) where T : IResource
         {
             var kind = typeof(T).GetResourceKind();
             if (!TryFindResource(searchString, out var _resource, out error, kind))
@@ -180,7 +180,7 @@ namespace RESTable.Meta
                 resource = default;
                 return false;
             }
-            resource = (T) _resource;
+            resource = (T)_resource!;
             return true;
         }
 
@@ -198,7 +198,7 @@ namespace RESTable.Meta
             {
                 case 0:
                     if (TryFindResource(searchString, out var resource, out _))
-                        return new[] {resource};
+                        return new[] { resource! };
                     return Array.Empty<IResource>();
                 case 1 when searchString.Last() != '*':
                     throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
@@ -217,12 +217,12 @@ namespace RESTable.Meta
         /// <summary>
         /// Tries to retrieve the resource with the given name
         /// </summary>
-        public bool TryGetResource(string name, out IResource resource) => ResourceByName.TryGetValue(name, out resource);
+        public bool TryGetResource(string name, out IResource? resource) => ResourceByName.TryGetValue(name, out resource);
 
         /// <summary>
         /// Tries to retrieve the resource with the given type
         /// </summary>
-        public bool TryGetResource(Type type, out IResource resource) => ResourceByType.TryGetValue(type, out resource);
+        public bool TryGetResource(Type type, out IResource? resource) => ResourceByType.TryGetValue(type, out resource);
 
         /// Gets the resource for a given type, or throws an UnknownResource exception if there is no such resource
         /// </summary>
@@ -243,7 +243,7 @@ namespace RESTable.Meta
         /// Finds a resource by name (case insensitive) and returns null
         /// if no resource is found
         /// </summary>
-        public IResource SafeGetResource(string name) => ResourceByName.SafeGet(name);
+        public IResource? SafeGetResource(string name) => ResourceByName.SafeGet(name);
 
         /// <summary>
         /// Gets the terminal resource for a given type, and throws an UnknownResource exception 

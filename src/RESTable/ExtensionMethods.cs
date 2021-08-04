@@ -59,17 +59,7 @@ namespace RESTable
         /// </summary>
         public static bool IsDictionary(this Type type) => type.ImplementsGenericInterface(typeof(IDictionary<string, object?>));
 
-        public static bool CanBePopulated(this Type type) =>
-
-            // It must have typecode object
-            Type.GetTypeCode(type) == TypeCode.Object &&
-
-            // If it's an IEnumerable type, it must either have elements that can be populated, or 
-            // also be an ICollection type.
-            (!type.ImplementsGenericInterface(typeof(IEnumerable<>), out var pe) || pe![0]!.CanBePopulated() || type.ImplementsGenericInterface(typeof(ICollection<>))) &&
-
-            // If it's an IAsyncEnumerable type, it must have elements that can be populated
-            (!type.ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out var pa) || pa![0]!.CanBePopulated());
+        public static bool CanBePopulated(this Type type) => !type.IsValueType && Type.GetTypeCode(type) == TypeCode.Object;
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
@@ -221,7 +211,7 @@ namespace RESTable
         /// </summary>
         public static (string, string?) TupleSplit(this string str, char separator, bool trim = false)
         {
-            var split = str.Split(new[] {separator}, 2, StringSplitOptions.RemoveEmptyEntries);
+            var split = str.Split(new[] { separator }, 2, StringSplitOptions.RemoveEmptyEntries);
             return trim switch
             {
                 false => split.Length switch
@@ -245,7 +235,7 @@ namespace RESTable
         /// </summary>
         public static (string, string?) TupleSplit(this string str, string separator, bool trim = false)
         {
-            var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
+            var split = str.Split(new[] { separator }, 2, StringSplitOptions.None);
             return trim switch
             {
                 false => split.Length switch
@@ -762,7 +752,7 @@ namespace RESTable
                 case "": return "";
             }
 
-            if (property is DeclaredProperty {IsEnum: true} prop)
+            if (property is DeclaredProperty { IsEnum: true } prop)
             {
                 try
                 {
@@ -914,7 +904,7 @@ namespace RESTable
         /// <summary>
         /// Converts an HTTP status code to the underlying numeric code
         /// </summary>
-        internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort) statusCode;
+        internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort)statusCode;
 
         /// <summary>
         /// Creates a formatted string representation of the URI components,

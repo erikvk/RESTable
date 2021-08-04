@@ -45,7 +45,7 @@ namespace RESTable.Meta
 
         internal IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(Type type, bool flag = false)
         {
-            if (type.HasAttribute<RESTableMemberAttribute>(out var memberAttribute) && memberAttribute.Ignored)
+            if (type.HasAttribute<RESTableMemberAttribute>(out var memberAttribute) && memberAttribute!.Ignored)
                 return Array.Empty<DeclaredProperty>();
             return ParseDeclaredProperties(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), flag);
         }
@@ -59,7 +59,7 @@ namespace RESTable.Meta
         public EntityTypeContract GetEntityTypeContract(Type type)
         {
             if (EntityTypeContracts.TryGetValue(type, out var value))
-                return value;
+                return value!;
             GetDeclaredProperties(type);
             return EntityTypeContracts[type];
         }
@@ -78,7 +78,7 @@ namespace RESTable.Meta
                     {
                         return ParseDeclaredProperties
                         (
-                            props: new[] {_type}
+                            props: new[] { _type }
                                 .Concat(_type.GetInterfaces())
                                 .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public)),
                             flag: false
@@ -103,7 +103,7 @@ namespace RESTable.Meta
                                 return null;
                             })
                             .Where(group => @group.Key is not null)
-                            .ToDictionary(m => m.Key, m => (
+                            .ToDictionary(m => m.Key!, m => (
                                 getter: m.FirstOrDefault(p => p.GetParameters().Length == 0),
                                 setter: m.FirstOrDefault(p => p.GetParameters().Length == 1)
                             ));
@@ -112,23 +112,23 @@ namespace RESTable.Meta
                             var (getter, setter) = targetsByProp.SafeGet(p.ActualName);
                             if (p.IsReadable)
                             {
-                                p.ActualName = getter.GetInstructions()
-                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && getter.IsSpecialName
-                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                p.ActualName = getter!.GetInstructions()
+                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && getter!.IsSpecialName
+                                        ? type!.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                             .FirstOrDefault(prop => prop.GetGetMethod() == calledMethod)
                                         : null)
                                     .LastOrDefault(prop => prop is not null)?
-                                    .Name;
+                                    .Name!;
                             }
                             else if (p.IsWritable)
                             {
-                                p.ActualName = setter.GetInstructions()
-                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && setter.IsSpecialName
-                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                p.ActualName = setter!.GetInstructions()
+                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && setter!.IsSpecialName
+                                        ? type!.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                             .FirstOrDefault(prop => prop.GetSetMethod() == calledMethod)
                                         : null)
                                     .LastOrDefault(prop => prop is not null)?
-                                    .Name;
+                                    .Name!;
                             }
                             return p;
                         });
@@ -258,9 +258,9 @@ namespace RESTable.Meta
 
         internal void EstablishPropertyDependancies(DeclaredProperty property)
         {
-            if (property.HasAttribute<DefinesAttribute>(out var dAttribute) && dAttribute.Terms is string[] dArgs && dArgs.Any())
+            if (property.HasAttribute<DefinesAttribute>(out var dAttribute) && dAttribute!.Terms is string[] dArgs && dArgs.Any())
             {
-                foreach (var term in dArgs.Select(name => TermFactory.MakeOrGetCachedTerm(property.Owner, name, ".", TermBindingRule.OnlyDeclared)))
+                foreach (var term in dArgs.Select(name => TermFactory.MakeOrGetCachedTerm(property.Owner!, name, ".", TermBindingRule.OnlyDeclared)))
                     property.DefinesPropertyTerms.Add(term);
                 property.DefinesOtherProperties = true;
             }

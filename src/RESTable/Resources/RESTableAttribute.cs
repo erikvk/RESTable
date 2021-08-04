@@ -26,13 +26,6 @@ namespace RESTable.Resources
         public bool AllowDynamicConditions { get; set; }
 
         /// <summary>
-        /// This will place a dollar sign ($) before all statically defined properties 
-        /// for this type in the REST API, to avoid capture with dynamic members. Always 
-        /// true for DDictionary resources. Not applicable for terminal resources.
-        /// </summary>
-        public bool FlagStaticMembers { get; set; }
-
-        /// <summary>
         /// Resource descriptions are visible in the AvailableResource resource
         /// </summary>
         public string? Description { get; set; }

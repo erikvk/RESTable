@@ -45,7 +45,7 @@ namespace RESTable.Meta
                     .Select(t => new EnumMember
                     (
                         name: t.Name,
-                        numericValue: (int) (Convert.ChangeType(t.GetValue(null), TypeCode.Int32) ?? -1),
+                        numericValue: (int)(Convert.ChangeType(t.GetValue(null), TypeCode.Int32) ?? -1),
                         attributes: t.GetCustomAttributes<Attribute>()
                     ))
                     .ToArray()
@@ -62,7 +62,7 @@ namespace RESTable.Meta
         /// Returns an attribute for an enumeration, or null if there is no such
         /// attribute decoration for this member
         /// </summary>
-        public T1 GetAttribute<T1>() where T1 : Attribute => Attributes.OfType<T1>().FirstOrDefault();
+        public T1? GetAttribute<T1>() where T1 : Attribute => Attributes.OfType<T1>().FirstOrDefault();
     }
 
     /// <summary>
@@ -103,26 +103,26 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the members of an enumeration
         /// </summary>
-        public static EnumMember<T>[] GetMembers() => GetMembers(null);
+        public static EnumMember<T>[] GetMembers() => GetMembers(Array.Empty<T>());
 
         /// <summary>
         /// Gets the members of an enumeration
         /// </summary>
-        public static EnumMember<T>[] GetMembers(T except) => GetMembers(new[] {except});
+        public static EnumMember<T>[] GetMembers(T except) => GetMembers(new[] { except });
 
         /// <summary>
         /// Gets the members of an enumeration
         /// </summary>
         public static EnumMember<T>[] GetMembers(IEnumerable<T> except)
         {
-            var exceptionStrings = except?.Select(e => e.ToString()).ToList();
+            var exceptionStrings = except.Select(e => e.ToString()).ToList();
             return typeof(T).IsEnum
                 ? typeof(T).GetFields()
                     .Where(field => field.FieldType.IsEnum)
-                    .Where(field => exceptionStrings?.Contains(field.Name) != true)
+                    .Where(field => exceptionStrings.Contains(field.Name) != true)
                     .Select(field => new EnumMember<T>
                     (
-                        value: (T) (field.GetValue(null) ?? -1),
+                        value: (T)(field.GetValue(null) ?? -1),
                         attributes: field.GetCustomAttributes<Attribute>()
                     ))
                     .ToArray()
@@ -135,7 +135,7 @@ namespace RESTable.Meta
         public static readonly T[] Values = typeof(T).IsEnum
             ? typeof(T).GetFields()
                 .Where(field => field.FieldType.IsEnum)
-                .Select(field => (T) (field.GetValue(null) ?? -1))
+                .Select(field => (T)(field.GetValue(null) ?? -1))
                 .ToArray()
             : throw new ArgumentException($"Type must be enum, found '{typeof(T).GetRESTableTypeName()}'");
 
@@ -156,6 +156,6 @@ namespace RESTable.Meta
         /// Returns an attribute for an enumeration, or null if there is no such
         /// attribute decoration for this member
         /// </summary>
-        public T1 GetAttribute<T1>() where T1 : Attribute => Attributes.OfType<T1>().FirstOrDefault();
+        public T1? GetAttribute<T1>() where T1 : Attribute => Attributes.OfType<T1>().FirstOrDefault();
     }
 }

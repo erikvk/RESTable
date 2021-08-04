@@ -68,7 +68,7 @@ namespace RESTable.Meta
         /// properties in this term. Flags should not change for properties after
         /// they are created.
         /// </summary>
-        private IDictionary<string, bool> Flags { get; set; }
+        private IDictionary<string, bool>? Flags { get; set; }
 
         /// <summary>
         /// Returns true if and only if all properties in the term has a given flag
@@ -88,6 +88,9 @@ namespace RESTable.Meta
 
         public Term(string componentSeparator)
         {
+            Key = null!;
+            ActualNamesKey = null!;
+
             Store = new List<Property>();
             ComponentSeparator = componentSeparator;
         }
@@ -104,7 +107,7 @@ namespace RESTable.Meta
             foreach (var property in Store)
             {
                 isDeclared = isDeclared && property is DeclaredProperty;
-                if (property is DeclaredProperty {SkipConditions: true})
+                if (property is DeclaredProperty { SkipConditions: true })
                     conditionSkip = true;
             }
             IsDeclared = isDeclared;
@@ -242,7 +245,7 @@ namespace RESTable.Meta
 
         private static Term Join(Term term1, params Property[] properties)
         {
-            return Join(term1, (IEnumerable<Property>) properties);
+            return Join(term1, (IEnumerable<Property>)properties);
         }
 
         private static Term Join(Term term1, IEnumerable<Property> properties)
@@ -268,7 +271,7 @@ namespace RESTable.Meta
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((Term) obj);
+            return Equals((Term)obj);
         }
 
         /// <inheritdoc />
@@ -276,6 +279,7 @@ namespace RESTable.Meta
         {
             unchecked
             {
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 return ((Key is not null ? Key.GetHashCode() : 0) * 397) ^ IsDeclared.GetHashCode();
             }
         }

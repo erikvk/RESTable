@@ -19,27 +19,23 @@ namespace RESTable.Json
     {
         private TypeCache TypeCache { get; }
         private HashSet<JsonConverter> CustomConverters { get; }
-
-        private static IEnumerable<JsonConverter> GetBuiltInConverters()
-        {
-            yield return new TypeConverter();
-            yield return new HeadersConverter();
-            yield return new ContentTypeConverter();
-            yield return new ContentTypesConverter();
-            yield return new ToStringConverter();
-            yield return new VersionConverter();
-            yield return new JsonStringEnumConverter();
-            yield return new ProcessedEntityConverter();
-        }
+        private IReadOnlyDictionary<Type, JsonConverter> BuiltInConverters { get; }
 
         public ConverterResolver(TypeCache typeCache, JsonSerializerOptionsAccessor optionsAccessor)
         {
             TypeCache = typeCache;
             CustomConverters = optionsAccessor.Options.Converters.ToHashSet();
-            foreach (var converter in GetBuiltInConverters())
+            BuiltInConverters = new Dictionary<Type, JsonConverter>
             {
-                optionsAccessor.Options.Converters.Add(converter);
-            }
+                [typeof(TypeConverter)] = new TypeConverter(),
+                [typeof(HeadersConverter)] = new HeadersConverter(),
+                [typeof(ContentTypeConverter)] = new ContentTypeConverter(),
+                [typeof(ContentTypesConverter)] = new ContentTypesConverter(),
+                [typeof(ToStringConverter)] = new ToStringConverter(),
+                [typeof(VersionConverter)] = new VersionConverter(),
+                [typeof(JsonStringEnumConverter)] = new JsonStringEnumConverter(),
+                [typeof(ProcessedEntityConverter)] = new ProcessedEntityConverter()
+            };
         }
 
         private Type? GetConverterType(Type objectType) => objectType switch
@@ -59,7 +55,10 @@ namespace RESTable.Json
             _ => typeof(DefaultDeclaredConverter<>).MakeGenericType(objectType)
         };
 
-        public override bool CanConvert(Type typeToConvert) => GetConverterType(typeToConvert) is not null;
+        public override bool CanConvert(Type typeToConvert)
+        {
+            return GetConverterType(typeToConvert) is not null;
+        }
 
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
@@ -68,10 +67,14 @@ namespace RESTable.Json
                 return null;
             var match = options.Converters.FirstOrDefault(c => converterType == c.GetType());
             if (match is null)
+                BuiltInConverters.TryGetValue(converterType, out match);
+            if (match is null && converterType.IsGenericType)
             {
-                if (converterType.IsGenericType)
-                    return (JsonConverter?) Activator.CreateInstance(converterType, TypeCache);
-                throw new Exception("Could not find expected converter");
+                match = (JsonConverter?)Activator.CreateInstance(converterType, TypeCache);
+            }
+            if (match is JsonConverterFactory factory)
+            {
+                match = factory.CreateConverter(typeToConvert, options);
             }
             return match;
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using RESTable.ContentTypeProviders;
 using RESTable.Json;
@@ -14,7 +15,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 AllowTrailingCommas = false,
                 IncludeFields = false,
                 PropertyNameCaseInsensitive = true,
-                WriteIndented = true
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
             jsonOptionsAction?.Invoke(jsonOptions);
             var newOptions = new JsonSerializerOptions(jsonOptions);

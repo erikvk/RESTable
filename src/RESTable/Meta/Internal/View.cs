@@ -24,7 +24,7 @@ namespace RESTable.Meta.Internal
         public string Name { get; }
 
         /// <inheritdoc />
-        public string Description { get; }
+        public string? Description { get; }
 
         /// <inheritdoc />
         public Type Type { get; }
@@ -47,19 +47,18 @@ namespace RESTable.Meta.Internal
 
         internal View(Type viewType, TypeCache typeCache)
         {
+            EntityResource = null!; // Set later
+
             var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
             Type = viewType;
-            if (viewAttribute is not null)
-            {
-                Name = viewAttribute.CustomName ?? viewType.Name;
-                ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
-                AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType);
-                Members = typeCache.GetDeclaredProperties(viewType);
-                Description = viewAttribute.Description;
-                ConditionBindingRule = viewAttribute.AllowDynamicConditions
-                    ? TermBindingRule.DeclaredWithDynamicFallback
-                    : TermBindingRule.OnlyDeclared;
-            }
+            Name = viewAttribute!.CustomName ?? viewType.Name;
+            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
+            AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType);
+            Members = typeCache.GetDeclaredProperties(viewType);
+            Description = viewAttribute.Description;
+            ConditionBindingRule = viewAttribute.AllowDynamicConditions
+                ? TermBindingRule.DeclaredWithDynamicFallback
+                : TermBindingRule.OnlyDeclared;
         }
 
         /// <inheritdoc />

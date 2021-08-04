@@ -28,7 +28,7 @@ namespace RESTable.Meta
             }
             else
             {
-                Expression readParameter = EnsureCastExpression(parameterExpression, propertyInfo.DeclaringType);
+                Expression readParameter = EnsureCastExpression(parameterExpression, propertyInfo.DeclaringType!);
 
                 resultExpression = Expression.MakeMemberAccess(readParameter, propertyInfo);
             }
@@ -37,7 +37,7 @@ namespace RESTable.Meta
 
             LambdaExpression lambdaExpression = Expression.Lambda(typeof(Func<T, object>), resultExpression, parameterExpression);
 
-            Func<T, object?> compiled = (Func<T, object?>) lambdaExpression.Compile();
+            Func<T, object?> compiled = (Func<T, object?>)lambdaExpression.Compile();
             return compiled;
         }
 
@@ -71,14 +71,14 @@ namespace RESTable.Meta
             }
             else
             {
-                Expression readInstanceParameter = EnsureCastExpression(instanceParameter, propertyInfo.DeclaringType);
+                Expression readInstanceParameter = EnsureCastExpression(instanceParameter, propertyInfo.DeclaringType!);
 
                 setExpression = Expression.Call(readInstanceParameter, setMethod, readValueParameter);
             }
 
             LambdaExpression lambdaExpression = Expression.Lambda(typeof(Action<T, object?>), setExpression, instanceParameter, valueParameter);
 
-            Action<T, object?> compiled = (Action<T, object?>) lambdaExpression.Compile();
+            Action<T, object?> compiled = (Action<T, object?>)lambdaExpression.Compile();
             return compiled;
         }
 
@@ -98,8 +98,7 @@ namespace RESTable.Meta
 
                 if (allowWidening && targetType.IsPrimitive)
                 {
-                    MethodInfo toTargetTypeMethod = typeof(Convert)
-                        .GetMethod("To" + targetType.Name, new[] {typeof(object)});
+                    var toTargetTypeMethod = typeof(Convert).GetMethod("To" + targetType.Name, new[] { typeof(object) });
 
                     if (toTargetTypeMethod != null)
                     {

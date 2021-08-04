@@ -48,7 +48,6 @@ namespace RESTable.SQLite
             if (type.IsSubclassOf(typeof(ElasticSQLiteTable)))
             {
                 attribute.AllowDynamicConditions = true;
-                attribute.FlagStaticMembers = true;
             }
         }
 
