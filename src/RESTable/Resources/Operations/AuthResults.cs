@@ -6,13 +6,13 @@
     public readonly struct AuthResults
     {
         public bool Success { get; }
-        public string FailedReason { get; }
+        public string? FailedReason { get; }
 
         /// <summary>
         /// Creates a new AuthenticationResults with the given success status and failedReason.
         /// failedReason is only used when success is false.
         /// </summary>
-        public AuthResults(bool success = true, string failedReason = null)
+        public AuthResults(bool success = true, string? failedReason = null)
         {
             Success = success;
             FailedReason = failedReason;

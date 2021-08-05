@@ -21,7 +21,7 @@ namespace RESTable.Results
         public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
 
         /// <inheritdoc />
-        public ValueTask<string> GetLogContent() => Result.GetLogContent();
+        public ValueTask<string?> GetLogContent() => Result.GetLogContent();
 
         /// <inheritdoc />
         public Headers Headers => Result.Headers;

@@ -73,11 +73,17 @@ namespace RESTable.Results
 
         internal Error(ErrorCodes code, string message) : base(code, message)
         {
+            StatusDescription = null!;
+            Context = null!;
+            Request = null!;
             Headers.Info = Message;
         }
 
         internal Error(ErrorCodes code, string? message, Exception? ie) : base(code, message, ie)
         {
+            StatusDescription = null!;
+            Context = null!;
+            Request = null!;
             if (message is null)
                 Headers.Info = ie?.Message;
             else Headers.Info = message;
@@ -93,19 +99,25 @@ namespace RESTable.Results
         public IProtocolHolder ProtocolHolder => Request;
 
         /// <inheritdoc />
-        public IRequest? Request { get; set; }
+        public IRequest Request { get; set; }
 
         /// <inheritdoc />
-        public void Dispose() => Request?.Dispose();
+        public void Dispose()
+        {
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            if (Request is not null)
+                Request.Dispose();
+        }
 
         /// <inheritdoc />
         public async ValueTask DisposeAsync()
         {
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             if (Request is not null)
                 await Request.DisposeAsync().ConfigureAwait(false);
         }
 
-        private readonly string _logContent = null;
+        private readonly string? _logContent = null;
 
         /// <inheritdoc />
         public virtual string Metadata => $"{GetType().Name};;";
@@ -114,6 +126,15 @@ namespace RESTable.Results
         /// <summary>
         /// The time elapsed from the start of reqeust evaluation
         /// </summary>
-        public TimeSpan TimeElapsed => Request?.TimeElapsed ?? default;
+        public TimeSpan TimeElapsed
+        {
+            get
+            {
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                if (Request is not null)
+                    return Request.TimeElapsed;
+                return default;
+            }
+        }
     }
 }

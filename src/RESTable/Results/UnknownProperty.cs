@@ -10,9 +10,10 @@ namespace RESTable.Results
     /// </summary>
     internal class UnknownProperty : NotFound
     {
-        internal UnknownProperty(Type targetType, IResource resource, string searchString) : base
+        internal UnknownProperty(Type targetType, IResource? resource, string searchString) : base
         (
             code: ErrorCodes.UnknownProperty,
-            info: $"Could not find any property in {(targetType.HasAttribute<RESTableViewAttribute>() ? $"view '{targetType.Name}' or type '{resource.Name}'" : $"type '{targetType.Name}'")} by '{searchString}'.") { }
+            info:
+            $"Could not find any property in {(targetType.HasAttribute<RESTableViewAttribute>() ? $"view '{targetType.Name}' or type '{resource?.Name}'" : $"type '{targetType.Name}'")} by '{searchString}'.") { }
     }
-} 
+}

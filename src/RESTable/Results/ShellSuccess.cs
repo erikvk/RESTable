@@ -8,7 +8,7 @@ namespace RESTable.Results
 
         public ShellSuccess(IProtocolHolder protocolHolder) : base(protocolHolder)
         {
-            Request = null;
+            Request = null!;
         }
     }
 }

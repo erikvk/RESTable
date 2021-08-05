@@ -129,10 +129,10 @@ namespace RESTable.Tutorial
     [RESTable, InMemory]
     public class MyDict : Dictionary<string, object?>
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public MyDict? Inner { get; set; }
         public int? InnerId => Inner?.GetHashCode();
-        public List<MyDict> Inners { get; } = new();
+        public List<MyDict> Inners { get; set; } = new();
     }
 
     [RESTable, InMemory]
@@ -146,7 +146,7 @@ namespace RESTable.Tutorial
 
         public int DictId => dict.GetHashCode();
 
-        public MyTest Testy { get; set; }
+        public MyTest? Testy { get; set; }
 
         public MyTest()
         {

@@ -7,7 +7,7 @@ namespace RESTable.Resources
 {
     internal static class MethodsExtensions
     {
-        internal static IReadOnlyList<Method> ResolveMethodRestrictions(this IEnumerable<Method> methods)
+        internal static IReadOnlyList<Method> ResolveMethodRestrictions(this IEnumerable<Method>? methods)
         {
             var methodsSet = methods?.ToHashSet();
             if (methodsSet is null || methodsSet.Count == 0)

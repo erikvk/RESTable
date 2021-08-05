@@ -50,7 +50,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTable internally. Don't call this method.
         /// </summary>
-        IProceduralEntityResource InsertProceduralResource(RESTableContext context, string name, string description, Method[] methods, dynamic data);
+        IProceduralEntityResource? InsertProceduralResource(RESTableContext context, string name, string? description, Method[] methods, dynamic? data);
 
         /// <summary>
         /// Runs a given update operation. Used by RESTable internally. Don't call this method.
@@ -60,7 +60,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Runs a given update operation. Used by RESTable internally. Don't call this method.
         /// </summary>
-        void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string newDescription);
+        void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string? newDescription);
 
         /// <summary>
         /// Deletes a dynamic entity resource entity. Used by RESTable internally. Don't call this method.

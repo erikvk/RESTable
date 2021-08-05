@@ -27,7 +27,7 @@ namespace RESTable.Json
 
         public Populator(Type toPopulate, JsonElement jsonElement, TypeCache typeCache, JsonSerializerOptions options)
         {
-            if (!toPopulate.CanBePopulated())
+            if (!typeCache.CanBePopulated(toPopulate))
                 throw new InvalidOperationException($"Cannot populate onto type '{toPopulate.GetRESTableTypeName()}'");
 
             switch (jsonElement.ValueKind)
@@ -117,7 +117,7 @@ namespace RESTable.Json
         )
         {
             var existingType = existingValue.GetType();
-            if (!existingType.CanBePopulated())
+            if (!typeCache.CanBePopulated(existingType))
             {
                 // The existing value cannot be populated, but we know what type is expected.
                 return propertyValue.ToObject(existingType, options)!;

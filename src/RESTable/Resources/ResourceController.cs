@@ -30,10 +30,10 @@ namespace RESTable.Resources
         IAsyncUpdater<TController>,
         IAsyncDeleter<TController>
         where TController : ResourceController<TController, TProvider>, new()
-        where TProvider : IEntityResourceProvider, IProceduralEntityResourceProvider
+        where TProvider : class, IEntityResourceProvider, IProceduralEntityResourceProvider
     {
-        internal static string BaseNamespace { private get; set; }
-        internal static TProvider ResourceProvider { private get; set; }
+        internal static string BaseNamespace { private get; set; } = null!;
+        internal static TProvider ResourceProvider { private get; set; } = null!;
 
         private static IEntityResourceProviderInternal ResourceProviderInternal => (IEntityResourceProviderInternal) ResourceProvider;
 
@@ -53,7 +53,7 @@ namespace RESTable.Resources
                 if (name.StartsWith($"{BaseNamespace}.", StringComparison.OrdinalIgnoreCase))
                 {
                     var nrOfDots = name.Count(c => c == '.') + 2;
-                    name = $"{BaseNamespace}.{name.Split(new[] {'.'}, nrOfDots).Last()}";
+                    name = $"{BaseNamespace}.{name.Split(new[] { '.' }, nrOfDots).Last()}";
                 }
                 else name = $"{BaseNamespace}.{name}";
             }
@@ -73,7 +73,7 @@ namespace RESTable.Resources
         protected static IEnumerable<TController> Select(RESTableContext context) => ResourceProviderInternal
             .SelectProceduralResources(context)
             .OrderBy(r => r.Name)
-            .Select(r => Make<TController>(ResourceProviderInternal.ResourceCollection.SafeGetResource(r.Name)));
+            .Select(r => Make<TController>(ResourceProviderInternal.ResourceCollection.SafeGetResource(r.Name)!));
 
         /// <summary>
         /// Inserts the current instance as a new procedural resource
@@ -85,11 +85,10 @@ namespace RESTable.Resources
             var description = Description;
             if (string.IsNullOrWhiteSpace(name))
                 throw new Exception("Missing or invalid name for new resource");
-            ResolveDynamicResourceName(ref name);
+            ResolveDynamicResourceName(ref name!);
             var methodsArray = methods.ResolveMethodRestrictions().ToArray();
 
-            var inserted =
-                ResourceProviderInternal.InsertProceduralResource(context, name, description, methodsArray, (object) Data);
+            var inserted = ResourceProviderInternal.InsertProceduralResource(context, name, description, methodsArray, (object?) Data);
             if (inserted is not null)
                 ResourceProviderInternal.InsertProcedural(context, inserted);
         }
@@ -99,13 +98,10 @@ namespace RESTable.Resources
         /// </summary>
         protected void Update(RESTableContext context)
         {
-            var procedural = ResourceProviderInternal.SelectProceduralResources(context)
-                                 ?.FirstOrDefault(item => item.Name == Name) ??
-                             throw new InvalidOperationException(
-                                 $"Cannot update resource '{Name}'. Resource has not been inserted.");
-            var resource = (IResourceInternal) ResourceProviderInternal.ResourceCollection.SafeGetResource(procedural.Type) ??
-                           throw new InvalidOperationException(
-                               $"Cannot update resource '{Name}'. Resource has not been inserted.");
+            var procedural = ResourceProviderInternal.SelectProceduralResources(context).FirstOrDefault(item => item.Name == Name) ??
+                             throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
+            var resource = (IResourceInternal) ResourceProviderInternal.ResourceCollection.SafeGetResource(procedural.Type!)! ??
+                           throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
             ResourceProviderInternal.SetProceduralResourceDescription(context, procedural, Description);
             resource.Description = Description;
             var methods = EnabledMethods.ResolveMethodRestrictions().ToArray();
@@ -118,12 +114,11 @@ namespace RESTable.Resources
         /// </summary>
         protected void Delete(RESTableContext context)
         {
-            var procedural = ResourceProviderInternal.SelectProceduralResources(context)
-                ?.FirstOrDefault(item => item.Name == Name);
+            var procedural = ResourceProviderInternal.SelectProceduralResources(context).FirstOrDefault(item => item.Name == Name);
             if (procedural is null) return;
             var type = procedural.Type;
             if (ResourceProviderInternal.DeleteProceduralResource(context, procedural))
-                ResourceProviderInternal.RemoveProceduralResource(type);
+                ResourceProviderInternal.RemoveProceduralResource(type!);
         }
 
         #region RESTable resource methods

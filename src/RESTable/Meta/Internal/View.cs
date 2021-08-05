@@ -52,8 +52,8 @@ namespace RESTable.Meta.Internal
             var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
             Type = viewType;
             Name = viewAttribute!.CustomName ?? viewType.Name;
-            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
-            AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType);
+            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType)!;
+            AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType)!;
             Members = typeCache.GetDeclaredProperties(viewType);
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions

@@ -162,14 +162,14 @@ namespace RESTable.SQLite
         }
 
         /// <inheritdoc />
-        protected override IProceduralEntityResource InsertProceduralResource(RESTableContext context, string name, string description, Method[] methods, dynamic data)
+        protected override IProceduralEntityResource InsertProceduralResource(RESTableContext context, string name, string? description, Method[] methods, dynamic? data)
         {
             var resource = new ProceduralResource
             {
                 Name = name,
                 Description = description,
                 Methods = methods,
-                BaseTypeName = data.BaseTypeName ?? throw new SQLiteException("No BaseTypeName defined in 'Data' in resource controller")
+                BaseTypeName = data?.BaseTypeName ?? throw new SQLiteException("No BaseTypeName defined in 'Data' in resource controller")
             };
             var resourceType = resource.Type;
             if (resourceType is null)
@@ -190,7 +190,7 @@ namespace RESTable.SQLite
         }
 
         /// <inheritdoc />
-        protected override void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string newDescription)
+        protected override void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string? newDescription)
         {
             var _resource = (ProceduralResource) resource;
             _resource.Description = newDescription;

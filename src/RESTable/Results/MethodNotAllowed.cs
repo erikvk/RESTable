@@ -26,6 +26,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(MethodNotAllowed)};{Request?.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(MethodNotAllowed)};{Request.Resource};{ErrorCode}";
     }
 }

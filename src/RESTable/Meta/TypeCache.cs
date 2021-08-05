@@ -21,6 +21,7 @@ namespace RESTable.Meta
     {
         internal ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache { get; }
         private ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCacheByActualName { get; }
+        private ConcurrentDictionary<Type, bool> CanBePopulatedCache { get; }
         private ConcurrentDictionary<Type, EntityTypeContract> EntityTypeContracts { get; }
         private IEnumerable<IEntityTypeContractResolver> EntityTypeContractResolvers { get; }
         internal TermFactory TermFactory { get; }
@@ -37,9 +38,55 @@ namespace RESTable.Meta
             ResourceCollection = resourceCollection;
             DeclaredPropertyCache = new ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>>();
             DeclaredPropertyCacheByActualName = new ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>>();
+            CanBePopulatedCache = new ConcurrentDictionary<Type, bool>();
             EntityTypeContracts = new ConcurrentDictionary<Type, EntityTypeContract>();
             TermFactory = new TermFactory(this, termCache, resourceCollection);
         }
+
+        #region Types
+
+        public bool CanBePopulated(Type type)
+        {
+            bool getValue() => !type.IsValueType &&
+                               Type.GetTypeCode(type) == TypeCode.Object &&
+                               (IsDictionary(type) || !ImplementsEnumerableInterface(type, out _));
+
+            if (!CanBePopulatedCache.TryGetValue(type, out var value))
+            {
+                value = CanBePopulatedCache[type] = getValue();
+            }
+            return value;
+        }
+
+        private static bool IsDictionary(Type type) => typeof(IDictionary).IsAssignableFrom(type) ||
+                                                       type.ImplementsGenericInterface(typeof(IDictionary<,>));
+
+        private static bool ImplementsEnumerableInterface(Type type, out Type? parameter)
+        {
+            if (type.ImplementsGenericInterface(typeof(IEnumerable<>), out var parameters) ||
+                type.ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out parameters))
+            {
+                parameter = parameters![0];
+                return true;
+            }
+            if (typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                parameter = typeof(object);
+                return true;
+            }
+            parameter = null;
+            return false;
+        }
+
+        public EntityTypeContract GetEntityTypeContract(Type type)
+        {
+            if (EntityTypeContracts.TryGetValue(type, out var value))
+                return value!;
+            GetDeclaredProperties(type);
+            return EntityTypeContracts[type];
+        }
+
+        #endregion
 
         #region Declared properties
 
@@ -55,14 +102,6 @@ namespace RESTable.Meta
             .Where(p => !p.GetIndexParameters().Any())
             .Select(p => new DeclaredProperty(p, flag))
             .OrderBy(p => p.Order);
-
-        public EntityTypeContract GetEntityTypeContract(Type type)
-        {
-            if (EntityTypeContracts.TryGetValue(type, out var value))
-                return value!;
-            GetDeclaredProperties(type);
-            return EntityTypeContracts[type];
-        }
 
         /// <summary>
         /// Gets the declared properties for a given type
@@ -198,13 +237,13 @@ namespace RESTable.Meta
             }
             if (type.IsNullable(out var underlying))
                 type = underlying!;
-            var resource = ResourceCollection.GetResource(type!);
+            var resource = ResourceCollection.SafeGetResource(type!);
             throw new UnknownProperty(type, resource, key);
         }
 
         public bool TryFindDeclaredProperty(Type type, string key, out DeclaredProperty? declaredProperty)
         {
-            if (!IsDictionary(type) && ImplementsEnumerableInterface(type, out var parameter))
+            if (type != typeof(string) && !IsDictionary(type) && ImplementsEnumerableInterface(type, out var parameter))
             {
                 var collectionReadonly = typeof(IList).IsAssignableFrom(type) || type.ImplementsGenericInterface(typeof(IList<>));
                 switch (key)
@@ -219,11 +258,6 @@ namespace RESTable.Meta
                         declaredProperty = new IndexProperty(integer, key, parameter!, collectionReadonly, type);
                         return true;
                     }
-                    default:
-                    {
-                        declaredProperty = null;
-                        return false;
-                    }
                 }
             }
 
@@ -233,26 +267,6 @@ namespace RESTable.Meta
                 return true;
             }
             declaredProperty = null;
-            return false;
-        }
-
-        private static bool IsDictionary(Type type) => typeof(IDictionary).IsAssignableFrom(type) ||
-                                                       type.ImplementsGenericInterface(typeof(IDictionary<,>));
-
-        private static bool ImplementsEnumerableInterface(Type type, out Type? parameter)
-        {
-            if (type.ImplementsGenericInterface(typeof(IEnumerable<>), out var parameters) ||
-                type.ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out parameters))
-            {
-                parameter = parameters![0];
-                return true;
-            }
-            if (typeof(IEnumerable).IsAssignableFrom(type))
-            {
-                parameter = typeof(object);
-                return true;
-            }
-            parameter = null;
             return false;
         }
 

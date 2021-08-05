@@ -13,11 +13,6 @@ namespace RESTable.WebSockets
 
         private List<T> Terminals { get; }
 
-        private class Empty : CombinedTerminal<T>
-        {
-            private Empty(List<T> terminals, IWebSocket combinedWebSocket) : base(new List<T>(), combinedWebSocket) { }
-        }
-        
         internal static CombinedTerminal<T> Create(IEnumerable<T> terminals)
         {
             var terminalList = new List<T>();

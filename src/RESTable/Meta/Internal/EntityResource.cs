@@ -44,7 +44,7 @@ namespace RESTable.Meta.Internal
         public void AddInnerResource(IResource resource) => InnerResources.Add(resource);
         public IEnumerable<IResource> GetInnerResources() => InnerResources.AsReadOnly();
 
-        string IResourceInternal.Description
+        string? IResourceInternal.Description
         {
             set => Description = value;
         }

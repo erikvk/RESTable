@@ -15,7 +15,7 @@ namespace RESTable.Auth
             var authResults = await resource.AuthenticateAsync(request, cancellationToken).ConfigureAwait(false);
             if (authResults.Success)
                 request.Context.Client.ResourceAuthMappings[resource] = default;
-            else throw new FailedResourceAuthentication(authResults.FailedReason);
+            else throw new FailedResourceAuthentication(authResults.FailedReason!);
         }
     }
 }

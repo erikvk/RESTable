@@ -11,8 +11,8 @@ namespace RESTable.Results
 
         public long EntityCount { get; set; }
 
-        public bool HasNextPage => EntityCount > 0 && EntityCount == (long?) Result.Request?.MetaConditions.Limit;
-        public bool HasPreviousPage => EntityCount > 0 && Result.Request?.MetaConditions.Offset > 0;
+        public bool HasNextPage => EntityCount > 0 && EntityCount == (long?) Result.Request.MetaConditions.Limit;
+        public bool HasPreviousPage => EntityCount > 0 && Result.Request.MetaConditions.Offset > 0;
 
         public MessageType MessageType => Result.MessageType;
         public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
@@ -23,7 +23,7 @@ namespace RESTable.Results
         public Body Body { get; }
         public TimeSpan TimeElapsed => Result.TimeElapsed;
 
-        public SerializedResult(IResult result, Stream customOutputStream = null)
+        public SerializedResult(IResult result, Stream? customOutputStream = null)
         {
             Result = result ?? throw new ArgumentNullException(nameof(result));
             if (result.ProtocolHolder is null)
@@ -41,13 +41,12 @@ namespace RESTable.Results
         public void Dispose()
         {
             Result.Dispose();
-            Body?.Dispose();
+            Body.Dispose();
         }
 
         public async ValueTask DisposeAsync()
         {
             await Result.DisposeAsync().ConfigureAwait(false);
-            if (Body is null) return;
             await Body.DisposeAsync().ConfigureAwait(false);
         }
     }

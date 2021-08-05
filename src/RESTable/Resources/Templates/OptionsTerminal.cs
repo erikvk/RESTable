@@ -47,7 +47,7 @@ namespace RESTable.Resources.Templates
                         await WebSocket.SendText($"> {option!.Command}", cancellationToken).ConfigureAwait(false);
                     try
                     {
-                        await option.Action(argsArray).ConfigureAwait(false);
+                        await option!.Action(argsArray).ConfigureAwait(false);
                         if (!RunSilent)
                             await WebSocket.SendText($"> Done!{Environment.NewLine}", cancellationToken).ConfigureAwait(false);
                     }

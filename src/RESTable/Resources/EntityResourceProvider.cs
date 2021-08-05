@@ -97,7 +97,7 @@ namespace RESTable.Resources
 
         void IEntityResourceProviderInternal.Validate() => Validate();
 
-        IProceduralEntityResource IEntityResourceProviderInternal.InsertProceduralResource(RESTableContext context, string n, string d, Method[] m, dynamic data)
+        IProceduralEntityResource IEntityResourceProviderInternal.InsertProceduralResource(RESTableContext context, string n, string? d, Method[] m, dynamic? data)
         {
             return InsertProceduralResource(context, n, d, m, data);
         }
@@ -107,7 +107,7 @@ namespace RESTable.Resources
             SetProceduralResourceMethods(context, resource, methods);
         }
 
-        void IEntityResourceProviderInternal.SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string newDescription)
+        void IEntityResourceProviderInternal.SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string? newDescription)
         {
             SetProceduralResourceDescription(context, resource, newDescription);
         }
@@ -205,7 +205,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Creates a new procedural entity resource object with the given name, description and methods. Used by RESTable internally. Don't call this method.
         /// </summary>
-        protected virtual IProceduralEntityResource InsertProceduralResource(RESTableContext context, string name, string description, Method[] methods, dynamic data)
+        protected virtual IProceduralEntityResource InsertProceduralResource(RESTableContext context, string name, string? description, Method[] methods, dynamic? data)
         {
             throw new NotImplementedException();
         }
@@ -221,7 +221,7 @@ namespace RESTable.Resources
         /// <summary>
         /// Runs a given update operation. Used by RESTable internally. Don't call this method.
         /// </summary>
-        protected virtual void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string newDescription)
+        protected virtual void SetProceduralResourceDescription(RESTableContext context, IProceduralEntityResource resource, string? newDescription)
         {
             throw new NotImplementedException();
         }

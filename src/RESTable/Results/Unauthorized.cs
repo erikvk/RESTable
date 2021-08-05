@@ -16,6 +16,6 @@ namespace RESTable.Results
             Headers["WWW-Authenticate"] = "Basic realm=\"REST API\", charset=\"UTF-8\"";
         }
 
-        public override string Metadata => $"{nameof(Unauthorized)};{Request?.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(Unauthorized)};{Request.Resource};{ErrorCode}";
     }
 }

@@ -25,7 +25,7 @@ namespace RESTable.WebSockets
         private long BytesReceived { get; set; }
         private long TotalSentBytesCount { get; set; }
         private WebSocketConnection? TerminalConnection { get; set; }
-        private IProtocolHolder? ProtocolHolder { get; set; }
+        private IProtocolHolder ProtocolHolder { get; set; }
         private bool _disposed;
 
         internal ITerminalResource? TerminalResource => TerminalConnection?.Resource;
@@ -97,6 +97,9 @@ namespace RESTable.WebSockets
 
         protected WebSocket(string webSocketId, RESTableContext context)
         {
+            ProtocolHolder = null!; // Set on Open()
+            LifetimeTask = null!; // Set on Open() where applicable
+            
             Id = webSocketId;
             WebSocketClosed = new CancellationTokenSource();
             Status = WebSocketStatus.Waiting;
@@ -157,7 +160,7 @@ namespace RESTable.WebSockets
             ProtocolHolder = protocolHolder;
             Context = new WebSocketContext(this, Client, protocolHolder.Context);
             await using var webSocket = this;
-            await Context.WebSocket.OpenServerWebSocket(cancellationToken, false).ConfigureAwait(false);
+            await Context.WebSocket!.OpenServerWebSocket(cancellationToken, false).ConfigureAwait(false);
             await action(this).ConfigureAwait(false);
         }
 
@@ -327,7 +330,7 @@ namespace RESTable.WebSockets
             {
                 await SendResult
                 (
-                    result: new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support text input"),
+                    result: new UnsupportedWebSocketInput($"Terminal '{TerminalConnection!.Resource!.Name}' does not support text input"),
                     cancellationToken: cancellationToken
                 ).ConfigureAwait(false);
                 return;
@@ -355,7 +358,7 @@ namespace RESTable.WebSockets
             {
                 await SendResult
                 (
-                    result: new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support binary input"),
+                    result: new UnsupportedWebSocketInput($"Terminal '{TerminalConnection!.Resource!.Name}' does not support binary input"),
                     cancellationToken: cancellationToken
                 ).ConfigureAwait(false);
                 return;
@@ -417,7 +420,7 @@ namespace RESTable.WebSockets
                 {
                     await Send(binaryData, asText, cancellationToken).ConfigureAwait(false);
                     TotalSentBytesCount += binaryData.Count;
-                    if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
+                    if (TerminalConnection?.Resource?.Name != Admin.Console.TypeName)
                     {
                         var logEvent = new WebSocketEvent
                         (
@@ -443,7 +446,7 @@ namespace RESTable.WebSockets
                 {
                     var sentBytes = await Send(binaryData, asText, cancellationToken).ConfigureAwait(false);
                     TotalSentBytesCount += sentBytes;
-                    if (TerminalConnection?.Resource.Name != Admin.Console.TypeName)
+                    if (TerminalConnection?.Resource?.Name != Admin.Console.TypeName)
                     {
                         var logEvent = new WebSocketEvent
                         (
@@ -619,7 +622,7 @@ namespace RESTable.WebSockets
             if (serializedResult is null) throw new ArgumentNullException(nameof(serializedResult));
             var content = serializedResult.Result as Content;
 
-            if (content is null || !(serializedResult.Body?.Length > 0))
+            if (content is null || !(serializedResult.Body.Length > 0))
             {
                 await SendSerializedResult(serializedResult, serializedResult.TimeElapsed, writeHeaders, disposeResult, cancellationToken)
                     .ConfigureAwait(false);
@@ -643,46 +646,46 @@ namespace RESTable.WebSockets
             buffer = null;
         }
 
-        private byte[] buffer;
+        private byte[]? buffer;
 
         private async Task CloseStream(CancellationToken cancellationToken)
         {
-            await SendText($"499: Client closed request. Streamed {StreamManifest.CurrentMessageIndex} " +
-                           $"of {StreamManifest.NrOfMessages} messages.", cancellationToken).ConfigureAwait(false);
+            await SendText($"499: Client closed request. Streamed {StreamManifest?.CurrentMessageIndex} " +
+                           $"of {StreamManifest?.NrOfMessages} messages.", cancellationToken).ConfigureAwait(false);
             StopStreaming();
         }
 
         private void StopStreaming()
         {
-            StreamManifest.Dispose();
+            StreamManifest?.Dispose();
             StreamManifest = null;
             buffer = null;
             TerminalConnection?.Unsuspend();
         }
 
-        private async Task SendManifest(CancellationToken cancellationToken) => await SendJson(StreamManifest, cancellationToken: cancellationToken).ConfigureAwait(false);
+        private async Task SendManifest(CancellationToken cancellationToken) => await SendJson(StreamManifest!, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         private async Task StreamMessage(int nr, CancellationToken cancellationToken = new())
         {
             try
             {
-                if (nr == -1) nr = StreamManifest.MessagesRemaining;
-                var endIndex = StreamManifest.CurrentMessageIndex + nr;
+                if (nr == -1) nr = StreamManifest!.MessagesRemaining;
+                var endIndex = StreamManifest!.CurrentMessageIndex + nr;
                 if (endIndex > StreamManifest.NrOfMessages)
                     endIndex = StreamManifest.NrOfMessages;
                 buffer ??= new byte[StreamManifest.BufferSize];
                 while (StreamManifest.CurrentMessageIndex < endIndex)
                 {
-                    var read = StreamManifest.Result.Body.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                    var read = StreamManifest.Result.Body.ReadAsync(buffer!, 0, buffer.Length, cancellationToken);
                     var message = StreamManifest.Messages[StreamManifest.CurrentMessageIndex];
                     await read.ConfigureAwait(false);
                     await SendBinary(new ArraySegment<byte>(buffer, 0, (int) message.Length), cancellationToken).ConfigureAwait(false);
                     message.IsSent = true;
-                    StreamManifest.MessagesStreamed += 1;
-                    StreamManifest.MessagesRemaining -= 1;
-                    StreamManifest.BytesStreamed += message.Length;
-                    StreamManifest.BytesRemaining -= message.Length;
-                    StreamManifest.CurrentMessageIndex += 1;
+                    StreamManifest!.MessagesStreamed += 1;
+                    StreamManifest!.MessagesRemaining -= 1;
+                    StreamManifest!.BytesStreamed += message.Length;
+                    StreamManifest!.BytesRemaining -= message.Length;
+                    StreamManifest!.CurrentMessageIndex += 1;
                 }
                 if (StreamManifest.Messages[StreamManifest.LastIndex].IsSent)
                 {

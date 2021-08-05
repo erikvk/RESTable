@@ -6,7 +6,7 @@ namespace RESTable.Meta.Internal
     {
         void AddInnerResource(IResource resource);
         IEnumerable<IResource> GetInnerResources();
-        string Description { set; }
+        string? Description { set; }
         IReadOnlyCollection<Method> AvailableMethods { set; }
     }
 }

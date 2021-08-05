@@ -59,8 +59,6 @@ namespace RESTable
         /// </summary>
         public static bool IsDictionary(this Type type) => type.ImplementsGenericInterface(typeof(IDictionary<string, object?>));
 
-        public static bool CanBePopulated(this Type type) => !type.IsValueType && Type.GetTypeCode(type) == TypeCode.Object;
-
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
             .ToList();
@@ -149,32 +147,26 @@ namespace RESTable
         internal static long CountBytes(this Type type)
         {
             if (type.IsEnum) return 8;
-            switch (Type.GetTypeCode(type))
+            return Type.GetTypeCode(type) switch
             {
-                case TypeCode.Object:
-                {
-                    if (type.IsNullable(out var baseType))
-                    {
-                        return CountBytes(baseType!);
-                    }
-                    throw new Exception($"Unknown type encountered: '{type.GetRESTableTypeName()}'");
-                }
-                case TypeCode.Boolean: return 4;
-                case TypeCode.Char: return 2;
-                case TypeCode.SByte: return 1;
-                case TypeCode.Byte: return 1;
-                case TypeCode.Int16: return 2;
-                case TypeCode.UInt16: return 2;
-                case TypeCode.Int32: return 4;
-                case TypeCode.UInt32: return 4;
-                case TypeCode.Int64: return 8;
-                case TypeCode.UInt64: return 8;
-                case TypeCode.Single: return 4;
-                case TypeCode.Double: return 8;
-                case TypeCode.Decimal: return 16;
-                case TypeCode.DateTime: return 8;
-                default: throw new ArgumentOutOfRangeException();
-            }
+                TypeCode.Object when type.IsNullable(out var baseType) => CountBytes(baseType!),
+                TypeCode.Object => throw new Exception($"Unknown type encountered: '{type.GetRESTableTypeName()}'"),
+                TypeCode.Boolean => 4,
+                TypeCode.Char => 2,
+                TypeCode.SByte => 1,
+                TypeCode.Byte => 1,
+                TypeCode.Int16 => 2,
+                TypeCode.UInt16 => 2,
+                TypeCode.Int32 => 4,
+                TypeCode.UInt32 => 4,
+                TypeCode.Int64 => 8,
+                TypeCode.UInt64 => 8,
+                TypeCode.Single => 4,
+                TypeCode.Double => 8,
+                TypeCode.Decimal => 16,
+                TypeCode.DateTime => 8,
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
 
         #endregion
@@ -427,6 +419,7 @@ namespace RESTable
         /// <summary>
         /// Gets the value of a key from an IDictionary, or null if the dictionary does not contain the key.
         /// </summary>
+        // ReSharper disable once ReturnTypeCanBeNotNullable
         public static TValue? SafeGet<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
         {
             if (key is null) throw new ArgumentNullException(nameof(key));
@@ -904,7 +897,7 @@ namespace RESTable
         /// <summary>
         /// Converts an HTTP status code to the underlying numeric code
         /// </summary>
-        internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort)statusCode;
+        internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort) statusCode;
 
         /// <summary>
         /// Creates a formatted string representation of the URI components,

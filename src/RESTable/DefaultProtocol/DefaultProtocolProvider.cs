@@ -238,7 +238,7 @@ namespace RESTable.DefaultProtocol
                 return;
 
             string? uri = null;
-            if (error.Request?.UriComponents is IUriComponents uriComponents)
+            if (error.Request.UriComponents is IUriComponents uriComponents)
             {
                 uri = ToUriString(uriComponents);
             }

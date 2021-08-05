@@ -27,7 +27,7 @@ namespace RESTable.Results
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
-        public abstract IRequest? Request { get; }
+        public abstract IRequest Request { get; }
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
@@ -39,7 +39,7 @@ namespace RESTable.Results
 
         /// <inheritdoc />
         [RESTableMember(hide: true)]
-        public TimeSpan TimeElapsed => Request?.TimeElapsed ?? default;
+        public TimeSpan TimeElapsed => Request.TimeElapsed;
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
@@ -48,7 +48,7 @@ namespace RESTable.Results
         /// <inheritdoc />
         public virtual ValueTask<string> GetLogMessage() => new($"{StatusCode.ToCode()}: {StatusDescription}");
 
-        public ValueTask<string> GetLogContent() => new(default(string));
+        public ValueTask<string?> GetLogContent() => new(default(string));
 
         /// <inheritdoc />
         [RESTableMember(ignore: true)]
@@ -77,17 +77,17 @@ namespace RESTable.Results
         public void ThrowIfError() { }
 
         /// <inheritdoc />
-        public void Dispose() => Request?.Dispose();
+        public void Dispose() => Request.Dispose();
 
         /// <inheritdoc />
         public async ValueTask DisposeAsync()
         {
-            if (Request is not null)
-                await Request.DisposeAsync().ConfigureAwait(false);
+            await Request.DisposeAsync().ConfigureAwait(false);
         }
 
-        protected Success(IProtocolHolder protocolHolder, Headers headers = null)
+        protected Success(IProtocolHolder protocolHolder, Headers? headers = null)
         {
+            StatusDescription = null!;
             ProtocolHolder = protocolHolder;
             Context = protocolHolder.Context;
             ExcludeHeaders = false;

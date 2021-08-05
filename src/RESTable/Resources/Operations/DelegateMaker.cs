@@ -7,7 +7,7 @@ namespace RESTable.Resources.Operations
     {
         private static Type GetMatchingInterface<TDelegate>() where TDelegate : Delegate
         {
-            var t = typeof(TDelegate).GetGenericArguments().ElementAtOrDefault(0);
+            var t = typeof(TDelegate).GetGenericArguments().ElementAt(0);
             return typeof(TDelegate) switch
             {
                 var d when d == typeof(Selector<>).MakeGenericType(t) => typeof(ISelector<>).MakeGenericType(t),
@@ -46,7 +46,7 @@ namespace RESTable.Resources.Operations
         /// <summary>
         /// Gets the given operations delegate from a given resource type definition
         /// </summary>
-        internal static TDelegate GetDelegate<TDelegate>(Type target) where TDelegate : Delegate
+        internal static TDelegate? GetDelegate<TDelegate>(Type target) where TDelegate : Delegate
         {
             var i = GetMatchingInterface<TDelegate>();
             if (!i.IsAssignableFrom(target)) return default;

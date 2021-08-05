@@ -30,12 +30,12 @@ namespace RESTable.Resources.Templates
         /// <summary>
         /// The header to use in welcome texts
         /// </summary>
-        protected virtual string WelcomeHeader => null;
+        protected virtual string? WelcomeHeader => null;
 
         /// <summary>
         /// The body to use in welcome texts. If long, include wrapping line breaks.
         /// </summary>
-        protected virtual string WelcomeBody => null;
+        protected virtual string? WelcomeBody => null;
 
         private string GetWelcomeText()
         {

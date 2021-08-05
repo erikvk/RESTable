@@ -13,6 +13,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(FeatureNotImplemented)};{Request?.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(FeatureNotImplemented)};{Request.Resource};{ErrorCode}";
     }
 }

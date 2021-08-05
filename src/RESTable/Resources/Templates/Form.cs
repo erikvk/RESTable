@@ -26,10 +26,10 @@ namespace RESTable.Resources.Templates
                 request.Cookies.Add(cookie);
             }
 
-            if (!Forms.TryGetValue(cookie.Value, out var form))
-                form = Forms[cookie.Value] = new T();
+            if (!Forms.TryGetValue(cookie.Value!, out var form))
+                form = Forms[cookie.Value!] = new T();
 
-            yield return form;
+            yield return form!;
         }
 
         IEnumerable<T> IUpdater<T>.Update(IRequest<T> request) => request.GetInputEntities();

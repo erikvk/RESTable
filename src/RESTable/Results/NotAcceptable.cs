@@ -9,7 +9,7 @@ namespace RESTable.Results
     public class NotAcceptable : Error
     {
         /// <inheritdoc />
-        public NotAcceptable(string headerValue, string expected = null) : base
+        public NotAcceptable(string headerValue, string? expected = null) : base
         (
             code: ErrorCodes.NotAcceptable,
             message: $"No supported media types were found in the Accept header. Found '{headerValue}'{(expected is not null ? $", expected {expected}" : null)}"
@@ -20,6 +20,6 @@ namespace RESTable.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(NotAcceptable)};{Request?.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(NotAcceptable)};{Request.Resource};{ErrorCode}";
     }
 }

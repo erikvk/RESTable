@@ -191,7 +191,7 @@ namespace RESTable.Meta
             HiddenIfNull = hiddenIfNull;
             IsEnum = type.IsEnum || type.IsNullable(out var @base) && @base!.IsEnum;
             IsCollection = Type.ImplementsGenericInterface(typeof(ICollection<>));
-            CanBePopulated = type.CanBePopulated();
+            CanBePopulated = ApplicationServicesAccessor.TypeCache.CanBePopulated(type);
             IsValueType = type.IsValueType;
             AllowedConditionOperators = allowedConditionOperators;
             IsNullable = !type.IsValueType || type.IsNullable(out _) || hidden;
@@ -223,7 +223,7 @@ namespace RESTable.Meta
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTableViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true;
-            CanBePopulated = p.PropertyType.CanBePopulated();
+            CanBePopulated = ApplicationServicesAccessor.TypeCache.CanBePopulated(p.PropertyType);
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base!.IsEnum;

@@ -107,7 +107,7 @@ namespace RESTable
         /// <summary>
         /// Only for outgoing streams
         /// </summary>
-        private Body(IProtocolHolder protocolHolder, Stream customOutputStream)
+        private Body(IProtocolHolder protocolHolder, Stream? customOutputStream)
         {
             ProtocolHolder = protocolHolder;
             IsIngoing = false;
@@ -189,7 +189,7 @@ namespace RESTable
             UninitializedBodyObject = null;
         }
 
-        internal static Body CreateOutputBody(IProtocolHolder protocolHolder, Stream customOutputStream)
+        internal static Body CreateOutputBody(IProtocolHolder protocolHolder, Stream? customOutputStream)
         {
             return new(protocolHolder, customOutputStream);
         }
