@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Auth;
+using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
@@ -45,6 +46,16 @@ namespace RESTable.Requests
             set => _metaConditions = value;
         }
 
+        private Stopwatch Stopwatch { get; }
+        public DateTime LogTime { get; } = DateTime.Now;
+        private RESTableConfiguration Configuration { get; }
+
+        public Func<IAsyncEnumerable<T>>? Selector { private get; set; }
+
+        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? Updater { private get; set; }
+
+        public Func<IAsyncEnumerable<T>>? EntitiesProducer { get; set; }
+
         #region Forwarding properties
 
         public Cookies Cookies => Context.Client.Cookies;
@@ -52,16 +63,11 @@ namespace RESTable.Requests
         public bool IsValid => Error is null;
         public string ProtocolIdentifier => Parameters.ProtocolIdentifier;
         public TimeSpan TimeElapsed => Stopwatch.Elapsed;
-        private Stopwatch Stopwatch { get; }
         IEntityResource<T> IEntityRequest<T>.EntityResource => (IEntityResource<T>) Resource;
-
         public Func<IAsyncEnumerable<T>>? GetCustomSelector() => Selector;
         public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? GetCustomUpdater() => Updater;
-
-        public Func<IAsyncEnumerable<T>>? Selector { private get; set; }
-        public Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? Updater { private get; set; }
-
-        public Func<IAsyncEnumerable<T>>? EntitiesProducer { get; set; }
+        public IContentTypeProvider InputContentTypeProvider => Parameters.InputContentTypeProvider;
+        public IContentTypeProvider OutputContentTypeProvider => Parameters.OutputContentTypeProvider;
 
         public IEnumerable<T> GetInputEntities() => GetInputEntitiesAsync().ToEnumerable();
 
@@ -81,9 +87,8 @@ namespace RESTable.Requests
         MessageType ILogable.MessageType => LogItem.MessageType;
         ValueTask<string> ILogable.GetLogMessage() => LogItem.GetLogMessage();
         ValueTask<string?> ILogable.GetLogContent() => LogItem.GetLogContent();
-        public DateTime LogTime { get; } = DateTime.Now;
         bool IHeaderHolder.ExcludeHeaders => HeaderHolder.ExcludeHeaders;
-        private RESTableConfiguration Configuration { get; }
+
 
         public Body Body
         {
@@ -207,6 +212,7 @@ namespace RESTable.Requests
                 result.Headers.Metadata = metadata;
             result.Headers.Version = Configuration.Version;
             result.Headers.Elapsed = result.TimeElapsed;
+            CachedProtocolProvider.ProtocolProvider.SetResultHeaders(result);
             return result;
         }
 

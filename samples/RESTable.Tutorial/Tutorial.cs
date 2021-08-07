@@ -66,6 +66,16 @@ namespace RESTable.Tutorial
             .UseRESTableAspNetCore();
     }
 
+    [RESTable(GET)]
+    public class Tester : ISelector<Tester>
+    {
+        public IEnumerable<Tester> Select(IRequest<Tester> request)
+        {
+            request.ResponseHeaders["FooFoo"] = "\"\r\nBannan!";
+            return Array.Empty<Tester>();
+        }
+    }
+
     /// <summary>
     /// Database is a subset of https://github.com/fivethirtyeight/data/tree/master/comic-characters
     /// - which is, in turn, taken from Marvel and DC Comics respective sites.
@@ -230,7 +240,7 @@ namespace RESTable.Tutorial
 
         public async IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            var number = (int)(request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
+            var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
             for (var i = 0; i < number; i += 1)
             {
                 await BufferBlock.SendAsync(Count += 1, cancellationToken).ConfigureAwait(false);
@@ -297,7 +307,7 @@ namespace RESTable.Tutorial
                 if (count == 0)
                     newest = superhero;
                 count += 1;
-                genderCount[(int)superhero.Gender] += 1;
+                genderCount[(int) superhero.Gender] += 1;
                 if (superhero.Year > newest?.Year)
                     newest = superhero;
             }
@@ -305,9 +315,9 @@ namespace RESTable.Tutorial
             yield return new SuperheroReport
             {
                 NumberOfSuperheroes = count,
-                NumberOfFemaleHeroes = genderCount[(int)Female],
-                NumberOfMaleHeroes = genderCount[(int)Male],
-                NumberOfOtherGenderHeroes = genderCount[(int)Other],
+                NumberOfFemaleHeroes = genderCount[(int) Female],
+                NumberOfMaleHeroes = genderCount[(int) Male],
+                NumberOfOtherGenderHeroes = genderCount[(int) Other],
                 NewestSuperhero = newest
             };
         }

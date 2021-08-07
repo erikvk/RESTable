@@ -6,7 +6,7 @@ namespace RESTable.Results
 {
     public abstract class Change : OK, IChange
     {
-        public const int MaxNumberOfEntitiesInChangeResults = 25;
+        public const int MaxNumberOfEntitiesInChangeResults = 100;
 
         /// <summary>
         /// The number of changed entities

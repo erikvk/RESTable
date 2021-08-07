@@ -30,7 +30,7 @@ namespace RESTable.Meta
         {
             try
             {
-                if (_setter == null)
+                if (_setter is null)
                 {
                     _setter = ExpressionReflectionDelegateFactory.Instance.CreateSet<object>(_memberInfo);
                 }
@@ -51,7 +51,7 @@ namespace RESTable.Meta
         {
             try
             {
-                if (_getter == null)
+                if (_getter is null)
                 {
                     _getter = ExpressionReflectionDelegateFactory.Instance.CreateGet<object>(_memberInfo);
                 }

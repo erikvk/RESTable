@@ -17,22 +17,14 @@ namespace RESTable.Results
         /// </summary>
         internal bool IsLocked { get; set; }
 
-        [RESTableMember(ignore: true)] public Type ResourceType { get; }
-
-        /// <summary>
-        /// Sets the ContentDisposition header to a unique file name of a given extension
-        /// </summary>
-        public void SetContentDisposition(string? extension)
-        {
-            if (extension is null) return;
-            Headers["Content-Disposition"] = $"attachment;filename={Request.Resource}_{DateTime.UtcNow:yyMMddHHmmssfff}{extension}";
-        }
+        [RESTableMember(ignore: true)]
+        public Type ResourceType { get; }
 
         /// <inheritdoc />
         protected Content(IRequest request, ContentType? contentType = null) : base(request)
         {
             ResourceType = request.Resource.Type;
-            Headers.ContentType = contentType ?? request.GetOutputContentTypeProvider().ContentType;
+            Headers.ContentType = contentType ?? request.OutputContentTypeProvider.ContentType;
         }
 
         public void MakeNoContent()

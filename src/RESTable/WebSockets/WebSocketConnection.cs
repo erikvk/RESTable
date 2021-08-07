@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -173,10 +174,10 @@ namespace RESTable.WebSockets
         }
 
         public bool ExcludeHeaders => WebSocket.ExcludeHeaders;
-
         public string ProtocolIdentifier => WebSocket.ProtocolIdentifier;
-
         public CachedProtocolProvider CachedProtocolProvider => WebSocket.CachedProtocolProvider;
+        public IContentTypeProvider InputContentTypeProvider => WebSocket.InputContentTypeProvider;
+        public IContentTypeProvider OutputContentTypeProvider => WebSocket.OutputContentTypeProvider;
 
         /// <inheritdoc />
         public WebSocketStatus Status => IsSuspended ? WebSocketStatus.Suspended : WebSocket.Status;

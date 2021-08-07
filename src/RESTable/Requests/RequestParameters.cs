@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
 
@@ -35,7 +36,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Did the request contain a body?
         /// </summary>
-        public bool HasBody => Body is {CanRead: true};
+        public bool HasBody => Body is { CanRead: true };
 
         private Body _body;
 
@@ -61,6 +62,10 @@ namespace RESTable.Requests
         /// </summary>
         public bool IsValid => Error is null;
 
+        public IContentTypeProvider InputContentTypeProvider { get; }
+
+        public IContentTypeProvider OutputContentTypeProvider { get; }
+
         #region Private and internal
 
         private string? UnparsedUri { get; }
@@ -68,7 +73,7 @@ namespace RESTable.Requests
         internal IResource IResource => iresource ??= Context.GetRequiredService<ResourceCollection>().FindResource(Uri.ResourceSpecifier);
         internal Exception? Error { get; }
         private static bool PercentCharsEscaped(Headers? headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
-        bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true};
+        bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource { RequiresAuthentication: true };
         public MessageType MessageType { get; } = MessageType.HttpInput;
 
         public CachedProtocolProvider CachedProtocolProvider { get; set; }
@@ -90,40 +95,7 @@ namespace RESTable.Requests
             return await Body.ToStringAsync().ConfigureAwait(false);
         }
 
-        internal async Task<RequestParameters> GetCopy() => new
-        (
-            iresource: iresource,
-            context: Context,
-            method: Method,
-            uri: Uri,
-            bodyCopy: await Body.GetCopy().ConfigureAwait(false),
-            headers: Headers,
-            unparsedUri: UnparsedUri,
-            error: Error,
-            messageType: MessageType,
-            cachedProtocolProvider: CachedProtocolProvider,
-            protocolIdentifier: ProtocolIdentifier,
-            headersStringCache: HeadersStringCache
-        );
-
         #endregion
-
-        private RequestParameters(IResource? iresource, RESTableContext context, Method method, URI uri, Body bodyCopy, Headers headers, string? unparsedUri,
-            Exception? error, MessageType messageType, CachedProtocolProvider cachedProtocolProvider, string protocolIdentifier, string? headersStringCache)
-        {
-            this.iresource = iresource;
-            Context = context;
-            Method = method;
-            Uri = uri;
-            _body = bodyCopy;
-            Headers = headers;
-            UnparsedUri = unparsedUri;
-            Error = error;
-            MessageType = messageType;
-            CachedProtocolProvider = cachedProtocolProvider;
-            ProtocolIdentifier = protocolIdentifier;
-            HeadersStringCache = headersStringCache;
-        }
 
         /// <summary>
         /// Used when creating generic requests through the .NET API
@@ -138,6 +110,8 @@ namespace RESTable.Requests
             var protocolController = context.GetRequiredService<ProtocolProviderManager>();
             ProtocolIdentifier = protocolIdentifier?.ToLower() ?? protocolController.DefaultProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             CachedProtocolProvider = protocolController.ResolveCachedProtocolProvider(protocolIdentifier);
+            InputContentTypeProvider = this.GetInputContentTypeProvider();
+            OutputContentTypeProvider = this.GetOutputContentTypeProvider();
             _body = new Body(this);
         }
 
@@ -150,8 +124,21 @@ namespace RESTable.Requests
             Method = method;
             Headers = headers ?? new Headers();
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
+            CachedProtocolProvider = cachedProtocolProvider;
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             _body = new Body(this, body);
+            InputContentTypeProvider = null!;
+            OutputContentTypeProvider = null!;
+            try
+            {
+                InputContentTypeProvider = this.GetInputContentTypeProvider();
+                OutputContentTypeProvider = this.GetOutputContentTypeProvider();
+            }
+            catch (Exception e)
+            {
+                Error = e.AsError();
+                return;
+            }
             var hasMacro = Uri.Macro is not null;
             if (hasMacro && Uri.Macro?.Headers is not null)
             {
@@ -170,7 +157,6 @@ namespace RESTable.Requests
                     }
                 }
             }
-            CachedProtocolProvider = cachedProtocolProvider;
             UnparsedUri = uri;
             if (Uri.HasError)
             {
@@ -195,8 +181,21 @@ namespace RESTable.Requests
             Context = context;
             Headers = headers ?? new Headers();
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
+            CachedProtocolProvider = cachedProtocolProvider;
             ProtocolIdentifier = cachedProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             _body = new Body(this);
+            InputContentTypeProvider = null!;
+            OutputContentTypeProvider = null!;
+            try
+            {
+                InputContentTypeProvider = this.GetInputContentTypeProvider();
+                OutputContentTypeProvider = this.GetOutputContentTypeProvider();
+            }
+            catch (Exception e)
+            {
+                Error = e.AsError();
+                return;
+            }
             var hasMacro = Uri.Macro is not null;
             if (hasMacro && Uri.Macro?.Headers is not null)
             {
@@ -215,7 +214,6 @@ namespace RESTable.Requests
                     }
                 }
             }
-            CachedProtocolProvider = cachedProtocolProvider;
             UnparsedUri = uri;
             try
             {

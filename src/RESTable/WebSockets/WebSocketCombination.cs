@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -30,6 +31,8 @@ namespace RESTable.WebSockets
         public string ProtocolIdentifier => throw new NotSupportedException();
         public CachedProtocolProvider CachedProtocolProvider => throw new NotSupportedException();
         public ReadonlyCookies Cookies => throw new NotSupportedException();
+        IContentTypeProvider IContentTypeHolder.InputContentTypeProvider => throw new NotSupportedException();
+        IContentTypeProvider IContentTypeHolder.OutputContentTypeProvider => throw new NotSupportedException();
 
         #endregion
 

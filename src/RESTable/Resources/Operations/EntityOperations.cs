@@ -152,12 +152,14 @@ namespace RESTable.Resources.Operations
             {
                 var jsonProvider = request.GetRequiredService<IJsonProvider>();
 
+
                 IAsyncEnumerable<T> RequestEntitiesProducer() => items
                     .ToAsyncEnumerable()
                     .SelectAwait(async item =>
                     {
                         var (source, json) = item;
-                        await jsonProvider.PopulateAsync(source, json, cancellationToken).ConfigureAwait(false);
+                        var populator = jsonProvider.GetPopulator<T>(json);
+                        await populator(source).ConfigureAwait(false);
                         return item.source;
                     })
                     .Validate(request.EntityResource, request.Context, cancellationToken);
@@ -222,7 +224,7 @@ namespace RESTable.Resources.Operations
                     if (request.MetaConditions.HasProcessors)
                     {
                         var entities = SelectProcessFilter(request, cancellationToken);
-                        RequestSuccess result = MakeEntitiesDynamic(request, (dynamic)entities);
+                        RequestSuccess result = MakeEntitiesDynamic(request, (dynamic) entities);
                         return Task.FromResult(result);
                     }
                     else
@@ -255,7 +257,7 @@ namespace RESTable.Resources.Operations
                 if (request.MetaConditions.HasProcessors)
                 {
                     var processedEntities = await ProcessChangedEntities(request, entities, cancellationToken).ConfigureAwait(false);
-                    RequestSuccess requestSuccess = MakeInsertedEntitiesDynamic(request, count, (dynamic)processedEntities);
+                    RequestSuccess requestSuccess = MakeInsertedEntitiesDynamic(request, count, (dynamic) processedEntities);
                     return requestSuccess;
                 }
                 return new InsertedEntities<T>(request, count, entities);
@@ -276,7 +278,7 @@ namespace RESTable.Resources.Operations
                         if (request.MetaConditions.HasProcessors)
                         {
                             var processedEntities = await ProcessChangedEntities(request, entities, cancellationToken).ConfigureAwait(false);
-                            RequestSuccess requestSuccess = MakeInsertedEntitiesDynamic(request, count, (dynamic)processedEntities);
+                            RequestSuccess requestSuccess = MakeInsertedEntitiesDynamic(request, count, (dynamic) processedEntities);
                             return requestSuccess;
                         }
                         return new InsertedEntities<T>(request, count, entities);
@@ -293,7 +295,7 @@ namespace RESTable.Resources.Operations
                         if (request.MetaConditions.HasProcessors)
                         {
                             var processedEntities = await ProcessChangedEntities(request, entities, cancellationToken).ConfigureAwait(false);
-                            RequestSuccess requestSuccess = MakeUpdatedEntitiesDynamic(request, count, (dynamic)processedEntities);
+                            RequestSuccess requestSuccess = MakeUpdatedEntitiesDynamic(request, count, (dynamic) processedEntities);
                             return requestSuccess;
                         }
                         return new UpdatedEntities<T>(request, count, entities);
@@ -314,7 +316,7 @@ namespace RESTable.Resources.Operations
                 if (request.MetaConditions.HasProcessors)
                 {
                     var processedEntities = await ProcessChangedEntities(request, entities, cancellationToken).ConfigureAwait(false);
-                    RequestSuccess requestSuccess = MakeUpdatedEntitiesDynamic(request, count, (dynamic)processedEntities);
+                    RequestSuccess requestSuccess = MakeUpdatedEntitiesDynamic(request, count, (dynamic) processedEntities);
                     return requestSuccess;
                 }
                 return new UpdatedEntities<T>(request, count, entities);
@@ -400,7 +402,7 @@ namespace RESTable.Resources.Operations
             try
             {
                 var jsonProvider = request.GetRequiredService<IJsonProvider>();
-                var innerRequest = (IEntityRequest<T>)request.Context.CreateRequest<T>();
+                var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
                 var (toInsert, toUpdate) = await GetSafePostTasks(request, innerRequest).ConfigureAwait(false);
                 var (insertedEntities, updatedEntities) = (EmptyEnumeration, EmptyEnumeration);
                 if (toUpdate.Any())
@@ -419,7 +421,7 @@ namespace RESTable.Resources.Operations
                 if (request.MetaConditions.HasProcessors)
                 {
                     var processedEntities = await ProcessChangedEntities(request, changedEntities, cancellationToken).ConfigureAwait(false);
-                    RequestSuccess requestSuccess = MakeSafePostedEntitiesDynamic(request, updatedCount, insertedCount, (dynamic)processedEntities);
+                    RequestSuccess requestSuccess = MakeSafePostedEntitiesDynamic(request, updatedCount, insertedCount, (dynamic) processedEntities);
                     return requestSuccess;
                 }
                 return new SafePostedEntities<T>(request, updatedCount, insertedCount, changedEntities);

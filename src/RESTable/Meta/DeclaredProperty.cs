@@ -238,17 +238,16 @@ namespace RESTable.Meta
 
         private static object MakeExcelReducer(string methodName, PropertyInfo p)
         {
-            if (p.DeclaringType is null) throw new Exception("Type error, cannot cache property " + p);
             try
             {
-                var method = p.DeclaringType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance) ?? throw new Exception();
+                var method = p.DeclaringType!.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance) ?? throw new Exception();
                 return method.CreateDelegate(typeof(Func<,>).MakeGenericType(p.DeclaringType, typeof(string)));
             }
             catch
             {
                 throw new Exception($"Invalid or unknown excel reduce function '{methodName}' for property '{p.Name}' in type '" +
-                                    $"{p.DeclaringType.GetRESTableTypeName()}'. Must be public instance method with signature 'public " +
-                                    "string <insert-name-here>()'");
+                                    $"{p.DeclaringType!.GetRESTableTypeName()}'. Must be public parameterless instance method with " +
+                                    "System.String as return type");
             }
         }
 

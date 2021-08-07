@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -26,6 +27,8 @@ namespace RESTable.WebSockets
         public WebSocketStatus Status => WebSocket.Status;
         public Headers Headers => WebSocket.Headers;
         public ReadonlyCookies Cookies => WebSocket.Cookies;
+        public IContentTypeProvider InputContentTypeProvider => WebSocket.InputContentTypeProvider;
+        public IContentTypeProvider OutputContentTypeProvider => WebSocket.OutputContentTypeProvider;
 
         /// <inheritdoc />
         public async void SetStatus(WebSocketStatus status)

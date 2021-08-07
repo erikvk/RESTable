@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
 using RESTable.Resources;
@@ -28,7 +27,6 @@ namespace FileSenderSample
         public void ConfigureServices(IServiceCollection services) => services
             .AddRESTable()
             .AddJson()
-            .Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true) // needed since RESTable still uses synchronous JSON serialization (Newtonsoft)
             .AddHttpContextAccessor();
 
         public void Configure(IApplicationBuilder app) => app

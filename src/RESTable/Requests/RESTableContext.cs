@@ -66,7 +66,7 @@ namespace RESTable.Requests
             waitingWebSocket = null;
             return false;
         }
-        
+
         #region Abstract
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace RESTable.Requests
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
-        public virtual IRequest<T> CreateRequest<T>(string protocolId = "restable", string? viewName = null) where T : class
+        public IRequest<T> CreateRequest<T>(string protocolId = "restable", string? viewName = null) where T : class
         {
             var resourceCollection = Services.GetRequiredService<ResourceCollection>();
             var resource = resourceCollection.SafeGetResource<T>() ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
@@ -120,7 +120,7 @@ namespace RESTable.Requests
         /// <param name="uri">The URI of the request</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public virtual IRequest CreateRequest(Method method = GET, string? uri = "/", object? body = null, Headers? headers = null)
+        public IRequest CreateRequest(Method method = GET, string? uri = "/", object? body = null, Headers? headers = null)
         {
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
@@ -231,13 +231,13 @@ namespace RESTable.Requests
                 var id = IdNr += 1;
                 var bytes = id switch
                 {
-                    < 1 << 8 => new[] {(byte) id},
-                    < 2 << 8 => new[] {byte.MaxValue, (byte) (id - 1 << 8)},
-                    < 3 << 8 => new[] {byte.MaxValue, byte.MaxValue, (byte) (id - 2 << 8)},
-                    < 4 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 3 << 8)},
-                    < 5 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 4 << 8)},
-                    < 6 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 5 << 8)},
-                    < 7 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 6 << 8)},
+                    < 1 << 8 => new[] { (byte) id },
+                    < 2 << 8 => new[] { byte.MaxValue, (byte) (id - 1 << 8) },
+                    < 3 << 8 => new[] { byte.MaxValue, byte.MaxValue, (byte) (id - 2 << 8) },
+                    < 4 << 8 => new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 3 << 8) },
+                    < 5 << 8 => new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 4 << 8) },
+                    < 6 << 8 => new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 5 << 8) },
+                    < 7 << 8 => new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 6 << 8) },
                     _ => BitConverter.GetBytes(IdNr)
                 };
                 return Convert.ToBase64String(bytes).TrimEnd('=');

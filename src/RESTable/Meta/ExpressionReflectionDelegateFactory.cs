@@ -17,7 +17,7 @@ namespace RESTable.Meta
             Expression resultExpression;
 
             MethodInfo? getMethod = propertyInfo.GetGetMethod(true);
-            if (getMethod == null)
+            if (getMethod is null)
             {
                 throw new ArgumentException("Property does not have a getter.");
             }
@@ -59,7 +59,7 @@ namespace RESTable.Meta
             Expression readValueParameter = EnsureCastExpression(valueParameter, propertyInfo.PropertyType);
 
             MethodInfo? setMethod = propertyInfo.GetSetMethod(true);
-            if (setMethod == null)
+            if (setMethod is null)
             {
                 throw new ArgumentException("Property does not have a setter.");
             }

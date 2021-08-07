@@ -11,6 +11,11 @@ namespace RESTable.ContentTypeProviders
         ValueTask PopulateAsync<T>(T target, string json, CancellationToken cancellationToken) where T : notnull;
         ValueTask PopulateAsync<T>(T target, JsonElement json, CancellationToken cancellationToken) where T : notnull;
 
+        PopulatorAction GetPopulator<T>(JsonElement json) where T : notnull;
+        PopulatorAction GetPopulator<T>(string json) where T : notnull;
+        PopulatorAction GetPopulator(Type toPopulate, JsonElement jsonElement);
+        PopulatorAction GetPopulator(Type toPopulate, string json);
+
         string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false);
         Task SerializeAsync<T>(Stream stream, T entity, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new());
 

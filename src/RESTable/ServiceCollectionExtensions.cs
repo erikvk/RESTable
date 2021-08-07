@@ -74,6 +74,12 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.AddSingleton<IProtocolProvider, DefaultProtocolProvider>();
             serviceCollection.AddTransient(typeof(ICombinedTerminal<>), typeof(CombinedTerminal<>));
             serviceCollection.AddTransient(typeof(ITerminalCollection<>), typeof(TerminalCollection<>));
+            serviceCollection.AddSingleton(typeof(ISerializationMetadata<>), typeof(SerializationMetadata<>));
+            serviceCollection.AddSingleton(typeof(ISerializationMetadataAccessor), pr =>
+            {
+                ISerializationMetadata accessor(Type type) => (ISerializationMetadata) pr.GetRequiredService(typeof(ISerializationMetadata<>).MakeGenericType(type));
+                return new SerializationMetadataAccessor(accessor);
+            });
             return serviceCollection;
         }
     }

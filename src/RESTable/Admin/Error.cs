@@ -105,7 +105,6 @@ namespace RESTable.Admin
 
         internal static Error Create(Results.Error errorResult, IRequest request)
         {
-            var resource = request.Resource;
             var uri = request.UriComponents.ToString() ?? throw new NullReferenceException("Missing request uri components");
             var errorStackTrace = errorResult.StackTrace;
             var innerStackTrace = errorResult.InnerException?.StackTrace;
@@ -124,11 +123,12 @@ namespace RESTable.Admin
                     .ToList();
                 InMemoryOperations<Error>.Delete(entitiesToDelete);
             }
+            var resource = request.Resource;
             var error = new Error
             (
                 uri: uri,
                 method: request.Method,
-                headers: resource is IEntityResource {RequiresAuthentication: true}
+                headers: resource is IEntityResource { RequiresAuthentication: true }
                     ? null
                     : request.Headers.StringJoin(" | ", dict => dict.Select(header => header.Key.ToLower() switch
                     {
@@ -136,7 +136,9 @@ namespace RESTable.Admin
                         "x-original-url" when header.Value?.Contains("key=") == true => "*******",
                         _ => $"{header.Key}: {header.Value}"
                     })),
-                resourceName: resource.Name,
+                // ReSharper disable once ConstantConditionalAccessQualifier
+                // ReSharper disable once ConstantNullCoalescingCondition
+                resourceName: resource?.Name ?? "<unknown>",
                 body: request.Body.ToString(),
                 time: DateTime.UtcNow,
                 errorCode: errorResult.ErrorCode,

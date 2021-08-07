@@ -14,13 +14,6 @@ namespace RESTable.Results
     public interface IEntities : IResult
     {
         /// <summary>
-        /// Helper method for setting the Content-Disposition headers of the result to an appropriate file
-        /// attachment. 
-        /// </summary>
-        /// <param name="extension">The file extension to use, for example .xlsx</param>
-        void SetContentDisposition(string extension);
-
-        /// <summary>
         /// The type of entities in the entity collection
         /// </summary>
         Type EntityType { get; }

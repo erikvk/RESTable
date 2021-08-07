@@ -16,7 +16,7 @@ namespace RESTable.Requests.Filters
         public override IAsyncEnumerable<T> Apply<T>(IAsyncEnumerable<T> entities)
         {
             if (Skip) return entities;
-            return entities.OrderBy(Selector);
+            return entities.OrderByAwait(Selector);
         }
 
         internal override OrderBy GetCopy() => new OrderByAscending(Resource, Term);

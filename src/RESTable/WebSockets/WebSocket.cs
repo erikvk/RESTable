@@ -34,6 +34,9 @@ namespace RESTable.WebSockets
         private CancellationTokenSource WebSocketClosed { get; }
         internal void Cancel() => WebSocketClosed.Cancel();
 
+        IContentTypeProvider IContentTypeHolder.InputContentTypeProvider => ProtocolHolder.InputContentTypeProvider;
+        IContentTypeProvider IContentTypeHolder.OutputContentTypeProvider => ProtocolHolder.OutputContentTypeProvider;
+
         /// <summary>
         /// The ID of the WebSocket
         /// </summary>
@@ -99,7 +102,7 @@ namespace RESTable.WebSockets
         {
             ProtocolHolder = null!; // Set on Open()
             LifetimeTask = null!; // Set on Open() where applicable
-            
+
             Id = webSocketId;
             WebSocketClosed = new CancellationTokenSource();
             Status = WebSocketStatus.Waiting;
@@ -495,7 +498,7 @@ namespace RESTable.WebSockets
             }
             if (result is WebSocketUpgradeSuccessful) return false;
 
-            if (result is Content {IsLocked: true})
+            if (result is Content { IsLocked: true })
                 throw new InvalidOperationException(
                     "Unable to send a result that is already assigned to a Websocket streaming " +
                     "job. Streaming results are locked, and can only be streamed once.");

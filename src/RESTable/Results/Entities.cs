@@ -30,6 +30,8 @@ namespace RESTable.Results
         internal Entities(IRequest request, IAsyncEnumerable<T> enumerable) : base(request)
         {
             Content = enumerable;
+            Headers["Content-Disposition"] = $"attachment;filename={Request.Resource}_{DateTime.UtcNow:yyMMddHHmmssfff}" +
+                                             $"{request.OutputContentTypeProvider.ContentDispositionFileExtension}";
         }
 
         public ValueTask<long> CountAsync() => Content.LongCountAsync();

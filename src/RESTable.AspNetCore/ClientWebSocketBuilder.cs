@@ -4,6 +4,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
@@ -27,6 +28,9 @@ namespace RESTable.AspNetCore
         private Func<IWebSocket, CancellationToken, Task>? OpenHandler { get; set; }
         private Func<IWebSocket, ValueTask>? DisposeHandler { get; set; }
 
+        public IContentTypeProvider InputContentTypeProvider { get; }
+        public IContentTypeProvider OutputContentTypeProvider { get; }
+
         public ClientWebSocketBuilder(RESTableContext context)
         {
             WebSocketId = Guid.NewGuid().ToString("N");
@@ -35,6 +39,9 @@ namespace RESTable.AspNetCore
             var defaultProtocolProvider = context.GetRequiredService<ProtocolProviderManager>().DefaultProtocolProvider;
             ProtocolIdentifier = defaultProtocolProvider.ProtocolProvider.ProtocolIdentifier;
             CachedProtocolProvider = defaultProtocolProvider;
+            var jsonProvider = context.GetRequiredService<IJsonProvider>();
+            InputContentTypeProvider = jsonProvider;
+            OutputContentTypeProvider = jsonProvider;
         }
 
         public ClientWebSocketBuilder WithUri(Uri uri)

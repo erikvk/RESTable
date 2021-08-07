@@ -56,7 +56,7 @@ namespace RESTable.SQLite
         )
         {
             var enumerable = (EntityEnumerable<T>) Select(where, onlyRowId);
-            if (context != null)
+            if (context is not null)
                 await QueryConsole.Publish(context, enumerable.Sql, null).ConfigureAwait(false);
             await foreach (var item in enumerable.ConfigureAwait(false))
                 yield return item;
@@ -97,7 +97,7 @@ namespace RESTable.SQLite
                             propertyValue = await getter(entity).ConfigureAwait(false);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
-                    if (context != null)
+                    if (context is not null)
                         await QueryConsole.Publish(context, command.CommandText, null).ConfigureAwait(false);
                     var insertedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     entity.RowId = connection.LastInsertRowId;
@@ -146,7 +146,7 @@ namespace RESTable.SQLite
                             propertyValue = await getter(entity).ConfigureAwait(false);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
-                    if (context != null)
+                    if (context is not null)
                         await QueryConsole.Publish(context, command.CommandText, null).ConfigureAwait(false);
                     var updatedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     if (updatedCount == 1)
@@ -183,7 +183,7 @@ namespace RESTable.SQLite
                 {
                     await entity._OnDelete().ConfigureAwait(false);
                     command.Parameters[RowIdParameter].Value = entity.RowId;
-                    if (context != null)
+                    if (context is not null)
                         await QueryConsole.Publish(context, command.CommandText, null).ConfigureAwait(false);
                     count += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
@@ -209,7 +209,7 @@ namespace RESTable.SQLite
             await using (connection.ConfigureAwait(false))
             await using (command.ConfigureAwait(false))
             {
-                if (context != null)
+                if (context is not null)
                     await QueryConsole.Publish(context, command.CommandText, null).ConfigureAwait(false);
                 var result = (long?) await command.ExecuteScalarAsync().ConfigureAwait(false);
                 return result.GetValueOrDefault();

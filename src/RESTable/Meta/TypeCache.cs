@@ -243,7 +243,7 @@ namespace RESTable.Meta
 
         public bool TryFindDeclaredProperty(Type type, string key, out DeclaredProperty? declaredProperty)
         {
-            if (type != typeof(string) && !IsDictionary(type) && ImplementsEnumerableInterface(type, out var parameter))
+            if (!IsDictionary(type) && ImplementsEnumerableInterface(type, out var parameter))
             {
                 var collectionReadonly = typeof(IList).IsAssignableFrom(type) || type.ImplementsGenericInterface(typeof(IList<>));
                 switch (key)

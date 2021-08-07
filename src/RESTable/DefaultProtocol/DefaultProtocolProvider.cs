@@ -42,7 +42,7 @@ namespace RESTable.DefaultProtocol
 
             switch (conditions)
             {
-                case string {Length: 0}:
+                case string { Length: 0 }:
                 case "_": break;
                 default:
                 {
@@ -54,7 +54,7 @@ namespace RESTable.DefaultProtocol
 
             switch (metaConditions)
             {
-                case string {Length: 0}:
+                case string { Length: 0 }:
                 case "_": break;
                 default:
                 {
@@ -190,6 +190,8 @@ namespace RESTable.DefaultProtocol
             }
         }
 
+        public void SetResultHeaders(IResult result) { }
+
         /// <inheritdoc />
         public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
@@ -264,8 +266,6 @@ namespace RESTable.DefaultProtocol
             CancellationToken cancellationToken
         ) where T : class
         {
-            entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
-
             if (contentTypeProvider is not IJsonProvider jsonProvider)
             {
                 var count = await contentTypeProvider.SerializeCollectionAsync(toSerialize.Body, entities, cancellationToken).ConfigureAwait(false);

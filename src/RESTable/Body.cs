@@ -26,12 +26,12 @@ namespace RESTable
         public object? UninitializedBodyObject { get; set; }
 
         public ContentType ContentType => IsIngoing
-            ? ProtocolHolder.GetInputContentTypeProvider().ContentType
-            : ProtocolHolder.GetOutputContentTypeProvider().ContentType;
+            ? ProtocolHolder.InputContentTypeProvider.ContentType
+            : ProtocolHolder.OutputContentTypeProvider.ContentType;
 
         private IContentTypeProvider ContentTypeProvider => IsIngoing
-            ? ProtocolHolder.GetInputContentTypeProvider()
-            : ProtocolHolder.GetOutputContentTypeProvider();
+            ? ProtocolHolder.InputContentTypeProvider
+            : ProtocolHolder.OutputContentTypeProvider;
 
         /// <summary>
         /// Serializes the given result object to this body, using the appropriate content type

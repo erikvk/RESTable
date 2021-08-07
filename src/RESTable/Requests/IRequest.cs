@@ -81,7 +81,7 @@ namespace RESTable.Requests
         /// internally to pass custom data between operations, for example account or session information. Each resource can have its
         /// separate client data set, that is not available from other resuorces.
         /// </summary>
-        TData GetClientData<TData>(string key);
+        TData? GetClientData<TData>(string key);
 
         /// <summary>
         /// Sets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTable

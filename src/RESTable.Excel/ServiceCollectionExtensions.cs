@@ -1,7 +1,6 @@
 ﻿#nullable enable
 
 using System;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using RESTable.ContentTypeProviders;
 using RESTable.Excel;
 
@@ -15,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
             excelSettingsAction?.Invoke(excelSettings);
             serviceCollection.AddSingleton<ExcelSettings>(excelSettings);
             serviceCollection.AddJson();
-            serviceCollection.TryAddSingleton<IContentTypeProvider, ExcelContentTypeProvider>();
+            serviceCollection.AddSingleton<IContentTypeProvider, ExcelContentTypeProvider>();
             return serviceCollection;
         }
     }

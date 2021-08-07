@@ -87,7 +87,7 @@ namespace RESTable.SQLite
             {
                 foreach (var columnName in columnNames)
                 {
-                    var mapping = TableMapping!.ColumnMappings.Values.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
+                    var mapping = TableMapping.ColumnMappings.Values.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
                     if (mapping is null) continue;
                     if (mapping.IsRowId || mapping.CLRProperty.IsDeclared)
                         throw new SQLiteException($"Cannot drop column '{mapping.SQLColumn.Name}' from table '{TableMapping.TableName}'. " +
@@ -98,7 +98,7 @@ namespace RESTable.SQLite
 
             List<ColumnMapping> toDrop = getMappings().ToList();
             if (!toDrop.Any()) return false;
-            await TableMapping!.DropColumns(toDrop).ConfigureAwait(false);
+            await TableMapping.DropColumns(toDrop).ConfigureAwait(false);
             return true;
         }
 

@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -98,6 +99,34 @@ namespace RESTable.Json
             return count;
         }
 
+        private PopulateSource GetPopulateSource(JsonElement jsonElement)
+        {
+            var valueResolver = new JsonElementValueProvider(jsonElement, this);
+            SourceKind sourceKind;
+            (string, PopulateSource)[]? properties = null;
+            switch (jsonElement.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    sourceKind = SourceKind.Object;
+                    properties = jsonElement.EnumerateObject()
+                        .Select(property => (property.Name, GetPopulateSource(property.Value)))
+                        .ToArray();
+                    break;
+                case JsonValueKind.Array:
+                case JsonValueKind.String:
+                case JsonValueKind.Number:
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    sourceKind = SourceKind.Value;
+                    break;
+                case JsonValueKind.Null:
+                    sourceKind = SourceKind.Null;
+                    break;
+                case var other: throw new InvalidOperationException($"Cannot populate from JSON token with value kind '{other}'");
+            }
+            return new PopulateSource(sourceKind, valueResolver, properties);
+        }
+
         /// <inheritdoc />
         public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken) where T : notnull
         {
@@ -108,25 +137,51 @@ namespace RESTable.Json
 #endif
             {
                 var jsonElement = await JsonSerializer.DeserializeAsync<JsonElement>(stream, Options, cancellationToken).ConfigureAwait(false);
-                var populator = new Populator(typeof(T), jsonElement, TypeCache, Options);
-                await foreach (var item in entities.ConfigureAwait(false))
+                var populateSource = GetPopulateSource(jsonElement);
+                var populator = new Populator(typeof(T), populateSource, TypeCache);
+                await foreach (var item in entities.WithCancellation(cancellationToken).ConfigureAwait(false))
                 {
-                    var populated = await populator.PopulateAsync(item).ConfigureAwait(false);
-                    yield return (T)populated!;
+                    yield return (T) await populator.PopulateAsync(item).ConfigureAwait(false);
                 }
             }
         }
 
-        public ValueTask PopulateAsync<T>(T target, string json, CancellationToken cancellationToken) where T : notnull
+        public PopulatorAction GetPopulator(Type toPopulate, JsonElement jsonElement)
+        {
+            var populateSource = GetPopulateSource(jsonElement);
+            return new Populator(toPopulate, populateSource, TypeCache).PopulateAsync;
+        }
+
+        public PopulatorAction GetPopulator(Type toPopulate, string json)
         {
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(json, Options);
-            return PopulateAsync(target, jsonElement, cancellationToken);
+            var populateSource = GetPopulateSource(jsonElement);
+            return new Populator(toPopulate, populateSource, TypeCache).PopulateAsync;
+        }
+
+        public PopulatorAction GetPopulator<T>(JsonElement jsonElement) where T : notnull
+        {
+            var populateSource = GetPopulateSource(jsonElement);
+            return new Populator(typeof(T), populateSource, TypeCache).PopulateAsync;
+        }
+
+        public PopulatorAction GetPopulator<T>(string json) where T : notnull
+        {
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(json, Options);
+            var populateSource = GetPopulateSource(jsonElement);
+            return new Populator(typeof(T), populateSource, TypeCache).PopulateAsync;
+        }
+
+        public async ValueTask PopulateAsync<T>(T target, string json, CancellationToken cancellationToken) where T : notnull
+        {
+            var populator = GetPopulator<T>(json);
+            await populator(target).ConfigureAwait(false);
         }
 
         public async ValueTask PopulateAsync<T>(T target, JsonElement json, CancellationToken cancellationToken) where T : notnull
         {
-            var populator = new Populator(typeof(T), json, TypeCache, Options);
-            await populator.PopulateAsync(target).ConfigureAwait(false);
+            var populator = GetPopulator<T>(json);
+            await populator(target).ConfigureAwait(false);
         }
 
         public T? Deserialize<T>(string json)
@@ -182,7 +237,7 @@ namespace RESTable.Json
                         yield break;
                     if (next is not null)
                         yield return next;
-                    leftOver = dataSize - (int)bytesConsumed;
+                    leftOver = dataSize - (int) bytesConsumed;
                     if (leftOver != 0)
                         buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
                 }

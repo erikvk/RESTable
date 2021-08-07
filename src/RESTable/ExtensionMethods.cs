@@ -55,9 +55,9 @@ namespace RESTable
         public static string GetRESTableTypeName(this Type type) => type.FullName?.Replace('+', '.') ?? throw new Exception("Could not establish the name of a type");
 
         /// <summary>
-        /// Can this type hold dynamic members? Defined as implementing the IDictionary`2 interface
+        /// Does this type implement the IDictionary{string, object} interface?
         /// </summary>
-        public static bool IsDictionary(this Type type) => type.ImplementsGenericInterface(typeof(IDictionary<string, object?>));
+        public static bool IsDictionary(this Type type) => typeof(IDictionary<string, object?>).IsAssignableFrom(type);
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)

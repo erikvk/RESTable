@@ -537,7 +537,7 @@ namespace RESTable
             }
         }
 
-        private async Task SendHeaders() => await WebSocket.SendJson(new {WebSocket.Headers}).ConfigureAwait(false);
+        private async Task SendHeaders() => await WebSocket.SendJson(new { WebSocket.Headers }).ConfigureAwait(false);
 
         private async Task EnsurePreviousEntities()
         {

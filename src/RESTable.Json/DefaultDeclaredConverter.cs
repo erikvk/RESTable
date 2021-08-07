@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using RESTable.Meta;
@@ -15,30 +13,15 @@ namespace RESTable.Json
     /// <typeparam name="T"></typeparam>
     public class DefaultDeclaredConverter<T> : JsonConverter<T>
     {
-        private TypeCache TypeCache { get; }
-        private IReadOnlyDictionary<string, DeclaredProperty> DeclaredProperties { get; }
-        private Constructor<T>? ParameterLessConstructor { get; }
-        private DeclaredProperty[] VisibleDeclaredPropertiesArray { get; }
+        private ISerializationMetadata<T> Metadata { get; }
 
-        public DefaultDeclaredConverter(TypeCache typeCache)
+        public DefaultDeclaredConverter(ISerializationMetadata<T> metadata)
         {
-            TypeCache = typeCache;
-            DeclaredProperties = typeCache.GetDeclaredProperties(typeof(T));
-            VisibleDeclaredPropertiesArray = DeclaredProperties.Values
-                .Where(p => !p.Hidden)
-                .OrderBy(p => p.Order)
-                .ToArray();
-            ParameterLessConstructor = typeof(T).MakeStaticConstructor<T>();
+            Metadata = metadata;
         }
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (ParameterLessConstructor is null)
-            {
-                // We don't support creating objects through a non-default constructor for now.
-                return default;
-            }
-
             reader.Read();
 
             switch (reader.TokenType)
@@ -46,23 +29,25 @@ namespace RESTable.Json
                 case JsonTokenType.Null: return default;
                 case JsonTokenType.EndObject:
                 {
-                    return ParameterLessConstructor() ?? throw new Exception($"Could not instantiate type '{typeToConvert.GetRESTableTypeName()}' while reading JSON");
+                    return Metadata.CreateInstance();
                 }
                 case JsonTokenType.PropertyName:
                 {
-                    var instance = ParameterLessConstructor() ?? throw new Exception($"Could not instantiate type '{typeToConvert.GetRESTableTypeName()}' while reading JSON");
+                    var instance = Metadata.CreateInstance();
                     while (reader.TokenType != JsonTokenType.EndObject)
                     {
-                        var propertyName = reader.GetString() ?? throw new JsonException("Invalid JSON token encountered. Expected property name.");
-                        if (!DeclaredProperties.TryGetValue(propertyName, out var property))
+                        if (reader.TokenType is not JsonTokenType.PropertyName || reader.GetString() is not string propertyName)
+                            throw new JsonException("Invalid JSON token encountered. Expected property name.");
+
+                        if (Metadata.GetProperty(propertyName) is not { } property)
                         {
                             // Encountered an unknown property in input JSON. Skipping.
                             reader.Skip();
                         }
                         else
                         {
-                            var value = JsonSerializer.Deserialize(ref reader, property!.Type, options);
-                            var setValueTask = property.SetValue(instance, value);
+                            var value = JsonSerializer.Deserialize(ref reader, property.Type, options);
+                            var setValueTask = property.SetValue(instance!, value);
                             if (setValueTask.IsCompleted)
                                 setValueTask.GetAwaiter().GetResult();
                             else setValueTask.AsTask().Wait();
@@ -83,7 +68,7 @@ namespace RESTable.Json
                 return;
             }
             writer.WriteStartObject();
-            WriteDeclaredMembers(writer, VisibleDeclaredPropertiesArray, value, options);
+            SerializeDeclaredMembers(writer, Metadata, value, options);
             writer.WriteEndObject();
         }
 

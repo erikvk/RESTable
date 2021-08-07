@@ -116,7 +116,11 @@ namespace RESTable.AspNetCore
         {
             context.Response.StatusCode = (ushort) result.StatusCode;
             foreach (var (key, value) in result.Headers)
-                context.Response.Headers[key] = value;
+            {
+                if (value is null) continue;
+                // Kestrel doesn't like line breaks in headers
+                context.Response.Headers[key] = value.Replace(System.Environment.NewLine, null);
+            }
             foreach (var cookie in result.Cookies)
                 context.Response.Headers["Set-Cookie"] = cookie.ToString();
             if (result.Headers.ContentType.HasValue)

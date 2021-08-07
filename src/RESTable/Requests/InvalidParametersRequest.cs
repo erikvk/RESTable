@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Results;
@@ -52,6 +53,8 @@ namespace RESTable.Requests
         public IResource Resource { get; }
         public TimeSpan TimeElapsed => default;
         public object? GetService(Type serviceType) => Context.GetService(serviceType);
+        public IContentTypeProvider InputContentTypeProvider => Parameters.InputContentTypeProvider;
+        public IContentTypeProvider OutputContentTypeProvider => Parameters.OutputContentTypeProvider;
 
         #endregion
 

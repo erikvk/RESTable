@@ -22,5 +22,5 @@ namespace RESTable.Meta
     /// Creates a new instance of some object type
     /// </summary>
     /// <returns></returns>
-    public delegate T Constructor<out T>();
+    public delegate T Constructor<T>();
 }

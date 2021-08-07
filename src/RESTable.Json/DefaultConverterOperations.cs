@@ -21,18 +21,18 @@ namespace RESTable.Json
             }
         }
 
-        internal static void WriteDeclaredMembers<T>(Utf8JsonWriter writer, DeclaredProperty[] declaredPropertiesArray, T value, JsonSerializerOptions options)
+        internal static void SerializeDeclaredMembers<T>(Utf8JsonWriter writer, ISerializationMetadata<T> metadata, T value, JsonSerializerOptions options)
         {
-            for (var i = 0; i < declaredPropertiesArray.Length; i += 1)
+            for (var i = 0; i < metadata.PropertiesToSerialize.Length; i += 1)
             {
-                var property = declaredPropertiesArray[i];
+                var property = metadata.PropertiesToSerialize[i];
                 var name = property.Name;
                 object? propertyValue;
                 var propertyValueTask = property.GetValue(value!);
                 if (propertyValueTask.IsCompleted)
                     propertyValue = propertyValueTask.GetAwaiter().GetResult();
                 else propertyValue = propertyValueTask.AsTask().Result;
-                if (property.IsWriteOnly || property.HiddenIfNull && propertyValue is null)
+                if (property.HiddenIfNull && propertyValue is null)
                     continue;
                 writer.WritePropertyName(name);
                 JsonSerializer.Serialize(writer, propertyValue, property.Type, options);
@@ -47,7 +47,7 @@ namespace RESTable.Json
 
         internal static void SetDeclaredMember<T>(ref Utf8JsonReader reader, DeclaredProperty property, T instance, JsonSerializerOptions options)
         {
-            var value = JsonSerializer.Deserialize(ref reader, property!.Type, options);
+            var value = JsonSerializer.Deserialize(ref reader, property.Type, options);
             var setValueTask = property.SetValue(instance!, value);
             if (setValueTask.IsCompleted)
                 setValueTask.GetAwaiter().GetResult();

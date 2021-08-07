@@ -343,3 +343,4 @@ healthchecksdb
 !RESTable.SQLite
 *.bat
 *.sqlite
+*.xlsx

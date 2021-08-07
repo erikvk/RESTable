@@ -20,8 +20,9 @@ namespace RESTable.Json
         private TypeCache TypeCache { get; }
         private HashSet<JsonConverter> CustomConverters { get; }
         private IReadOnlyDictionary<Type, JsonConverter> BuiltInConverters { get; }
+        private ISerializationMetadataAccessor MetadataAccessor { get; }
 
-        public ConverterResolver(TypeCache typeCache, JsonSerializerOptionsAccessor optionsAccessor)
+        public ConverterResolver(TypeCache typeCache, JsonSerializerOptionsAccessor optionsAccessor, ISerializationMetadataAccessor metadataAccessor)
         {
             TypeCache = typeCache;
             CustomConverters = optionsAccessor.Options.Converters.ToHashSet();
@@ -36,6 +37,7 @@ namespace RESTable.Json
                 [typeof(JsonStringEnumConverter)] = new JsonStringEnumConverter(),
                 [typeof(ProcessedEntityConverter)] = new ProcessedEntityConverter()
             };
+            MetadataAccessor = metadataAccessor;
         }
 
         private Type? GetConverterType(Type objectType) => objectType switch
@@ -50,9 +52,9 @@ namespace RESTable.Json
             _ when objectType == typeof(Version) => typeof(VersionConverter),
             _ when objectType.IsEnum => typeof(JsonStringEnumConverter),
             _ when objectType == typeof(ProcessedEntity) => typeof(ProcessedEntityConverter),
-            _ when objectType.IsDictionary() => typeof(DefaultDynamicConverter<>).MakeGenericType(objectType),
+            _ when objectType.IsDictionary() => typeof(DefaultDynamicConverter<>),
             _ when TypeCache.GetDeclaredProperties(objectType).Values.All(p => !p.HasAttribute<RESTableMemberAttribute>()) => null,
-            _ => typeof(DefaultDeclaredConverter<>).MakeGenericType(objectType)
+            _ => typeof(DefaultDeclaredConverter<>)
         };
 
         public override bool CanConvert(Type typeToConvert)
@@ -68,9 +70,11 @@ namespace RESTable.Json
             var match = options.Converters.FirstOrDefault(c => converterType == c.GetType());
             if (match is null)
                 BuiltInConverters.TryGetValue(converterType, out match);
-            if (match is null && converterType.IsGenericType)
+            if (match is null && converterType.IsGenericTypeDefinition)
             {
-                match = (JsonConverter?)Activator.CreateInstance(converterType, TypeCache);
+                converterType = converterType.MakeGenericType(typeToConvert);
+                var metadata = MetadataAccessor.GetMetadata(typeToConvert);
+                match = (JsonConverter?) Activator.CreateInstance(converterType, metadata);
             }
             if (match is JsonConverterFactory factory)
             {
