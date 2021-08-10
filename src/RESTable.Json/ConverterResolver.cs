@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,15 +21,15 @@ namespace RESTable.Json
         private TypeCache TypeCache { get; }
         private HashSet<JsonConverter> CustomConverters { get; }
         private IReadOnlyDictionary<Type, JsonConverter> BuiltInConverters { get; }
-        private ISerializationMetadataAccessor MetadataAccessor { get; }
+        private IApplicationServiceProvider ApplicationServiceProvider { get; }
 
-        public ConverterResolver(TypeCache typeCache, JsonSerializerOptionsAccessor optionsAccessor, ISerializationMetadataAccessor metadataAccessor)
+        public ConverterResolver(TypeCache typeCache, IApplicationServiceProvider applicationServiceProvider, IJsonSerializerOptionsAccessor optionsAccessor)
         {
             TypeCache = typeCache;
+            ApplicationServiceProvider = applicationServiceProvider;
             CustomConverters = optionsAccessor.Options.Converters.ToHashSet();
             BuiltInConverters = new Dictionary<Type, JsonConverter>
             {
-                [typeof(TypeConverter)] = new TypeConverter(),
                 [typeof(HeadersConverter)] = new HeadersConverter(),
                 [typeof(ContentTypeConverter)] = new ContentTypeConverter(),
                 [typeof(ContentTypesConverter)] = new ContentTypesConverter(),
@@ -37,14 +38,19 @@ namespace RESTable.Json
                 [typeof(JsonStringEnumConverter)] = new JsonStringEnumConverter(),
                 [typeof(ProcessedEntityConverter)] = new ProcessedEntityConverter()
             };
-            MetadataAccessor = metadataAccessor;
         }
 
         private Type? GetConverterType(Type objectType) => objectType switch
         {
+            // We let any custom converter override this resolver
             _ when CustomConverters.FirstOrDefault(c => c.CanConvert(objectType)) is { } converter => converter.GetType(),
-            _ when objectType.HasAttribute(out JsonConverterAttribute? a) && a!.ConverterType is Type converterType => converterType,
-            _ when objectType.IsSubclassOf(typeof(Type)) => typeof(TypeConverter),
+
+            // Attributes are respected
+            _ when objectType.HasAttribute(out JsonConverterAttribute? a) => a!.ConverterType,
+
+            // We map some types to the RESTable built-in converters
+            _ when typeof(Type).IsAssignableFrom(objectType) => typeof(TypeConverter<>).MakeGenericType(objectType),
+            _ when typeof(IResource).IsAssignableFrom(objectType) => typeof(ResourceConverter<>).MakeGenericType(objectType),
             _ when objectType == typeof(Headers) => typeof(HeadersConverter),
             _ when objectType == typeof(ContentType) => typeof(ContentTypeConverter),
             _ when objectType == typeof(ContentTypes) => typeof(ContentTypesConverter),
@@ -52,9 +58,22 @@ namespace RESTable.Json
             _ when objectType == typeof(Version) => typeof(VersionConverter),
             _ when objectType.IsEnum => typeof(JsonStringEnumConverter),
             _ when objectType == typeof(ProcessedEntity) => typeof(ProcessedEntityConverter),
-            _ when objectType.IsDictionary() => typeof(DefaultDynamicConverter<>),
-            _ when TypeCache.GetDeclaredProperties(objectType).Values.All(p => !p.HasAttribute<RESTableMemberAttribute>()) => null,
-            _ => typeof(DefaultDeclaredConverter<>)
+
+            // Dictionary types get their own converters. Read-only dictionaries get their own that do not
+            // put any dictionary entries in when deserializing. If the key is not string, it is treated as
+            // read only, and we call ToString() on the key object.
+            _ when objectType.IsDictionary(out var writable, out var keyType, out var valueType) => writable && keyType == typeof(string)
+                ? typeof(DefaultDictionaryConverter<,>).MakeGenericType(objectType, valueType!)
+                : typeof(DefaultReadonlyDictionaryConverter<,,>).MakeGenericType(objectType, keyType!, valueType!),
+
+            // Types that have no properties decorated with RESTableMemberAttribute are skipped.
+            _ when objectType.GetProperties().All(property => !property.HasAttribute<RESTableMemberAttribute>()) => null,
+
+            // We also always skip enumerable types.
+            _ when objectType.ImplementsEnumerableInterface(out _) => null,
+
+            // And for the remaining types, we use the default converter for declared properties only.
+            _ => typeof(DefaultDeclaredConverter<>).MakeGenericType(objectType)
         };
 
         public override bool CanConvert(Type typeToConvert)
@@ -70,11 +89,9 @@ namespace RESTable.Json
             var match = options.Converters.FirstOrDefault(c => converterType == c.GetType());
             if (match is null)
                 BuiltInConverters.TryGetValue(converterType, out match);
-            if (match is null && converterType.IsGenericTypeDefinition)
+            if (match is null && converterType.IsGenericType)
             {
-                converterType = converterType.MakeGenericType(typeToConvert);
-                var metadata = MetadataAccessor.GetMetadata(typeToConvert);
-                match = (JsonConverter?) Activator.CreateInstance(converterType, metadata);
+                match = (JsonConverter?) ActivatorUtilities.CreateInstance(ApplicationServiceProvider, converterType);
             }
             if (match is JsonConverterFactory factory)
             {

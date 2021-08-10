@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using RESTable.Meta;
 
@@ -6,11 +7,14 @@ namespace RESTable.Json
 {
     internal static class DefaultConverterOperations
     {
-        internal static void WriteDynamicMembers<T>(Utf8JsonWriter writer, T value, JsonSerializerOptions options) where T : IDictionary<string, object?>
+        internal static void WriteDynamicMembers<T, TKey, TValue>(Utf8JsonWriter writer, T instance, JsonSerializerOptions options)
+            where T : IEnumerable<KeyValuePair<TKey, TValue?>>
+            where TKey : notnull
         {
-            foreach (var (dynamicKey, dynamicValue) in value)
+            foreach (var (dynamicKey, dynamicValue) in instance)
             {
-                writer.WritePropertyName(dynamicKey);
+                var propertyName = dynamicKey is Type type ? type.GetRESTableTypeName() : dynamicKey.ToString();
+                writer.WritePropertyName(propertyName!);
                 if (dynamicValue is null)
                 {
                     // The type is unknown, so we can't call the appropriate converter to 
@@ -39,10 +43,11 @@ namespace RESTable.Json
             }
         }
 
-        internal static void SetDynamicMember<T>(ref Utf8JsonReader reader, string propertyName, T instance, JsonSerializerOptions options) where T : IDictionary<string, object?>
+        internal static void SetDynamicMember<T, TValue>(ref Utf8JsonReader reader, string propertyName, T instance, JsonSerializerOptions options)
+            where T : IDictionary<string, TValue?>
         {
             var element = JsonSerializer.Deserialize<JsonElement>(ref reader, options);
-            instance[propertyName] = element.ToObject<object>(options);
+            instance[propertyName] = element.ToObject<TValue?>(options);
         }
 
         internal static void SetDeclaredMember<T>(ref Utf8JsonReader reader, DeclaredProperty property, T instance, JsonSerializerOptions options)

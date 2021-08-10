@@ -52,16 +52,7 @@ namespace RESTable.SQLite
                     comparer: StringComparer.OrdinalIgnoreCase
                 );
         }
-
-
-        private static bool IsNullable(this Type type, out Type? baseType) => (baseType = Nullable.GetUnderlyingType(type)) is not null;
-
-        internal static (string, string?) TSplit(this string str, char splitCharacter)
-        {
-            var split = str.Split(splitCharacter);
-            return (split[0], split.ElementAtOrDefault(1));
-        }
-
+        
         internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
         internal static Method[] ToMethodsArray(this string methodsString)

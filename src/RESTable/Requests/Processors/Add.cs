@@ -20,9 +20,10 @@ namespace RESTable.Requests.Processors
         /// </summary>
         public async IAsyncEnumerable<ProcessedEntity> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
+            var typeCache = ApplicationServicesAccessor.GetRequiredService<TypeCache>();
             await foreach (var entity in entities.ConfigureAwait(false))
             {
-                var dictionary = await entity.MakeProcessedEntity().ConfigureAwait(false);
+                var dictionary = await entity.MakeProcessedEntity(typeCache).ConfigureAwait(false);
                 foreach (var term in this)
                 {
                     if (dictionary.ContainsKey(term.Key))

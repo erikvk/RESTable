@@ -6,7 +6,7 @@ using RESTable.Requests;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreClientWebSocket : AspNetCoreWebSocket
+    internal sealed class AspNetCoreClientWebSocket : AspNetCoreWebSocket
     {
         private ClientWebSocket ClientWebSocket { get; }
         private Uri RemoteUri { get; }

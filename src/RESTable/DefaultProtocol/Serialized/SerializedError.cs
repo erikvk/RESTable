@@ -4,7 +4,6 @@ using RESTable.Results;
 
 namespace RESTable.DefaultProtocol.Serialized
 {
-    [UseDefaultConverter]
     public class SerializedError : ISerializedError
     {
         private Error Error { get; }

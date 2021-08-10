@@ -7,16 +7,18 @@ namespace RESTable.SQLite
     {
         internal string Sql { get; }
         internal bool OnlyRowId { get; }
+        internal TableMapping TableMapping { get; }
 
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = new())
         {
-            return new EntityEnumerator<T>(Sql, OnlyRowId, cancellationToken);
+            return new EntityEnumerator<T>(TableMapping, Sql, OnlyRowId, cancellationToken);
         }
 
-        internal EntityEnumerable(string sql, bool onlyRowId)
+        internal EntityEnumerable(TableMapping tableMapping, string sql, bool onlyRowId)
         {
             Sql = sql;
             OnlyRowId = onlyRowId;
+            TableMapping = tableMapping;
         }
     }
 }

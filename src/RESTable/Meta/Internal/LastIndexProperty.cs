@@ -20,7 +20,6 @@ namespace RESTable.Meta.Internal
             hidden: true,
             hiddenIfNull: false,
             readOnly: false,
-            customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
             owner: owner,
             excelReducer: null,

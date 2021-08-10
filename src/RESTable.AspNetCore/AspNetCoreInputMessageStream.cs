@@ -1,19 +1,23 @@
 ﻿using System;
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IAsyncDisposable
+    internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IAsyncDisposable
     {
         public override bool CanRead => true;
         public override bool CanWrite => false;
+
+        private ArrayPool<byte> ArrayPool { get; }
 
         public AspNetCoreInputMessageStream
         (
             WebSocket webSocket,
             WebSocketReceiveResult initialResult,
+            ArrayPool<byte> arrayPool,
             CancellationToken webSocketCancelledToken
         ) : base
         (
@@ -22,11 +26,13 @@ namespace RESTable.AspNetCore
             webSocketCancelledToken: webSocketCancelledToken
         )
         {
+            ArrayPool = arrayPool;
             EndOfMessage = initialResult.EndOfMessage;
             ByteCount = initialResult.Count;
         }
 
-        private async Task<int> _ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
+
+        private async ValueTask<int> ArraySegmentReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
             var result = await WebSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
             EndOfMessage = result.EndOfMessage;
@@ -45,47 +51,46 @@ namespace RESTable.AspNetCore
             WebSocketCancelledToken.ThrowIfCancellationRequested();
             if (EndOfMessage) return 0;
             var arraySegment = new ArraySegment<byte>(buffer, offset, count);
-            return await _ReceiveAsync(arraySegment, cancellationToken).ConfigureAwait(false);
+            return await ArraySegmentReceiveAsync(arraySegment, cancellationToken).ConfigureAwait(false);
         }
 
         public override int ReadByte()
         {
             WebSocketCancelledToken.ThrowIfCancellationRequested();
             if (EndOfMessage) return -1;
-            var arraySegment = new ArraySegment<byte>(new byte[1], 0, 1);
-            return _ReceiveAsync(arraySegment, WebSocketCancelledToken).Result;
+            var array = ArrayPool.Rent(1);
+            var arraySegment = new ArraySegment<byte>(array, 0, 1);
+            try
+            {
+                return ArraySegmentReceiveAsync(arraySegment, WebSocketCancelledToken).AsTask().Result;
+            }
+            finally
+            {
+                ArrayPool.Return(array);
+            }
         }
 
 #if !NETSTANDARD2_0
-        private async Task<int> _ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        private async ValueTask<int> MemoryReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
+            WebSocketCancelledToken.ThrowIfCancellationRequested();
+            if (EndOfMessage) return 0;
             var result = await WebSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
             EndOfMessage = result.EndOfMessage;
             ByteCount += result.Count;
             return result.Count;
         }
 
-        public override int Read(Span<byte> buffer)
-        {
-            var array = new byte[buffer.Length];
-            WebSocketCancelledToken.ThrowIfCancellationRequested();
-            if (EndOfMessage) return 0;
-            var count = _ReceiveAsync(array, WebSocketCancelledToken).Result;
-            array.CopyTo(buffer);
-            return count;
-        }
+        public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            WebSocketCancelledToken.ThrowIfCancellationRequested();
-            if (EndOfMessage) return 0;
-            return await _ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
+            return await MemoryReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         public override async ValueTask DisposeAsync()
         {
-            var memory = new byte[4096];
+            var memory = ArrayPool.Rent(AspNetCoreWebSocket.WebSocketBufferSize);
             while (!EndOfMessage)
             {
                 await ReadAsync(memory);
@@ -94,7 +99,7 @@ namespace RESTable.AspNetCore
 #else
         public override async ValueTask DisposeAsync()
         {
-            var memory = new byte[4096];
+            var memory = ArrayPool.Rent(AspNetCoreWebSocket.WebSocketBufferSize);
             while (!EndOfMessage)
             {
                 await ReadAsync(memory, 0, memory.Length);

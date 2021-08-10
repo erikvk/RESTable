@@ -2,7 +2,6 @@
 
 namespace RESTable.DefaultProtocol.Serialized
 {
-    [UseDefaultConverter]
     public class SerializedReport : ISerialized
     {
         private Report Report { get; }

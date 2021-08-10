@@ -44,10 +44,11 @@ namespace RESTable.Requests.Processors
         /// </summary>
         public async IAsyncEnumerable<ProcessedEntity> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
         {
+            var typeCache = ApplicationServicesAccessor.GetRequiredService<TypeCache>();
             await foreach (var entity in entities)
             {
                 if (entity is null) throw new ArgumentNullException(nameof(entities));
-                var dictionary = await entity.MakeProcessedEntity().ConfigureAwait(false);
+                var dictionary = await entity.MakeProcessedEntity(typeCache).ConfigureAwait(false);
                 yield return await Renamed(dictionary).ConfigureAwait(false);
             }
         }

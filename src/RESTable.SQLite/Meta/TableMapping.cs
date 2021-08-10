@@ -30,7 +30,7 @@ namespace RESTable.SQLite.Meta
         internal static (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec => Get.InsertSpec;
         internal static (string name, string set, string[] param, ColumnMapping[] mappings) UpdateSpec => Get.UpdateSpec;
 
-        internal static IEnumerable<ColumnMapping> TransactMappings => Get.TransactMappings;
+        internal static ColumnMapping[] TransactMappings => Get.TransactMappings;
 
         /// <summary>
         /// Gets the column names from the table mapping for the given type

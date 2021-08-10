@@ -19,7 +19,9 @@ namespace RESTable.Meta
 
         public bool HasParameterLessConstructor => ParameterLessConstructor is not null;
 
-        public bool TypeIsDynamic { get; }
+        public bool TypeIsDictionary { get; }
+
+        public bool TypeIsWritableDictionary { get; }
 
         object? ISerializationMetadata.CreateInstance() => CreateInstance();
 
@@ -38,7 +40,8 @@ namespace RESTable.Meta
                 .Where(p => !p.Hidden)
                 .OrderBy(p => p.Order)
                 .ToArray();
-            TypeIsDynamic = typeof(T).IsDictionary() || typeof(T).ImplementsGenericInterface(typeof(IDynamicMemberValueProvider));
+            TypeIsDictionary = typeof(T).IsDictionary(out var isWritable);
+            TypeIsWritableDictionary = isWritable;
             ParameterLessConstructor = typeof(T).MakeStaticConstructor<T>();
         }
     }

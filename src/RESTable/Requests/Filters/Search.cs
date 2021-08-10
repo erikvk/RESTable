@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 using static System.StringComparison;
 
@@ -73,7 +74,7 @@ namespace RESTable.Requests.Filters
             if (Pattern is null)
                 return entities;
             var comparison = IgnoreCase ? OrdinalIgnoreCase : Ordinal;
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            var jsonProvider = ApplicationServicesAccessor.GetRequiredService<IJsonProvider>();
             if (Selector is null)
             {
                 return entities.Where(e => jsonProvider.Serialize(e).IndexOf(Pattern, comparison) >= 0);

@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
             };
             jsonOptionsAction?.Invoke(jsonOptions);
             var newOptions = new JsonSerializerOptions(jsonOptions);
-            serviceCollection.AddSingleton(new JsonSerializerOptionsAccessor(newOptions));
+            serviceCollection.AddSingleton<IJsonSerializerOptionsAccessor>(new JsonSerializerOptionsAccessor(newOptions));
             serviceCollection.AddSingleton<ConverterResolver>();
             serviceCollection.AddSingleton<IJsonProvider, SystemTextJsonProvider>();
             serviceCollection.AddSingleton<IContentTypeProvider>(pr => pr.GetRequiredService<IJsonProvider>());

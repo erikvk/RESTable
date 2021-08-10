@@ -18,7 +18,7 @@ namespace RESTable.Requests.Filters
         public Distinct()
         {
             EqualityComparer = new JsonElementComparer();
-            JsonProvider = ApplicationServicesAccessor.JsonProvider;
+            JsonProvider = ApplicationServicesAccessor.GetRequiredService<IJsonProvider>();
         }
 
         /// <summary>

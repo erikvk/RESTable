@@ -61,7 +61,7 @@ namespace RESTable
                             aggregator[key] = value;
                         }
                         return aggregator;
-                    case JsonElement {ValueKind: JsonValueKind.Array} array:
+                    case JsonElement { ValueKind: JsonValueKind.Array } array:
                     {
                         var list = new List<object>();
                         foreach (var item in array.EnumerateArray())
@@ -72,7 +72,7 @@ namespace RESTable
                         }
                         return list;
                     }
-                    case JsonElement {ValueKind: JsonValueKind.Object} obj:
+                    case JsonElement { ValueKind: JsonValueKind.Object } obj:
                     {
                         return await Populator(jsonProvider!.ToObject<Aggregator>(obj)!).ConfigureAwait(false);
                     }
@@ -97,18 +97,15 @@ namespace RESTable
                         else return stringValue;
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
-                        var internalRequest = request.Context.CreateRequest
-                        (
-                            method: method,
-                            uri: uri,
-                            headers: request.Headers
-                        );
-                        await using var result = await internalRequest.GetResult(cancellationToken).ConfigureAwait(false);
+                        var result = await request.Context
+                            .CreateRequest(method, uri, request.Headers)
+                            .GetResult(cancellationToken)
+                            .ConfigureAwait(false);
                         return result switch
                         {
                             Error error => throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}"),
                             Report report => report.Count,
-                            IEntities entities => entities,
+                            IEntities<object> entities => entities.ToEnumerable(),
                             var other => throw new Exception($"Unexpected result from {method.ToString()} request inside " + $"Aggregator: {await other.GetLogMessage()}")
                         };
                     }
@@ -119,7 +116,7 @@ namespace RESTable
             yield return await Populator(template).ConfigureAwait(false) switch
             {
                 Aggregator aggregator => aggregator,
-                long integer => new Aggregator {["Result"] = integer},
+                long integer => new Aggregator { ["Result"] = integer },
                 var other => throw new InvalidOperationException($"An error occured when reading the request template, the root object was resolved to {other.GetType().FullName}")
             };
         }

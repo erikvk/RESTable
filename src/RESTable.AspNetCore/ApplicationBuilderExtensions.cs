@@ -82,7 +82,7 @@ namespace RESTable.AspNetCore
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
 
             var body = aspNetCoreContext.Request.Body;
-            var request = context.CreateRequest(method, uri, body, headers);
+            var request = context.CreateRequest(method, uri, headers, body);
             await using var result = await request.GetResult(cancellationToken);
             switch (result)
             {

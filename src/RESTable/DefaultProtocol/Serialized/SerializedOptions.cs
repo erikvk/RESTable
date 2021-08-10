@@ -2,7 +2,6 @@
 
 namespace RESTable.DefaultProtocol.Serialized
 {
-    [UseDefaultConverter]
     public class SerializedOptions : ISerialized
     {
         public string Status => "success";

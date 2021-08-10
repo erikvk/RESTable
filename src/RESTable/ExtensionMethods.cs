@@ -57,7 +57,68 @@ namespace RESTable
         /// <summary>
         /// Does this type implement the IDictionary{string, object} interface?
         /// </summary>
-        public static bool IsDictionary(this Type type) => typeof(IDictionary<string, object?>).IsAssignableFrom(type);
+        public static bool IsDictionary(this Type type, out bool isWritable)
+        {
+            if (type.ImplementsGenericInterface(typeof(IDictionary<,>)))
+            {
+                isWritable = true;
+                return true;
+            }
+            if (type.ImplementsGenericInterface(typeof(IReadOnlyDictionary<,>)))
+            {
+                isWritable = false;
+                return true;
+            }
+            isWritable = false;
+            return false;
+        }
+
+        /// <summary>
+        /// Does this type implement the IDictionary{string, object} interface?
+        /// </summary>
+        public static bool IsDictionary(this Type type, out bool isWritable, out Type? keyType, out Type? valueType)
+        {
+            if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out var parameters))
+            {
+                isWritable = true;
+                keyType = parameters![0];
+                valueType = parameters[1];
+                return true;
+            }
+            if (type.ImplementsGenericInterface(typeof(IReadOnlyDictionary<,>), out parameters))
+            {
+                isWritable = false;
+                keyType = parameters![0];
+                valueType = parameters[1];
+                return true;
+            }
+            keyType = null;
+            valueType = null;
+            isWritable = false;
+            return false;
+        }
+
+        /// <summary>
+        /// Evaluates to true if the given type implements either IEnumerable, IEnumerable{T} or
+        /// IAsyncEnumerable{T}, and returns the generic parameter {T} in the out parameter.
+        /// </summary>
+        public static bool ImplementsEnumerableInterface(this Type type, out Type? parameter)
+        {
+            if (type.ImplementsGenericInterface(typeof(IEnumerable<>), out var parameters) ||
+                type.ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out parameters))
+            {
+                parameter = parameters![0];
+                return true;
+            }
+            if (typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                parameter = typeof(object);
+                return true;
+            }
+            parameter = null;
+            return false;
+        }
+
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
@@ -314,7 +375,7 @@ namespace RESTable
             return false;
         }
 
-        public static async ValueTask<ProcessedEntity> MakeProcessedEntity<T>(this T entity) where T : notnull
+        public static async ValueTask<ProcessedEntity> MakeProcessedEntity<T>(this T entity, TypeCache typeCache) where T : notnull
         {
             switch (entity)
             {
@@ -338,7 +399,10 @@ namespace RESTable
                 default:
                 {
                     var processedEntity = new ProcessedEntity();
-                    var properties = ApplicationServicesAccessor.TypeCache.GetDeclaredProperties(entity.GetType()).Values.Where(p => !p.Hidden);
+                    var properties = typeCache
+                        .GetDeclaredProperties(entity.GetType())
+                        .Values
+                        .Where(p => !p.Hidden);
                     foreach (var property in properties)
                         processedEntity[property.Name] = await property.GetValue(entity).ConfigureAwait(false);
                     return processedEntity;
@@ -611,35 +675,35 @@ namespace RESTable
         /// Generates new UriComponents that encode a request for the first number of entities, calculated from an IEntities entity collection.
         /// The count parameter controls how many entities are selected. If omitted, one entity is selected.
         /// </summary>
-        public static IUriComponents GetFirstLink(this IEntities entities, int count = 1)
+        public static ValueTask<IUriComponents> GetFirstLink(this IEntities entities, int count = 1)
         {
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
             components.MetaConditions.Add(new UriCondition(RESTableMetaCondition.Limit, count.ToString()));
-            return components;
+            return new ValueTask<IUriComponents>(components);
         }
 
         /// <summary>
         /// Generates new UriComponents that encode a request for the last number of entities, calculated from an IEntities entity collection.
         /// The count parameter controls how many entities are selected. If omitted, one entity is selected.
         /// </summary>
-        public static IUriComponents GetLastLink(this IEntities entities, int count = 1)
+        public static ValueTask<IUriComponents> GetLastLink(this IEntities entities, int count = 1)
         {
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
             components.MetaConditions.Add(new UriCondition(RESTableMetaCondition.Offset, (-count).ToString()));
             components.MetaConditions.Add(new UriCondition(RESTableMetaCondition.Limit, count.ToString()));
-            return components;
+            return new ValueTask<IUriComponents>(components);
         }
 
         /// <summary>
         /// Generates new UriComponents that encode a request for all entities in a resource, calculated from an IEntities entity collection.
         /// </summary>
-        public static IUriComponents GetAllLink(this IEntities entities)
+        public static ValueTask<IUriComponents> GetAllLink(this IEntities entities)
         {
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
-            return components;
+            return new ValueTask<IUriComponents>(components);
         }
 
         public static IContentTypeProvider GetInputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)

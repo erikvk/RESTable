@@ -44,11 +44,11 @@ namespace RESTable.Excel
 
         public async Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken)
         {
-            await SerializeCollectionAsync(stream, Linq.Enumerable.ToAsyncSingleton(item), cancellationToken).ConfigureAwait(false);
+            await SerializeAsyncEnumerable(stream, Linq.Enumerable.ToAsyncSingleton(item), cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken)
+        public async ValueTask<long> SerializeAsyncEnumerable<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken)
         {
             try
             {
@@ -126,7 +126,7 @@ namespace RESTable.Excel
             _ => await prop.GetValue(target).ConfigureAwait(false)
         };
 
-        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var localStream = new SwappingStream();
             await stream.CopyToAsync(localStream, 81920, cancellationToken).ConfigureAwait(false);
@@ -175,7 +175,7 @@ namespace RESTable.Excel
                 var propertyName = worksheet.Cells[rowNumber, columnIndex].GetValue<string>();
                 if (metadata.GetProperty(propertyName) is { IsWritable: true } writeable)
                     referencedPropertiesList.Add((writeable, columnIndex));
-                else if (metadata.TypeIsDynamic)
+                else if (metadata.TypeIsDictionary)
                     referencedPropertiesList.Add((DynamicProperty.Parse(propertyName), columnIndex));
             }
             return referencedPropertiesList.ToArray();

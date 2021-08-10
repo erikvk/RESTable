@@ -2,9 +2,9 @@
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public class JsonSerializerOptionsAccessor
+    public class JsonSerializerOptionsAccessor : IJsonSerializerOptionsAccessor
     {
-        internal JsonSerializerOptions Options { get; }
+        public JsonSerializerOptions Options { get; }
 
         public JsonSerializerOptionsAccessor(JsonSerializerOptions options)
         {

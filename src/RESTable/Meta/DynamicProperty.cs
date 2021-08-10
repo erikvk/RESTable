@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using RESTable.ContentTypeProviders;
 
 namespace RESTable.Meta
 {
@@ -46,8 +47,8 @@ namespace RESTable.Meta
             Name = ActualName = name;
             DeclaredFallback = declaredFallback;
             Type = typeof(object);
-            var typeCache = ApplicationServicesAccessor.TypeCache;
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            var typeCache = ApplicationServicesAccessor.GetRequiredService<TypeCache>();
+            var jsonProvider = ApplicationServicesAccessor.GetRequiredService<IJsonProvider>();
 
             async ValueTask<object?> getValue(object obj)
             {
@@ -77,7 +78,7 @@ namespace RESTable.Meta
                         }
                         return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
                     }
-                    case JsonElement {ValueKind: JsonValueKind.Object} element:
+                    case JsonElement { ValueKind: JsonValueKind.Object } element:
                     {
                         foreach (var jsonProperty in element.EnumerateObject())
                         {

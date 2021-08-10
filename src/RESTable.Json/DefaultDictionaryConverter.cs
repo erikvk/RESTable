@@ -8,15 +8,15 @@ using static RESTable.Json.DefaultConverterOperations;
 namespace RESTable.Json
 {
     /// <summary>
-    /// Converter for declared types that implement IDictionary{string, object}
+    /// Converter for declared types that are dictionaries, defined as implementing IEnumerable{T} where
+    /// T is some KeyValuePair{TKey,TValue} type.
     /// member.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class DefaultDynamicConverter<T> : JsonConverter<T> where T : IDictionary<string, object?>
+    public class DefaultDictionaryConverter<T, TValue> : JsonConverter<T> where T : IDictionary<string, TValue?>
     {
         private ISerializationMetadata<T> Metadata { get; }
 
-        public DefaultDynamicConverter(ISerializationMetadata<T> metadata)
+        public DefaultDictionaryConverter(ISerializationMetadata<T> metadata)
         {
             Metadata = metadata;
         }
@@ -43,15 +43,12 @@ namespace RESTable.Json
                         if (Metadata.GetProperty(propertyName) is not { } property)
                         {
                             // The read property is not declared, let's add it as dynamic
-                            SetDynamicMember(ref reader, propertyName, instance, options);
+                            SetDynamicMember<T, TValue>(ref reader, propertyName, instance, options);
                         }
                         else
                         {
-                            var value = JsonSerializer.Deserialize(ref reader, property.Type, options);
-                            var setValueTask = property.SetValue(instance, value);
-                            if (setValueTask.IsCompleted)
-                                setValueTask.GetAwaiter().GetResult();
-                            else setValueTask.AsTask().Wait();
+                            // Property is declared, set it using the property's set value task
+                            SetDeclaredMember(ref reader, property, instance, options);
                         }
                         reader.Read();
                     }
@@ -69,7 +66,7 @@ namespace RESTable.Json
                 return;
             }
             writer.WriteStartObject();
-            WriteDynamicMembers(writer, value, options);
+            WriteDynamicMembers<T, string, TValue>(writer, value, options);
             SerializeDeclaredMembers(writer, Metadata, value, options);
             writer.WriteEndObject();
         }

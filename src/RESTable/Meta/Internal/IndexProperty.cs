@@ -26,7 +26,6 @@ namespace RESTable.Meta.Internal
             skipConditions: false,
             hidden: true,
             hiddenIfNull: false,
-            customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
             readOnly: false,
             excelReducer: null,

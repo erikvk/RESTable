@@ -69,7 +69,7 @@ namespace FrameworkApp
                 var body = args.ElementAtOrDefault(2);
 
                 // Make request
-                var request = context.CreateRequest(method, uri, body);
+                var request = context.CreateRequest(method, uri, body: body);
                 await using var result = await request.GetResult();
                 await using var serializedResult = await result.Serialize();
 

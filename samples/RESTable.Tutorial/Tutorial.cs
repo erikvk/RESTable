@@ -25,9 +25,11 @@ namespace RESTable.Tutorial
 {
     public static class ExtensionMethods
     {
-        public static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(
+        public static async IAsyncEnumerable<T> ToAsyncEnumerable<T>
+        (
             this IReceivableSourceBlock<T> source,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            [EnumeratorCancellation] CancellationToken cancellationToken = default
+        )
         {
             while (await source.OutputAvailableAsync(cancellationToken).ConfigureAwait(false))
             {

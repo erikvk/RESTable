@@ -43,7 +43,7 @@ namespace RESTable.Resources.Operations
                 throw new ArgumentNullException(nameof(propertyName), "The name of the changed property could not be established. Check the " +
                                                                       "context of the call to NotifyChange, and consider providing an explicit " +
                                                                       "'propertyName' parameter.");
-            var typeCache = ApplicationServicesAccessor.TypeCache;
+            var typeCache = ApplicationServicesAccessor.GetRequiredService<TypeCache>();
             if (!typeCache.GetDeclaredProperties(typeof(T), groupByActualName: true).TryGetValue(propertyName, out var property))
                 throw new ArgumentException($"Could not find a property with actual name '{propertyName}' in type '{typeof(T)}'.");
 

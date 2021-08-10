@@ -26,6 +26,7 @@ namespace RESTable.SQLite
         private bool OnlyRowId { get; }
         private CancellationToken CancellationToken { get; }
         private long CurrentRowId { get; set; }
+        private ColumnMapping[] TransactMappings { get; }
 
         public async ValueTask DisposeAsync()
         {
@@ -56,14 +57,14 @@ namespace RESTable.SQLite
             return true;
         }
 
-        internal EntityEnumerator(string sql, bool onlyRowId, CancellationToken cancellationToken)
+        internal EntityEnumerator(TableMapping tableMapping, string sql, bool onlyRowId, CancellationToken cancellationToken)
         {
             CancellationToken = cancellationToken;
             Sql = sql;
             OnlyRowId = onlyRowId;
             Current = null!;
+            TransactMappings = tableMapping.TransactMappings;
         }
-
 
         public T Current { get; private set; }
 
@@ -73,8 +74,9 @@ namespace RESTable.SQLite
             entity.RowId = CurrentRowId;
             if (!OnlyRowId)
             {
-                foreach (var column in TableMapping<T>.TransactMappings)
+                for (var index = 0; index < TransactMappings.Length; index++)
                 {
+                    var column = TransactMappings[index];
                     if (column.CLRProperty.Set is not Setter setter)
                         continue;
                     var value = record[column.SQLColumn.Name];

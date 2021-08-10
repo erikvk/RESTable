@@ -29,9 +29,11 @@ namespace RESTable.SQLite
         /// <returns></returns>
         public static IAsyncEnumerable<T> Select(string? where = null, bool onlyRowId = false)
         {
+            var tableMapping = TableMapping<T>.Get;
             var enumerable = new EntityEnumerable<T>
             (
-                sql: $"SELECT RowId,* FROM {TableMapping<T>.TableName} {@where}",
+                tableMapping: tableMapping,
+                sql: $"SELECT RowId,* FROM {TableMapping<T>.TableName} {where}",
                 onlyRowId: onlyRowId
             );
             return enumerable;
@@ -57,8 +59,8 @@ namespace RESTable.SQLite
         {
             var enumerable = (EntityEnumerable<T>) Select(where, onlyRowId);
             if (context is not null)
-                await QueryConsole.Publish(context, enumerable.Sql, null).ConfigureAwait(false);
-            await foreach (var item in enumerable.ConfigureAwait(false))
+                await QueryConsole.Publish(context, enumerable.Sql, cancellationToken).ConfigureAwait(false);
+            await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
                 yield return item;
         }
 
@@ -98,7 +100,7 @@ namespace RESTable.SQLite
                         command.Parameters[param[i]].Value = propertyValue;
                     }
                     if (context is not null)
-                        await QueryConsole.Publish(context, command.CommandText, null).ConfigureAwait(false);
+                        await QueryConsole.Publish(context, command.CommandText, cancellationToken).ConfigureAwait(false);
                     var insertedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     entity.RowId = connection.LastInsertRowId;
                     if (insertedCount == 1)
@@ -147,7 +149,7 @@ namespace RESTable.SQLite
                         command.Parameters[param[i]].Value = propertyValue;
                     }
                     if (context is not null)
-                        await QueryConsole.Publish(context, command.CommandText, null).ConfigureAwait(false);
+                        await QueryConsole.Publish(context, command.CommandText, cancellationToken).ConfigureAwait(false);
                     var updatedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     if (updatedCount == 1)
                         yield return entity;
@@ -184,7 +186,7 @@ namespace RESTable.SQLite
                     await entity._OnDelete().ConfigureAwait(false);
                     command.Parameters[RowIdParameter].Value = entity.RowId;
                     if (context is not null)
-                        await QueryConsole.Publish(context, command.CommandText, null).ConfigureAwait(false);
+                        await QueryConsole.Publish(context, command.CommandText, cancellationToken).ConfigureAwait(false);
                     count += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
 
@@ -200,7 +202,7 @@ namespace RESTable.SQLite
         /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 
         /// by "SELECT COUNT(*) FROM {type} " in the actual query</param>
         /// <returns></returns>
-        public static async Task<long> Count(RESTableContext? context, string? where = null)
+        public static async Task<long> Count(RESTableContext? context, string? where = null, CancellationToken cancellationToken = new())
         {
             var sql = $"SELECT COUNT(RowId) FROM {TableMapping<T>.TableName} {where}";
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
@@ -210,8 +212,8 @@ namespace RESTable.SQLite
             await using (command.ConfigureAwait(false))
             {
                 if (context is not null)
-                    await QueryConsole.Publish(context, command.CommandText, null).ConfigureAwait(false);
-                var result = (long?) await command.ExecuteScalarAsync().ConfigureAwait(false);
+                    await QueryConsole.Publish(context, command.CommandText, cancellationToken).ConfigureAwait(false);
+                var result = (long?) await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
                 return result.GetValueOrDefault();
             }
         }

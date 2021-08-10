@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using RESTable.Auth;
-using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Meta.Internal;
 using RESTable.Meta;
@@ -32,9 +31,9 @@ namespace RESTable
             ResourceFactory resourceFactory,
             ProtocolProviderManager protocolProviderManager,
             RESTableConfiguration configuration,
-            IJsonProvider jsonProvider,
             RootAccess rootAccess,
-            IEnumerable<IStartupActivator> startupActivators
+            IEnumerable<IStartupActivator> startupActivators,
+            IApplicationServiceProvider applicationServiceProvider
         )
         {
             TypeCache = typeCache;
@@ -44,9 +43,7 @@ namespace RESTable
             Configuration = configuration;
             RootAccess = rootAccess;
             StartupActivators = startupActivators;
-            ApplicationServicesAccessor.JsonProvider = jsonProvider;
-            ApplicationServicesAccessor.ResourceCollection = resourceCollection;
-            ApplicationServicesAccessor.TypeCache = typeCache;
+            ApplicationServicesAccessor.ApplicationServiceProvider = applicationServiceProvider;
         }
 
         public bool IsConfigured { get; private set; }

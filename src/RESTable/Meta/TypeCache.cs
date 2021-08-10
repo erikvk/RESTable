@@ -49,33 +49,13 @@ namespace RESTable.Meta
         {
             bool getValue() => !type.IsValueType &&
                                Type.GetTypeCode(type) == TypeCode.Object &&
-                               (IsDictionary(type) || !ImplementsEnumerableInterface(type, out _));
+                               (type.IsDictionary(out var writeAble) && writeAble || !type.ImplementsEnumerableInterface(out _));
 
             if (!CanBePopulatedCache.TryGetValue(type, out var value))
             {
                 value = CanBePopulatedCache[type] = getValue();
             }
             return value;
-        }
-
-        private static bool IsDictionary(Type type) => typeof(IDictionary).IsAssignableFrom(type) ||
-                                                       type.ImplementsGenericInterface(typeof(IDictionary<,>));
-
-        private static bool ImplementsEnumerableInterface(Type type, out Type? parameter)
-        {
-            if (type.ImplementsGenericInterface(typeof(IEnumerable<>), out var parameters) ||
-                type.ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out parameters))
-            {
-                parameter = parameters![0];
-                return true;
-            }
-            if (typeof(IEnumerable).IsAssignableFrom(type))
-            {
-                parameter = typeof(object);
-                return true;
-            }
-            parameter = null;
-            return false;
         }
 
         public EntityTypeContract GetEntityTypeContract(Type type)
@@ -113,6 +93,14 @@ namespace RESTable.Meta
                 switch (_type)
                 {
                     case null: return Array.Empty<DeclaredProperty>();
+                    case var _ when _type.IsDictionary(out _):
+                    {
+                        return FindAndParseDeclaredProperties(_type, flag: true).Select(p =>
+                        {
+                            p.Hidden = true;
+                            return p;
+                        });
+                    }
                     case var _ when _type.IsInterface:
                     {
                         return ParseDeclaredProperties
@@ -184,14 +172,6 @@ namespace RESTable.Meta
                     {
                         return FindAndParseDeclaredProperties(_type).Union(Make(_type.DeclaringType));
                     }
-                    case var _ when _type.IsDictionary():
-                    {
-                        return FindAndParseDeclaredProperties(_type, flag: true).Select(p =>
-                        {
-                            p.Hidden = true;
-                            return p;
-                        });
-                    }
                     default:
                     {
                         return FindAndParseDeclaredProperties(_type);
@@ -243,7 +223,7 @@ namespace RESTable.Meta
 
         public bool TryFindDeclaredProperty(Type type, string key, out DeclaredProperty? declaredProperty)
         {
-            if (!IsDictionary(type) && ImplementsEnumerableInterface(type, out var parameter))
+            if (!type.IsDictionary(out _) && type.ImplementsEnumerableInterface(out var parameter))
             {
                 var collectionReadonly = typeof(IList).IsAssignableFrom(type) || type.ImplementsGenericInterface(typeof(IList<>));
                 switch (key)

@@ -120,7 +120,7 @@ namespace RESTable.Requests
         /// <param name="uri">The URI of the request</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public IRequest CreateRequest(Method method = GET, string? uri = "/", object? body = null, Headers? headers = null)
+        public IRequest CreateRequest(Method method = GET, string? uri = "/", Headers? headers = null, object? body = null)
         {
             if (uri is null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)

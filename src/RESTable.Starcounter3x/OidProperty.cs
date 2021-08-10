@@ -43,7 +43,6 @@ namespace RESTable.Starcounter3x
             hidden: false,
             hiddenIfNull: false,
             allowedConditionOperators: Operators.All,
-            customDateTimeFormat: null,
             getter: GetOid,
             owner: owner,
             readOnly: false,

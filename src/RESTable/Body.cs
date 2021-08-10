@@ -52,7 +52,7 @@ namespace RESTable
             if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
             try
             {
-                return ContentTypeProvider.DeserializeCollection<T>(Stream, cancellationToken);
+                return ContentTypeProvider.DeserializeAsyncEnumerable<T>(Stream, cancellationToken);
             }
             finally
             {
@@ -173,13 +173,13 @@ namespace RESTable
                     await contentTypeProvider.SerializeAsync(Stream, dict, cancellationToken).ConfigureAwait(false);
                     break;
                 case IAsyncEnumerable<object> aie:
-                    await contentTypeProvider.SerializeCollectionAsync(Stream, aie, cancellationToken).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeAsyncEnumerable(Stream, aie, cancellationToken).ConfigureAwait(false);
                     break;
                 case IEnumerable<object> ie:
-                    await contentTypeProvider.SerializeCollectionAsync(Stream, ie.ToAsyncEnumerable(), cancellationToken).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeAsyncEnumerable(Stream, ie.ToAsyncEnumerable(), cancellationToken).ConfigureAwait(false);
                     break;
                 case IEnumerable ie:
-                    await contentTypeProvider.SerializeCollectionAsync(Stream, ie.Cast<object>().ToAsyncEnumerable(), cancellationToken).ConfigureAwait(false);
+                    await contentTypeProvider.SerializeAsyncEnumerable(Stream, ie.Cast<object>().ToAsyncEnumerable(), cancellationToken).ConfigureAwait(false);
                     break;
                 case { } other:
                     await contentTypeProvider.SerializeAsync(Stream, other, cancellationToken).ConfigureAwait(false);
@@ -205,7 +205,7 @@ namespace RESTable
         public async Task<string> ToStringAsync()
         {
             if (IsClosed)
-                return "<The body has been disposed>";
+                return "";
             TryRewind();
             try
             {
@@ -232,7 +232,8 @@ namespace RESTable
 
         public async Task<Body> GetCopy()
         {
-            if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
+            if (IsClosed)
+                throw new ObjectDisposedException(nameof(Stream), "The body has been disposed. Likely, the request or the result was disposed before serialization began");
             var copy = new Body(ProtocolHolder);
             await Stream.CopyToAsync(copy.Stream).ConfigureAwait(false);
             copy.Stream.Rewind();

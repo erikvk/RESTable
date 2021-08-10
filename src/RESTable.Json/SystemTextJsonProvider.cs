@@ -42,10 +42,10 @@ namespace RESTable.Json
         /// <summary>
         /// Creates a new instance of the <see cref="SystemTextJsonProvider"/> type
         /// </summary>
-        public SystemTextJsonProvider(JsonSerializerOptionsAccessor optionsAccessor, ConverterResolver resolver, TypeCache typeCache)
+        public SystemTextJsonProvider(IJsonSerializerOptionsAccessor optionsAccessor, ConverterResolver resolver, TypeCache typeCache)
         {
+            optionsAccessor.Options.Converters.Add(resolver);
             Options = new JsonSerializerOptions(optionsAccessor.Options);
-            Options.Converters.Add(resolver);
             OptionsIgnoreNulls = new JsonSerializerOptions(Options) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
             BufferPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
             TypeCache = typeCache;
@@ -85,7 +85,7 @@ namespace RESTable.Json
         }
 
         /// <inheritdoc />
-        public async ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken)
+        public async ValueTask<long> SerializeAsyncEnumerable<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken)
         {
             await using var writer = new Utf8JsonWriter(stream);
             writer.WriteStartArray();
@@ -214,7 +214,7 @@ namespace RESTable.Json
         public object? ToObject(JsonElement element, Type targetType) => element.ToObject(targetType, Options);
         public JsonElement ToJsonElement(object obj, Type targetType) => obj.ToJsonElement(targetType, Options);
 
-        public async IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var buffer = BufferPool.Rent(Options.DefaultBufferSize);
             JsonReaderState state = default;

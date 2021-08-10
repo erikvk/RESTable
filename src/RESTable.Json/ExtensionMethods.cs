@@ -6,11 +6,6 @@ namespace RESTable.Json
 {
     internal static class ExtensionMethods
     {
-        private static JsonDocument JsonDocumentFromObject<TValue>(TValue value, JsonSerializerOptions options)
-        {
-            return JsonDocumentFromObject(value, typeof(TValue), options);
-        }
-
         private static JsonDocument JsonDocumentFromObject(object? value, Type type, JsonSerializerOptions options)
         {
             var bytes = JsonSerializer.SerializeToUtf8Bytes(value, type, options);

@@ -5,7 +5,7 @@ using RESTable.Requests;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreServerWebSocket : AspNetCoreWebSocket
+    internal sealed class AspNetCoreServerWebSocket : AspNetCoreWebSocket
     {
         private HttpContext HttpContext { get; }
 

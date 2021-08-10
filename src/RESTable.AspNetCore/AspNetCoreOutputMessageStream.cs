@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RESTable.AspNetCore
 {
-    internal class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, IAsyncDisposable
+    internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, IAsyncDisposable
     {
         public override bool CanRead => false;
         public override bool CanWrite => true;
@@ -47,7 +47,7 @@ namespace RESTable.AspNetCore
             WebSocketCancelledToken.ThrowIfCancellationRequested();
             WebSocket.SendAsync
             (
-                buffer: new ArraySegment<byte>(new[] {value}),
+                buffer: new ArraySegment<byte>(new[] { value }),
                 messageType: MessageType,
                 endOfMessage: false,
                 cancellationToken: WebSocketCancelledToken
@@ -61,11 +61,23 @@ namespace RESTable.AspNetCore
             await DisposeAsyncCore().ConfigureAwait(false);
             await base.DisposeAsync();
         }
-#else
 
+        private async ValueTask DisposeAsyncCore()
+        {
+            if (IsDisposed) return;
+            await WebSocket.SendAsync
+            (
+                buffer: new ArraySegment<byte>(Array.Empty<byte>()),
+                messageType: MessageType,
+                endOfMessage: true,
+                cancellationToken: WebSocketCancelledToken
+            ).ConfigureAwait(false);
+            IsDisposed = true;
+        }
+
+#else
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
         {
-            cancellationToken.ThrowIfCancellationRequested();
             WebSocketCancelledToken.ThrowIfCancellationRequested();
             await WebSocket.SendAsync
             (
@@ -94,23 +106,22 @@ namespace RESTable.AspNetCore
         {
             await DisposeAsyncCore().ConfigureAwait(false);
             Dispose(false);
-            GC.SuppressFinalize(this);
         }
-
-#endif
 
         private async ValueTask DisposeAsyncCore()
         {
             if (IsDisposed) return;
             await WebSocket.SendAsync
             (
-                buffer: new ArraySegment<byte>(Array.Empty<byte>()),
+                buffer: ReadOnlyMemory<byte>.Empty,
                 messageType: MessageType,
                 endOfMessage: true,
                 cancellationToken: WebSocketCancelledToken
             ).ConfigureAwait(false);
             IsDisposed = true;
         }
+
+#endif
 
         public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }

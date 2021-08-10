@@ -87,7 +87,7 @@ namespace RESTable.SQLite
         /// </summary>
         internal IEntityResource Resource { get; set; }
 
-        internal IEnumerable<ColumnMapping> TransactMappings { get; private set; }
+        internal ColumnMapping[] TransactMappings { get; private set; }
 
         /// <summary>
         /// The names of the mapped columns of this table mapping

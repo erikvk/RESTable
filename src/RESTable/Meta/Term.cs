@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
+using RESTable.Requests.Processors;
 
 namespace RESTable.Meta
 {
@@ -155,8 +155,6 @@ namespace RESTable.Meta
         /// </summary>
         public ValueTask<TermValue> GetValue(object? target)
         {
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
-
             async ValueTask<TermValue> getTermValue(Term term)
             {
                 object? parent = null;
@@ -165,18 +163,18 @@ namespace RESTable.Meta
                 object? value;
 
                 // If the target is the result of processing using some IProcessor, the type
-                // will be JObject. In that case, the object may contain the entire term key
+                // will be JsonElement. In that case, the object may contain the entire term key
                 // as member, even if the term has multiple properties (common result of add 
                 // and select). This code handles those cases.
-                if (target is JsonElement element)
+                if (target is ProcessedEntity processedEntity)
                 {
-                    if (element.GetProperty(term.Key, StringComparison.OrdinalIgnoreCase) is JsonProperty jproperty)
+                    if (processedEntity.TryFindInDictionary(term.Key, out var processedKey, out var processedValue))
                     {
-                        actualKey = jproperty.Name;
-                        parent = element;
+                        actualKey = processedKey!;
+                        parent = processedEntity;
                         property = DynamicProperty.Parse(term.Key);
-                        value = jsonProvider.ToObject<object>(jproperty.Value);
-                        return new TermValue(value, actualKey, parent, property);
+                        value = processedValue;
+                        return new TermValue(value, actualKey!, parent, property);
                     }
                     term = MakeDynamic(term);
                 }
@@ -245,7 +243,7 @@ namespace RESTable.Meta
 
         private static Term Join(Term term1, params Property[] properties)
         {
-            return Join(term1, (IEnumerable<Property>)properties);
+            return Join(term1, (IEnumerable<Property>) properties);
         }
 
         private static Term Join(Term term1, IEnumerable<Property> properties)
@@ -271,7 +269,7 @@ namespace RESTable.Meta
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((Term)obj);
+            return Equals((Term) obj);
         }
 
         /// <inheritdoc />

@@ -24,7 +24,6 @@ namespace RESTable.Meta.Internal
             skipConditions: false,
             hidden: true,
             hiddenIfNull: false,
-            customDateTimeFormat: null,
             allowedConditionOperators: Operators.All,
             owner: owner,
             getter: null,

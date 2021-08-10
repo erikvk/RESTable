@@ -4,7 +4,6 @@ using RESTable.Results;
 
 namespace RESTable.DefaultProtocol.Serialized
 {
-    [UseDefaultConverter]
     public class SerializedChange<T> : ISerialized where T : class
     {
         private Change<T> Change { get; }

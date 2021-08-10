@@ -5,7 +5,6 @@ using RESTable.Results;
 
 namespace RESTable.DefaultProtocol.Serialized
 {
-    [UseDefaultConverter]
     public class SerializedEntitiesEnumerable<T> : ISerialized where T : class
     {
         private IEntities<T> Entities { get; }

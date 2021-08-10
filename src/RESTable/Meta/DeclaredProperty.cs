@@ -69,11 +69,6 @@ namespace RESTable.Meta
         public bool IsDateTime { get; }
 
         /// <summary>
-        /// A custom datetime format string of this property (if any)
-        /// </summary>
-        public string? CustomDateTimeFormat { get; }
-
-        /// <summary>
         /// Should this member, and all its members, be merged onto the owner type when (de)serializing?
         /// </summary>
         public bool MergeOntoOwner { get; }
@@ -170,7 +165,6 @@ namespace RESTable.Meta
             bool hiddenIfNull,
             bool mergeOntoOwner,
             bool readOnly,
-            string? customDateTimeFormat,
             Operators allowedConditionOperators,
             object? excelReducer,
             Type owner,
@@ -191,11 +185,10 @@ namespace RESTable.Meta
             HiddenIfNull = hiddenIfNull;
             IsEnum = type.IsEnum || type.IsNullable(out var @base) && @base!.IsEnum;
             IsCollection = Type.ImplementsGenericInterface(typeof(ICollection<>));
-            CanBePopulated = ApplicationServicesAccessor.TypeCache.CanBePopulated(type);
+            CanBePopulated = ApplicationServicesAccessor.GetRequiredService<TypeCache>().CanBePopulated(type);
             IsValueType = type.IsValueType;
             AllowedConditionOperators = allowedConditionOperators;
             IsNullable = !type.IsValueType || type.IsNullable(out _) || hidden;
-            CustomDateTimeFormat = customDateTimeFormat;
             IsDateTime = type == typeof(DateTime) || type == typeof(DateTime?);
             Getter = getter;
             Setter = setter;
@@ -214,7 +207,6 @@ namespace RESTable.Meta
             ActualName = p.Name;
             Attributes = p.GetCustomAttributes().ToList();
             var memberAttribute = GetAttribute<RESTableMemberAttribute>();
-            CustomDateTimeFormat = memberAttribute?.DateTimeFormat;
             MergeOntoOwner = memberAttribute?.MergeOntoOwner ?? false;
             ReadOnly = memberAttribute?.ReadOnly ?? false;
             Order = memberAttribute?.Order;
@@ -223,7 +215,7 @@ namespace RESTable.Meta
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTableViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true;
-            CanBePopulated = ApplicationServicesAccessor.TypeCache.CanBePopulated(p.PropertyType);
+            CanBePopulated = ApplicationServicesAccessor.GetRequiredService<TypeCache>().CanBePopulated(p.PropertyType);
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base!.IsEnum;

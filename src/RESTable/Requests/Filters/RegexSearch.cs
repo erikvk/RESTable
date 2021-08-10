@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 using static System.StringComparison;
 
@@ -24,7 +25,7 @@ namespace RESTable.Requests.Filters
         {
             if (Pattern is null)
                 return entities;
-            var jsonProvider = ApplicationServicesAccessor.JsonProvider;
+            var jsonProvider = ApplicationServicesAccessor.GetRequiredService<IJsonProvider>();
             var options = IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             if (Selector is null)
             {

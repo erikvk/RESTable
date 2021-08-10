@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
-
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
@@ -20,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\RESTable.Tests\RESTable.Tests.csproj" />
+        <ProjectReference Include="..\RESTable.Tests\RESTable.Tests.csproj" />
     </ItemGroup>
 
 </Project>

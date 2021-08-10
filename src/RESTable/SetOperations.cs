@@ -36,6 +36,7 @@ namespace RESTable
         private static readonly IEqualityComparer<JsonElement> EqualityComparer = new JsonElementComparer();
 
         public SetOperations() { }
+       
         private SetOperations(IDictionary<string, object?> other) : base(other) { }
 
         /// <inheritdoc />

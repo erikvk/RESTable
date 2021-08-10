@@ -21,7 +21,6 @@ namespace RESTable.Meta
             bool hiddenIfNull = false,
             bool mergeOntoOwner = false,
             bool readOnly = false,
-            string? customDateTimeFormat = null,
             Operators allowedConditionOperators = Operators.All
         ) : base
         (
@@ -34,7 +33,6 @@ namespace RESTable.Meta
             skipConditions: skipConditions,
             hidden: hidden,
             hiddenIfNull: hiddenIfNull,
-            customDateTimeFormat: customDateTimeFormat,
             allowedConditionOperators: allowedConditionOperators,
             owner: owner,
             getter: getter,
@@ -60,7 +58,6 @@ namespace RESTable.Meta
             bool hiddenIfNull = false,
             bool mergeOntoOwner = false,
             bool readOnly = false,
-            string? customDateTimeFormat = null,
             Operators allowedConditionOperators = Operators.All
         ) : base
         (
@@ -73,7 +70,6 @@ namespace RESTable.Meta
             skipConditions: skipConditions,
             hidden: hidden,
             hiddenIfNull: hiddenIfNull,
-            customDateTimeFormat: customDateTimeFormat,
             allowedConditionOperators: allowedConditionOperators,
             owner: typeof(TOwner),
             excelReducer: null,
@@ -81,14 +77,14 @@ namespace RESTable.Meta
                 ? default(Getter)
                 : async o =>
                 {
-                    var value = await getter((TOwner)o).ConfigureAwait(false);
+                    var value = await getter((TOwner) o).ConfigureAwait(false);
                     return value;
                 },
             setter: setter is null
                 ? default(Setter)
                 : async (o, v) =>
                 {
-                    await setter((TOwner)o, (TPropertyType)v!).ConfigureAwait(false);
+                    await setter((TOwner) o, (TPropertyType) v!).ConfigureAwait(false);
                 },
             mergeOntoOwner: mergeOntoOwner,
             readOnly: readOnly

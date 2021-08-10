@@ -15,7 +15,7 @@ namespace RESTable.Json
         public override void Write(Utf8JsonWriter writer, ProcessedEntity value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-            DefaultConverterOperations.WriteDynamicMembers(writer, value, options);
+            DefaultConverterOperations.WriteDynamicMembers<ProcessedEntity, string, object?>(writer, value, options);
             writer.WriteEndObject();
         }
     }

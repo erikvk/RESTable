@@ -6,7 +6,6 @@ using RESTable.Results;
 
 namespace RESTable.DefaultProtocol.Serialized
 {
-    [UseDefaultConverter]
     public class SerializedInvalidEntity : ISerializedError
     {
         private InvalidInputEntity InvalidEntity { get; }

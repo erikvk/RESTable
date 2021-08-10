@@ -107,7 +107,7 @@ namespace RESTable.Meta.Internal
             IsInternal = attribute is RESTableInternalAttribute;
             InterfaceType = typeof(T).GetRESTableInterfaceType();
             (DynamicConditionsAllowed, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
-            DeclaredPropertiesFlagged = typeof(T).IsDictionary() || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T));
+            DeclaredPropertiesFlagged = typeof(T).IsDictionary(out _) || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T));
             GETAvailableToAll = attribute.GETAvailableToAll;
             ResourceKind = ResourceKind.EntityResource;
             if (DeclaredPropertiesFlagged)

@@ -118,7 +118,7 @@ namespace RESTable.OData
                     foreach (var (type, members) in complexTypes)
                     {
                         var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
-                        var isOpenType = type.IsDictionary() || dynamicMembers.Any();
+                        var isOpenType = type.IsDictionary(out _) || dynamicMembers.Any();
                         await swr.WriteAsync($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
                         await WriteMembers(swr, declaredMembers).ConfigureAwait(false);
                         await swr.WriteAsync("</ComplexType>").ConfigureAwait(false);
@@ -131,12 +131,12 @@ namespace RESTable.OData
                     foreach (var (type, members) in metadata.EntityResourceTypes.Where(t => t.Key != typeof(Metadata)))
                     {
                         var (dynamicMembers, declaredMembers) = members.Split(IsDynamicMember);
-                        var isOpenType = type.IsDictionary() || dynamicMembers.Any();
+                        var isOpenType = type.IsDictionary(out _) || dynamicMembers.Any();
                         await swr.WriteAsync($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">").ConfigureAwait(false);
                         var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
                         if (key is not null)
                             await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
-                        await WriteMembers(swr, declaredMembers.Where(p => p is not DeclaredProperty {Hidden: true} d || d.Equals(key))).ConfigureAwait(false);
+                        await WriteMembers(swr, declaredMembers.Where(p => p is not DeclaredProperty { Hidden: true } d || d.Equals(key))).ConfigureAwait(false);
                         await swr.WriteAsync("</EntityType>").ConfigureAwait(false);
                     }
                     await swr.WriteAsync("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>").ConfigureAwait(false);

@@ -44,6 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddRESTable(this IServiceCollection serviceCollection)
         {
+            serviceCollection.AddSingleton<IApplicationServiceProvider>(sp => new ApplicationServiceProvider(sp));
             serviceCollection.TryAddSingleton<WebSocketManager>();
             serviceCollection.TryAddSingleton<RESTableConfiguration>();
             serviceCollection.TryAddSingleton<RESTableConfigurator>();

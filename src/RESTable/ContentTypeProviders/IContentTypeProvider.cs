@@ -47,24 +47,22 @@ namespace RESTable.ContentTypeProviders
         string ContentDispositionFileExtension { get; }
 
         /// <summary>
-        /// Serializes the entity collection to the given Stream and returns the number of entities serialized.
-        /// </summary>
-        ValueTask<long> SerializeCollectionAsync<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Serializes the entity to the given Stream and returns the number of entities serialized.
         /// </summary>
         Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 
-        /// content types included in CanRead.
+        /// Serializes the entity collection to the given Stream and returns the number of entities serialized.
         /// </summary>
-        IAsyncEnumerable<T> DeserializeCollection<T>(Stream stream, CancellationToken cancellationToken);
+        ValueTask<long> SerializeAsyncEnumerable<T>(Stream stream, IAsyncEnumerable<T> collection, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Populates the data from the stream to all entities in the given collection. Populate calls can only be made with 
-        /// content types included in CanRead.
+        /// Deserializes the data from the stream to the given IAsyncEnumerable type.
+        /// </summary>
+        IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream stream, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Populates the data from the stream to all entities in the given collection.
         /// </summary>
         IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, CancellationToken cancellationToken) where T : notnull;
     }

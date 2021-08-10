@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RESTable.Meta;
 
 namespace RESTable.Json
 {
-    public class TypeConverter<T> : JsonConverter<T> where T : Type
+    public class ResourceConverter<T> : JsonConverter<T> where T : IResource
     {
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -13,7 +14,7 @@ namespace RESTable.Json
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value.GetRESTableTypeName());
+            writer.WriteStringValue(value.Name);
         }
     }
 }

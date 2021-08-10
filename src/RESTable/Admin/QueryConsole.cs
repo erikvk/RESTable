@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
@@ -17,13 +18,13 @@ namespace RESTable.Admin
     [RESTable]
     public class QueryConsole : FeedTerminal
     {
-        public static async Task Publish(RESTableContext context, string query, params object[]? args)
+        public static async Task Publish(RESTableContext context, string query, CancellationToken cancellationToken, params object[]? args)
         {
             var consoles = context.GetRequiredService<ICombinedTerminal<QueryConsole>>();
             if (consoles.Count == 0) return;
             var argsString = args is null ? null : $"{NewLine}Args: {string.Join(", ", args)}";
             var message = $"{DateTime.UtcNow:O}: {query}{argsString}{NewLine}";
-            await consoles.CombinedWebSocket.SendText(message).ConfigureAwait(false);
+            await consoles.CombinedWebSocket.SendText(message, cancellationToken).ConfigureAwait(false);
         }
     }
 }

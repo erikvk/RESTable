@@ -28,18 +28,11 @@ namespace RESTable.Meta
         /// <param name="value">The value to set on the target.</param>
         public void SetValue(object target, object? value)
         {
-            try
+            if (_setter is null)
             {
-                if (_setter is null)
-                {
-                    _setter = ExpressionReflectionDelegateFactory.Instance.CreateSet<object>(_memberInfo);
-                }
-                _setter(target, value);
+                _setter = ExpressionReflectionDelegateFactory.Instance.CreateSet<object>(_memberInfo);
             }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error setting value to '{_memberInfo.Name}' on '{target.GetType()}'.", ex);
-            }
+            _setter(target, value);
         }
 
         /// <summary>
@@ -49,18 +42,11 @@ namespace RESTable.Meta
         /// <returns>The value.</returns>
         public object? GetValue(object target)
         {
-            try
+            if (_getter is null)
             {
-                if (_getter is null)
-                {
-                    _getter = ExpressionReflectionDelegateFactory.Instance.CreateGet<object>(_memberInfo);
-                }
-                return _getter(target);
+                _getter = ExpressionReflectionDelegateFactory.Instance.CreateGet<object>(_memberInfo);
             }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error getting value from '{_memberInfo.Name}' on '{target.GetType()}'.", ex);
-            }
+            return _getter(target);
         }
     }
 }

@@ -5,7 +5,6 @@ using RESTable.Results;
 
 namespace RESTable.DefaultProtocol.Serialized
 {
-    [UseDefaultConverter]
     public class SerializedEntitiesAsyncEnumerable<T> : ISerialized where T : class
     {
         public string Status => "success";

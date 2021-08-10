@@ -268,7 +268,7 @@ namespace RESTable.DefaultProtocol
         {
             if (contentTypeProvider is not IJsonProvider jsonProvider)
             {
-                var count = await contentTypeProvider.SerializeCollectionAsync(toSerialize.Body, entities, cancellationToken).ConfigureAwait(false);
+                var count = await contentTypeProvider.SerializeAsyncEnumerable(toSerialize.Body, entities, cancellationToken).ConfigureAwait(false);
                 toSerialize.EntityCount = count;
                 return;
             }

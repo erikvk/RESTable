@@ -6,7 +6,7 @@ namespace RESTable
     /// <summary>
     /// A collection of ContentType instances
     /// </summary>
-    public class ContentTypes : List<ContentType>
+    public sealed class ContentTypes : List<ContentType>
     {
         /// <inheritdoc />
         public override string ToString() => string.Join(",", this);

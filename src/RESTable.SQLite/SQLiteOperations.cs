@@ -49,7 +49,7 @@ namespace RESTable.SQLite
                     .CountAsync(cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
             }
-            return await SQLite<T>.Count(request.Context, sql.ToSQLiteWhereClause()).ConfigureAwait(false);
+            return await SQLite<T>.Count(request.Context, sql.ToSQLiteWhereClause(), cancellationToken).ConfigureAwait(false);
         }
 
         private static bool IsSQLiteQueryable(ICondition condition) => condition.Term.Count == 1 &&

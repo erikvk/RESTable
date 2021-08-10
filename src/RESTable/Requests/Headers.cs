@@ -10,7 +10,7 @@ namespace RESTable.Requests
     /// <summary>
     /// A collection of request headers. Key comparison is case insensitive.
     /// </summary>
-    public class Headers : IHeaders, IHeadersInternal
+    public sealed class Headers : IHeaders, IHeadersInternal
     {
         #region Response headers
 

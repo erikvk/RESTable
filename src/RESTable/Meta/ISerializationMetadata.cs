@@ -6,7 +6,8 @@
         object? CreateInstance();
         DeclaredProperty[] PropertiesToSerialize { get; }
         DeclaredProperty? GetProperty(string name);
-        bool TypeIsDynamic { get; }
+        bool TypeIsDictionary { get; }
+        bool TypeIsWritableDictionary { get; }
     }
 
     public interface ISerializationMetadata<T> : ISerializationMetadata

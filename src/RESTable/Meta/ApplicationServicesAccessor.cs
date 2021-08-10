@@ -1,11 +1,12 @@
-﻿using RESTable.ContentTypeProviders;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace RESTable.Meta
 {
     internal static class ApplicationServicesAccessor
     {
-        internal static IJsonProvider JsonProvider { get; set; } = null!;
-        internal static TypeCache TypeCache { get; set; } = null!;
-        internal static ResourceCollection ResourceCollection { get; set; } = null!;
+        internal static IServiceProvider ApplicationServiceProvider { get; set; } = null!;
+
+        internal static T GetRequiredService<T>() where T : notnull => ApplicationServiceProvider.GetRequiredService<T>();
     }
 }

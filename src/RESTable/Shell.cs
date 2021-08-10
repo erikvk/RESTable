@@ -160,7 +160,7 @@ namespace RESTable
             streamBufferSize = MaxStreamBufferSize;
             Unsafe = false;
             PreviousEntities = null;
-            query = "";
+            query = "/";
             previousQuery = "";
             WriteHeaders = false;
             AutoOptions = false;
@@ -180,10 +180,6 @@ namespace RESTable
         {
             if (Query.Length == 0 || ConfirmationContinuation is not null)
             {
-                if (input is IAsyncDisposable asyncDisposable)
-                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-                // ReSharper disable once MethodHasAsyncOverload
-                else input.Dispose();
                 await WebSocket.SendResult(new InvalidShellStateForBinaryInput(), cancellationToken: cancellationToken).ConfigureAwait(false);
             }
             else await SafeOperation(POST, input, cancellationToken).ConfigureAwait(false);
@@ -353,7 +349,7 @@ namespace RESTable
                             );
                             var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
                             await using var schemaResult = await schemaRequest.GetResultOrThrow<IEntities>(cancellationToken: cancellationToken).ConfigureAwait(false);
-                            await SerializeAndSendResult(schemaResult).ConfigureAwait(false);
+                            await SerializeAndSendResult(schemaResult, cancellationToken: cancellationToken).ConfigureAwait(false);
                             break;
                         }
 
@@ -440,39 +436,33 @@ namespace RESTable
                                 .ConfigureAwait(false);
                             break;
                         case "FIRST":
-                            await Permute(p => p.GetFirstLink(tail.AsNumber() ?? 1)).ConfigureAwait(false);
+                            await GetLinkAndNavigate(p => p.GetFirstLink(tail.AsNumber() ?? 1)).ConfigureAwait(false);
                             break;
                         case "LAST":
-                            await Permute(p => p.GetLastLink(tail.AsNumber() ?? 1)).ConfigureAwait(false);
+                            await GetLinkAndNavigate(p => p.GetLastLink(tail.AsNumber() ?? 1)).ConfigureAwait(false);
                             break;
                         case "ALL":
-                            await Permute(p => p.GetAllLink()).ConfigureAwait(false);
+                            await GetLinkAndNavigate(p => p.GetAllLink()).ConfigureAwait(false);
                             break;
                         case "NEXT":
-                            await Permute
+                            await GetLinkAndNavigate(async p => p.GetNextPageLink
                             (
-                                asyncPermuter: async p => p.GetNextPageLink
-                                (
-                                    entityCount: await p.CountAsync().ConfigureAwait(false),
-                                    nextPageSize: tail.AsNumber() ?? -1
-                                )
-                            ).ConfigureAwait(false);
+                                entityCount: await p.CountAsync().ConfigureAwait(false),
+                                nextPageSize: tail.AsNumber() ?? -1
+                            )).ConfigureAwait(false);
                             break;
                         case "PREV":
                         case "PREVIOUS":
-                            await Permute
+                            await GetLinkAndNavigate(async p => p.GetPreviousPageLink
                             (
-                                asyncPermuter: async p => p.GetPreviousPageLink
-                                (
-                                    entityCount: await p.CountAsync().ConfigureAwait(false),
-                                    nextPageSize: tail.AsNumber() ?? -1
-                                )
-                            ).ConfigureAwait(false);
+                                entityCount: await p.CountAsync().ConfigureAwait(false),
+                                nextPageSize: tail.AsNumber() ?? -1
+                            )).ConfigureAwait(false);
                             break;
 
                         #region Nonsense
 
-                        case "HELLO" when tail.EqualsNoCase(", world!"):
+                        case "HELLO," when tail.EqualsNoCase("world!"):
 
                             string getHelloWorld() => new Random().Next(0, 7) switch
                             {
@@ -539,35 +529,30 @@ namespace RESTable
 
         private async Task SendHeaders() => await WebSocket.SendJson(new { WebSocket.Headers }).ConfigureAwait(false);
 
-        private async Task EnsurePreviousEntities()
+        private async ValueTask<bool> EnsurePreviousEntities()
         {
             if (PreviousEntities is null)
             {
                 await WsGetPreliminary().ConfigureAwait(false);
                 if (PreviousEntities is null)
                 {
-                    await SendResult(new ShellNoContent(WebSocket)).ConfigureAwait(false);
+                    return false;
                 }
             }
+            return true;
         }
 
-        private async Task Permute(Func<IEntities, IUriComponents> permuter)
+        private async Task GetLinkAndNavigate(Func<IEntities, ValueTask<IUriComponents>> linkSelector)
         {
-            await EnsurePreviousEntities().ConfigureAwait(false);
-            var link = permuter(PreviousEntities!);
-            await Navigate(link.ToString()).ConfigureAwait(false);
-        }
-
-        private async Task Permute(Func<IEntities, ValueTask<IUriComponents>> asyncPermuter)
-        {
-            await EnsurePreviousEntities().ConfigureAwait(false);
-            var link = await asyncPermuter(PreviousEntities!).ConfigureAwait(false);
+            var hasContent = await EnsurePreviousEntities().ConfigureAwait(false);
+            if (!hasContent)
+                return;
+            var link = await linkSelector(PreviousEntities!).ConfigureAwait(false);
             await Navigate(link.ToString()).ConfigureAwait(false);
         }
 
         private async Task<IResult> WsGetPreliminary()
         {
-            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
             var request = WebSocket.Context.CreateRequest(GET, local, null, WebSocket.Headers);
             await using var result = await request.GetResult().ConfigureAwait(false);
@@ -594,9 +579,8 @@ namespace RESTable
 
         private async Task<IResult> GetResult(Method method, object? body = null, CancellationToken cancellationToken = new())
         {
-            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers);
+            var request = WebSocket.Context.CreateRequest(method, local, WebSocket.Headers, body);
             var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
             switch (result)
             {
@@ -649,7 +633,7 @@ namespace RESTable
         {
             var sw = Stopwatch.StartNew();
             await using var result = await GetResult(method, body, cancellationToken).ConfigureAwait(false);
-            await SerializeAndSendResult(result, sw.Elapsed).ConfigureAwait(true);
+            await SerializeAndSendResult(result, sw.Elapsed, cancellationToken).ConfigureAwait(true);
         }
 
         private async Task UnsafeOperation(Method method, object? body = null, CancellationToken cancellationToken = new())
@@ -708,7 +692,6 @@ namespace RESTable
             switch (result)
             {
                 case var _ when Query == "":
-                case ShellNoQuery _:
                 {
                     await WebSocket.SendText("? <no query>", cancellationToken).ConfigureAwait(false);
                     break;
@@ -721,45 +704,28 @@ namespace RESTable
             }
         }
 
-        private async Task SerializeAndSendResult(IResult result, TimeSpan? elapsed = null)
+        private async Task SerializeAndSendResult(IResult result, TimeSpan? elapsed = null, CancellationToken cancellationToken = new())
         {
             if (result is SwitchedTerminal) return;
-            await WebSocket.SendResult(result, elapsed, WriteHeaders).ConfigureAwait(false);
-            var message = await WebSocket.GetMessageStream(false).ConfigureAwait(false);
+            await WebSocket.SendResult(result, elapsed, WriteHeaders, cancellationToken).ConfigureAwait(false);
+
+            var message = await WebSocket.GetMessageStream(false, cancellationToken).ConfigureAwait(false);
 #if NETSTANDARD2_0
-            using (message)
+                using (message)
 #else
             await using (message.ConfigureAwait(false))
 #endif
             {
-                await using var serialized = await result.Serialize(message).ConfigureAwait(false);
+                await using var serialized = await result.Serialize(message, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
-            switch (result)
-            {
-                case var _ when Query == "":
-                case ShellNoQuery _:
-                    await WebSocket.SendText("? <no query>").ConfigureAwait(false);
-                    break;
-                default:
-                    await WebSocket.SendText("? " + Query).ConfigureAwait(false);
-                    break;
-            }
+            await WebSocket.SendText("? " + Query, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null, CancellationToken cancellationToken = new())
         {
             if (serializedResult.Result is SwitchedTerminal) return;
             await WebSocket.SendSerializedResult(serializedResult, elapsed, WriteHeaders, cancellationToken: cancellationToken).ConfigureAwait(false);
-            switch (serializedResult.Result)
-            {
-                case var _ when Query == "":
-                case ShellNoQuery _:
-                    await WebSocket.SendText("? <no query>", cancellationToken).ConfigureAwait(false);
-                    break;
-                default:
-                    await WebSocket.SendText("? " + Query, cancellationToken).ConfigureAwait(false);
-                    break;
-            }
+            await WebSocket.SendText("? " + Query, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task StreamSerializedResult(ISerializedResult serializedResult, TimeSpan? elapsed = null, CancellationToken cancellationToken = new())
@@ -767,16 +733,7 @@ namespace RESTable
             if (serializedResult.Result is SwitchedTerminal) return;
             await WebSocket.StreamSerializedResult(serializedResult, StreamBufferSize, elapsed, WriteHeaders, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
-            switch (serializedResult.Result)
-            {
-                case var _ when Query == "":
-                case ShellNoQuery _:
-                    await WebSocket.SendText("? <no query>", cancellationToken).ConfigureAwait(false);
-                    break;
-                default:
-                    await WebSocket.SendText("? " + Query, cancellationToken).ConfigureAwait(false);
-                    break;
-            }
+            await WebSocket.SendText("? " + Query, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task SendShellInit(CancellationToken cancellationToken) =>

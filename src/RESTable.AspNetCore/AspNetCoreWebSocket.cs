@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -12,9 +13,13 @@ namespace RESTable.AspNetCore
     internal abstract class AspNetCoreWebSocket : WebSockets.WebSocket
     {
         protected WebSocket WebSocket { get; set; }
+        protected ArrayPool<byte> ArrayPool { get; }
+
+        internal const int WebSocketBufferSize = 4096;
 
         public AspNetCoreWebSocket(string webSocketId, RESTableContext context) : base(webSocketId, context)
         {
+            ArrayPool = ArrayPool<byte>.Create(WebSocketBufferSize, 32);
             WebSocket = null!;
         }
 
@@ -32,7 +37,7 @@ namespace RESTable.AspNetCore
 
         protected override async Task<long> Send(Stream data, bool asText, CancellationToken token)
         {
-            var buffer = new byte[4096];
+            var buffer = ArrayPool.Rent(WebSocketBufferSize);
             var messageType = asText ? Text : Binary;
             long bytesSent = 0;
             bool lastFrame;
@@ -76,7 +81,7 @@ namespace RESTable.AspNetCore
                 try
                 {
                     var nextMessageResult = await WebSocket.ReceiveAsync(EmptyBuffer, cancellationToken).ConfigureAwait(false);
-                    var nextMessage = new AspNetCoreInputMessageStream(WebSocket, nextMessageResult, cancellationToken);
+                    var nextMessage = new AspNetCoreInputMessageStream(WebSocket, nextMessageResult, ArrayPool, cancellationToken);
                     await using var nextMessageDisposable = nextMessage.ConfigureAwait(false);
                     switch (nextMessage.MessageType)
                     {
