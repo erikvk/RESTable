@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,15 +18,13 @@ namespace RESTable.Json
     public class ConverterResolver : JsonConverterFactory
     {
         private TypeCache TypeCache { get; }
-        private HashSet<JsonConverter> CustomConverters { get; }
         private IReadOnlyDictionary<Type, JsonConverter> BuiltInConverters { get; }
-        private IApplicationServiceProvider ApplicationServiceProvider { get; }
+        private IApplicationServiceProvider ServiceProvider { get; }
 
-        public ConverterResolver(TypeCache typeCache, IApplicationServiceProvider applicationServiceProvider, IJsonSerializerOptionsAccessor optionsAccessor)
+        public ConverterResolver(TypeCache typeCache, IApplicationServiceProvider serviceProvider)
         {
             TypeCache = typeCache;
-            ApplicationServiceProvider = applicationServiceProvider;
-            CustomConverters = optionsAccessor.Options.Converters.ToHashSet();
+            ServiceProvider = serviceProvider;
             BuiltInConverters = new Dictionary<Type, JsonConverter>
             {
                 [typeof(HeadersConverter)] = new HeadersConverter(),
@@ -40,17 +37,18 @@ namespace RESTable.Json
             };
         }
 
-        private Type? GetConverterType(Type objectType) => objectType switch
-        {
-            // We let any custom converter override this resolver
-            _ when CustomConverters.FirstOrDefault(c => c.CanConvert(objectType)) is { } converter => converter.GetType(),
+        public override bool CanConvert(Type typeToConvert) => GetConverterType(typeToConvert) is not null;
 
+        private static Type? GetConverterType(Type objectType) => objectType switch
+        {
             // Attributes are respected
             _ when objectType.HasAttribute(out JsonConverterAttribute? a) => a!.ConverterType,
 
-            // We map some types to the RESTable built-in converters
+            // Types and resources are given a special treatment
             _ when typeof(Type).IsAssignableFrom(objectType) => typeof(TypeConverter<>).MakeGenericType(objectType),
             _ when typeof(IResource).IsAssignableFrom(objectType) => typeof(ResourceConverter<>).MakeGenericType(objectType),
+
+            // We map some types to the RESTable built-in converters
             _ when objectType == typeof(Headers) => typeof(HeadersConverter),
             _ when objectType == typeof(ContentType) => typeof(ContentTypeConverter),
             _ when objectType == typeof(ContentTypes) => typeof(ContentTypesConverter),
@@ -76,11 +74,6 @@ namespace RESTable.Json
             _ => typeof(DefaultDeclaredConverter<>).MakeGenericType(objectType)
         };
 
-        public override bool CanConvert(Type typeToConvert)
-        {
-            return GetConverterType(typeToConvert) is not null;
-        }
-
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             var converterType = GetConverterType(typeToConvert);
@@ -91,7 +84,7 @@ namespace RESTable.Json
                 BuiltInConverters.TryGetValue(converterType, out match);
             if (match is null && converterType.IsGenericType)
             {
-                match = (JsonConverter?) ActivatorUtilities.CreateInstance(ApplicationServiceProvider, converterType);
+                match = (JsonConverter?) ActivatorUtilities.CreateInstance(ServiceProvider, converterType);
             }
             if (match is JsonConverterFactory factory)
             {

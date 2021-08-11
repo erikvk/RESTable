@@ -80,7 +80,7 @@ namespace RESTable
                     // We have encountered an unknown member in the input JSON. Let's skip it.
                     continue;
                 }
-                // We set the index to default to signal that this property is handled.
+                // We set the index to default to signal that this property has been populated.
                 populateSource.Properties[index] = default;
                 actions[actionCount] = GetDeclaredPropertyAction(declaredProperty!, value, typeCache);
                 actionCount += 1;

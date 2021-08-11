@@ -8,7 +8,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 
@@ -42,11 +41,10 @@ namespace RESTable.Json
         /// <summary>
         /// Creates a new instance of the <see cref="SystemTextJsonProvider"/> type
         /// </summary>
-        public SystemTextJsonProvider(IJsonSerializerOptionsAccessor optionsAccessor, ConverterResolver resolver, TypeCache typeCache)
+        public SystemTextJsonProvider(JsonSerializerOptions options, TypeCache typeCache)
         {
-            optionsAccessor.Options.Converters.Add(resolver);
-            Options = new JsonSerializerOptions(optionsAccessor.Options);
-            OptionsIgnoreNulls = new JsonSerializerOptions(Options) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+            Options = new JsonSerializerOptions(options);
+            OptionsIgnoreNulls = new JsonSerializerOptions(options) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
             BufferPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
             TypeCache = typeCache;
         }
@@ -172,13 +170,13 @@ namespace RESTable.Json
             return new Populator(typeof(T), populateSource, TypeCache).PopulateAsync;
         }
 
-        public async ValueTask PopulateAsync<T>(T target, string json, CancellationToken cancellationToken) where T : notnull
+        public async ValueTask PopulateAsync<T>(T target, string json) where T : notnull
         {
             var populator = GetPopulator<T>(json);
             await populator(target).ConfigureAwait(false);
         }
 
-        public async ValueTask PopulateAsync<T>(T target, JsonElement json, CancellationToken cancellationToken) where T : notnull
+        public async ValueTask PopulateAsync<T>(T target, JsonElement json) where T : notnull
         {
             var populator = GetPopulator<T>(json);
             await populator(target).ConfigureAwait(false);
@@ -199,14 +197,14 @@ namespace RESTable.Json
             return JsonSerializer.Deserialize(span, targetType, Options);
         }
 
-        public ValueTask<T?> DeserializeAsync<T>(Stream stream)
+        public ValueTask<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken)
         {
-            return JsonSerializer.DeserializeAsync<T>(stream, Options);
+            return JsonSerializer.DeserializeAsync<T>(stream, Options, cancellationToken);
         }
 
-        public ValueTask<object?> DeserializeAsync(Stream stream, Type targetType)
+        public ValueTask<object?> DeserializeAsync(Stream stream, Type targetType, CancellationToken cancellationToken)
         {
-            return JsonSerializer.DeserializeAsync(stream, targetType, Options);
+            return JsonSerializer.DeserializeAsync(stream, targetType, Options, cancellationToken);
         }
 
         public T? ToObject<T>(JsonElement element) => element.ToObject<T>(Options);

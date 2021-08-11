@@ -160,7 +160,7 @@ namespace RESTable
             streamBufferSize = MaxStreamBufferSize;
             Unsafe = false;
             PreviousEntities = null;
-            query = "/";
+            query = "";
             previousQuery = "";
             WriteHeaders = false;
             AutoOptions = false;
@@ -197,13 +197,17 @@ namespace RESTable
         {
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
-                await JsonProvider.PopulateAsync(this, config, cancellationToken).ConfigureAwait(false);
+                await JsonProvider.PopulateAsync(this, config).ConfigureAwait(false);
                 await SendShellInit(cancellationToken).ConfigureAwait(false);
                 await SendQuery().ConfigureAwait(false);
             }
             else if (Query != "")
                 await Navigate().ConfigureAwait(false);
-            else await SendShellInit(cancellationToken).ConfigureAwait(false);
+            else
+            {
+                Query = $"/{TerminalResource.Name}";
+                await SendShellInit(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         private async Task Navigate(string? input = null, bool sendQuery = true)
