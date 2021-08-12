@@ -79,11 +79,6 @@ namespace RESTable.Meta
         public bool IsCollection { get; }
 
         /// <summary>
-        /// Can this property be populated?
-        /// </summary>
-        public bool CanBePopulated { get; }
-
-        /// <summary>
         /// Is this property of a value type?
         /// </summary>
         public bool IsValueType { get; }
@@ -185,7 +180,6 @@ namespace RESTable.Meta
             HiddenIfNull = hiddenIfNull;
             IsEnum = type.IsEnum || type.IsNullable(out var @base) && @base!.IsEnum;
             IsCollection = Type.ImplementsGenericInterface(typeof(ICollection<>));
-            CanBePopulated = ApplicationServicesAccessor.GetRequiredService<TypeCache>().CanBePopulated(type);
             IsValueType = type.IsValueType;
             AllowedConditionOperators = allowedConditionOperators;
             IsNullable = !type.IsValueType || type.IsNullable(out _) || hidden;
@@ -215,7 +209,6 @@ namespace RESTable.Meta
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType!.HasAttribute<RESTableViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true;
-            CanBePopulated = ApplicationServicesAccessor.GetRequiredService<TypeCache>().CanBePopulated(p.PropertyType);
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base!.IsEnum;

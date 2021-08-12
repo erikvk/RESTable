@@ -26,6 +26,10 @@ namespace RESTable
                 }
                 case SourceKind.Value:
                 {
+                    // The type can be populated, but the PopulateSource is a value. There's nothing we can do 
+                    // to populate from it, but we can give the PopulateSource a chance to convert it to an
+                    // instance of the expected type. We know that the expected type is a reference type
+                    // (value types cannot be populated), so we have to create it in each invocation.
                     Action = _ => new ValueTask<object>(source.GetValue(toPopulate)!);
                     return;
                 }
@@ -74,11 +78,14 @@ namespace RESTable
             TypeCache typeCache
         )
         {
-            var declaredProperties = typeCache.GetDeclaredProperties(toPopulate);
             if (populateSource.Properties.Length == 0)
+            {
+                // No properties to populate
                 return DoNothing;
+            }
             var actions = new PopulatorAction[populateSource.Properties.Length];
             var actionCount = 0;
+            var declaredProperties = typeCache.GetDeclaredProperties(toPopulate);
 
             for (var index = 0; index < populateSource.Properties.Length; index += 1)
             {
@@ -137,7 +144,7 @@ namespace RESTable
         private static PopulatorAction GetDeclaredPropertyAction(DeclaredProperty declaredProperty, PopulateSource source, TypeCache typeCache)
         {
             // If it can or should not be populated, make a set value action for it
-            if (!declaredProperty.CanBePopulated || declaredProperty.ReplaceOnUpdate)
+            if (!typeCache.CanBePopulated(declaredProperty.Type) || declaredProperty.ReplaceOnUpdate)
             {
                 if (!declaredProperty.IsWritable)
                 {
@@ -147,7 +154,7 @@ namespace RESTable
 
                 var hasPresetValue = false;
                 // If the value is null or a value type, we can assign the same (possibly boxed) value to all properties.
-                // that value can be established right now, and stored in presetValue.
+                // That value can be established right now, and stored in presetValue.
                 object? presetValue = null;
                 if (source.SourceKind == SourceKind.Null)
                 {
