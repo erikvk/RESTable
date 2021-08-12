@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace RESTable.Resources.Operations
@@ -20,6 +21,10 @@ namespace RESTable.Resources.Operations
             InvalidMembers = invalidMembers;
         }
 
-        public override string ToString() => JsonSerializer.Serialize(this);
+        public override string ToString()
+        {
+            var data = InvalidMembers.ToDictionary(m => m.MemberName, m => m.Message);
+            return JsonSerializer.Serialize(data);
+        }
     }
 }

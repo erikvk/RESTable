@@ -52,6 +52,7 @@ namespace RESTable.Json
             {
                 JsonValueKind.Undefined => default,
                 JsonValueKind.Null => default,
+                JsonValueKind.String when typeof(T).IsEnum => (T) Enum.Parse(typeof(T), element.GetString()!),
                 JsonValueKind.String when element.GetString() is T t => t,
                 JsonValueKind.String => throw exception(element.GetString()),
                 JsonValueKind.Number => Type.GetTypeCode(typeof(T)) switch
@@ -117,8 +118,8 @@ namespace RESTable.Json
             {
                 JsonValueKind.Undefined => default,
                 JsonValueKind.Null => default,
+                JsonValueKind.String when targetType.IsEnum => Enum.Parse(targetType, element.GetString()!),
                 JsonValueKind.String when typeCode == TypeCode.String => element.GetString(),
-                JsonValueKind.String => throw exception(element.GetString()),
                 JsonValueKind.Number => typeCode switch
                 {
                     // Match types

@@ -250,7 +250,7 @@ namespace RESTable.Requests
 
                     case IEntityResource<T> entityResource:
                     {
-                        if (entityResource.RequiresAuthentication)
+                        if (entityResource.RequiresAuthentication)  
                         {
                             var authenticator = this.GetRequiredService<ResourceAuthenticator>();
                             await authenticator.ResourceAuthenticate(this, entityResource, cancellationToken).ConfigureAwait(false);

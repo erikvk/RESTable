@@ -30,12 +30,34 @@ namespace Microsoft.Extensions.DependencyInjection
             return serviceCollection;
         }
 
+        /// <summary>
+        /// Adds an action to be run when RESTable is configured
+        /// </summary>
+        /// <param name="serviceCollection"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public static IServiceCollection AddOnConfigureRESTable(this IServiceCollection serviceCollection, Action<IServiceProvider> action)
+        {
+            serviceCollection.AddTransient<IStartupActivator>(pr => new StartupActivator<IApplicationServiceProvider>(pr, provider =>
+            {
+                action(provider);
+                return Task.CompletedTask;
+            }));
+            return serviceCollection;
+        }
+
+        /// <summary>
+        /// Adds a StartupActivator for the given service, making sure it's activated during startup of the app, when RESTable is configured
+        /// </summary>
         public static IServiceCollection AddStartupActivator<TService>(this IServiceCollection serviceCollection) where TService : class
         {
             serviceCollection.AddTransient<IStartupActivator>(pr => new StartupActivator<TService>(pr, _ => Task.CompletedTask));
             return serviceCollection;
         }
 
+        /// <summary>
+        /// Adds a StartupActivator for the given task, making sure it's called during startup of the app, when RESTable is configured
+        /// </summary>
         public static IServiceCollection AddStartupActivator<TService>(this IServiceCollection serviceCollection, Func<TService, Task> activator) where TService : class
         {
             serviceCollection.AddTransient<IStartupActivator>(pr => new StartupActivator<TService>(pr, activator));

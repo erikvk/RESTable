@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using RESTable.Meta;
 
-namespace RESTable.Json
+namespace RESTable.Json.Converters
 {
     internal static class DefaultConverterOperations
     {

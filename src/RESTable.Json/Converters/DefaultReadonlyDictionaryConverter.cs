@@ -1,21 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using RESTable.Meta;
-using static RESTable.Json.DefaultConverterOperations;
+using static RESTable.Json.Converters.DefaultConverterOperations;
 
-namespace RESTable.Json
+namespace RESTable.Json.Converters
 {
     /// <summary>
-    /// Converter for declared types that have at least one RESTableMemberAttribute on some
+    /// Converter for declared types that are dictionaries, defined as implementing IEnumerable{T} where
+    /// T is some KeyValuePair{TKey,TValue} type.
     /// member.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class DefaultDeclaredConverter<T> : JsonConverter<T>
+    [BuiltInConverter]
+    public class DefaultReadonlyDictionaryConverter<T, TKey, TValue> : JsonConverter<T> where T : IEnumerable<KeyValuePair<TKey, TValue?>> where TKey : notnull
     {
         private ISerializationMetadata<T> Metadata { get; }
 
-        public DefaultDeclaredConverter(ISerializationMetadata<T> metadata)
+        public DefaultReadonlyDictionaryConverter(ISerializationMetadata<T> metadata)
         {
             Metadata = metadata;
         }
@@ -36,21 +38,17 @@ namespace RESTable.Json
                     var instance = Metadata.CreateInstance();
                     while (reader.TokenType != JsonTokenType.EndObject)
                     {
-                        if (reader.TokenType is not JsonTokenType.PropertyName || reader.GetString() is not string propertyName)
+                        if (reader.GetString() is not string propertyName)
                             throw new JsonException("Invalid JSON token encountered. Expected property name.");
 
                         if (Metadata.GetProperty(propertyName) is not { } property)
                         {
-                            // Encountered an unknown property in input JSON. Skipping.
-                            reader.Skip();
+                            // This is a readonly dictionary, so we can't add dynamic members. Instead we skip.
                         }
                         else
                         {
-                            var value = JsonSerializer.Deserialize(ref reader, property.Type, options);
-                            var setValueTask = property.SetValue(instance!, value);
-                            if (setValueTask.IsCompleted)
-                                setValueTask.GetAwaiter().GetResult();
-                            else setValueTask.AsTask().Wait();
+                            // Property is declared, set it using the property's set value task
+                            SetDeclaredMember(ref reader, property, instance, options);
                         }
                         reader.Read();
                     }
@@ -68,6 +66,7 @@ namespace RESTable.Json
                 return;
             }
             writer.WriteStartObject();
+            WriteDynamicMembers<T, TKey, TValue>(writer, value, options);
             SerializeDeclaredMembers(writer, Metadata, value, options);
             writer.WriteEndObject();
         }

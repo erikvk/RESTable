@@ -6,9 +6,9 @@ using Xunit;
 
 namespace RESTable.Json.Tests
 {
-    public class VersionHolder
+    public class Holder<T>
     {
-        public Version Version { get; set; }
+        public T Item { get; set; }
     }
 
     public class VersionConverterTests : RESTableTestBase
@@ -19,10 +19,10 @@ namespace RESTable.Json.Tests
             var jsonProvider = Fixture.GetRequiredService<IJsonProvider>();
             var versionString = "12.1.2.3";
             var version = new Version(versionString);
-            var jsonString = $"{{\"Version\":\"{versionString}\"}}";
-            var versionHolder = jsonProvider.Deserialize<VersionHolder>(jsonString);
-            Assert.NotNull(versionHolder?.Version);
-            Assert.Equal(version, versionHolder.Version);
+            var jsonString = $"{{\"Item\":\"{versionString}\"}}";
+            var versionHolder = jsonProvider.Deserialize<Holder<Version>>(jsonString);
+            Assert.NotNull(versionHolder?.Item);
+            Assert.Equal(version, versionHolder.Item);
         }
 
         [Fact]
@@ -31,8 +31,8 @@ namespace RESTable.Json.Tests
             var jsonProvider = Fixture.GetRequiredService<IJsonProvider>();
             var versionString = "12.1.2.3";
             var version = new Version(versionString);
-            var jsonString = $"{{\"Version\":\"{versionString}\"}}";
-            var versionHolder = new VersionHolder {Version = version};
+            var jsonString = $"{{\"Item\":\"{versionString}\"}}";
+            var versionHolder = new Holder<Version> { Item = version };
             var str = jsonProvider.Serialize(versionHolder, false);
             Assert.Equal(jsonString, str);
         }

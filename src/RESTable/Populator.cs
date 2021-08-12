@@ -24,7 +24,15 @@ namespace RESTable
                     Action = SetToNull;
                     return;
                 }
-                case not SourceKind.Object: throw new InvalidOperationException($"Cannot populate from element of kind '{source.SourceKind}'. Expected Object");
+                case SourceKind.Value:
+                {
+                    Action = _ => new ValueTask<object>(source.GetValue(toPopulate)!);
+                    return;
+                }
+                case not SourceKind.Object:
+                {
+                    throw new InvalidOperationException($"Cannot populate from element of kind '{source.SourceKind}'. Expected Object");
+                }
             }
 
             var populateDeclaredPropertiesAction = GetPopulateDeclaredPropertiesAction(toPopulate, source, typeCache);
@@ -128,9 +136,15 @@ namespace RESTable
 
         private static PopulatorAction GetDeclaredPropertyAction(DeclaredProperty declaredProperty, PopulateSource source, TypeCache typeCache)
         {
-            // If it's writable and should not be populated, make a set value action for it
-            if (declaredProperty.IsWritable && (!declaredProperty.CanBePopulated || declaredProperty.ReplaceOnUpdate))
+            // If it can or should not be populated, make a set value action for it
+            if (!declaredProperty.CanBePopulated || declaredProperty.ReplaceOnUpdate)
             {
+                if (!declaredProperty.IsWritable)
+                {
+                    // Not much we can do if this is the case
+                    return DoNothing;
+                }
+
                 var hasPresetValue = false;
                 // If the value is null or a value type, we can assign the same (possibly boxed) value to all properties.
                 // that value can be established right now, and stored in presetValue.

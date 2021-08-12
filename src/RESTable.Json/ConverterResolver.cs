@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.Json.Converters;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Requests.Processors;
@@ -64,8 +65,10 @@ namespace RESTable.Json
                 ? typeof(DefaultDictionaryConverter<,>).MakeGenericType(objectType, valueType!)
                 : typeof(DefaultReadonlyDictionaryConverter<,,>).MakeGenericType(objectType, keyType!, valueType!),
 
-            // Types that have no properties decorated with RESTableMemberAttribute are skipped.
-            _ when objectType.GetProperties().All(property => !property.HasAttribute<RESTableMemberAttribute>()) => null,
+            // Types that would not benefit from the RESTable converters are skipped
+            _ when objectType.GetProperties().All(property =>
+                !property.HasAttribute<RESTableMemberAttribute>()
+            ) => null,
 
             // We also always skip enumerable types.
             _ when objectType.ImplementsEnumerableInterface(out _) => null,

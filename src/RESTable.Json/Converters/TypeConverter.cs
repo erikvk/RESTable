@@ -2,8 +2,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace RESTable.Json
+namespace RESTable.Json.Converters
 {
+    [BuiltInConverter]
     public class TypeConverter<T> : JsonConverter<T> where T : Type
     {
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

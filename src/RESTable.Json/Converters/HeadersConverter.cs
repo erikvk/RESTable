@@ -5,8 +5,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using RESTable.Requests;
 
-namespace RESTable.Json
+namespace RESTable.Json.Converters
 {
+    [BuiltInConverter]
     internal class HeadersConverter : JsonConverter<Headers>
     {
         private HashSet<string> WhitelistedNonCustomHeaders { get; }

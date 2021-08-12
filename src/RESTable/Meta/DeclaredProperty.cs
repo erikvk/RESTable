@@ -212,7 +212,7 @@ namespace RESTable.Meta
             Order = memberAttribute?.Order;
             ExcelReducer = null!;
             IsCollection = Type.ImplementsGenericInterface(typeof(ICollection<>));
-            SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTableViewAttribute>();
+            SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType!.HasAttribute<RESTableViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true;
             CanBePopulated = ApplicationServicesAccessor.GetRequiredService<TypeCache>().CanBePopulated(p.PropertyType);

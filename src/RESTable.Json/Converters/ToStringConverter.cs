@@ -2,12 +2,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace RESTable.Json
+namespace RESTable.Json.Converters
 {
     /// <inheritdoc />
     /// <summary>
     /// Converts an object to its string value, by using ToString(), during serialization
     /// </summary>
+    [BuiltInConverter]
     public class ToStringConverter : JsonConverter<object>
     {
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

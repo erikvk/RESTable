@@ -20,11 +20,11 @@ namespace RESTable.Json
     /// <inheritdoc cref="RESTable.ContentTypeProviders.IContentTypeProvider" />
     public class SystemTextJsonProvider : IJsonProvider, IContentTypeProvider
     {
-        private JsonSerializerOptions Options { get; }
-        private JsonSerializerOptions OptionsIgnoreNulls { get; }
-        private TypeCache TypeCache { get; }
+        private JsonSerializerOptions Options { get; set; }
+        private JsonSerializerOptions OptionsIgnoreNulls { get; set; }
+        private ArrayPool<byte> BufferPool { get; set; }
 
-        private ArrayPool<byte> BufferPool { get; }
+        private TypeCache TypeCache { get; }
 
         private const string JsonMimeType = "application/json";
         private const string RESTableSpecific = "application/restable-json";
@@ -41,12 +41,19 @@ namespace RESTable.Json
         /// <summary>
         /// Creates a new instance of the <see cref="SystemTextJsonProvider"/> type
         /// </summary>
-        public SystemTextJsonProvider(JsonSerializerOptions options, TypeCache typeCache)
+        public SystemTextJsonProvider(TypeCache typeCache)
+        {
+            Options = null!;
+            OptionsIgnoreNulls = null!;
+            BufferPool = null!;
+            TypeCache = typeCache;
+        }
+
+        internal void SetOptions(JsonSerializerOptions options)
         {
             Options = new JsonSerializerOptions(options);
             OptionsIgnoreNulls = new JsonSerializerOptions(options) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
             BufferPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
-            TypeCache = typeCache;
         }
 
         private JsonSerializerOptions GetOptions(bool? prettyPrint, bool ignoreNulls)
@@ -61,6 +68,12 @@ namespace RESTable.Json
         {
             var options = GetOptions(prettyPrint, ignoreNulls);
             return JsonSerializer.Serialize(value, options);
+        }
+
+        public byte[] SerializeToUtf8Bytes(object value, bool? prettyPrint = null, bool ignoreNulls = false)
+        {
+            var options = GetOptions(prettyPrint, ignoreNulls);
+            return JsonSerializer.SerializeToUtf8Bytes(value, options);
         }
 
         /// <summary>
@@ -179,6 +192,18 @@ namespace RESTable.Json
         public async ValueTask PopulateAsync<T>(T target, JsonElement json) where T : notnull
         {
             var populator = GetPopulator<T>(json);
+            await populator(target).ConfigureAwait(false);
+        }
+
+        public async ValueTask PopulateAsync(object target, Type targetType, string json)
+        {
+            var populator = GetPopulator(targetType, json);
+            await populator(target).ConfigureAwait(false);
+        }
+
+        public async ValueTask PopulateAsync(object target, Type targetType, JsonElement json)
+        {
+            var populator = GetPopulator(targetType, json);
             await populator(target).ConfigureAwait(false);
         }
 

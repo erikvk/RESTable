@@ -10,6 +10,8 @@ namespace RESTable.ContentTypeProviders
     {
         ValueTask PopulateAsync<T>(T target, string json) where T : notnull;
         ValueTask PopulateAsync<T>(T target, JsonElement json) where T : notnull;
+        ValueTask PopulateAsync(object target, Type targetType, string json);
+        ValueTask PopulateAsync(object target, Type targetType, JsonElement json);
 
         PopulatorAction GetPopulator<T>(JsonElement json) where T : notnull;
         PopulatorAction GetPopulator<T>(string json) where T : notnull;
@@ -17,6 +19,7 @@ namespace RESTable.ContentTypeProviders
         PopulatorAction GetPopulator(Type toPopulate, string json);
 
         string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false);
+        byte[] SerializeToUtf8Bytes(object value, bool? prettyPrint = null, bool ignoreNulls = false);
         Task SerializeAsync<T>(Stream stream, T entity, bool? prettyPrint = null, bool ignoreNulls = false, CancellationToken cancellationToken = new());
 
         T? Deserialize<T>(Span<byte> span);

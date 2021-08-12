@@ -4,11 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace RESTable.Json
 {
-    public interface IRegisteredJsonConverter
-    {
-        JsonConverter GetInstance(IServiceProvider serviceProvider);
-    }
-
     internal class RegisteredJsonConverter : IRegisteredJsonConverter
     {
         private Func<IServiceProvider, JsonConverter> GetInstanceDelegate { get; }

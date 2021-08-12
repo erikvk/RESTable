@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using RESTable.Meta;
-using static RESTable.Json.DefaultConverterOperations;
+using static RESTable.Json.Converters.DefaultConverterOperations;
 
-namespace RESTable.Json
+namespace RESTable.Json.Converters
 {
     /// <summary>
     /// Converter for declared types that are dictionaries, defined as implementing IEnumerable{T} where
     /// T is some KeyValuePair{TKey,TValue} type.
     /// member.
     /// </summary>
+    [BuiltInConverter]
     public class DefaultDictionaryConverter<T, TValue> : JsonConverter<T> where T : IDictionary<string, TValue?>
     {
         private ISerializationMetadata<T> Metadata { get; }

@@ -16,7 +16,7 @@ namespace RESTable.Starcounter3x
         protected override bool Include(Type type)
         {
             if (type.IsWrapper())
-                return type.GetWrappedType().HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
+                return type.GetWrappedType()!.HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
             return type.HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
         }
 

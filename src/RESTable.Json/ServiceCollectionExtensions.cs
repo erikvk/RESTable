@@ -5,7 +5,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using RESTable.ContentTypeProviders;
 using RESTable.Json;
-using RESTable.Meta;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -24,13 +23,20 @@ namespace Microsoft.Extensions.DependencyInjection
             jsonOptionsAction?.Invoke(jsonOptions);
             var newOptions = new JsonSerializerOptions(jsonOptions);
             serviceCollection.AddJsonConverter<ConverterResolver>();
-            serviceCollection.AddSingleton<IJsonProvider>(sp =>
+            serviceCollection.AddSingleton<IJsonProvider, SystemTextJsonProvider>();
+
+            // There is a circular dependency between SystemTextJsonProvider, which needs the converters, and the converters,
+            // which must be able to inject the SystemTextJsonProvider. To solve this, we put together the list of converters
+            // separately from activating the SystemTextJsonProvider, and call SetOptions() for it after activation, during
+            // RESTable configuration.
+            serviceCollection.AddOnConfigureRESTable(sp =>
             {
-                var typeCache = sp.GetRequiredService<TypeCache>();
                 foreach (var converter in sp.GetServices<IRegisteredJsonConverter>().Select(rjc => rjc.GetInstance(sp)))
                     newOptions.Converters.Add(converter);
-                return new SystemTextJsonProvider(newOptions, typeCache);
+                var jsonProvider = (SystemTextJsonProvider) sp.GetRequiredService<IJsonProvider>();
+                jsonProvider.SetOptions(newOptions);
             });
+
             serviceCollection.AddSingleton<IContentTypeProvider>(pr => pr.GetRequiredService<IJsonProvider>());
             return serviceCollection;
         }

@@ -3,8 +3,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using RESTable.Requests.Processors;
 
-namespace RESTable.Json
+namespace RESTable.Json.Converters
 {
+    [BuiltInConverter]
     public class ProcessedEntityConverter : JsonConverter<ProcessedEntity>
     {
         public override ProcessedEntity Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

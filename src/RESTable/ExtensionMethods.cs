@@ -139,9 +139,9 @@ namespace RESTable
             })
             .Where(type => type.IsSubclassOf(baseType));
 
-        internal static bool HasAttribute(this MemberInfo? type, Type attributeType)
+        internal static bool HasAttribute(this MemberInfo type, Type attributeType)
         {
-            return (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
+            return type.GetCustomAttributes(attributeType).Any();
         }
 
         public static bool HasResourceProviderAttribute(this Type resource)
@@ -149,14 +149,16 @@ namespace RESTable
             return resource.GetCustomAttributes().OfType<EntityResourceProviderAttribute>().Any();
         }
 
-        public static bool HasAttribute<TAttribute>(this MemberInfo? type) where TAttribute : Attribute
+        public static bool HasAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
         {
-            return type?.GetCustomAttribute<TAttribute>() is not null;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            return type.GetCustomAttribute<TAttribute>() is not null;
         }
 
-        public static bool HasAttribute<TAttribute>(this MemberInfo? type, out TAttribute? attribute) where TAttribute : Attribute
+        public static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute? attribute) where TAttribute : Attribute
         {
-            attribute = type?.GetCustomAttribute<TAttribute>();
+            attribute = type.GetCustomAttribute<TAttribute>();
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             return attribute is not null;
         }
 
@@ -472,7 +474,7 @@ namespace RESTable
         /// </summary>
         public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return str.Split(new[] {separator}, options);
+            return str.Split(new[] { separator }, options);
         }
 #endif
 
