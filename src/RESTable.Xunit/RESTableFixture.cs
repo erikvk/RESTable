@@ -1,14 +1,11 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
-using RESTable.Tests.OperationsTests;
 
 namespace RESTable.Tests
 {
     public class RESTableFixture : ServiceCollection, IServiceProvider
     {
-        public OperationsTestsFlags OperationsTestsFlags => this.GetRequiredService<OperationsTestsFlags>();
-
         public RESTableContext Context
         {
             get
@@ -38,8 +35,6 @@ namespace RESTable.Tests
         public RESTableFixture()
         {
             this.AddRESTable();
-            this.AddJson();
-            this.AddSingleton<OperationsTestsFlags>();
         }
     }
 }

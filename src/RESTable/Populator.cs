@@ -84,9 +84,8 @@ namespace RESTable
                 return DoNothing;
             }
             var actions = new PopulatorAction[populateSource.Properties.Length];
-            var actionCount = 0;
             var declaredProperties = typeCache.GetDeclaredProperties(toPopulate);
-
+            var actionCount = 0;
             for (var index = 0; index < populateSource.Properties.Length; index += 1)
             {
                 var (name, value) = populateSource.Properties[index];
@@ -100,7 +99,6 @@ namespace RESTable
                 actions[actionCount] = GetDeclaredPropertyAction(declaredProperty!, value, typeCache);
                 actionCount += 1;
             }
-
             if (actionCount == 0)
             {
                 return DoNothing;

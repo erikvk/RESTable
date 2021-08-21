@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\pack.props" />
+    <Import Project="..\common.props" />
+
+    <ItemGroup>
+        <ProjectReference Include="..\RESTable\RESTable.csproj" />
+        <PackageReference Include="Xunit.Extensibility.Core" Version="2.4.1" />
+    </ItemGroup>
+    
+</Project>

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RESTable.ContentTypeProviders;
+using RESTable.Meta;
 using RESTable.Requests.Processors;
 
 namespace RESTable.Json.Converters
@@ -8,6 +10,15 @@ namespace RESTable.Json.Converters
     [BuiltInConverter]
     public class ProcessedEntityConverter : JsonConverter<ProcessedEntity>
     {
+        private ISerializationMetadata<ProcessedEntity> Metadata { get; }
+        private IJsonProvider JsonProvider { get; }
+
+        internal ProcessedEntityConverter(ISerializationMetadata<ProcessedEntity> metadata, IJsonProvider jsonProvider)
+        {
+            Metadata = metadata;
+            JsonProvider = jsonProvider;
+        }
+
         public override ProcessedEntity Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             throw new NotImplementedException();
@@ -15,9 +26,8 @@ namespace RESTable.Json.Converters
 
         public override void Write(Utf8JsonWriter writer, ProcessedEntity value, JsonSerializerOptions options)
         {
-            writer.WriteStartObject();
-            DefaultConverterOperations.WriteDynamicMembers<ProcessedEntity, string, object?>(writer, value, options);
-            writer.WriteEndObject();
+            var jsonWriter = JsonProvider.GetJsonWriter(writer, options);
+            jsonWriter.WriteDictionary(value, Metadata);
         }
     }
 }

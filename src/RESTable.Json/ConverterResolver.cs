@@ -19,31 +19,49 @@ namespace RESTable.Json
     public class ConverterResolver : JsonConverterFactory
     {
         private TypeCache TypeCache { get; }
-        private IReadOnlyDictionary<Type, JsonConverter> BuiltInConverters { get; }
+        private IReadOnlyDictionary<Type, JsonConverter> InstantiatedConverters { get; }
         private IApplicationServiceProvider ServiceProvider { get; }
+        private IRegisteredGenericJsonConverterType[] GenericJsonConverterTypes { get; }
 
-        public ConverterResolver(TypeCache typeCache, IApplicationServiceProvider serviceProvider)
+        public ConverterResolver(TypeCache typeCache, IApplicationServiceProvider serviceProvider, IEnumerable<IRegisteredGenericJsonConverterType> genericConverterTypes)
         {
             TypeCache = typeCache;
             ServiceProvider = serviceProvider;
-            BuiltInConverters = new Dictionary<Type, JsonConverter>
+            GenericJsonConverterTypes = genericConverterTypes.ToArray();
+            InstantiatedConverters = new Dictionary<Type, JsonConverter>
             {
                 [typeof(HeadersConverter)] = new HeadersConverter(),
                 [typeof(ContentTypeConverter)] = new ContentTypeConverter(),
                 [typeof(ContentTypesConverter)] = new ContentTypesConverter(),
                 [typeof(ToStringConverter)] = new ToStringConverter(),
                 [typeof(VersionConverter)] = new VersionConverter(),
-                [typeof(JsonStringEnumConverter)] = new JsonStringEnumConverter(),
-                [typeof(ProcessedEntityConverter)] = new ProcessedEntityConverter()
+                [typeof(JsonStringEnumConverter)] = new JsonStringEnumConverter()
             };
         }
 
         public override bool CanConvert(Type typeToConvert) => GetConverterType(typeToConvert) is not null;
 
-        private static Type? GetConverterType(Type objectType) => objectType switch
+        private bool HasGenericConverterType(Type typeToConvert, out IRegisteredGenericJsonConverterType? genericJsonConverterType)
+        {
+            foreach (var registeredGenericJsonConverterType in GenericJsonConverterTypes)
+            {
+                if (registeredGenericJsonConverterType.CanConvert(typeToConvert))
+                {
+                    genericJsonConverterType = registeredGenericJsonConverterType;
+                    return true;
+                }
+            }
+            genericJsonConverterType = null;
+            return false;
+        }
+
+        private Type? GetConverterType(Type objectType) => objectType switch
         {
             // Attributes are respected
             _ when objectType.HasAttribute(out JsonConverterAttribute? a) => a!.ConverterType,
+
+            // Try to match against a registered generic json converter, if any
+            _ when HasGenericConverterType(objectType, out var genericJsonConverterType) => genericJsonConverterType!.GetConverterType(objectType),
 
             // Types and resources are given a special treatment
             _ when typeof(Type).IsAssignableFrom(objectType) => typeof(TypeConverter<>).MakeGenericType(objectType),
@@ -84,14 +102,14 @@ namespace RESTable.Json
                 return null;
             var match = options.Converters.FirstOrDefault(c => converterType == c.GetType());
             if (match is null)
-                BuiltInConverters.TryGetValue(converterType, out match);
-            if (match is null && converterType.IsGenericType)
-            {
-                match = (JsonConverter?) ActivatorUtilities.CreateInstance(ServiceProvider, converterType);
-            }
+                InstantiatedConverters.TryGetValue(converterType, out match);
             if (match is JsonConverterFactory factory)
             {
                 match = factory.CreateConverter(typeToConvert, options);
+            }
+            if (match is null)
+            {
+                match = (JsonConverter?) ActivatorUtilities.CreateInstance(ServiceProvider, converterType);
             }
             return match;
         }

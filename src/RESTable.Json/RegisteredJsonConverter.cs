@@ -10,13 +10,19 @@ namespace RESTable.Json
 
         public JsonConverter GetInstance(IServiceProvider serviceProvider) => GetInstanceDelegate(serviceProvider);
 
+        public Type ConverterType { get; }
+
         internal RegisteredJsonConverter(Type converterType)
         {
-            GetInstanceDelegate = provider => (JsonConverter) ActivatorUtilities.CreateInstance(provider, converterType);
+            ConverterType = converterType;
+            if (converterType.IsGenericTypeDefinition)
+                GetInstanceDelegate = _ => throw new InvalidOperationException("Cannot instantiate a generic type definition");
+            else GetInstanceDelegate = provider => (JsonConverter) ActivatorUtilities.CreateInstance(provider, converterType);
         }
 
         internal RegisteredJsonConverter(JsonConverter instance)
         {
+            ConverterType = instance.GetType();
             GetInstanceDelegate = _ => instance;
         }
     }

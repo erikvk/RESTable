@@ -9,6 +9,8 @@ namespace RESTable.Meta
         private Constructor<T>? ParameterLessConstructor { get; }
         private IReadOnlyDictionary<string, DeclaredProperty> DeclaredProperties { get; }
 
+        public Type Type => typeof(T);
+
         public DeclaredProperty[] PropertiesToSerialize { get; }
 
         public DeclaredProperty? GetProperty(string name)

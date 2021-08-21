@@ -1,4 +1,5 @@
-﻿using RESTable.Requests;
+﻿using Microsoft.Extensions.DependencyInjection;
+using RESTable.Requests;
 using Xunit;
 
 namespace RESTable.Tests.RequestTests
@@ -13,6 +14,7 @@ namespace RESTable.Tests.RequestTests
 
         public RequestTestBase(RESTableFixture fixture)
         {
+            fixture.AddJson();
             fixture.Configure();
             Fixture = fixture;
             Context = fixture.Context;

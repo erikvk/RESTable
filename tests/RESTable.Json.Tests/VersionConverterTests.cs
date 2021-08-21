@@ -6,11 +6,6 @@ using Xunit;
 
 namespace RESTable.Json.Tests
 {
-    public class Holder<T>
-    {
-        public T Item { get; set; }
-    }
-
     public class VersionConverterTests : RESTableTestBase
     {
         [Fact]
@@ -32,13 +27,14 @@ namespace RESTable.Json.Tests
             var versionString = "12.1.2.3";
             var version = new Version(versionString);
             var jsonString = $"{{\"Item\":\"{versionString}\"}}";
-            var versionHolder = new Holder<Version> { Item = version };
+            var versionHolder = new Holder<Version> {Item = version};
             var str = jsonProvider.Serialize(versionHolder, false);
             Assert.Equal(jsonString, str);
         }
 
         public VersionConverterTests(RESTableFixture fixture) : base(fixture)
         {
+            fixture.AddJson();
             fixture.Configure();
         }
     }

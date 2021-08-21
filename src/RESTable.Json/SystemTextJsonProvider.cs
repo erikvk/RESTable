@@ -36,7 +36,7 @@ namespace RESTable.Json
         public bool CanRead => true;
         public bool CanWrite => true;
         public string ContentDispositionFileExtension => ".json";
-        public string[] MatchStrings => new[] { JsonMimeType, RESTableSpecific, Brief, TextPlain };
+        public string[] MatchStrings => new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
 
         /// <summary>
         /// Creates a new instance of the <see cref="SystemTextJsonProvider"/> type
@@ -52,7 +52,7 @@ namespace RESTable.Json
         internal void SetOptions(JsonSerializerOptions options)
         {
             Options = new JsonSerializerOptions(options);
-            OptionsIgnoreNulls = new JsonSerializerOptions(options) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+            OptionsIgnoreNulls = new JsonSerializerOptions(options) {DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull};
             BufferPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
         }
 
@@ -60,20 +60,44 @@ namespace RESTable.Json
         {
             var options = ignoreNulls ? OptionsIgnoreNulls : Options;
             if (prettyPrint.HasValue && prettyPrint.Value != options.WriteIndented)
-                options = new JsonSerializerOptions(options) { WriteIndented = prettyPrint.Value };
+                options = new JsonSerializerOptions(options) {WriteIndented = prettyPrint.Value};
             return options;
         }
 
         public string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             var options = GetOptions(prettyPrint, ignoreNulls);
+            return JsonSerializer.Serialize(value, value.GetType(), options);
+        }
+
+        public string Serialize<T>(T value, bool? prettyPrint = null, bool ignoreNulls = false)
+        {
+            var options = GetOptions(prettyPrint, ignoreNulls);
             return JsonSerializer.Serialize(value, options);
+        }
+
+        public string Serialize(object value, Type inputType, bool? prettyPrint = null, bool ignoreNulls = false)
+        {
+            var options = GetOptions(prettyPrint, ignoreNulls);
+            return JsonSerializer.Serialize(value, inputType, options);
         }
 
         public byte[] SerializeToUtf8Bytes(object value, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             var options = GetOptions(prettyPrint, ignoreNulls);
+            return JsonSerializer.SerializeToUtf8Bytes(value, value.GetType(), options);
+        }
+
+        public byte[] SerializeToUtf8Bytes<T>(T value, bool? prettyPrint = null, bool ignoreNulls = false)
+        {
+            var options = GetOptions(prettyPrint, ignoreNulls);
             return JsonSerializer.SerializeToUtf8Bytes(value, options);
+        }
+
+        public byte[] SerializeToUtf8Bytes(object value, Type inputType, bool? prettyPrint = null, bool ignoreNulls = false)
+        {
+            var options = GetOptions(prettyPrint, ignoreNulls);
+            return JsonSerializer.SerializeToUtf8Bytes(value, inputType, options);
         }
 
         /// <summary>
@@ -110,9 +134,9 @@ namespace RESTable.Json
             return count;
         }
 
-        private PopulateSource GetPopulateSource(JsonElement jsonElement)
+        private PopulateSource GetPopulateSource(JsonElement jsonElement, JsonSerializerOptions options)
         {
-            var valueResolver = new JsonElementValueProvider(jsonElement, this);
+            var valueResolver = new JsonElementValueProvider(jsonElement, this, options);
             SourceKind sourceKind;
             (string, PopulateSource)[]? properties = null;
             switch (jsonElement.ValueKind)
@@ -120,7 +144,7 @@ namespace RESTable.Json
                 case JsonValueKind.Object:
                     sourceKind = SourceKind.Object;
                     properties = jsonElement.EnumerateObject()
-                        .Select(property => (property.Name, GetPopulateSource(property.Value)))
+                        .Select(property => (property.Name, GetPopulateSource(property.Value, options)))
                         .ToArray();
                     break;
                 case JsonValueKind.Array:
@@ -148,7 +172,7 @@ namespace RESTable.Json
 #endif
             {
                 var jsonElement = await JsonSerializer.DeserializeAsync<JsonElement>(stream, Options, cancellationToken).ConfigureAwait(false);
-                var populateSource = GetPopulateSource(jsonElement);
+                var populateSource = GetPopulateSource(jsonElement, Options);
                 var populator = new Populator(typeof(T), populateSource, TypeCache);
                 await foreach (var item in entities.WithCancellation(cancellationToken).ConfigureAwait(false))
                 {
@@ -157,85 +181,131 @@ namespace RESTable.Json
             }
         }
 
-        public PopulatorAction GetPopulator(Type toPopulate, JsonElement jsonElement)
+        public PopulatorAction GetPopulator(Type toPopulate, JsonElement jsonElement, JsonSerializerOptions? options = null)
         {
-            var populateSource = GetPopulateSource(jsonElement);
+            var populateSource = GetPopulateSource(jsonElement, options ?? Options);
             return new Populator(toPopulate, populateSource, TypeCache).PopulateAsync;
         }
 
-        public PopulatorAction GetPopulator(Type toPopulate, string json)
+        public PopulatorAction GetPopulator(Type toPopulate, string json, JsonSerializerOptions? options = null)
         {
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(json, Options);
-            var populateSource = GetPopulateSource(jsonElement);
+            var populateSource = GetPopulateSource(jsonElement, options ?? Options);
             return new Populator(toPopulate, populateSource, TypeCache).PopulateAsync;
         }
 
-        public PopulatorAction GetPopulator<T>(JsonElement jsonElement) where T : notnull
+        public PopulatorAction GetPopulator<T>(JsonElement jsonElement, JsonSerializerOptions? options = null) where T : notnull
         {
-            var populateSource = GetPopulateSource(jsonElement);
+            var populateSource = GetPopulateSource(jsonElement, options ?? Options);
             return new Populator(typeof(T), populateSource, TypeCache).PopulateAsync;
         }
 
-        public PopulatorAction GetPopulator<T>(string json) where T : notnull
+        public PopulatorAction GetPopulator<T>(string json, JsonSerializerOptions? options = null) where T : notnull
         {
-            var jsonElement = JsonSerializer.Deserialize<JsonElement>(json, Options);
-            var populateSource = GetPopulateSource(jsonElement);
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(json, options ?? Options);
+            var populateSource = GetPopulateSource(jsonElement, options ?? Options);
             return new Populator(typeof(T), populateSource, TypeCache).PopulateAsync;
         }
 
-        public async ValueTask PopulateAsync<T>(T target, string json) where T : notnull
+        public void Populate<T>(T target, string json, JsonSerializerOptions? options = null) where T : notnull
         {
-            var populator = GetPopulator<T>(json);
+            var populator = GetPopulator<T>(json, options ?? Options);
+            var populateTask = populator(target);
+            if (populateTask.IsCompleted)
+                populateTask.GetAwaiter().GetResult();
+            else populateTask.AsTask().Wait();
+        }
+
+        public void Populate<T>(T target, JsonElement json, JsonSerializerOptions? options = null) where T : notnull
+        {
+            var populator = GetPopulator<T>(json, options ?? Options);
+            var populateTask = populator(target);
+            if (populateTask.IsCompleted)
+                populateTask.GetAwaiter().GetResult();
+            else populateTask.AsTask().Wait();
+        }
+
+        public void Populate(object target, Type targetType, string json, JsonSerializerOptions? options = null)
+        {
+            var populator = GetPopulator(targetType, json, options ?? Options);
+            var populateTask = populator(target);
+            if (populateTask.IsCompleted)
+                populateTask.GetAwaiter().GetResult();
+            else populateTask.AsTask().Wait();
+        }
+
+        public void Populate(object target, Type targetType, JsonElement json, JsonSerializerOptions? options = null)
+        {
+            var populator = GetPopulator(targetType, json, options ?? Options);
+            var populateTask = populator(target);
+            if (populateTask.IsCompleted)
+                populateTask.GetAwaiter().GetResult();
+            else populateTask.AsTask().Wait();
+        }
+
+        public async ValueTask PopulateAsync<T>(T target, string json, JsonSerializerOptions? options = null) where T : notnull
+        {
+            var populator = GetPopulator<T>(json, options ?? Options);
             await populator(target).ConfigureAwait(false);
         }
 
-        public async ValueTask PopulateAsync<T>(T target, JsonElement json) where T : notnull
+        public async ValueTask PopulateAsync<T>(T target, JsonElement json, JsonSerializerOptions? options = null) where T : notnull
         {
-            var populator = GetPopulator<T>(json);
+            var populator = GetPopulator<T>(json, options ?? Options);
             await populator(target).ConfigureAwait(false);
         }
 
-        public async ValueTask PopulateAsync(object target, Type targetType, string json)
+        public async ValueTask PopulateAsync(object target, Type targetType, string json, JsonSerializerOptions? options = null)
         {
-            var populator = GetPopulator(targetType, json);
+            var populator = GetPopulator(targetType, json, options ?? Options);
             await populator(target).ConfigureAwait(false);
         }
 
-        public async ValueTask PopulateAsync(object target, Type targetType, JsonElement json)
+        public async ValueTask PopulateAsync(object target, Type targetType, JsonElement json, JsonSerializerOptions? options = null)
         {
-            var populator = GetPopulator(targetType, json);
+            var populator = GetPopulator(targetType, json, options ?? Options);
             await populator(target).ConfigureAwait(false);
         }
 
-        public T? Deserialize<T>(string json)
+        public T? Deserialize<T>(string json, JsonSerializerOptions? options = null)
         {
-            return JsonSerializer.Deserialize<T>(json, Options);
+            return JsonSerializer.Deserialize<T>(json, options ?? Options);
         }
 
-        public T? Deserialize<T>(Span<byte> span)
+        public T? Deserialize<T>(Span<byte> span, JsonSerializerOptions? options = null)
         {
-            return JsonSerializer.Deserialize<T>(span, Options);
+            return JsonSerializer.Deserialize<T>(span, options ?? Options);
         }
 
-        public object? Deserialize(Type targetType, Span<byte> span)
+        public object? Deserialize(Type targetType, Span<byte> span, JsonSerializerOptions? options = null)
         {
-            return JsonSerializer.Deserialize(span, targetType, Options);
+            return JsonSerializer.Deserialize(span, targetType, options ?? Options);
         }
 
-        public ValueTask<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken)
+        public ValueTask<T?> DeserializeAsync<T>(Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = new())
         {
-            return JsonSerializer.DeserializeAsync<T>(stream, Options, cancellationToken);
+            return JsonSerializer.DeserializeAsync<T>(stream, options ?? Options, cancellationToken);
         }
 
-        public ValueTask<object?> DeserializeAsync(Stream stream, Type targetType, CancellationToken cancellationToken)
+        public ValueTask<object?> DeserializeAsync(Stream stream, Type targetType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = new())
         {
-            return JsonSerializer.DeserializeAsync(stream, targetType, Options, cancellationToken);
+            return JsonSerializer.DeserializeAsync(stream, targetType, options ?? Options, cancellationToken);
         }
 
-        public T? ToObject<T>(JsonElement element) => element.ToObject<T>(Options);
-        public JsonElement ToJsonElement<T>(T obj) => obj.ToJsonElement(Options);
-        public object? ToObject(JsonElement element, Type targetType) => element.ToObject(targetType, Options);
-        public JsonElement ToJsonElement(object obj, Type targetType) => obj.ToJsonElement(targetType, Options);
+        public JsonReader GetJsonReader(JsonSerializerOptions? options = null)
+        {
+            return new JsonReader(options ?? Options, this);
+        }
+
+        public JsonWriter GetJsonWriter(Utf8JsonWriter jsonWriter, JsonSerializerOptions? options = null)
+        {
+            return new JsonWriter(jsonWriter, options ?? Options);
+        }
+
+        public T? ToObject<T>(JsonElement element, JsonSerializerOptions? options = null) => element.ToObject<T>(options ?? Options);
+        public JsonElement ToJsonElement<T>(T obj, JsonSerializerOptions? options = null) => obj.ToJsonElement(options ?? Options);
+        public object? ToObject(JsonElement element, Type targetType, JsonSerializerOptions? options = null) => element.ToObject(targetType, options ?? Options);
+        public JsonElement ToJsonElement(object obj, Type targetType, JsonSerializerOptions? options = null) => obj.ToJsonElement(targetType, options ?? Options);
 
         public async IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {

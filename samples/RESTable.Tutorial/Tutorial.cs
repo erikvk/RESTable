@@ -68,16 +68,6 @@ namespace RESTable.Tutorial
             .UseRESTableAspNetCore();
     }
 
-    [RESTable(GET)]
-    public class Tester : ISelector<Tester>
-    {
-        public IEnumerable<Tester> Select(IRequest<Tester> request)
-        {
-            request.ResponseHeaders["FooFoo"] = "\"\r\nBannan!";
-            return Array.Empty<Tester>();
-        }
-    }
-
     /// <summary>
     /// Database is a subset of https://github.com/fivethirtyeight/data/tree/master/comic-characters
     /// - which is, in turn, taken from Marvel and DC Comics respective sites.
@@ -260,7 +250,7 @@ namespace RESTable.Tutorial
         {
             await foreach (var value in Test2.BufferBlock.ToAsyncEnumerable(cancellationToken: cancellationToken))
             {
-                yield return new Test { Value = value };
+                yield return new Test {Value = value};
             }
         }
     }
@@ -272,15 +262,15 @@ namespace RESTable.Tutorial
 
         public async IAsyncEnumerable<Test3> SelectAsync(IRequest<Test3> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            yield return new Test3 { Value = 0 };
+            yield return new Test3 {Value = 0};
             await Task.Delay(2000, cancellationToken);
-            yield return new Test3 { Value = 1 };
+            yield return new Test3 {Value = 1};
             await Task.Delay(2000, cancellationToken);
-            yield return new Test3 { Value = 2 };
+            yield return new Test3 {Value = 2};
             await Task.Delay(2000, cancellationToken);
-            yield return new Test3 { Value = 3 };
+            yield return new Test3 {Value = 3};
             await Task.Delay(2000, cancellationToken);
-            yield return new Test3 { Value = 4 };
+            yield return new Test3 {Value = 4};
             await Task.Delay(2000, cancellationToken);
         }
     }

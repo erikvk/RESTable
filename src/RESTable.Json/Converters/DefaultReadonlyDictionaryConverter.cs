@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RESTable.ContentTypeProviders;
 using RESTable.Meta;
-using static RESTable.Json.Converters.DefaultConverterOperations;
 
 namespace RESTable.Json.Converters
 {
@@ -13,62 +13,27 @@ namespace RESTable.Json.Converters
     /// member.
     /// </summary>
     [BuiltInConverter]
-    public class DefaultReadonlyDictionaryConverter<T, TKey, TValue> : JsonConverter<T> where T : IEnumerable<KeyValuePair<TKey, TValue?>> where TKey : notnull
+    public class DefaultReadonlyDictionaryConverter<T, TKey, TValue> : JsonConverter<T> where T : ICollection<KeyValuePair<TKey, TValue?>> where TKey : notnull
     {
         private ISerializationMetadata<T> Metadata { get; }
+        private IJsonProvider JsonProvider { get; }
 
-        public DefaultReadonlyDictionaryConverter(ISerializationMetadata<T> metadata)
+        public DefaultReadonlyDictionaryConverter(ISerializationMetadata<T> metadata, IJsonProvider jsonProvider)
         {
             Metadata = metadata;
+            JsonProvider = jsonProvider;
         }
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            reader.Read();
-
-            switch (reader.TokenType)
-            {
-                case JsonTokenType.Null: return default;
-                case JsonTokenType.EndObject:
-                {
-                    return Metadata.CreateInstance();
-                }
-                case JsonTokenType.PropertyName:
-                {
-                    var instance = Metadata.CreateInstance();
-                    while (reader.TokenType != JsonTokenType.EndObject)
-                    {
-                        if (reader.GetString() is not string propertyName)
-                            throw new JsonException("Invalid JSON token encountered. Expected property name.");
-
-                        if (Metadata.GetProperty(propertyName) is not { } property)
-                        {
-                            // This is a readonly dictionary, so we can't add dynamic members. Instead we skip.
-                        }
-                        else
-                        {
-                            // Property is declared, set it using the property's set value task
-                            SetDeclaredMember(ref reader, property, instance, options);
-                        }
-                        reader.Read();
-                    }
-                    return instance;
-                }
-                default: throw new JsonException("Invalid JSON token encountered");
-            }
+            var jsonReader = JsonProvider.GetJsonReader(options);
+            return jsonReader.ReadToObjectOrGetDefault(ref reader, Metadata);
         }
 
         public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options)
         {
-            if (value is null)
-            {
-                writer.WriteNullValue();
-                return;
-            }
-            writer.WriteStartObject();
-            WriteDynamicMembers<T, TKey, TValue>(writer, value, options);
-            SerializeDeclaredMembers(writer, Metadata, value, options);
-            writer.WriteEndObject();
+            var jsonWriter = JsonProvider.GetJsonWriter(writer, options);
+            jsonWriter.WriteDictionary(value, Metadata);
         }
 
         public override bool HandleNull => true;

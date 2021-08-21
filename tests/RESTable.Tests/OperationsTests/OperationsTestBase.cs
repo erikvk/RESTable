@@ -19,11 +19,13 @@ namespace RESTable.Tests.OperationsTests
 
         public OperationsTestBase(RESTableFixture fixture)
         {
+            fixture.AddSingleton<OperationsTestsFlags>();
+            fixture.AddJson();
             fixture.Configure();
             Resource = (IEntityResource<TResourceType>) fixture
                 .GetRequiredService<ResourceCollection>()
                 .GetResource<TResourceType>();
-            OperationsTestsFlags = fixture.OperationsTestsFlags;
+            OperationsTestsFlags = fixture.GetRequiredService<OperationsTestsFlags>();
             OperationsTestsFlags.Reset();
             Request = fixture.Context.CreateRequest<TResourceType>();
         }
