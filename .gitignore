@@ -344,3 +344,4 @@ healthchecksdb
 *.bat
 *.sqlite
 *.xlsx
+publish.bat
