@@ -30,19 +30,38 @@ namespace RESTable.Resources
         /// </summary>
         protected IServiceProvider Services => WebSocket!.Context;
 
-        internal IWebSocket GetWebSocket() => WebSocket!;
+        /// <summary>
+        /// Does this terminal support text input?
+        /// </summary>
+        /// <returns></returns>
+        internal bool SupportsTextInput { get; }
 
-        internal void SetWebSocket(IWebSocket webSocket)
+        /// <summary>
+        /// Does this terminal support binary input?
+        /// </summary>
+        /// <returns></returns>
+        internal bool SupportsBinaryInput { get; }
+
+        protected Terminal(bool supportsTextInput, bool supportsBinaryInput)
         {
-            WebSocket = webSocket;
+            SupportsTextInput = supportsTextInput;
+            SupportsBinaryInput = supportsBinaryInput;
         }
 
-        internal void SetTerminalResource(ITerminalResource terminalResource)
+        protected Terminal()
         {
-            TerminalResource = terminalResource;
+            var type = GetType();
+            SupportsTextInput = type.GetMethod(nameof(HandleTextInput))!.IsImplemented();
+            SupportsBinaryInput = type.GetMethod(nameof(HandleBinaryInput))!.IsImplemented();
         }
 
-        internal async Task OpenTerminal(CancellationToken cancellationToken) => await Open(cancellationToken).ConfigureAwait(false);
+        internal IWebSocket GetWebSocket() => WebSocket;
+
+        internal void SetWebSocket(IWebSocket webSocket) => WebSocket = webSocket;
+
+        internal void SetTerminalResource(ITerminalResource terminalResource) => TerminalResource = terminalResource;
+
+        internal Task OpenTerminal(CancellationToken cancellationToken) => Open(cancellationToken);
 
         /// <summary>
         /// This method is called when the WebSocket is opened, and when data can be sent   
@@ -53,34 +72,13 @@ namespace RESTable.Resources
         /// <summary>
         /// Performs an action on string input
         /// </summary>
-        public virtual Task HandleTextInput(string input, CancellationToken cancellationToken) => Task.CompletedTask;
+        [MethodNotImplemented]
+        public virtual Task HandleTextInput(string input, CancellationToken cancellationToken) => throw new NotImplementedException();
 
         /// <summary>
         /// Performs and action on binary input
         /// </summary>
-        public virtual Task HandleBinaryInput(Stream input, CancellationToken cancellationToken) => Task.CompletedTask;
-
-        internal bool SupportsTextInputInternal => SupportsTextInput;
-        internal bool SupportsBinaryInputInternal => SupportsBinaryInput;
-
-        /// <summary>
-        /// Sends the current terminal over the connected websocket.
-        /// </summary>
-        protected async Task SendThis()
-        {
-            await WebSocket!.SendJson(this).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Does this terminal support text input?
-        /// </summary>
-        /// <returns></returns>
-        protected virtual bool SupportsTextInput => false;
-
-        /// <summary>
-        /// Does this terminal support binary input?
-        /// </summary>
-        /// <returns></returns>
-        protected virtual bool SupportsBinaryInput => false;
+        [MethodNotImplemented]
+        public virtual Task HandleBinaryInput(Stream input, CancellationToken cancellationToken) => throw new NotImplementedException();
     }
 }

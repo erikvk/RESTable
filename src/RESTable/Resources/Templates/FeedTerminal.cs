@@ -55,9 +55,6 @@ namespace RESTable.Resources.Templates
         }
 
         /// <inheritdoc />
-        protected override bool SupportsTextInput => true;
-
-        /// <inheritdoc />
         public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             switch (input.ToUpperInvariant().Trim())

@@ -136,7 +136,14 @@ namespace RESTable.AspNetCore
         {
             private ClientWebSocketBuilder ClientWebSocketBuilder { get; }
 
-            public CustomTerminal(ClientWebSocketBuilder clientWebSocketBuilder) => ClientWebSocketBuilder = clientWebSocketBuilder;
+            public CustomTerminal(ClientWebSocketBuilder clientWebSocketBuilder) : base
+            (
+                supportsTextInput: clientWebSocketBuilder.TextInputHandler is not null,
+                supportsBinaryInput: clientWebSocketBuilder.BinaryInputHandler is not null
+            )
+            {
+                ClientWebSocketBuilder = clientWebSocketBuilder;
+            }
 
             protected override async Task Open(CancellationToken cancellationToken)
             {
@@ -163,9 +170,6 @@ namespace RESTable.AspNetCore
             {
                 await ClientWebSocketBuilder.BinaryInputHandler!(WebSocket, input, cancellationToken).ConfigureAwait(false);
             }
-
-            protected override bool SupportsTextInput => ClientWebSocketBuilder.TextInputHandler is not null;
-            protected override bool SupportsBinaryInput => ClientWebSocketBuilder.BinaryInputHandler is not null;
         }
     }
 }

@@ -42,7 +42,5 @@ namespace RESTable.SQLite
                 await responseWriter.WriteAsync(rowData, cancellationToken).ConfigureAwait(false);
             }
         }
-
-        protected override bool SupportsTextInput => true;
     }
 }
