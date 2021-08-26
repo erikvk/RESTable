@@ -16,7 +16,7 @@ namespace RESTable.Json
     /// Resolves a converter type for all types that RESTable defines operations for,
     /// and acts as a top-level resolver for these converters.
     /// </summary>
-    public class ConverterResolver : JsonConverterFactory
+    internal class ConverterResolver : JsonConverterFactory
     {
         private TypeCache TypeCache { get; }
         private IReadOnlyDictionary<Type, JsonConverter> InstantiatedConverters { get; }
@@ -97,19 +97,30 @@ namespace RESTable.Json
 
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            var converterType = GetConverterType(typeToConvert);
-            if (converterType is null)
+            var match = options.Converters
+                .Where(c => c is not ConverterResolver)
+                .FirstOrDefault(c => c.CanConvert(typeToConvert));
+            var resolvedConverterType = GetConverterType(typeToConvert);
+            if (match is null && resolvedConverterType is null)
+            {
+                // There is no custom converter for this type, and this resolver can not
+                // deal with it either. let's use the default converters
                 return null;
-            var match = options.Converters.FirstOrDefault(c => converterType == c.GetType());
+            }
+
             if (match is null)
-                InstantiatedConverters.TryGetValue(converterType, out match);
+            {
+                // We know that resolvedConverterType is not null.
+                // Let's see if we can use one of the built-in converters
+                InstantiatedConverters.TryGetValue(resolvedConverterType!, out match);
+            }
             if (match is JsonConverterFactory factory)
             {
                 match = factory.CreateConverter(typeToConvert, options);
             }
             if (match is null)
             {
-                match = (JsonConverter?) ActivatorUtilities.CreateInstance(ServiceProvider, converterType);
+                match = (JsonConverter?) ActivatorUtilities.CreateInstance(ServiceProvider, resolvedConverterType!);
             }
             return match;
         }

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -22,7 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection
             };
             jsonOptionsAction?.Invoke(jsonOptions);
             var newOptions = new JsonSerializerOptions(jsonOptions);
-            serviceCollection.AddJsonConverter<ConverterResolver>();
+            serviceCollection.AddSingleton<ConverterResolver>();
             serviceCollection.AddSingleton<IJsonProvider, SystemTextJsonProvider>();
 
             // There is a circular dependency between SystemTextJsonProvider, which needs the converters, and the converters,
@@ -31,6 +33,8 @@ namespace Microsoft.Extensions.DependencyInjection
             // RESTable configuration.
             serviceCollection.AddOnConfigureRESTable(sp =>
             {
+                var converterResolver = sp.GetRequiredService<ConverterResolver>();
+                newOptions.Converters.Insert(0, converterResolver);
                 foreach (var registeredJsonConverter in sp.GetServices<IRegisteredJsonConverter>())
                 {
                     var converter = registeredJsonConverter.GetInstance(sp);
@@ -97,18 +101,20 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException($"Cannot add type '{genericConverterType.GetRESTableTypeName()}' as a generic JsonConverter type, since it is " +
                                                     $"not a subclass of '{typeof(JsonConverter).FullName}'");
             }
-            
+
+            var argument = argumentArray[0];
+            var constraints = argument.GetGenericParameterConstraints();
+            var attributes = argument.GenericParameterAttributes;
+
             bool defaultCanConvert(Type type)
             {
-                try
-                {
-                    _ = genericConverterType.MakeGenericType(type);
-                    return true;
-                }
-                catch (ArgumentException)
-                {
+                if (!constraints.All(constraint => constraint.IsAssignableFrom(type)))
                     return false;
-                }
+                if (attributes.HasFlag(GenericParameterAttributes.ReferenceTypeConstraint) && type.IsValueType)
+                    return false;
+                if (attributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint) && type.GetConstructor(Type.EmptyTypes) is null)
+                    return false;
+                return true;
             }
 
             serviceCollection.AddSingleton<IRegisteredGenericJsonConverterType>(new RegisteredGenericJsonConverterType(genericConverterType, canConvert ?? defaultCanConvert));

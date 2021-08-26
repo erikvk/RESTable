@@ -22,7 +22,7 @@ namespace RESTable.Json
     {
         private JsonSerializerOptions Options { get; set; }
         private JsonSerializerOptions OptionsIgnoreNulls { get; set; }
-        private ArrayPool<byte> BufferPool { get; set; }
+        private ArrayPool<byte> ArrayPool { get; set; }
 
         private TypeCache TypeCache { get; }
 
@@ -45,7 +45,7 @@ namespace RESTable.Json
         {
             Options = null!;
             OptionsIgnoreNulls = null!;
-            BufferPool = null!;
+            ArrayPool = null!;
             TypeCache = typeCache;
         }
 
@@ -53,7 +53,7 @@ namespace RESTable.Json
         {
             Options = new JsonSerializerOptions(options);
             OptionsIgnoreNulls = new JsonSerializerOptions(options) {DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull};
-            BufferPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
+            ArrayPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
         }
 
         private JsonSerializerOptions GetOptions(bool? prettyPrint, bool ignoreNulls)
@@ -309,7 +309,7 @@ namespace RESTable.Json
 
         public async IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            var buffer = BufferPool.Rent(Options.DefaultBufferSize);
+            var buffer = ArrayPool.Rent(Options.DefaultBufferSize);
             JsonReaderState state = default;
             var leftOver = 0;
             try
@@ -337,7 +337,7 @@ namespace RESTable.Json
             }
             finally
             {
-                BufferPool.Return(buffer);
+                ArrayPool.Return(buffer);
             }
         }
 
