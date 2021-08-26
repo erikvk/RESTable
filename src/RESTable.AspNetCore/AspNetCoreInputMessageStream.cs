@@ -10,108 +10,104 @@ namespace RESTable.AspNetCore
     {
         public override bool CanRead => true;
         public override bool CanWrite => false;
+        public override bool CanSeek => false;
+        private bool EndOfMessage { get; set; }
+
+        public override long Position
+        {
+            get => ByteCount;
+            set => throw new NotSupportedException();
+        }
 
         private ArrayPool<byte> ArrayPool { get; }
 
         public AspNetCoreInputMessageStream
         (
             WebSocket webSocket,
-            WebSocketReceiveResult initialResult,
+            WebSocketMessageType messageType,
+            bool endOfMessage,
+            int initialByteCount,
             ArrayPool<byte> arrayPool,
             CancellationToken webSocketCancelledToken
         ) : base
         (
             webSocket: webSocket,
-            messageType: initialResult.MessageType,
+            messageType: messageType,
             webSocketCancelledToken: webSocketCancelledToken
         )
         {
             ArrayPool = arrayPool;
-            EndOfMessage = initialResult.EndOfMessage;
-            ByteCount = initialResult.Count;
+            EndOfMessage = endOfMessage;
+            ByteCount = initialByteCount;
         }
 
-
-        private async ValueTask<int> ArraySegmentReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
-        {
-            var result = await WebSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
-            EndOfMessage = result.EndOfMessage;
-            ByteCount += result.Count;
-            return result.Count;
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return ReadAsync(buffer, offset, count, WebSocketCancelledToken).Result;
-        }
-
+#if NETSTANDARD2_0
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             WebSocketCancelledToken.ThrowIfCancellationRequested();
             if (EndOfMessage) return 0;
             var arraySegment = new ArraySegment<byte>(buffer, offset, count);
-            return await ArraySegmentReceiveAsync(arraySegment, cancellationToken).ConfigureAwait(false);
-        }
-
-        public override int ReadByte()
-        {
-            WebSocketCancelledToken.ThrowIfCancellationRequested();
-            if (EndOfMessage) return -1;
-            var array = ArrayPool.Rent(1);
-            var arraySegment = new ArraySegment<byte>(array, 0, 1);
-            try
-            {
-                return ArraySegmentReceiveAsync(arraySegment, WebSocketCancelledToken).AsTask().Result;
-            }
-            finally
-            {
-                ArrayPool.Return(array);
-            }
-        }
-
-#if !NETSTANDARD2_0
-        private async ValueTask<int> MemoryReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            WebSocketCancelledToken.ThrowIfCancellationRequested();
-            if (EndOfMessage) return 0;
-            var result = await WebSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
+            var result = await WebSocket.ReceiveAsync(arraySegment, cancellationToken).ConfigureAwait(false);
+            if (result.MessageType != MessageType)
+                throw new InvalidOperationException($"Received frame with type '{result.MessageType}' when expecting '{MessageType}'");
             EndOfMessage = result.EndOfMessage;
             ByteCount += result.Count;
             return result.Count;
         }
 
-        public override int Read(Span<byte> buffer) => throw new NotSupportedException();
-
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
-        {
-            return await MemoryReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
-        }
-
         public override async ValueTask DisposeAsync()
         {
-            var memory = ArrayPool.Rent(AspNetCoreWebSocket.WebSocketBufferSize);
-            while (!EndOfMessage)
+            if (EndOfMessage || WebSocket.State != WebSocketState.Open)
+                return;
+            var arrayBuffer = ArrayPool.Rent(AspNetCoreWebSocket.WebSocketBufferSize);
+            try
             {
-                await ReadAsync(memory);
+                while (!EndOfMessage)
+                {
+                    // Read the rest of the message
+                    await ReadAsync(arrayBuffer, 0, AspNetCoreWebSocket.WebSocketBufferSize);
+                }
+            }
+            finally
+            {
+                ArrayPool.Return(arrayBuffer);
             }
         }
 #else
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
+        {
+            WebSocketCancelledToken.ThrowIfCancellationRequested();
+            if (EndOfMessage) return 0;
+            var result = await WebSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
+            if (result.MessageType != MessageType)
+                throw new InvalidOperationException($"Received frame with type '{result.MessageType}' when expecting '{MessageType}'");
+            EndOfMessage = result.EndOfMessage;
+            ByteCount += result.Count;
+            return result.Count;
+        }
+
         public override async ValueTask DisposeAsync()
         {
-            var memory = ArrayPool.Rent(AspNetCoreWebSocket.WebSocketBufferSize);
-            while (!EndOfMessage)
+            if (EndOfMessage || WebSocket.State != WebSocketState.Open)
+                return;
+            var arrayBuffer = ArrayPool.Rent(AspNetCoreWebSocket.WebSocketBufferSize);
+            try
             {
-                await ReadAsync(memory, 0, memory.Length);
+                var memory = arrayBuffer.AsMemory(..AspNetCoreWebSocket.WebSocketBufferSize);
+                while (!EndOfMessage)
+                {
+                    // Read the rest of the message
+                    await ReadAsync(memory);
+                }
+            }
+            finally
+            {
+                ArrayPool.Return(arrayBuffer);
             }
         }
 #endif
 
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        protected override void Dispose(bool disposing)
-        {
-            DisposeAsync().AsTask().Wait();
-        }
     }
 }

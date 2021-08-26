@@ -13,7 +13,6 @@ namespace RESTable.AspNetCore
         protected bool IsDisposed { get; set; }
         public override void Flush() { }
         public override bool CanSeek => false;
-        protected bool EndOfMessage { get; set; }
         protected int ByteCount { get; set; }
 
         public override long Position
@@ -35,7 +34,6 @@ namespace RESTable.AspNetCore
         {
             return default;
         }
-#else
 #endif
 
         #region Unsupported

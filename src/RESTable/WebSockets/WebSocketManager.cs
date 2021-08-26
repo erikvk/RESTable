@@ -45,12 +45,6 @@ namespace RESTable.WebSockets
                 throw new Exception($"Cannot handle text input for WebSocket '{wsId}' with no attached terminal");
             }
 
-            if (webSocket.IsStreaming)
-            {
-                await webSocket.HandleStreamingTextInput(textInput, cancellationToken).ConfigureAwait(false);
-                return;
-            }
-
             if (await HandleGlobalCommand(terminal, webSocket, textInput, cancellationToken).ConfigureAwait(false))
             {
                 return;
@@ -65,6 +59,13 @@ namespace RESTable.WebSockets
         /// </summary>
         private async Task<bool> HandleGlobalCommand(Terminal terminal, WebSocket webSocket, string textInput, CancellationToken cancellationToken)
         {
+            Task sendJson(object obj) => webSocket.Send
+            (
+                data: JsonProvider.SerializeToUtf8Bytes(obj, obj.GetType(), true, true),
+                asText: true,
+                cancellationToken
+            );
+
             if (textInput.ElementAtOrDefault(0) == '#' && char.IsLetter(textInput.ElementAtOrDefault(1)))
             {
                 var (command, tail) = textInput.Trim().TupleSplit(' ');
@@ -76,7 +77,7 @@ namespace RESTable.WebSockets
                         {
                             await JsonProvider.PopulateAsync(terminal, json).ConfigureAwait(false);
                             await webSocket.SendText("Terminal updated", cancellationToken).ConfigureAwait(false);
-                            await webSocket.SendJson(terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
+                            await sendJson(terminal).ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
@@ -86,7 +87,12 @@ namespace RESTable.WebSockets
                     }
                     case "#TERMINAL":
                     {
-                        await webSocket.SendJson(terminal, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await sendJson(terminal).ConfigureAwait(false);
+                        return true;
+                    }
+                    case "#OPTIONS":
+                    {
+                        await sendJson(new {terminal.SupportsTextInput, terminal.SupportsBinaryInput}).ConfigureAwait(false);
                         return true;
                     }
                     case "#INFO" when tail is string json:
@@ -96,7 +102,7 @@ namespace RESTable.WebSockets
                             var profile = webSocket.GetAppProfile();
                             await JsonProvider.PopulateAsync(profile, json).ConfigureAwait(false);
                             await webSocket.SendText("Profile updated", cancellationToken).ConfigureAwait(false);
-                            await webSocket.SendJson(webSocket.GetAppProfile(), cancellationToken: cancellationToken).ConfigureAwait(false);
+                            await sendJson(webSocket.GetAppProfile()).ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
@@ -106,7 +112,7 @@ namespace RESTable.WebSockets
                     }
                     case "#INFO":
                     {
-                        await webSocket.SendJson(webSocket.GetAppProfile(), cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await sendJson(webSocket.GetAppProfile()).ConfigureAwait(false);
                         return true;
                     }
                     case "#SHELL":
@@ -125,14 +131,14 @@ namespace RESTable.WebSockets
             return false;
         }
 
-        public async Task HandleBinaryInput(string wsId, Stream binaryInput, CancellationToken cancellationToken)
+        public Task HandleBinaryInput(string wsId, Stream binaryInput, CancellationToken cancellationToken)
         {
             if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket) || webSocket is not WebSocket)
             {
                 throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
                                                       "application. Disconnecting...");
             }
-            await webSocket.HandleBinaryInputInternal(binaryInput, cancellationToken).ConfigureAwait(false);
+            return webSocket.HandleBinaryInputInternal(binaryInput, cancellationToken);
         }
 
         public void RemoveWebSocket(string wsId) => ConnectedWebSockets.Remove(wsId);

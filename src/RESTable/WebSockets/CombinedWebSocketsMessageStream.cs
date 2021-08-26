@@ -1,109 +1,103 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTable.WebSockets
 {
-    internal class CombinedWebSocketsMessageStream : Stream, IAsyncDisposable
+    internal sealed class CombinedWebSocketsMessageStream : Stream, IAsyncDisposable
     {
         private WebSocketMessageType MessageType { get; }
         private CancellationToken CancellationToken { get; }
         private Stream[] MessageStreams { get; }
+        private long ByteCount { get; set; }
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        private bool IsDisposed { get; set; }
 
-        public CombinedWebSocketsMessageStream(IEnumerable<Stream> messageStreams, bool asText, CancellationToken cancellationToken)
+        public override long Position
+        {
+            get => ByteCount;
+            set => throw new NotSupportedException();
+        }
+
+        public CombinedWebSocketsMessageStream(Stream[] messageStreams, bool asText, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            MessageStreams = messageStreams.ToArray();
+            MessageStreams = messageStreams;
             MessageType = asText ? WebSocketMessageType.Text : WebSocketMessageType.Binary;
             CancellationToken = cancellationToken;
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                DisposeAsync().AsTask().Wait(CancellationToken);
-            }
-        }
-
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+#if NETSTANDARD2_0
+        private Task ForAll(Func<Stream, Task> action)
         {
             CancellationToken.ThrowIfCancellationRequested();
-            return Task.WhenAll(MessageStreams.Select(s => s.WriteAsync(buffer, offset, count, cancellationToken)));
+            var taskArray = new Task[MessageStreams.Length];
+            for (var i = 0; i < MessageStreams.Length; i += 1)
+            {
+                var stream = MessageStreams[i];
+                taskArray[i] = action(stream);
+            }
+            return Task.WhenAll(taskArray);
         }
 
-#if NETSTANDARD2_0
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (IsDisposed)
+                throw new InvalidOperationException("Cannot write to a closed websocket message stream");
+            await ForAll(stream => stream.WriteAsync(buffer, offset, count, cancellationToken)).ConfigureAwait(false);
+            ByteCount += count;
+        }
+
         public ValueTask DisposeAsync()
         {
+            if (IsDisposed)
+                return default;
             foreach (var stream in MessageStreams)
             {
                 stream.Dispose();
             }
-            base.Dispose();
+            IsDisposed = true;
             return default;
         }
 #else
-        public override async ValueTask DisposeAsync()
+        private Task ForAll(Func<Stream, ValueTask> action)
         {
-            foreach (var stream in MessageStreams)
+            CancellationToken.ThrowIfCancellationRequested();
+            var taskArray = new Task[MessageStreams.Length];
+            for (var i = 0; i < MessageStreams.Length; i += 1)
             {
-                await stream.DisposeAsync().ConfigureAwait(false);
+                var stream = MessageStreams[i];
+                taskArray[i] = action(stream).AsTask();
             }
+            return Task.WhenAll(taskArray);
         }
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
         {
-            CancellationToken.ThrowIfCancellationRequested();
-            foreach (var stream in MessageStreams)
-            {
-                await stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-            }
+            if (IsDisposed)
+                throw new InvalidOperationException("Cannot write to a closed websocket message stream");
+            await ForAll(stream => stream.WriteAsync(buffer, cancellationToken)).ConfigureAwait(false);
+            ByteCount += buffer.Length;
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        public override async ValueTask DisposeAsync()
         {
-            CancellationToken.ThrowIfCancellationRequested();
-            foreach (var stream in MessageStreams)
-            {
-                stream.Write(buffer);
-            }
+            if (IsDisposed)
+                return;
+            await ForAll(stream => stream.DisposeAsync()).ConfigureAwait(false);
+            IsDisposed = true;
         }
 #endif
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            CancellationToken.ThrowIfCancellationRequested();
-            var tasks = new Task[MessageStreams.Length];
-            for (var index = 0; index < MessageStreams.Length; index++)
-            {
-                var i = index;
-                tasks[i] = Task.Run(() => MessageStreams[i].Write(buffer, offset, count), CancellationToken);
-            }
-            Task.WhenAll(tasks).Wait(CancellationToken);
-        }
-
         public override void Flush() { }
-        public override bool CanRead => false;
-        public override bool CanSeek => false;
-        public override bool CanWrite => true;
-
-        #region Unsupported
-
-        public override int Read(byte[] buffer, int offset, int count) => throw new InvalidOperationException();
-        public override long Seek(long offset, SeekOrigin origin) => throw new InvalidOperationException();
-        public override void SetLength(long value) => throw new InvalidOperationException();
-        public override long Length => throw new InvalidOperationException();
-
-        public override long Position
-        {
-            get => throw new InvalidOperationException();
-            set => throw new InvalidOperationException();
-        }
-
-        #endregion
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override long Length => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

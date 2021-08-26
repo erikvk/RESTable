@@ -56,40 +56,16 @@ namespace RESTable.WebSockets
             await WebSocket.SendText(d, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task SendText(ArraySegment<byte> buffer, CancellationToken cancellationToken = new())
+        public async Task Send(Memory<byte> data, bool asText, CancellationToken cancellationToken = new())
         {
             await WaitTask.ConfigureAwait(false);
-            await WebSocket.SendText(buffer, cancellationToken).ConfigureAwait(false);
+            await WebSocket.Send(data, asText, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task SendText(Stream stream, CancellationToken cancellationToken = new())
-        {
-            await WaitTask.ConfigureAwait(false);
-            await WebSocket.SendText(stream, cancellationToken).ConfigureAwait(false);
-        }
-
-        public async Task SendBinary(ArraySegment<byte> buffer, CancellationToken cancellationToken = new())
-        {
-            await WaitTask.ConfigureAwait(false);
-            await WebSocket.SendBinary(buffer, cancellationToken).ConfigureAwait(false);
-        }
-
-        public async Task SendBinary(Stream stream, CancellationToken cancellationToken = new())
-        {
-            await WaitTask.ConfigureAwait(false);
-            await WebSocket.SendBinary(stream, cancellationToken).ConfigureAwait(false);
-        }
-
-        public async Task<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
+        public async ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
         {
             await WaitTask.ConfigureAwait(false);
             return await WebSocket.GetMessageStream(asText, cancellationToken).ConfigureAwait(false);
-        }
-
-        public async Task SendJson(object dataObject, bool a = false, bool? p = null, bool ig = false, CancellationToken cancellationToken = new())
-        {
-            await WaitTask.ConfigureAwait(false);
-            await WebSocket.SendJson(dataObject, a, p, ig, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task SendException(Exception exception, CancellationToken cancellationToken = new())
@@ -98,22 +74,10 @@ namespace RESTable.WebSockets
             await WebSocket.SendException(exception, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false, bool d = true, CancellationToken cancellationToken = new())
-        {
-            await WaitTask.ConfigureAwait(false);
-            await WebSocket.SendSerializedResult(serializedResult, t, w, d, cancellationToken).ConfigureAwait(false);
-        }
-
         public async Task SendResult(IResult r, TimeSpan? t = null, bool w = false, CancellationToken cancellationToken = new())
         {
             await WaitTask.ConfigureAwait(false);
             await WebSocket.SendResult(r, t, w, cancellationToken).ConfigureAwait(false);
-        }
-
-        public async Task StreamSerializedResult(ISerializedResult r, int m, TimeSpan? t = null, bool w = false, bool d = true, CancellationToken cancellationToken = new())
-        {
-            await WaitTask.ConfigureAwait(false);
-            await WebSocket.StreamSerializedResult(r, m, t, w, d, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task DirectToShell(ICollection<Condition<Shell>>? a = null, CancellationToken cancellationToken = new())
