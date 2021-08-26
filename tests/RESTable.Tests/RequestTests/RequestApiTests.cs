@@ -1,7 +1,13 @@
-﻿namespace RESTable.Tests.RequestTests
+﻿using Microsoft.Extensions.DependencyInjection;
+
+namespace RESTable.Tests.RequestTests
 {
-    public class RequestApiTests : RequestTestBase
+    public class RequestApiTests : RESTableTestBase
     {
-        public RequestApiTests(RESTableFixture fixture) : base(fixture) { }
+        public RequestApiTests(RESTableFixture fixture) : base(fixture)
+        {
+            fixture.AddJson();
+            Fixture.Configure();
+        }
     }
 }

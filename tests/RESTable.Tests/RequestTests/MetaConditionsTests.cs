@@ -1,12 +1,16 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using RESTable.Requests;
 using RESTable.Results;
 using Xunit;
 
 namespace RESTable.Tests.RequestTests
 {
-    public class MetaConditionsTests : RequestTestBase
+    public class MetaConditionsTests : RESTableTestBase
     {
+        private RESTableContext Context { get; }
+        
         #region Unsafe
 
         #endregion
@@ -156,7 +160,12 @@ namespace RESTable.Tests.RequestTests
         #region Safepost
 
         #endregion
-        
-        public MetaConditionsTests(RESTableFixture fixture) : base(fixture) { }
+
+        public MetaConditionsTests(RESTableFixture fixture) : base(fixture)
+        {
+            fixture.AddJson();
+            fixture.Configure();
+            Context = fixture.Context;
+        }
     }
 }

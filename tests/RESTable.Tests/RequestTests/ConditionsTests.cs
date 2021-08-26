@@ -1,12 +1,15 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Results;
 using Xunit;
 
 namespace RESTable.Tests.RequestTests
 {
-    public class ConditionsTests : RequestTestBase
+    public class ConditionsTests : RESTableTestBase
     {
+        private RESTableContext Context { get; }
+
         #region Declared members
 
         [Fact]
@@ -131,6 +134,11 @@ namespace RESTable.Tests.RequestTests
 
         #endregion
 
-        public ConditionsTests(RESTableFixture fixture) : base(fixture) { }
+        public ConditionsTests(RESTableFixture fixture) : base(fixture)
+        {
+            fixture.AddJson();
+            fixture.Configure();
+            Context = fixture.Context;
+        }
     }
 }
