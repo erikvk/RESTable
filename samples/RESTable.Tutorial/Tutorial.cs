@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -66,6 +68,17 @@ namespace RESTable.Tutorial
         public void Configure(IApplicationBuilder app) => app
             .UseWebSockets()
             .UseRESTableAspNetCore();
+    }
+
+    [RESTable(GET)]
+    public record MyRecord(string Name, int Number) : ISelector<MyRecord>
+    {
+        public IEnumerable<MyRecord> Select(IRequest<MyRecord> request)
+        {
+            yield return new MyRecord("Foo", 123);
+            yield return new MyRecord("Bar", 456);
+            yield return new MyRecord("Boo", 789);
+        }
     }
 
     /// <summary>
@@ -162,6 +175,62 @@ namespace RESTable.Tutorial
         }
     }
 
+    [RESTable]
+    public class TerminalTester : Terminal, IAsyncDisposable
+    {
+        private IWebSocket Connection { get; set; } = null!;
+
+        protected override async Task Open(CancellationToken cancellationToken)
+        {
+            Connection = await new ClientWebSocketBuilder(WebSocket.Context)
+                .WithUri("wss://localhost:5001/restable/myterminaltest")
+                .Connect(cancellationToken);
+        }
+
+        public override Task HandleTextInput(string input, CancellationToken cancellationToken)
+        {
+            var tasks = new Task[10];
+            var text = "Text";
+            var binary = Encoding.UTF8.GetBytes("Binary bananas are the best!");
+
+            tasks[0] = Connection.SendText(text, cancellationToken);
+            tasks[1] = Connection.Send(binary, asText: false, cancellationToken);
+            tasks[2] = Connection.SendText(text, cancellationToken);
+            tasks[3] = Connection.SendText(text, cancellationToken);
+            tasks[4] = Connection.Send(binary, asText: false, cancellationToken);
+            tasks[5] = Connection.SendText(text, cancellationToken);
+            tasks[6] = Connection.SendText(text, cancellationToken);
+            tasks[7] = Connection.SendText(text, cancellationToken);
+            tasks[8] = Connection.SendText(text, cancellationToken);
+            tasks[9] = Connection.SendText(text, cancellationToken);
+
+            return Task.WhenAll(tasks);
+        }
+
+        public ValueTask DisposeAsync() => Connection.DisposeAsync();
+    }
+
+    [RESTable]
+    public class MyTerminalTest : Terminal
+    {
+        public override Task HandleTextInput(string input, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public override async Task HandleBinaryInput(Stream input, CancellationToken cancellationToken)
+        {
+            var mem = new byte[10].AsMemory();
+            var read1 = await input.ReadAsync(mem, cancellationToken);
+            var str1 = Encoding.UTF8.GetString(mem[..read1].Span);
+
+            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            var read2 = await input.ReadAsync(mem, cancellationToken);
+            var str2 = Encoding.UTF8.GetString(mem[..read2].Span);
+        }
+    }
+
+
     // ReSharper disable UnusedParameter.Local
 
     [RESTable]
@@ -186,8 +255,6 @@ namespace RESTable.Tutorial
         {
             return WebSocket.SendText(input, cancellationToken);
         }
-
-        protected override bool SupportsTextInput => true;
     }
 
     // ReSharper restore UnusedParameter.Local
@@ -217,8 +284,6 @@ namespace RESTable.Tutorial
         {
             return Task.CompletedTask;
         }
-
-        protected override bool SupportsTextInput => true;
     }
 
     [RESTable(GET)]
@@ -422,8 +487,6 @@ namespace RESTable.Tutorial
             .Combine()
             .CombinedWebSocket
             .SendText(message, cancellationToken);
-
-        protected override bool SupportsTextInput => true;
     }
 }
 
