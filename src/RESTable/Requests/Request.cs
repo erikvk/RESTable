@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +14,6 @@ using RESTable.Meta.Internal;
 using RESTable.Resources.Operations;
 using RESTable.Results;
 using RESTable.WebSockets;
-using Error = RESTable.Results.Error;
 
 namespace RESTable.Requests
 {
@@ -151,28 +149,6 @@ namespace RESTable.Requests
             data![key] = value;
         }
 
-        public async IAsyncEnumerable<T> GetResultEntities([EnumeratorCancellation] CancellationToken cancellationToken = new())
-        {
-            await using var result = await GetResult(cancellationToken).ConfigureAwait(false);
-            switch (result)
-            {
-                case Error error: throw error;
-                case Change<T> change:
-                {
-                    foreach (var entity in change.Entities)
-                        yield return entity;
-                    yield break;
-                }
-                case IEntities<T> entities:
-                {
-                    await foreach (var entity in entities)
-                        yield return entity;
-                    yield break;
-                }
-                case var other: throw new InvalidOperationException($"Cannot convert result of type '{other.GetType()}' to an enumeration of entities");
-            }
-        }
-
         public async Task<IResult> GetResult(CancellationToken cancellationToken = new())
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -250,7 +226,7 @@ namespace RESTable.Requests
 
                     case IEntityResource<T> entityResource:
                     {
-                        if (entityResource.RequiresAuthentication)  
+                        if (entityResource.RequiresAuthentication)
                         {
                             var authenticator = this.GetRequiredService<ResourceAuthenticator>();
                             await authenticator.ResourceAuthenticate(this, entityResource, cancellationToken).ConfigureAwait(false);
@@ -315,7 +291,7 @@ namespace RESTable.Requests
         private async Task<IResult> SwitchTerminal(WebSocket webSocket, ITerminalResource<T> resource, CancellationToken cancellationToken)
         {
             var _resource = (TerminalResource<T>) resource;
-            var newTerminal = await _resource.CreateTerminal(Context, Conditions).ConfigureAwait(false);
+            var newTerminal = await _resource.CreateTerminal(Context, cancellationToken, Conditions).ConfigureAwait(false);
             await webSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal(cancellationToken).ConfigureAwait(false);
             return new SwitchedTerminal(this);

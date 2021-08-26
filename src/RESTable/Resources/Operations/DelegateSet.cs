@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
 
@@ -168,10 +169,6 @@ namespace RESTable.Resources.Operations
             return this;
         }
 
-        private static T? AsImplemented<T>(T? @delegate) where T : Delegate => @delegate?
-            .Method
-            .HasAttribute<MethodNotImplementedAttribute>() == false
-            ? @delegate
-            : null;
+        private static T? AsImplemented<T>(T? @delegate) where T : Delegate => @delegate?.Method.IsImplemented() == true ? @delegate : null;
     }
 }

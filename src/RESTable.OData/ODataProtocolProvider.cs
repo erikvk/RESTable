@@ -144,7 +144,7 @@ namespace RESTable.OData
                                 args.Conditions.AddRange(toAdd);
                                 break;
                             case orderby:
-                                if (decodedValue.Contains(","))
+                                if (decodedValue.Contains(','))
                                     throw new FeatureNotImplemented("Multiple expressions not implemented for $orderby");
                                 var (term, order) = decodedValue.TupleSplit(' ');
                                 switch (order)

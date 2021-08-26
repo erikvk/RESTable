@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using RESTable.Resources;
 
 namespace RESTable.Meta
 {
@@ -69,5 +71,10 @@ namespace RESTable.Meta
                 return null;
             }
         }
+
+        internal static bool IsImplemented(this MethodInfo method) => !method
+            .GetCustomAttributes(false)
+            .OfType<MethodNotImplementedAttribute>()
+            .Any();
     }
 }

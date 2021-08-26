@@ -17,7 +17,7 @@ namespace RESTable.Results
 
         public sealed override IRequest Request => null!;
 
-        internal static Options Create(RequestParameters parameters)
+        public static Options Create(RequestParameters parameters)
         {
             var options = new Options(parameters);
             if (!parameters.IsValid)
