@@ -6,7 +6,7 @@ using RESTable.Meta;
 
 namespace RESTable.Json.Tests
 {
-    public class GenericConverter<T> : JsonConverter<T> where T : class, IConvertMePlease
+    public class GenericConverter<T> : JsonConverter<T> where T : class, IToConvert
     {
         private ISerializationMetadata<T> Metadata { get; }
         private IJsonProvider JsonProvider { get; }
@@ -32,7 +32,7 @@ namespace RESTable.Json.Tests
             }
             var jsonWriter = JsonProvider.GetJsonWriter(writer, options);
             jsonWriter.WriteStartObject();
-            jsonWriter.WriteString("GenericConverter", typeof(T).FullName);
+            jsonWriter.WriteString("GenericConverter", typeof(T).Name);
             jsonWriter.WriteDeclaredMembers(value, Metadata);
             jsonWriter.WriteEndObject();
         }
