@@ -136,6 +136,48 @@ namespace RESTable.Tutorial
         Other
     }
 
+    [RESTable(GET)]
+    public class SuperheroReport : IAsyncSelector<SuperheroReport>
+    {
+        public int NumberOfSuperheroes { get; set; }
+        public int NumberOfFemaleHeroes { get; set; }
+        public int NumberOfMaleHeroes { get; set; }
+        public int NumberOfOtherGenderHeroes { get; set; }
+        public Superhero? NewestSuperhero { get; set; }
+
+        /// <summary>
+        /// This method returns an IEnumerable of the resource type. RESTable will call this
+        /// on GET requests and send the results back to the client as e.g. JSON.
+        /// </summary>
+        public async IAsyncEnumerable<SuperheroReport> SelectAsync(IRequest<SuperheroReport> request, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var count = 0;
+            var newest = default(Superhero);
+            var genderCount = new int[3];
+
+            await foreach (var superhero in request.Context.CreateRequest<Superhero>().GetResultEntities(cancellationToken))
+            {
+                if (count == 0)
+                    newest = superhero;
+                count += 1;
+                genderCount[(int) superhero.Gender] += 1;
+                if (superhero.Year > newest?.Year)
+                    newest = superhero;
+            }
+
+            yield return new SuperheroReport
+            {
+                NumberOfSuperheroes = count,
+                NumberOfFemaleHeroes = genderCount[(int) Female],
+                NumberOfMaleHeroes = genderCount[(int) Male],
+                NumberOfOtherGenderHeroes = genderCount[(int) Other],
+                NewestSuperhero = newest
+            };
+        }
+    }
+
+    #region A bunch of test things to try
+
     public interface IMyTest
     {
         string? Name { get; }
@@ -187,24 +229,36 @@ namespace RESTable.Tutorial
                 .Connect(cancellationToken);
         }
 
-        public override Task HandleTextInput(string input, CancellationToken cancellationToken)
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
             var tasks = new Task[10];
             var text = "Text";
             var binary = Encoding.UTF8.GetBytes("Binary bananas are the best!");
 
-            tasks[0] = Connection.SendText(text, cancellationToken);
-            tasks[1] = Connection.Send(binary, asText: false, cancellationToken);
-            tasks[2] = Connection.SendText(text, cancellationToken);
-            tasks[3] = Connection.SendText(text, cancellationToken);
-            tasks[4] = Connection.Send(binary, asText: false, cancellationToken);
-            tasks[5] = Connection.SendText(text, cancellationToken);
-            tasks[6] = Connection.SendText(text, cancellationToken);
-            tasks[7] = Connection.SendText(text, cancellationToken);
-            tasks[8] = Connection.SendText(text, cancellationToken);
-            tasks[9] = Connection.SendText(text, cancellationToken);
+            Task fragmentedTask;
 
-            return Task.WhenAll(tasks);
+            // Should lead to frame fragmentation if RESTable does not limit writing threads
+            await using (var binaryMessage = await Connection.GetMessageStream(false, cancellationToken))
+            {
+                await binaryMessage.WriteAsync(binary, cancellationToken);
+
+                // This should not completed until the binary message is sent and the semaphore is released
+                // If MaxNumberOfConcurrentWriters > 1, this will lead to frame fragmentation where the text 
+                // frame will appear in the binary message (and, being a final frame) close the message.
+                fragmentedTask = Task.Run(async () => await Connection.SendText(text, cancellationToken), cancellationToken);
+
+                await Task.Delay(1000, cancellationToken);
+
+                if (fragmentedTask.IsCompleted)
+                    throw new Exception("Fragmented task completed!");
+
+                await binaryMessage.WriteAsync(binary, cancellationToken);
+            }
+
+            await Task.Delay(1000, cancellationToken);
+
+            if (!fragmentedTask.IsCompleted)
+                throw new Exception("Fragmented task not completed!");
         }
 
         public ValueTask DisposeAsync() => Connection.DisposeAsync();
@@ -220,13 +274,9 @@ namespace RESTable.Tutorial
 
         public override async Task HandleBinaryInput(Stream input, CancellationToken cancellationToken)
         {
-            var mem = new byte[10].AsMemory();
-            var read1 = await input.ReadAsync(mem, cancellationToken);
-            var str1 = Encoding.UTF8.GetString(mem[..read1].Span);
+            using var streamReader = new StreamReader(input);
 
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-            var read2 = await input.ReadAsync(mem, cancellationToken);
-            var str2 = Encoding.UTF8.GetString(mem[..read2].Span);
+            var str = await streamReader.ReadToEndAsync();
         }
     }
 
@@ -340,46 +390,6 @@ namespace RESTable.Tutorial
         }
     }
 
-    [RESTable(GET)]
-    public class SuperheroReport : IAsyncSelector<SuperheroReport>
-    {
-        public int NumberOfSuperheroes { get; set; }
-        public int NumberOfFemaleHeroes { get; set; }
-        public int NumberOfMaleHeroes { get; set; }
-        public int NumberOfOtherGenderHeroes { get; set; }
-        public Superhero? NewestSuperhero { get; set; }
-
-        /// <summary>
-        /// This method returns an IEnumerable of the resource type. RESTable will call this
-        /// on GET requests and send the results back to the client as e.g. JSON.
-        /// </summary>
-        public async IAsyncEnumerable<SuperheroReport> SelectAsync(IRequest<SuperheroReport> request, [EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            var count = 0;
-            var newest = default(Superhero);
-            var genderCount = new int[3];
-
-            await foreach (var superhero in request.Context.CreateRequest<Superhero>().GetResultEntities(cancellationToken))
-            {
-                if (count == 0)
-                    newest = superhero;
-                count += 1;
-                genderCount[(int) superhero.Gender] += 1;
-                if (superhero.Year > newest?.Year)
-                    newest = superhero;
-            }
-
-            yield return new SuperheroReport
-            {
-                NumberOfSuperheroes = count,
-                NumberOfFemaleHeroes = genderCount[(int) Female],
-                NumberOfMaleHeroes = genderCount[(int) Male],
-                NumberOfOtherGenderHeroes = genderCount[(int) Other],
-                NewestSuperhero = newest
-            };
-        }
-    }
-
     [RESTable, SQLite]
     public class Person : ElasticSQLiteTable, IValidator<Person>
     {
@@ -488,6 +498,8 @@ namespace RESTable.Tutorial
             .CombinedWebSocket
             .SendText(message, cancellationToken);
     }
+
+    #endregion
 }
 
 #endregion
