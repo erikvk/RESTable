@@ -13,6 +13,7 @@ namespace RESTable.AspNetCore
     internal abstract class AspNetCoreWebSocket : WebSockets.WebSocket
     {
         internal const int WebSocketBufferSize = 4096;
+        private const int MaxNumberOfConcurrentWriters = 1;
 
         /// <summary>
         /// Ensures that at most one thread sends a message frame over this websocket at any one time, to
@@ -27,32 +28,44 @@ namespace RESTable.AspNetCore
         {
             ArrayPool = ArrayPool<byte>.Create(WebSocketBufferSize, 32);
             WebSocket = null!;
-            SendMessageSemaphore = new SemaphoreSlim(1, 1);
+            SendMessageSemaphore = new SemaphoreSlim(MaxNumberOfConcurrentWriters, MaxNumberOfConcurrentWriters);
         }
 
         protected override async Task SendBuffered(string data, bool asText, CancellationToken cancellationToken)
         {
             await SendMessageSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-            var buffer = Encoding.UTF8.GetBytes(data);
+            try
+            {
+                var buffer = Encoding.UTF8.GetBytes(data);
 #if NETSTANDARD2_0
-            var byteData = new ArraySegment<byte>(buffer);
+                var byteData = new ArraySegment<byte>(buffer);
 #else
-            var byteData = buffer.AsMemory();
+                var byteData = buffer.AsMemory();
 #endif
-            await WebSocket.SendAsync(byteData, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
-            SendMessageSemaphore.Release();
+                await WebSocket.SendAsync(byteData, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                SendMessageSemaphore.Release();
+            }
         }
 
         protected override async Task SendBuffered(Memory<byte> data, bool asText, CancellationToken cancellationToken)
         {
             await SendMessageSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
 #if NETSTANDARD2_0
-            var segment = new ArraySegment<byte>(data.ToArray());
-            await WebSocket.SendAsync(segment, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
+                var segment = new ArraySegment<byte>(data.ToArray());
+                await WebSocket.SendAsync(segment, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
 #else
-            await WebSocket.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
+                await WebSocket.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
 #endif
-            SendMessageSemaphore.Release();
+            }
+            finally
+            {
+                SendMessageSemaphore.Release();
+            }
         }
 
         protected override Stream GetOutgoingMessageStream(bool asText, CancellationToken cancellationToken)

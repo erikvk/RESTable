@@ -18,7 +18,7 @@ namespace RESTable.SQLite
             Sql = sql;
         }
 
-        public async Task Execute()
+        public async Task ExecuteAsync(CancellationToken cancellationToken = new())
         {
             var connection = new SQLiteConnection(ConnectionString).OpenAndReturn();
             await using (connection.ConfigureAwait(false))
@@ -27,7 +27,7 @@ namespace RESTable.SQLite
                 await using (command.ConfigureAwait(false))
                 {
                     command.CommandText = Sql;
-                    await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }

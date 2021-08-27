@@ -60,7 +60,7 @@ namespace RESTable.SQLite.Meta
                                               $"The table already contained a column definition '({column.ToSql()})'.");
             }
             var pushQuery = new Query($"BEGIN TRANSACTION;ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSql()};COMMIT;");
-            await pushQuery.Execute().ConfigureAwait(false);
+            await pushQuery.ExecuteAsync().ConfigureAwait(false);
         }
 
         internal string ToSql() => $"{Name.Fnuttify()} {Type}";

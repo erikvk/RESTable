@@ -198,7 +198,7 @@ namespace RESTable.SQLite
                            $"DROP TABLE {tempName};" +
                            "COMMIT;PRAGMA foreign_keys=on;";
             var query = new Query(querySql);
-            await query.Execute().ConfigureAwait(false);
+            await query.ExecuteAsync().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace RESTable.SQLite
             ColumnMappings = columnMappings;
         }
 
-        private async Task Drop() => await DropTableQuery.Execute().ConfigureAwait(false);
+        private async Task Drop() => await DropTableQuery.ExecuteAsync().ConfigureAwait(false);
 
         // ReSharper disable once ConstantNullCoalescingCondition
         private string GetCreateTableSql() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
@@ -261,7 +261,7 @@ namespace RESTable.SQLite
             if (!await mapping.Exists())
             {
                 var createTableQuery = new Query(mapping.GetCreateTableSql());
-                await createTableQuery.Execute().ConfigureAwait(false);
+                await createTableQuery.ExecuteAsync().ConfigureAwait(false);
             }
             await mapping.Update().ConfigureAwait(false);
         }
