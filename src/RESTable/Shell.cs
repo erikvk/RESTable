@@ -316,7 +316,7 @@ namespace RESTable
                                 op: Operators.EQUALS,
                                 value: resource!.Name
                             );
-                            var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithConditions(resourceCondition);
+                            var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithAddedConditions(resourceCondition);
                             await using var schemaResult = await schemaRequest.GetResultOrThrow<IEntities>(cancellationToken: cancellationToken).ConfigureAwait(false);
                             await SerializeAndSendResult(schemaResult, cancellationToken: cancellationToken).ConfigureAwait(false);
                             break;

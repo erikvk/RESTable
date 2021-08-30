@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
+using RESTable.Requests.Filters;
 using RESTable.Results;
 
 namespace RESTable.Requests
@@ -85,7 +88,57 @@ namespace RESTable.Requests
         /// <summary>
         /// Sets the given conditions to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithConditions<T>(this IRequest<T> request, IEnumerable<Condition<T>> conditions) where T : class
+        public static IRequest<T> WithLimit<T>(this IRequest<T> request, Limit limit) where T : class
+        {
+            request.MetaConditions.Limit = limit;
+            return request;
+        }
+
+        /// <summary>
+        /// Sets the given conditions to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithOffset<T>(this IRequest<T> request, Offset offset) where T : class
+        {
+            request.MetaConditions.Offset = offset;
+            return request;
+        }
+
+#if !NETSTANDARD2_0
+        /// <summary>
+        /// Sets the given conditions to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithOffsetAndLimit<T>(this IRequest<T> request, Range range) where T : class
+        {
+            var (offset, limit) = range.ToSlicedOffsetAndLimit(0, -1);
+            request.MetaConditions.Offset = offset;
+            request.MetaConditions.Limit = limit;
+            return request;
+        }
+#endif
+
+        /// <summary>
+        /// Sets the given conditions to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithOffsetAndLimit<T>(this IRequest<T> request, Offset offset, Limit limit) where T : class
+        {
+            request.MetaConditions.Offset = offset;
+            request.MetaConditions.Limit = limit;
+            return request;
+        }
+
+        /// <summary>
+        /// Removes all conditions from the request by setting Conditions to a new List of Condition of T
+        /// </summary>
+        public static IRequest<T> WithNoConditions<T>(this IRequest<T> request) where T : class
+        {
+            request.Conditions = new List<Condition<T>>();
+            return request;
+        }
+
+        /// <summary>
+        /// Sets the given conditions to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithAddedConditions<T>(this IRequest<T> request, IEnumerable<Condition<T>> conditions) where T : class
         {
             request.Conditions.AddRange(conditions);
             return request;
@@ -94,23 +147,23 @@ namespace RESTable.Requests
         /// <summary>
         /// Sets the given conditions to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithConditions<T>(this IRequest<T> request, params Condition<T>[] conditionsArray) where T : class
+        public static IRequest<T> WithAddedConditions<T>(this IRequest<T> request, params Condition<T>[] conditionsArray) where T : class
         {
-            return WithConditions(request, conditions: conditionsArray);
+            return WithAddedConditions(request, conditions: conditionsArray);
         }
 
         /// <summary>
         /// Sets the given conditions to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithCondition<T>(this IRequest<T> request, string key, Operators op, object value) where T : class
+        public static IRequest<T> WithAddedCondition<T>(this IRequest<T> request, string key, Operators op, object value) where T : class
         {
-            return WithConditions(request, (key, op, value));
+            return WithAddedConditions(request, (key, op, value));
         }
 
         /// <summary>
         /// Sets the given conditions to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithCondition<T>(this IRequest<T> request, string key, Operators op, object value, out Condition<T> condition) where T : class
+        public static IRequest<T> WithAddedCondition<T>(this IRequest<T> request, string key, Operators op, object value, out Condition<T> condition) where T : class
         {
             var termFactory = request.GetRequiredService<TermFactory>();
             var target = request.Target;
@@ -120,13 +173,13 @@ namespace RESTable.Requests
                 op: op,
                 value: value
             );
-            return WithConditions(request, condition);
+            return WithAddedConditions(request, condition);
         }
 
         /// <summary>
         /// Sets the given conditions to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithConditions<T>(this IRequest<T> request, params (string key, Operators op, object value)[] conditions) where T : class
+        public static IRequest<T> WithAddedConditions<T>(this IRequest<T> request, params (string key, Operators op, object value)[] conditions) where T : class
         {
             var termFactory = request.GetRequiredService<TermFactory>();
             var target = request.Target;
@@ -144,13 +197,13 @@ namespace RESTable.Requests
                 }
             }
 
-            return WithConditions(request, conditions: Converter());
+            return WithAddedConditions(request, conditions: Converter());
         }
 
         /// <summary>
         /// Sets the given selector to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithSelector<T>(this IRequest<T> request, Func<IAsyncEnumerable<T>> selector) where T : class
+        public static IRequest<T> WithSelector<T>(this IRequest<T> request, Func<IAsyncEnumerable<T>>? selector) where T : class
         {
             request.Selector = selector;
             return request;
@@ -176,7 +229,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Sets the given selector to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithUpdater<T>(this IRequest<T> request, Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> updater) where T : class
+        public static IRequest<T> WithUpdater<T>(this IRequest<T> request, Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? updater) where T : class
         {
             request.Updater = updater;
             return request;
@@ -195,7 +248,7 @@ namespace RESTable.Requests
         /// Evaluates the request asynchronously and returns the result, or
         /// disposes the result and throws an exception if the result is an error.
         /// </summary>
-        public static async Task<IResult> GetResultOrThrow(this IRequest request, CancellationToken cancellationToken = new())
+        public static async ValueTask<IResult> GetResultOrThrow(this IRequest request, CancellationToken cancellationToken = new())
         {
             var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
             if (result is Error error)
@@ -211,7 +264,7 @@ namespace RESTable.Requests
         /// disposes the result and throws an exception if the result is an error
         /// or not of the given result type.
         /// </summary>
-        public static async Task<TResult> GetResultOrThrow<TResult>(this IRequest request, CancellationToken cancellationToken = new()) where TResult : IResult
+        public static async ValueTask<TResult> GetResultOrThrow<TResult>(this IRequest request, CancellationToken cancellationToken = new()) where TResult : IResult
         {
             var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
             switch (result)
@@ -231,6 +284,39 @@ namespace RESTable.Requests
                     throw new InvalidCastException($"Result was of type '{other.GetType()}', " +
                                                    $"and cannot be converted to '{typeof(TResult)}'");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Evaluates the request asynchronously and gets its result, then
+        /// serializes the result, optionally to the given output stream.
+        /// </summary>
+        public static async Task<ISerializedResult> GetAndSerializeResult(this IRequest request, Stream? customOutputStream = null, CancellationToken cancellationToken = new())
+        {
+            var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
+            result.ThrowIfError();
+            return await result.Serialize(customOutputStream, cancellationToken).ConfigureAwait(false);
+        }
+
+        public static async IAsyncEnumerable<T> GetResultEntities<T>(this IRequest<T> request, [EnumeratorCancellation] CancellationToken cancellationToken = new()) where T : class
+        {
+            await using var result = await request.GetResult(cancellationToken).ConfigureAwait(false);
+            switch (result)
+            {
+                case Error error: throw error;
+                case Change<T> change:
+                {
+                    foreach (var entity in change.Entities)
+                        yield return entity;
+                    yield break;
+                }
+                case IEntities<T> entities:
+                {
+                    await foreach (var entity in entities)
+                        yield return entity;
+                    yield break;
+                }
+                case var other: throw new InvalidOperationException($"Cannot convert result of type '{other.GetType()}' to an enumeration of entities");
             }
         }
     }

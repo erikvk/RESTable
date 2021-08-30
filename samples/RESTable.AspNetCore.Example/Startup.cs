@@ -65,7 +65,7 @@ namespace RESTable.Example
                         Interests = new[] {"Destiny", "Forces"}
                     }
                 });
-            using var result = personPostRequest.GetResult().Result;
+            personPostRequest.GetResult().AsTask().Wait();
         }
     }
 }

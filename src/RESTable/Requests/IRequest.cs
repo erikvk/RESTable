@@ -59,14 +59,14 @@ namespace RESTable.Requests
         /// This delegate is used in GetInputEntities(). By default RESTable will generate entities by deserializing the request 
         /// body to an <see cref="IAsyncEnumerable{T}"/> using the content type provided in the Content-Type header.
         /// </summary>
-        Func<IAsyncEnumerable<T>> Selector { set; }
+        Func<IAsyncEnumerable<T>>? Selector { set; }
 
         /// <summary>
         /// The method used when updating existing entities. Set this property to override the default behavior.
         /// By default RESTable will populate the existing entities with content from the request body, using the 
         /// content type provided in the Content-Type header.
         /// </summary>
-        Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>> Updater { set; }
+        Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? Updater { set; }
         
         /// <summary>
         /// Gets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTable
@@ -144,7 +144,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Evaluates the request asynchronously and returns the result
         /// </summary>
-        Task<IResult> GetResult(CancellationToken cancellationToken = new());
+        ValueTask<IResult> GetResult(CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Is this request valid?
@@ -160,6 +160,6 @@ namespace RESTable.Requests
         /// Gets a deep exact copy of this request
         /// </summary>
         /// <returns></returns>
-        Task<IRequest> GetCopy(string? newProtocol = null);
+        ValueTask<IRequest> GetCopy(string? newProtocol = null);
     }
 }

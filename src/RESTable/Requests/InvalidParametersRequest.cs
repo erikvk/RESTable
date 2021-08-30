@@ -13,9 +13,9 @@ namespace RESTable.Requests
         public bool IsValid { get; }
         private Exception Error { get; }
 
-        public Task<IResult> GetResult(CancellationToken cancellationToken = new())
+        public ValueTask<IResult> GetResult(CancellationToken cancellationToken = new())
         {
-            return Task.FromResult<IResult>(Error.AsResultOf(this));
+            return new ValueTask<IResult>(Error.AsResultOf(this));
         }
 
         public ITarget Target { get; }
@@ -82,10 +82,10 @@ namespace RESTable.Requests
             ResponseHeaders = null!;
         }
 
-        public Task<IRequest> GetCopy(string? newProtocol = null)
+        public ValueTask<IRequest> GetCopy(string? newProtocol = null)
         {
             // We do not care about changing the protocol of an invalid parameters request.
-            return Task.FromResult<IRequest>(new InvalidParametersRequest(Parameters));
+            return new ValueTask<IRequest>(new InvalidParametersRequest(Parameters));
         }
 
         public void Dispose() => Body.Dispose();

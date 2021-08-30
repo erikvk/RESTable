@@ -149,7 +149,7 @@ namespace RESTable.Requests
             data![key] = value;
         }
 
-        public async Task<IResult> GetResult(CancellationToken cancellationToken = new())
+        public async ValueTask<IResult> GetResult(CancellationToken cancellationToken = new())
         {
             cancellationToken.ThrowIfCancellationRequested();
             Stopwatch.Restart();
@@ -366,7 +366,7 @@ namespace RESTable.Requests
 
         #endregion
 
-        public async Task<IRequest> GetCopy(string? newProtocol = null)
+        public async ValueTask<IRequest> GetCopy(string? newProtocol = null)
         {
             var protocolController = this.GetRequiredService<ProtocolProviderManager>();
             return new Request<T>

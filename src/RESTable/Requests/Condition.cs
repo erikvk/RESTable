@@ -39,7 +39,7 @@ namespace RESTable.Requests
         public object? Value
         {
             get => _value;
-            set
+            internal set
             {
                 _value = value;
                 ValueLiteral = _value switch

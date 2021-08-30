@@ -266,7 +266,7 @@ namespace RESTable
         /// </summary>
         public static (string, string?) TupleSplit(this string str, char separator, bool trim = false)
         {
-            var split = str.Split(new[] { separator }, 2, StringSplitOptions.RemoveEmptyEntries);
+            var split = str.Split(new[] {separator}, 2, StringSplitOptions.RemoveEmptyEntries);
             return trim switch
             {
                 false => split.Length switch
@@ -290,7 +290,7 @@ namespace RESTable
         /// </summary>
         public static (string, string?) TupleSplit(this string str, string separator, bool trim = false)
         {
-            var split = str.Split(new[] { separator }, 2, StringSplitOptions.None);
+            var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
             return trim switch
             {
                 false => split.Length switch
@@ -474,7 +474,7 @@ namespace RESTable
         /// </summary>
         public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return str.Split(new[] { separator }, options);
+            return str.Split(new[] {separator}, options);
         }
 #endif
 
@@ -811,7 +811,7 @@ namespace RESTable
                 case "": return "";
             }
 
-            if (property is DeclaredProperty { IsEnum: true } prop)
+            if (property is DeclaredProperty {IsEnum: true} prop)
             {
                 try
                 {
@@ -890,6 +890,62 @@ namespace RESTable
         #endregion
 
         #region Conversion
+
+#if !NETSTANDARD2_0
+        internal static (int offset, int limit) ToOffsetAndLimit(this Range range)
+        {
+            var offset = range.Start switch
+            {
+                {IsFromEnd: true, Value: 0} when range.End.Equals(^0) => int.MaxValue,
+                {IsFromEnd: true, Value: 0} => throw new ArgumentOutOfRangeException(nameof(range)),
+                {IsFromEnd: true} => -range.Start.Value,
+                _ => range.Start.Value
+            };
+            return range.End switch
+            {
+                {IsFromEnd: true} when range.End.Value != 0 => throw new ArgumentOutOfRangeException
+                (
+                    nameof(range), "Ranges where End.FromEnd == true and End.Value > 0 are not supported by RESTable"
+                ),
+                {IsFromEnd: true} => (offset, -1),
+                _ => range.Start switch
+                {
+                    {IsFromEnd: true} => throw new ArgumentOutOfRangeException
+                    (
+                        nameof(range), "Ranges where Start.FromEnd == true and End.FromEnd == false are not supported by RESTable"
+                    ),
+                    _ when range.End.Value - range.Start.Value is var limit => limit < 0
+                        ? throw new ArgumentOutOfRangeException(nameof(range), "Negative ranges are not supported by RESTable")
+                        : (offset, limit),
+                    _ => throw new Exception($"Unknown error while parsing start of range '{range}'")
+                }
+            };
+        }
+
+        internal static (int offset, int limit) ToSlicedOffsetAndLimit(this Range range, int currentOffset, int currentLimit)
+        {
+            switch (currentLimit)
+            {
+                case <0:
+                {
+                    var (rangeOffset, rangeLimit) = range.ToOffsetAndLimit();
+                    switch (currentOffset)
+                    {
+                        case <0: return (currentLimit + rangeOffset, rangeLimit);
+                        case 0:
+                        case >0 when rangeOffset < 0: return (rangeOffset, rangeLimit);
+                        case >0: return (rangeOffset + currentOffset, rangeLimit);
+                    }
+                }
+                case 0: return (currentOffset, currentLimit);
+                case >0:
+                {
+                    var (offset, length) = range.GetOffsetAndLength(currentLimit);
+                    return (offset + currentOffset, length);
+                }
+            }
+        }
+#endif
 
         internal static double GetRESTableElapsedMs(this TimeSpan timeSpan)
         {

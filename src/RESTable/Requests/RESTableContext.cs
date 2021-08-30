@@ -91,6 +91,64 @@ namespace RESTable.Requests
         /// </summary>
         public Client Client { get; }
 
+#if !NETSTANDARD2_0
+
+        #region Get and Replace
+
+        public ValueTask<ReadOnlyMemory<T>> All<T>() where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).AsMemoryAsync();
+        }
+
+        public ValueTask<ReadOnlyMemory<T>> Get<T>(Range range) where T : class
+        {
+            var (offset, limit) = range.ToOffsetAndLimit();
+            return new EntityBufferTask<T>(CreateRequest<T>(), offset, limit, System.Collections.Immutable.ImmutableList<Condition<T>>.Empty).AsMemoryAsync();
+        }
+
+        public ValueTask<T?> First<T>() where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).First;
+        }
+
+        public ValueTask<T?> Last<T>() where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Last;
+        }
+
+        public ValueTask<T?> Get<T>(int index) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Get(index);
+        }
+
+        public ValueTask<T> Patch<T>(Index index, T item) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Patch(index, item);
+        }
+
+        public ValueTask<T> Patch<T>(int index, T item) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Patch(index, item);
+        }
+
+        public ValueTask<ReadOnlyMemory<T>> Patch<T>(Range range, ReadOnlyMemory<T> updatedBuffer) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Slice(range).Patch(updatedBuffer);
+        }
+
+        #endregion
+
+        #region Entities
+
+        public EntityBufferTask<T> Entities<T>() where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>());
+        }
+
+        #endregion
+
+#endif
+
         /// <summary>
         /// Creates a request in this context for a resource type, using the given method and optional protocol id and 
         /// view name. If the protocol ID is null, the default protocol will be used. T must be a registered resource type.
@@ -156,9 +214,10 @@ namespace RESTable.Requests
             IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
             if (!request.IsValid)
             {
-                // Will run synchronously since the request is known to be invalid
-                using var result = request.GetResult().Result;
-                error = result as Error;
+                var resultTask = request.GetResult();
+                if (resultTask.IsCompleted)
+                    error = resultTask.GetAwaiter().GetResult() as Error;
+                else error = resultTask.AsTask().Result as Error;
                 return false;
             }
             uriComponents = request.UriComponents;
@@ -231,13 +290,13 @@ namespace RESTable.Requests
                 var id = IdNr += 1;
                 var bytes = id switch
                 {
-                    < 1 << 8 => new[] { (byte) id },
-                    < 2 << 8 => new[] { byte.MaxValue, (byte) (id - 1 << 8) },
-                    < 3 << 8 => new[] { byte.MaxValue, byte.MaxValue, (byte) (id - 2 << 8) },
-                    < 4 << 8 => new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 3 << 8) },
-                    < 5 << 8 => new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 4 << 8) },
-                    < 6 << 8 => new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 5 << 8) },
-                    < 7 << 8 => new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 6 << 8) },
+                    < 1 << 8 => new[] {(byte) id},
+                    < 2 << 8 => new[] {byte.MaxValue, (byte) (id - 1 << 8)},
+                    < 3 << 8 => new[] {byte.MaxValue, byte.MaxValue, (byte) (id - 2 << 8)},
+                    < 4 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 3 << 8)},
+                    < 5 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 4 << 8)},
+                    < 6 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 5 << 8)},
+                    < 7 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 6 << 8)},
                     _ => BitConverter.GetBytes(IdNr)
                 };
                 return Convert.ToBase64String(bytes).TrimEnd('=');

@@ -28,8 +28,7 @@ namespace RESTable.Requests.Filters
         public static bool operator >(Limit l, int i) => l.Number > i;
         public static bool operator <=(Limit l, int i) => l.Number <= i;
         public static bool operator >=(Limit l, int i) => l.Number >= i;
-
-
+        
         public bool Equals(Limit other) => Number == other.Number;
         public override bool Equals(object? obj) => obj is Limit limit && Equals(limit);
         public override int GetHashCode() => Number.GetHashCode();
