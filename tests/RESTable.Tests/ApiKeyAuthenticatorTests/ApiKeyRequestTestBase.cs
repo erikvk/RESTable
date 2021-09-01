@@ -51,8 +51,7 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
                 .Build();
             fixture.AddSingleton<IConfiguration>(configuration);
             fixture.AddApiKeys();
-            fixture.AddJson();
-
+            
             fixture.Configure();
 
             Context = fixture.Context;

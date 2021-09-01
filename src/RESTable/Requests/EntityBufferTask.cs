@@ -20,29 +20,107 @@ namespace RESTable.Requests
     /// <typeparam name="T"></typeparam>
     public readonly struct EntityBufferTask<T> where T : class
     {
+        /// <summary>
+        /// The underlying request used to generate the entities. Shared among all subtasks. Its state is
+        /// always overwritten when used.
+        /// </summary>
         private readonly IRequest<T> Request;
+
+        /// <summary>
+        /// The offset within the entities enumeration, from which to generate the buffer
+        /// </summary>
         private readonly int Offset;
+
+        /// <summary>
+        /// The length/limit of the buffer
+        /// </summary>
         private readonly int Limit;
+
+        /// <summary>
+        /// Conditions used to filter the entities ahead of generating the buffer
+        /// </summary>
         private readonly ImmutableList<Condition<T>> Conditions;
 
-        public ValueTask<ReadOnlyMemory<T>> All => AsMemoryAsync();
-        public ValueTask<T?> First => GetResultEntities().FirstOrDefaultAsync();
-        public ValueTask<T?> Last => GetResultEntities().LastOrDefaultAsync();
-        public ValueTask<ReadOnlyMemory<T>> Get(Range range) => Slice(range).AsMemoryAsync();
-        public ValueTask<T?> Get(int index) => GetResultEntities().ElementAtOrDefaultAsync(index);
-        public EntityBufferTask<T> this[Range range] => Slice(range);
-        public EntityBufferTask<T> this[int start, int length] => Slice(start, length);
-
-        public ValueTask<T?> this[int index] => Get(index);
-        public ValueTask<T?> this[Index index] => Get(index);
-
-        public ValueTask<T?> Get(Index index)
+        /// <summary>
+        /// The entities currently selected by this buffer, which would be read into a buffer on await
+        /// </summary>
+        public IAsyncEnumerable<T> Entities
         {
-            var range = index..Following(index);
-            return Slice(range).First;
+            get
+            {
+                Request.Conditions = Conditions.ToList();
+                return Request
+                    .WithMethod(Method.GET)
+                    .WithUpdater(null)
+                    .WithOffsetAndLimit(Offset, Limit)
+                    .GetResultEntities();
+            }
         }
 
-        private static Index Following(Index index) => new(index.IsFromEnd ? index.Value - 1 : index.Value + 1, index.IsFromEnd);
+        /// <summary>
+        /// Patches the resource of this buffer task with an updated buffer
+        /// </summary>
+        private async ValueTask<ReadOnlyMemory<T>> Patch(IAsyncEnumerable<T> updatedBuffer)
+        {
+            Request.Conditions = Conditions.ToList();
+            return await Request
+                .WithMethod(Method.PATCH)
+                .WithUpdater(_ => updatedBuffer)
+                .WithOffsetAndLimit(Offset, Limit)
+                .GetResultEntities()
+                .ToArrayAsync()
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Generates a buffer of all elements
+        /// </summary>
+        public ValueTask<ReadOnlyMemory<T>> All => AsReadOnlyMemoryAsync();
+
+        /// <summary>
+        /// Generates a buffer of all the elements within the given range
+        /// </summary>
+        public ValueTask<ReadOnlyMemory<T>> Within(Range range) => Slice(range).AsReadOnlyMemoryAsync();
+
+        /// <summary>
+        /// Returns the entity at the given index
+        /// </summary>
+        public ValueTask<T> At(int index) => Entities.ElementAtAsync(index);
+
+        /// <summary>
+        /// Returns the entity at the given index
+        /// </summary>
+        public ValueTask<T> At(Index index) => index.IsFromEnd ? Slice(index..new Index(index.Value - 1, true)).Entities.FirstAsync() : At(index.Value);
+
+        /// <summary>
+        /// Slices this buffer to a new one with a given range
+        /// </summary>
+        public EntityBufferTask<T> this[Range range] => Slice(range);
+
+        /// <summary>
+        /// Slices this buffer to a new one with a given start and length
+        /// </summary>
+        public EntityBufferTask<T> this[int start, int length] => Slice(start, length);
+
+        /// <summary>
+        /// Returns the entity at the given index
+        /// </summary>
+        public ValueTask<T> this[int index] => At(index);
+
+        /// <summary>
+        /// Returns the entity at the given index
+        /// </summary>
+        public ValueTask<T> this[Index index] => At(index);
+
+        /// <summary>
+        /// Returns the entity at the given index, or default if there is no such entity
+        /// </summary>
+        public ValueTask<T?> TryAt(int index) => Entities.ElementAtOrDefaultAsync(index);
+
+        /// <summary>
+        /// Returns the entity at the given index, or default if there is no such entity
+        /// </summary>
+        public ValueTask<T?> TryAt(Index index) => index.IsFromEnd ? Slice(index..(index.Value - 1)).Entities.FirstOrDefaultAsync() : TryAt(index.Value);
 
         internal EntityBufferTask(IRequest<T> request)
         {
@@ -61,19 +139,37 @@ namespace RESTable.Requests
         }
 
         /// <summary>
+        /// Creates a ReadOnlyMemory buffer from this buffer task
+        /// </summary>
+        /// <returns></returns>
+        public async ValueTask<ReadOnlyMemory<T>> AsReadOnlyMemoryAsync()
+        {
+            switch (Limit)
+            {
+                case < 0: return await Entities.ToArrayAsync().ConfigureAwait(false);
+                case 0: return Array.Empty<T>();
+                case > 0:
+                {
+                    var array = new T[Limit];
+                    var i = 0;
+                    await foreach (var item in Entities.ConfigureAwait(false))
+                    {
+                        array[i] = item;
+                        i += 1;
+                    }
+                    return array;
+                }
+            }
+        }
+
+        #region Conditions
+
+        /// <summary>
         /// Clears all conditions from this buffer task
         /// </summary>
         public EntityBufferTask<T> WithNoConditions()
         {
             return new EntityBufferTask<T>(Request, Offset, Limit, ImmutableList<Condition<T>>.Empty);
-        }
-
-        /// <summary>
-        /// Clears all predicates from this buffer task
-        /// </summary>
-        public EntityBufferTask<T> WithNoPredicates()
-        {
-            return new EntityBufferTask<T>(Request, Offset, Limit, Conditions);
         }
 
         /// <summary>
@@ -123,22 +219,24 @@ namespace RESTable.Requests
             return new EntityBufferTask<T>(Request, Offset, Limit, Conditions.Add(condition));
         }
 
-        private IAsyncEnumerable<T> GetResultEntities()
-        {
-            Request.Conditions = Conditions.ToList();
-            return Request
-                .WithMethod(Method.GET)
-                .WithUpdater(null)
-                .WithOffsetAndLimit(Offset, Limit)
-                .GetResultEntities();
-        }
+        #endregion
 
+        #region Patch
+
+        /// <summary>
+        /// Calls the resource Update() with the given entity as input, for the resources that
+        /// require Update() calls to mutate resource state.
+        /// </summary>
         public async ValueTask<T> Patch(Index index, T updatedItem)
         {
-            var result = await Slice(index..Following(index)).Patch(updatedItem.ToAsyncSingleton());
+            var result = await Slice(index..index.GetNext()).Patch(updatedItem.ToAsyncSingleton()).ConfigureAwait(false);
             return result.Span[0];
         }
 
+        /// <summary>
+        /// Calls the resource Update() with the given buffer as input, for the resources that
+        /// require Update() calls to mutate resource state.
+        /// </summary>
         public ValueTask<ReadOnlyMemory<T>> Patch(ReadOnlySpan<T> updatedBuffer)
         {
             var updatedBufferArray = updatedBuffer.ToArray().ToAsyncEnumerable();
@@ -155,57 +253,28 @@ namespace RESTable.Requests
             return Patch(enumerable);
         }
 
+        /// <summary>
+        /// Slices the buffer task to the range and then calls the resource Update() with the
+        /// given buffer as input, for the resources that require Update() calls to mutate resource state.
+        /// </summary>
         public ValueTask<ReadOnlyMemory<T>> Patch(Range range, ReadOnlySpan<T> updatedBuffer)
         {
             var updatedBufferArray = updatedBuffer.ToArray();
             return Slice(range).Patch(updatedBufferArray.ToAsyncEnumerable());
         }
 
+        /// <summary>
+        /// Slices the buffer task to the range and then calls the resource Update() with the
+        /// given buffer as input, for the resources that require Update() calls to mutate resource state.
+        /// </summary>
         public ValueTask<ReadOnlyMemory<T>> Patch(Range range, ReadOnlyMemory<T> updatedBuffer) => Slice(range).Patch(updatedBuffer);
 
-        private async ValueTask<ReadOnlyMemory<T>> Patch(IAsyncEnumerable<T> updatedBuffer)
-        {
-            Request.Conditions = Conditions.ToList();
-            return await Request
-                .WithMethod(Method.PATCH)
-                .WithUpdater(_ => updatedBuffer)
-                .WithOffsetAndLimit(Offset, Limit)
-                .GetResultEntities()
-                .ToArrayAsync();
-        }
+        #endregion
 
-        public async ValueTask<ReadOnlyMemory<T>> AsMemoryAsync()
-        {
-            T[]? array;
-            switch (Limit)
-            {
-                case < 0:
-                    array = null;
-                    break;
-                case > 0:
-                    array = new T[Limit];
-                    break;
-                case 0: return Array.Empty<T>();
-            }
-
-            var entities = GetResultEntities();
-
-            if (array is null)
-            {
-                return await entities.ToArrayAsync().ConfigureAwait(false);
-            }
-
-            var i = 0;
-            await foreach (var item in entities.ConfigureAwait(false))
-            {
-                array[i] = item;
-                i += 1;
-            }
-
-            return array;
-        }
+        #region Slice
 
         public EntityBufferTask<T> Slice(int offset) => Slice(offset..);
+
         public EntityBufferTask<T> Slice(int offset, int length) => Slice(offset..(offset + length));
 
         public EntityBufferTask<T> Slice(Range range)
@@ -214,7 +283,10 @@ namespace RESTable.Requests
             return new EntityBufferTask<T>(Request, offset, limit, Conditions);
         }
 
-        public ValueTaskAwaiter<ReadOnlyMemory<T>> GetAwaiter() => AsMemoryAsync().GetAwaiter();
+        #endregion
+
+        public ValueTaskAwaiter<ReadOnlyMemory<T>> GetAwaiter() => AsReadOnlyMemoryAsync().GetAwaiter();
+
         public ConfiguredEntityBufferTask<T> ConfigureAwait(bool continueOnCapturedContext) => new(this, continueOnCapturedContext);
     }
 }

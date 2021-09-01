@@ -10,7 +10,6 @@ namespace RESTable.Json.Tests
 
         public SerializationTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             fixture.Configure();
             JsonProvider = fixture.GetRequiredService<IJsonProvider>();
         }

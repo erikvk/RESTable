@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ using RESTable.Requests;
 using RESTable.Requests.Filters;
 using RESTable.Requests.Processors;
 using RESTable.Resources;
+using RESTable.Resources.Operations;
 using RESTable.Results;
 using static System.Globalization.DateTimeStyles;
 using static System.StringComparison;
@@ -48,9 +50,29 @@ namespace RESTable
         public static bool RESTableIgnored(this MemberInfo m) => m.GetCustomAttribute<RESTableMemberAttribute>()?.Ignored == true ||
                                                                  m.HasAttribute<IgnoreDataMemberAttribute>();
 
+        public static ParameterInfo? GetCustomConstructorParameterInfo(this DeclaredProperty declaredProperty)
+        {
+            if (declaredProperty.Owner?.GetCustomConstructor() is not { } constructor)
+                return default;
+            var parameters = constructor.GetParameters();
+            for (var i = 0; i < parameters.Length; i += 1)
+            {
+                var parameter = parameters[i];
+                if (parameter.Name.EqualsNoCase(declaredProperty.Name))
+                {
+                    return parameter;
+                }
+            }
+            return default;
+        }
+
         #endregion
 
         #region Type reflection
+
+        public static ConstructorInfo? GetCustomConstructor(this Type type) => type
+            .GetConstructors()
+            .FirstOrDefault(c => c.HasAttribute<RESTableConstructorAttribute>() || c.HasAttribute<JsonConstructorAttribute>());
 
         public static string GetRESTableTypeName(this Type type) => type.FullName?.Replace('+', '.') ?? throw new Exception("Could not establish the name of a type");
 
@@ -892,6 +914,8 @@ namespace RESTable
         #region Conversion
 
 #if !NETSTANDARD2_0
+        internal static Index GetNext(this Index index) => new(index.IsFromEnd ? index.Value - 1 : index.Value + 1, index.IsFromEnd);
+
         internal static (int offset, int limit) ToOffsetAndLimit(this Range range)
         {
             var offset = range.Start switch
@@ -1046,6 +1070,15 @@ namespace RESTable
             replaced = true;
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
+
+        internal static List<InvalidMember> ToInvalidMembers(this IEnumerable<ParameterInfo> missingParameters, Type owner) => missingParameters
+            .Select(parameter => new InvalidMember
+            (
+                entityType: owner,
+                memberName: parameter.Name!,
+                memberType: parameter.ParameterType,
+                message: $"Missing parameter of type '{parameter.ParameterType}'"
+            )).ToList();
 
         #endregion
     }

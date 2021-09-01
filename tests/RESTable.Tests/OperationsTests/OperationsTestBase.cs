@@ -20,7 +20,6 @@ namespace RESTable.Tests.OperationsTests
         public OperationsTestBase(RESTableFixture fixture)
         {
             fixture.AddSingleton<OperationsTestsFlags>();
-            fixture.AddJson();
             fixture.Configure();
             Resource = (IEntityResource<TResourceType>) fixture
                 .GetRequiredService<ResourceCollection>()

@@ -11,7 +11,6 @@
         <ProjectReference Include="..\..\src\RESTable.AspNetCore\RESTable.AspNetCore.csproj" />
         <ProjectReference Include="..\..\src\RESTable.OData\RESTable.OData.csproj" />
         <ProjectReference Include="..\..\src\RESTable.SQLite\RESTable.SQLite.csproj" />
-        <ProjectReference Include="..\..\src\RESTable.Json\RESTable.Json.csproj" />
         <ProjectReference Include="..\..\src\RESTable.Excel\RESTable.Excel.csproj" />
         <ProjectReference Include="..\..\src\RESTable\RESTable.csproj" />
         <PackageReference Include="Starcounter.Database.Abstractions" Version="3.0.0" />

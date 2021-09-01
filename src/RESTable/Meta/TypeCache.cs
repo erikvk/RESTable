@@ -80,6 +80,7 @@ namespace RESTable.Meta
         internal IEnumerable<DeclaredProperty> ParseDeclaredProperties(IEnumerable<PropertyInfo> props, bool flag) => props
             .Where(p => !p.RESTableIgnored())
             .Where(p => !p.GetIndexParameters().Any())
+            .Where(p => !p.PropertyType.HasAttribute<RESTableIgnoreMembersWithTypeAttribute>())
             .Select(p => new DeclaredProperty(p, flag))
             .OrderBy(p => p.Order);
 
@@ -92,8 +93,9 @@ namespace RESTable.Meta
             {
                 switch (_type)
                 {
-                    case null: return Array.Empty<DeclaredProperty>();
-                    case var _ when _type.IsDictionary(out _):
+                    case null:
+                    case { } when _type.HasAttribute<RESTableIgnoreMembersWithTypeAttribute>(): return Array.Empty<DeclaredProperty>();
+                    case { } when _type.IsDictionary(out _):
                     {
                         return FindAndParseDeclaredProperties(_type, flag: true).Select(p =>
                         {
@@ -101,17 +103,17 @@ namespace RESTable.Meta
                             return p;
                         });
                     }
-                    case var _ when _type.IsInterface:
+                    case {IsInterface: true}:
                     {
                         return ParseDeclaredProperties
                         (
-                            props: new[] { _type }
+                            props: new[] {_type}
                                 .Concat(_type.GetInterfaces())
                                 .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public)),
                             flag: false
                         );
                     }
-                    case var _ when _type.GetRESTableInterfaceType() is Type t:
+                    case { } when _type.GetRESTableInterfaceType() is Type t:
                     {
                         var interfaceName = t.GetRESTableTypeName();
                         var targetsByProp = _type
@@ -160,22 +162,19 @@ namespace RESTable.Meta
                             return p;
                         });
                     }
-                    case var _ when _type.IsSubclassOf(typeof(Terminal)):
+                    case { } when _type.IsSubclassOf(typeof(Terminal)):
                     {
                         return FindAndParseDeclaredProperties(_type).Except(GetDeclaredProperties(typeof(Terminal)).Values, DeclaredProperty.NameComparer);
                     }
-                    case var _ when _type.IsNullable(out var underlying):
+                    case { } when _type.IsNullable(out var underlying):
                     {
                         return GetDeclaredProperties(underlying).Values;
                     }
-                    case var _ when _type.HasAttribute<RESTableViewAttribute>():
+                    case { } when _type.HasAttribute<RESTableViewAttribute>():
                     {
                         return FindAndParseDeclaredProperties(_type).Union(Make(_type.DeclaringType));
                     }
-                    default:
-                    {
-                        return FindAndParseDeclaredProperties(_type);
-                    }
+                    case { }: return FindAndParseDeclaredProperties(_type);
                 }
             }
 

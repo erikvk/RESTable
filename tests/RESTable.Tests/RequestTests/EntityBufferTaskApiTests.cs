@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using Xunit;
 
@@ -13,7 +12,7 @@ namespace RESTable.Tests.RequestTests
             var context = Fixture.Context;
 
             var _ = await context.Entities<GetApiTestResource>();
-            var entitiesRanged = await context.Entities<GetApiTestResource>().Get(..5);
+            var entitiesRanged = await context.Entities<GetApiTestResource>().Within(..5);
             Assert.Equal(5, entitiesRanged.Length);
         }
 
@@ -31,7 +30,7 @@ namespace RESTable.Tests.RequestTests
             Assert.Equal(9, nr3To10.Span[^1].Number);
 
             var last1 = await context.Entities<GetApiTestResource>()[^1];
-            Assert.Equal(59, last1?.Number);
+            Assert.Equal(59, last1.Number);
 
             var lastThree = await context.Get<GetApiTestResource>(^3..);
             Assert.Equal(3, lastThree.Length);
@@ -57,9 +56,9 @@ namespace RESTable.Tests.RequestTests
             Assert.Equal(19, tentotwentyBuffer.Span[^1].Number);
 
             var nr19 = await tentotwenty[^1];
-            Assert.Equal(19, nr19?.Number);
+            Assert.Equal(19, nr19.Number);
             var nr13 = await tentotwenty[3];
-            Assert.Equal(13, nr13?.Number);
+            Assert.Equal(13, nr13.Number);
 
             var fifteenTo18 = await tentotwenty[^5..^1];
             Assert.Equal(15, fifteenTo18.Span[0].Number);
@@ -89,9 +88,9 @@ namespace RESTable.Tests.RequestTests
             var all = context.Entities<GetApiPatchInPlaceTestResource>();
 
             var third = await all[2];
-            third!.Number = 10;
+            third.Number = 10;
             var last = await all[^1];
-            last!.Number = 11;
+            last.Number = 11;
 
             var allBuffer = await all;
             Assert.Equal(10, allBuffer.Span[2].Number);
@@ -107,10 +106,9 @@ namespace RESTable.Tests.RequestTests
             var allBuffer = await all;
 
             var third = allBuffer.Span[2];
-            third!.Number = 10;
+            third.Number = 10;
             var last = allBuffer.Span[^1];
-            last!.Number = 11;
-
+            last.Number = 11;
 
             var allBuffer2 = await all;
 
@@ -133,7 +131,6 @@ namespace RESTable.Tests.RequestTests
 
         public EntityBufferTaskApiTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             Fixture.Configure();
         }
     }

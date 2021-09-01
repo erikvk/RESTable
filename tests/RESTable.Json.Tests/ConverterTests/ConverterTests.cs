@@ -72,7 +72,6 @@ namespace RESTable.Json.Tests
 
         public ConverterTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             fixture.AddGenericJsonConverter(typeof(GenericConverter<>));
             fixture.Configure();
             JsonProvider = fixture.GetRequiredService<IJsonProvider>();

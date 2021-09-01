@@ -35,7 +35,6 @@ namespace RESTable.Json.Tests
 
         public PopulateTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             fixture.Configure();
             JsonProvider = fixture.GetRequiredService<IJsonProvider>();
         }

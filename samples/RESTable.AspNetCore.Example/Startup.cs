@@ -20,7 +20,6 @@ namespace RESTable.Example
         public void ConfigureServices(IServiceCollection services) => services
             .AddHttpContextAccessor()
             .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("./database"))
-            .AddJson()
             .AddExcelProvider()
             .AddSingleton<IEntityTypeContractResolver, MyStringPropertiesResolver>()
             .AddRESTable()

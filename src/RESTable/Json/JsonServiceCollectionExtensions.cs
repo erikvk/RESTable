@@ -4,15 +4,14 @@ using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using RESTable;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
-using RESTable.Json;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace RESTable.Json
 {
-    public static class ServiceCollectionExtensions
+    public static class JsonServiceCollectionExtensions
     {
-        public static IServiceCollection AddJson(this IServiceCollection serviceCollection, Action<JsonSerializerOptions>? jsonOptionsAction = null)
+        internal static IServiceCollection AddJson(this IServiceCollection serviceCollection, Action<JsonSerializerOptions>? jsonOptionsAction = null)
         {
             var jsonOptions = new JsonSerializerOptions
             {

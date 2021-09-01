@@ -34,7 +34,6 @@ namespace RESTable.Json.Tests
 
         public VersionConverterTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             fixture.Configure();
         }
     }

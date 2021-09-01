@@ -84,9 +84,12 @@ namespace RESTable.Json
                 : typeof(DefaultReadonlyDictionaryConverter<,,>).MakeGenericType(objectType, keyType!, valueType!),
 
             // Types that would not benefit from the RESTable converters are skipped
-            _ when objectType.GetProperties().All(property =>
-                !property.HasAttribute<RESTableMemberAttribute>()
-            ) => null,
+            _ when objectType.GetConstructors()
+                       .All(constructor => !constructor.HasAttribute<RESTableConstructorAttribute>()) &&
+                   objectType.GetProperties().All(property =>
+                       !property.HasAttribute<RESTableMemberAttribute>() &&
+                       !property.PropertyType.HasAttribute<RESTableIgnoreMembersWithTypeAttribute>()
+                   ) => null,
 
             // We also always skip enumerable types.
             _ when objectType.ImplementsEnumerableInterface(out _) => null,

@@ -5,6 +5,7 @@ using RESTable;
 using RESTable.Auth;
 using RESTable.DefaultProtocol;
 using RESTable.Internal;
+using RESTable.Json;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
@@ -66,6 +67,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddRESTable(this IServiceCollection serviceCollection)
         {
+            serviceCollection.AddJson();
             serviceCollection.AddSingleton<IApplicationServiceProvider>(sp => new ApplicationServiceProvider(sp));
             serviceCollection.TryAddSingleton<WebSocketManager>();
             serviceCollection.TryAddSingleton<RESTableConfiguration>();

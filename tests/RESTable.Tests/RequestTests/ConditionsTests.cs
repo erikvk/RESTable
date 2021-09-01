@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Results;
 using Xunit;
@@ -136,7 +135,6 @@ namespace RESTable.Tests.RequestTests
 
         public ConditionsTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             fixture.Configure();
             Context = fixture.Context;
         }

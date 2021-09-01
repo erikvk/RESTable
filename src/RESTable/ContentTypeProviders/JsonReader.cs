@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text.Json;
 using RESTable.Meta;
@@ -9,11 +10,13 @@ namespace RESTable.ContentTypeProviders
     {
         private JsonSerializerOptions options { get; }
         private IJsonProvider JsonProvider { get; }
+        private ArrayPool<(bool, object?)> ArrayPool { get; }
 
         public JsonReader(JsonSerializerOptions jsonSerializerOptions, IJsonProvider jsonProvider)
         {
             options = jsonSerializerOptions;
             JsonProvider = jsonProvider;
+            ArrayPool = ArrayPool<(bool, object?)>.Shared;
         }
 
         #region Generic
@@ -57,10 +60,10 @@ namespace RESTable.ContentTypeProviders
                 throw new JsonException($"Invalid JSON token '{reader.TokenType}' encountered. Expected valid JSON");
             }
             if (reader.TokenType == JsonTokenType.Null)
+            {
                 return default;
-            var instance = metadata.CreateInstance();
-            ReadToObject(ref reader, instance, metadata);
-            return instance;
+            }
+            return (T) ReadToObjectInternal(ref reader, metadata);
         }
 
         public T ReadToObject<T>(ref Utf8JsonReader reader, ISerializationMetadata<T> metadata)
@@ -77,9 +80,7 @@ namespace RESTable.ContentTypeProviders
             {
                 throw new NullReferenceException("Expected a non-null value when reading to object");
             }
-            var instance = metadata.CreateInstance();
-            ReadToObject(ref reader, instance, metadata);
-            return instance;
+            return (T) ReadToObjectInternal(ref reader, metadata);
         }
 
         public void ReadToObject<T>(ref Utf8JsonReader reader, T instance, ISerializationMetadata metadata)
@@ -114,7 +115,7 @@ namespace RESTable.ContentTypeProviders
                         else
                         {
                             // Property is declared, set it using the property's set value task
-                            SetDeclaredMember(ref reader, property, instance!, options);
+                            ReadAndSetDeclaredMember(ref reader, property, instance!, options);
                         }
                         reader.Read();
                     }
@@ -137,7 +138,7 @@ namespace RESTable.ContentTypeProviders
             }
             if (reader.TokenType == JsonTokenType.Null)
                 return default;
-            var instance = metadata.CreateInstance();
+            var instance = metadata.InvokeParameterlessConstructor();
             ReadToDictionary(ref reader, instance, metadata);
             return instance;
         }
@@ -157,7 +158,7 @@ namespace RESTable.ContentTypeProviders
             {
                 throw new NullReferenceException("Expected a non-null value when reading to dictionary");
             }
-            var instance = metadata.CreateInstance();
+            var instance = metadata.InvokeParameterlessConstructor();
             ReadToDictionary(ref reader, instance, metadata);
             return instance;
         }
@@ -191,7 +192,7 @@ namespace RESTable.ContentTypeProviders
                         else
                         {
                             // Property is declared, set it using the property's set value task
-                            SetDeclaredMember(ref reader, property, instance, options);
+                            ReadAndSetDeclaredMember(ref reader, property, instance, options);
                         }
                         reader.Read();
                     }
@@ -205,34 +206,6 @@ namespace RESTable.ContentTypeProviders
 
         #region Dynamic
 
-        public bool TryReadNextProperty(ref Utf8JsonReader reader, Type propertyType, out string? name, out object? value)
-        {
-            if
-            (
-                reader.TokenType == JsonTokenType.None && !reader.Read() ||
-                reader.TokenType != JsonTokenType.PropertyName && !reader.Read() ||
-                reader.TokenType == JsonTokenType.EndObject
-            )
-            {
-                name = null;
-                value = default;
-                return false;
-            }
-            if
-            (
-                reader.TokenType != JsonTokenType.PropertyName ||
-                reader.GetString() is not string propertyName
-            )
-            {
-                throw new JsonException($"Invalid JSON token '{reader.TokenType}' encountered. Expected PropertyName");
-            }
-
-            name = propertyName;
-            value = JsonSerializer.Deserialize(ref reader, propertyType, options);
-            reader.Read();
-            return true;
-        }
-
         public object? ReadToObjectOrGetDefault(ref Utf8JsonReader reader, ISerializationMetadata metadata)
         {
             if
@@ -244,11 +217,10 @@ namespace RESTable.ContentTypeProviders
                 throw new JsonException($"Invalid JSON token '{reader.TokenType}' encountered. Expected valid JSON");
             }
             if (reader.TokenType == JsonTokenType.Null)
+            {
                 return default;
-            var instance = metadata.CreateInstance();
-            ReadToObject(ref reader, instance!, metadata);
-
-            return instance;
+            }
+            return ReadToObjectInternal(ref reader, metadata);
         }
 
         public object ReadToObject(ref Utf8JsonReader reader, ISerializationMetadata metadata)
@@ -265,9 +237,7 @@ namespace RESTable.ContentTypeProviders
             {
                 throw new NullReferenceException("Expected a non-null value when reading to object");
             }
-            var instance = metadata.CreateInstance();
-            ReadToObject(ref reader, instance!, metadata);
-            return instance!;
+            return ReadToObjectInternal(ref reader, metadata);
         }
 
         public void ReadToObject(ref Utf8JsonReader reader, object instance, ISerializationMetadata metadata)
@@ -302,7 +272,7 @@ namespace RESTable.ContentTypeProviders
                         else
                         {
                             // Property is declared, set it using the property's set value task
-                            SetDeclaredMember(ref reader, property, instance, options);
+                            ReadAndSetDeclaredMember(ref reader, property, instance, options);
                         }
                         reader.Read();
                     }
@@ -312,13 +282,102 @@ namespace RESTable.ContentTypeProviders
             }
         }
 
-        private static void SetDeclaredMember(ref Utf8JsonReader reader, Property property, object instance, JsonSerializerOptions options)
+        private object ReadToObjectInternal(ref Utf8JsonReader reader, ISerializationMetadata metadata)
+        {
+            if (metadata.UsesParameterizedConstructor)
+            {
+                return InvokeParameterizedConstructorAndReadToObject(ref reader, metadata);
+            }
+            var instance = metadata.InvokeParameterlessConstructor();
+            ReadToObject(ref reader, instance, metadata);
+            return instance;
+        }
+
+        private object InvokeParameterizedConstructorAndReadToObject(ref Utf8JsonReader reader, ISerializationMetadata metadata)
+        {
+            var assigments = new (DeclaredProperty? property, object? value)[metadata.DeclaredPropertyCount];
+            var nextNonConstructorParameterIndex = metadata.ParameterizedConstructorParameterCount;
+
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.EndObject:
+                {
+                    // No data to read. This could still work if all parameters are optional:
+                    return metadata.InvokeParameterizedConstructor(assigments);
+                }
+                case JsonTokenType.PropertyName:
+                {
+                    while (reader.TokenType != JsonTokenType.EndObject)
+                    {
+                        if (reader.TokenType is not JsonTokenType.PropertyName || reader.GetString() is not string propertyName)
+                            throw new JsonException("Invalid JSON token encountered. Expected property name.");
+
+                        if (metadata.GetProperty(propertyName) is not { } property)
+                        {
+                            // Encountered an unknown property in input JSON. Skipping.
+                            reader.Skip();
+                        }
+                        else
+                        {
+                            // Property is declared, get its value and add it to the assignments list at
+                            // the index where it ocurs in the constructor (if any) or at the counter otherwise.
+                            var value = JsonSerializer.Deserialize(ref reader, property.Type, options);
+                            if (property.CustomConstructorParameterInfo?.Position is int index)
+                                assigments[index] = (property, value);
+                            else
+                            {
+                                assigments[nextNonConstructorParameterIndex] = (property, value);
+                                nextNonConstructorParameterIndex += 1;
+                            }
+                        }
+                        reader.Read();
+                    }
+                    var instance = metadata.InvokeParameterizedConstructor(assigments);
+                    for (var i = metadata.ParameterizedConstructorParameterCount; i < metadata.DeclaredPropertyCount; i += 1)
+                    {
+                        // Set additional properties
+                        var (property, value) = assigments[i];
+                        property?.SetValueOrBlock(instance!, value);
+                    }
+                    return instance;
+                }
+                default: throw new JsonException($"Invalid JSON token '{reader.TokenType}' encountered");
+            }
+        }
+
+
+        public bool TryReadNextProperty(ref Utf8JsonReader reader, Type propertyType, out string? name, out object? value)
+        {
+            if
+            (
+                reader.TokenType == JsonTokenType.None && !reader.Read() ||
+                reader.TokenType != JsonTokenType.PropertyName && !reader.Read() ||
+                reader.TokenType == JsonTokenType.EndObject
+            )
+            {
+                name = null;
+                value = default;
+                return false;
+            }
+            if
+            (
+                reader.TokenType != JsonTokenType.PropertyName ||
+                reader.GetString() is not string propertyName
+            )
+            {
+                throw new JsonException($"Invalid JSON token '{reader.TokenType}' encountered. Expected PropertyName");
+            }
+
+            name = propertyName;
+            value = JsonSerializer.Deserialize(ref reader, propertyType, options);
+            reader.Read();
+            return true;
+        }
+
+        private static void ReadAndSetDeclaredMember(ref Utf8JsonReader reader, Property property, object instance, JsonSerializerOptions options)
         {
             var value = JsonSerializer.Deserialize(ref reader, property.Type, options);
-            var setValueTask = property.SetValue(instance, value);
-            if (setValueTask.IsCompleted)
-                setValueTask.GetAwaiter().GetResult();
-            else setValueTask.AsTask().Wait();
+            property.SetValueOrBlock(instance, value);
         }
 
         #endregion

@@ -97,28 +97,33 @@ namespace RESTable.Requests
 
         public ValueTask<ReadOnlyMemory<T>> All<T>() where T : class
         {
-            return new EntityBufferTask<T>(CreateRequest<T>()).AsMemoryAsync();
+            return new EntityBufferTask<T>(CreateRequest<T>()).AsReadOnlyMemoryAsync();
         }
 
         public ValueTask<ReadOnlyMemory<T>> Get<T>(Range range) where T : class
         {
             var (offset, limit) = range.ToOffsetAndLimit();
-            return new EntityBufferTask<T>(CreateRequest<T>(), offset, limit, System.Collections.Immutable.ImmutableList<Condition<T>>.Empty).AsMemoryAsync();
+            return new EntityBufferTask<T>(CreateRequest<T>(), offset, limit, System.Collections.Immutable.ImmutableList<Condition<T>>.Empty).AsReadOnlyMemoryAsync();
         }
 
-        public ValueTask<T?> First<T>() where T : class
+        public ValueTask<T> First<T>() where T : class
         {
-            return new EntityBufferTask<T>(CreateRequest<T>()).First;
+            return new EntityBufferTask<T>(CreateRequest<T>()).Entities.FirstAsync();
         }
 
-        public ValueTask<T?> Last<T>() where T : class
+        public ValueTask<T> Last<T>() where T : class
         {
-            return new EntityBufferTask<T>(CreateRequest<T>()).Last;
+            return new EntityBufferTask<T>(CreateRequest<T>()).Entities.LastAsync();
         }
 
-        public ValueTask<T?> Get<T>(int index) where T : class
+        public ValueTask<T> Get<T>(int index) where T : class
         {
-            return new EntityBufferTask<T>(CreateRequest<T>()).Get(index);
+            return new EntityBufferTask<T>(CreateRequest<T>()).At(index);
+        }
+
+        public ValueTask<T> Get<T>(Index index) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).At(index);
         }
 
         public ValueTask<T> Patch<T>(Index index, T item) where T : class
@@ -133,7 +138,7 @@ namespace RESTable.Requests
 
         public ValueTask<ReadOnlyMemory<T>> Patch<T>(Range range, ReadOnlyMemory<T> updatedBuffer) where T : class
         {
-            return new EntityBufferTask<T>(CreateRequest<T>()).Slice(range).Patch(updatedBuffer);
+            return new EntityBufferTask<T>(CreateRequest<T>()).Patch(range, updatedBuffer);
         }
 
         #endregion

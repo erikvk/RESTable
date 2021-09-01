@@ -138,13 +138,7 @@ namespace RESTable.Meta.Internal
 
             if (missingParameterAssignments?.Count > 0)
             {
-                var invalidMembers = missingParameterAssignments
-                    .Select(parameter => new InvalidMember(
-                        entityType: Type,
-                        memberName: parameter.Name!,
-                        memberType: parameter.ParameterType,
-                        message: $"Missing parameter of type '{parameter.ParameterType}'")
-                    ).ToList();
+                var invalidMembers = missingParameterAssignments.ToInvalidMembers(Type);
                 throw new MissingTerminalParameter(Type, invalidMembers);
             }
 

@@ -45,7 +45,6 @@ namespace FrameworkApp
             // Build services
             await using var services = new ServiceCollection()
                 .AddRESTable()
-                .AddJson()
                 .BuildServiceProvider();
             var configurator = services.GetRequiredService<RESTableConfigurator>();
             configurator.ConfigureRESTable();

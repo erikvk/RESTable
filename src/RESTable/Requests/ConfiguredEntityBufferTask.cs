@@ -16,7 +16,7 @@ namespace RESTable.Requests
         }
 
         public ConfiguredValueTaskAwaitable<ReadOnlyMemory<T>>.ConfiguredValueTaskAwaiter GetAwaiter() => BufferTask
-            .AsMemoryAsync()
+            .AsReadOnlyMemoryAsync()
             .ConfigureAwait(ContinueOnCapturedContext)
             .GetAwaiter();
     }

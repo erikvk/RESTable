@@ -27,7 +27,6 @@ namespace FileSenderSample
 
         public void ConfigureServices(IServiceCollection services) => services
             .AddRESTable()
-            .AddJson()
             .AddHttpContextAccessor();
 
         public void Configure(IApplicationBuilder app) => app

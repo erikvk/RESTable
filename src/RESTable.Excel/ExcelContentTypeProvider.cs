@@ -149,7 +149,7 @@ namespace RESTable.Excel
 
             for (var row = 2; row <= rowCount; row += 1)
             {
-                var instance = metadata.CreateInstance();
+                var instance = metadata.InvokeParameterlessConstructor();
                 for (var i = 0; i < referencedProperties.Length; i += 1)
                 {
                     var (property, columnIndex) = referencedProperties[i];

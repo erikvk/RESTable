@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using RESTable.Requests;
 using RESTable.Results;
 using Xunit;
@@ -163,7 +162,6 @@ namespace RESTable.Tests.RequestTests
 
         public MetaConditionsTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             fixture.Configure();
             Context = fixture.Context;
         }

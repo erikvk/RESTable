@@ -61,7 +61,6 @@ namespace RESTable.Tutorial
             .AddODataProvider()
             .AddSqliteProvider(dbPath: "./database")
             .AddExcelProvider()
-            .AddJson()
             .AddRESTable()
             .AddHttpContextAccessor();
 
@@ -205,6 +204,7 @@ namespace RESTable.Tutorial
 
         public MyTest? Testy { get; set; }
 
+        [RESTableConstructor]
         public MyTest()
         {
             dict = new Dictionary<string, object>();

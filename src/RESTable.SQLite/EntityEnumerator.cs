@@ -12,11 +12,11 @@ namespace RESTable.SQLite
 {
     internal class EntityEnumerator<T> : IAsyncEnumerator<T> where T : SQLiteTable
     {
-        private static readonly Constructor<T> Constructor;
+        private static readonly ParameterlessConstructor<T> ParameterlessConstructor;
 
         static EntityEnumerator()
         {
-            Constructor = typeof(T).MakeStaticConstructor<T>() ?? throw new InvalidOperationException($"Could not create constructor for type '{typeof(T).GetRESTableTypeName()}'");
+            ParameterlessConstructor = typeof(T).MakeParameterlessConstructor<T>() ?? throw new InvalidOperationException($"Could not create constructor for type '{typeof(T).GetRESTableTypeName()}'");
         }
 
         private SQLiteConnection? Connection { get; set; }
@@ -70,7 +70,7 @@ namespace RESTable.SQLite
 
         private async ValueTask<T> MakeEntity(IDataRecord record)
         {
-            var entity = Constructor();
+            var entity = ParameterlessConstructor();
             entity.RowId = CurrentRowId;
             if (!OnlyRowId)
             {

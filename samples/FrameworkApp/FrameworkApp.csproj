@@ -10,7 +10,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\RESTable\RESTable.csproj" />
-        <ProjectReference Include="..\..\src\RESTable.Json\RESTable.Json.csproj" />
     </ItemGroup>
 
 </Project>
