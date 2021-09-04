@@ -41,11 +41,6 @@
         internal const string ApiKey = @"^[!-~]+$";
 
         /// <summary>
-        /// The base URI regex, used when validating base uris in RESTableConfig.Init
-        /// </summary>
-        internal const string BaseUri = @"^/?[\/\w]+$";
-
-        /// <summary>
         /// Matches only letters, numbers and underscores
         /// </summary>
         internal const string LettersNumsAndUs = @"^\w+$";
