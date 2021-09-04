@@ -30,11 +30,11 @@ namespace RESTable.Starcounter3x
             {
                 case 0:
                     var sql = $"{select}";
-                    QueryConsole.Publish(request.Context, sql, CancellationToken.None);
+                    QueryConsole.Publish(sql, CancellationToken.None);
                     foreach (var item in Transaction.Run(db => db.Sql<T>(sql)))
                         yield return item;
                     yield break;
-                case 1 when request.Conditions[0] is Condition<T> { Operator: Operators.EQUALS } only:
+                case 1 when request.Conditions[0] is Condition<T> {Operator: Operators.EQUALS} only:
                     if (string.Equals(ObjectNo, only.Key, StringComparison.OrdinalIgnoreCase))
                     {
                         var objectNo = 0UL;
@@ -46,7 +46,7 @@ namespace RESTable.Starcounter3x
                         {
                             // ignore
                         }
-                        QueryConsole.Publish(request.Context, $"FROMID {objectNo}", CancellationToken.None);
+                        QueryConsole.Publish($"FROMID {objectNo}", CancellationToken.None);
                         if (objectNo == 0UL)
                             yield break;
                         yield return Transaction.Run(db => db.Get<T>(objectNo));
@@ -59,7 +59,7 @@ namespace RESTable.Starcounter3x
 //                    string? orderBy = null;
 //                    var (where, values) = request.Conditions.GetSQL().MakeWhereClause(null, out var useOrderBy);
 //                    sql = useOrderBy ? $"{select}{where}{orderBy}" : $"{select}{where}";
-//                    QueryConsole.Publish(request.Context, sql, values);
+//                    QueryConsole.Publish(sql, values);
 //                    if (request.Conditions.HasPost(out var post))
 //                        request.Conditions = post;
 //                    foreach (var item in Transaction.Run(db => db.Sql<T>(sql, values)))
