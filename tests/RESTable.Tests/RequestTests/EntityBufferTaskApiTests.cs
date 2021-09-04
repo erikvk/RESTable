@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using RESTable.Requests;
+using RESTable.Xunit;
 using Xunit;
 
 namespace RESTable.Tests.RequestTests
@@ -98,6 +99,79 @@ namespace RESTable.Tests.RequestTests
         }
 
         [Fact]
+        public async Task PutAtZeroWhenEmpty()
+        {
+            var context = Fixture.Context;
+            var all = context.Entities<GetApiExplicitEmptyPatchTestResource1>();
+            var allBuffer = await all;
+            Assert.Equal(0, allBuffer.Length);
+            var entity = new GetApiExplicitEmptyPatchTestResource1(100);
+            var ok = await all.Put(0, entity);
+            Assert.True(ok);
+            var allbuffer2 = await all;
+            Assert.Equal(1, allbuffer2.Length);
+        }
+
+        [Fact]
+        public async Task PutAtGreaterThanZeroWhenEmpty()
+        {
+            var context = Fixture.Context;
+            var all = context.Entities<GetApiExplicitEmptyPatchTestResource2>();
+            var allBuffer = await all;
+            Assert.Equal(0, allBuffer.Length);
+            var entity = new GetApiExplicitEmptyPatchTestResource2(100);
+            var ok = await all.Put(5, entity);
+            Assert.True(ok);
+
+            var allbuffer2 = await all;
+            Assert.Equal(1, allbuffer2.Length);
+            Assert.Equal(100, allbuffer2.Span[0].Number);
+
+            // This slice should still be empty
+            var five = await all.Slice(5..6);
+            Assert.Equal(0, five.Length);
+        }
+
+        [Fact]
+        public async Task InsertAndDelete()
+        {
+            var context = Fixture.Context;
+            var all = context.Entities<GetApiExplicitEmptyPatchTestResource3>();
+            var allBuffer = await all;
+            Assert.Equal(0, allBuffer.Length);
+
+            var ok = await all.Insert(new GetApiExplicitEmptyPatchTestResource3(1));
+            Assert.True(ok);
+
+            var allBuffer2 = await all;
+            Assert.Equal(1, allBuffer2.Length);
+
+            ok = await all.Insert(new GetApiExplicitEmptyPatchTestResource3(2));
+            Assert.True(ok);
+            var allBuffer3 = await all;
+            Assert.Equal(2, allBuffer3.Length);
+            Assert.Equal(1, allBuffer3.Span[0].Id);
+            Assert.Equal(2, allBuffer3.Span[1].Id);
+
+            ok = await all.Insert(new GetApiExplicitEmptyPatchTestResource3(3));
+            Assert.True(ok);
+            var allBuffer4 = await all;
+            Assert.Equal(3, allBuffer4.Length);
+            Assert.Equal(1, allBuffer4.Span[0].Id);
+            Assert.Equal(2, allBuffer4.Span[1].Id);
+            Assert.Equal(3, allBuffer4.Span[2].Id);
+
+            await all.Delete(1);
+            var allBuffer5 = await all;
+            Assert.Equal(2, allBuffer5.Length);
+            Assert.Equal(3, allBuffer5.Span[1].Id);
+
+            await all.Delete();
+            var allBuffer6 = await all;
+            Assert.Equal(0, allBuffer6.Length);
+        }
+
+        [Fact]
         public async Task ExplicitPatchTests()
         {
             var context = Fixture.Context;
@@ -127,6 +201,25 @@ namespace RESTable.Tests.RequestTests
             var allBuffer3 = await all;
             Assert.Equal(10, allBuffer3.Span[2].ActualNumber);
             Assert.Equal(11, allBuffer3.Span[^1].ActualNumber);
+        }
+
+        [Fact]
+        public async Task SinglePatchTests()
+        {
+            var context = Fixture.Context;
+
+            var all = context.Entities<GetApiExplicitEmptyPatchTestResource4>();
+            var allBuffer = await all;
+            Assert.Equal(0, allBuffer.Length);
+
+            await context.Insert(new GetApiExplicitEmptyPatchTestResource4(100));
+
+            var first = await context.First<GetApiExplicitEmptyPatchTestResource4>();
+            Assert.Equal(100, first.Number);
+            first.Number = 200;
+            var ok = await context.Patch(0, first);
+            Assert.True(ok);
+            Assert.Equal(200, first.ActualNumber);
         }
 
         public EntityBufferTaskApiTests(RESTableFixture fixture) : base(fixture)

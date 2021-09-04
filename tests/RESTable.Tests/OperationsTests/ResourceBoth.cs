@@ -45,7 +45,7 @@ namespace RESTable.Tests.OperationsTests
             yield break;
         }
 
-        public async ValueTask<int> DeleteAsync(IRequest<ResourceBoth> request, CancellationToken cancellationToken)
+        public async ValueTask<long> DeleteAsync(IRequest<ResourceBoth> request, CancellationToken cancellationToken)
         {
             request.GetRequiredService<OperationsTestsFlags>().AsyncDeleterWasCalled = true;
             return 0;

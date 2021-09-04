@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
-using RESTable.Tests;
+using RESTable.Xunit;
 using Xunit;
 
 namespace RESTable.Json.Tests
