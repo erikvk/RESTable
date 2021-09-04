@@ -12,7 +12,6 @@ namespace RESTable.AspNetCore
 {
     internal abstract class AspNetCoreWebSocket : WebSockets.WebSocket
     {
-        internal const int WebSocketBufferSize = 4096;
         private const int MaxNumberOfConcurrentWriters = 1;
 
         /// <summary>
@@ -23,9 +22,11 @@ namespace RESTable.AspNetCore
 
         protected WebSocket WebSocket { get; set; }
         private ArrayPool<byte> ArrayPool { get; }
+        private int WebSocketBufferSize { get; }
 
         protected AspNetCoreWebSocket(string webSocketId, RESTableContext context) : base(webSocketId, context)
         {
+            WebSocketBufferSize = context.Configuration.WebSocketBufferSize;
             ArrayPool = ArrayPool<byte>.Create(WebSocketBufferSize, 32);
             WebSocket = null!;
             SendMessageSemaphore = new SemaphoreSlim(MaxNumberOfConcurrentWriters, MaxNumberOfConcurrentWriters);
@@ -113,7 +114,7 @@ namespace RESTable.AspNetCore
                     {
                         case Binary:
                         {
-                            var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, cancellationToken);
+                            var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken);
                             await using (nextMessage.ConfigureAwait(false))
                             {
                                 await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
@@ -122,7 +123,7 @@ namespace RESTable.AspNetCore
                         }
                         case Text:
                         {
-                            var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, cancellationToken);
+                            var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken);
                             Task handleTask;
                             await using (nextMessage.ConfigureAwait(false))
                             {

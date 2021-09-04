@@ -10,6 +10,7 @@ using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
+using RESTable.Resources.Operations;
 using RESTable.WebSockets;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -18,6 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection)
         {
+            serviceCollection.AddOptions<ApiKeys>().BindConfiguration(ApiKeys.ConfigSection);
             serviceCollection.TryAddSingleton<IApiKeyAuthenticator, ApiKeyAuthenticator>();
             serviceCollection.TryAddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
             serviceCollection.AddStartupActivator<IRequestAuthenticator>();
@@ -26,6 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddAllowedCorsOriginsFilter(this IServiceCollection serviceCollection)
         {
+            serviceCollection.AddOptions<AllowAccess>().BindConfiguration(AllowAccess.ConfigSection);
             serviceCollection.AddSingleton<IAllowedCorsOriginsFilter, AllowedCorsOriginsFilter>();
             serviceCollection.AddStartupActivator<IAllowedCorsOriginsFilter>();
             return serviceCollection;
@@ -68,10 +71,13 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddRESTable(this IServiceCollection serviceCollection)
         {
             serviceCollection.AddJson();
+
+            serviceCollection.AddOptions<RESTableConfiguration>().BindConfiguration(RESTableConfiguration.ConfigSection, o => o.BindNonPublicProperties = true);
+            serviceCollection.AddSingleton<RESTableInitializer>();
+
             serviceCollection.AddSingleton<IApplicationServiceProvider>(sp => new ApplicationServiceProvider(sp));
             serviceCollection.TryAddSingleton<WebSocketManager>();
             serviceCollection.TryAddSingleton<RESTableConfiguration>();
-            serviceCollection.TryAddSingleton<RESTableConfigurator>();
             serviceCollection.TryAddSingleton<TermFactory>(pr => pr.GetRequiredService<TypeCache>().TermFactory);
             serviceCollection.TryAddSingleton<ConditionRedirector>();
             serviceCollection.TryAddSingleton<ResourceCollection>();
@@ -97,6 +103,7 @@ namespace Microsoft.Extensions.DependencyInjection
             });
             serviceCollection.AddSingleton<IEntityResourceProvider, InMemoryEntityResourceProvider>();
             serviceCollection.AddSingleton<IProtocolProvider, DefaultProtocolProvider>();
+            serviceCollection.AddSingleton(typeof(EntityOperations<>));
             serviceCollection.AddTransient(typeof(ICombinedTerminal<>), typeof(CombinedTerminal<>));
             serviceCollection.AddTransient(typeof(ITerminalCollection<>), typeof(TerminalCollection<>));
             serviceCollection.AddSingleton(typeof(ISerializationMetadata<>), typeof(SerializationMetadata<>));

@@ -111,6 +111,22 @@ namespace RESTable.OData
             Configuration = configuration;
         }
 
+        public IContentTypeProvider GetDefaultInputContentTypeProvider(ICollection<IContentTypeProvider> registeredProviders)
+        {
+            var json = registeredProviders.FirstOrDefault(p => p.ContentType == ContentType.JSON);
+            if (json is not null)
+                return json;
+            return registeredProviders.First();
+        }
+
+        public IContentTypeProvider GetDefaultOutputContentTypeProvider(ICollection<IContentTypeProvider> registeredProviders)
+        {
+            var json = registeredProviders.FirstOrDefault(p => p.ContentType == ContentType.JSON);
+            if (json is not null)
+                return json;
+            return registeredProviders.First();
+        }
+
         private static void PopulateFromOptions(ODataUriComponents args, string options)
         {
             foreach (var (optionKey, optionValue) in options.Split('&').Select(option => option.TupleSplit('=')))
@@ -224,7 +240,7 @@ namespace RESTable.OData
         {
             if (entities is null) throw new ArgumentNullException(nameof(entities));
             var origin = entities.Request.Context.Client;
-            var hostAndPath = $"{origin.Host}{Configuration.RootUri}-odata";
+            var hostAndPath = $"{origin.Host}/restable-odata";
             return origin.Https ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
         }
 

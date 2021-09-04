@@ -96,7 +96,7 @@ namespace RESTable.Meta.Internal
                     throw new InvalidResourceDeclarationException($"Invalid type '{type.GetRESTableTypeName()}'. Unknown namespace");
 
                 if (Configuration.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
-                    type.Assembly != typeof(RESTableConfigurator).Assembly)
+                    type.Assembly != typeof(RESTableConfiguration).Assembly)
                     throw new InvalidResourceDeclarationException(
                         $"Invalid namespace for resource type '{type.GetRESTableTypeName()}'. Namespace '{type.Namespace}' is reserved by RESTable");
 

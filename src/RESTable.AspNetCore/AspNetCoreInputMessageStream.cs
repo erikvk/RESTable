@@ -12,6 +12,7 @@ namespace RESTable.AspNetCore
         public override bool CanWrite => false;
         public override bool CanSeek => false;
         private bool EndOfMessage { get; set; }
+        private int BufferSize { get; }
 
         public override long Position
         {
@@ -28,6 +29,7 @@ namespace RESTable.AspNetCore
             bool endOfMessage,
             int initialByteCount,
             ArrayPool<byte> arrayPool,
+            int bufferSize,
             CancellationToken webSocketCancelledToken
         ) : base
         (
@@ -36,6 +38,7 @@ namespace RESTable.AspNetCore
             webSocketCancelledToken: webSocketCancelledToken
         )
         {
+            BufferSize = bufferSize;
             ArrayPool = arrayPool;
             EndOfMessage = endOfMessage;
             ByteCount = initialByteCount;
@@ -59,13 +62,13 @@ namespace RESTable.AspNetCore
         {
             if (EndOfMessage || WebSocket.State != WebSocketState.Open)
                 return;
-            var arrayBuffer = ArrayPool.Rent(AspNetCoreWebSocket.WebSocketBufferSize);
+            var arrayBuffer = ArrayPool.Rent(BufferSize);
             try
             {
                 while (!EndOfMessage)
                 {
                     // Read the rest of the message
-                    await ReadAsync(arrayBuffer, 0, AspNetCoreWebSocket.WebSocketBufferSize);
+                    await ReadAsync(arrayBuffer, 0, BufferSize);
                 }
             }
             finally
@@ -90,10 +93,10 @@ namespace RESTable.AspNetCore
         {
             if (EndOfMessage || WebSocket.State != WebSocketState.Open)
                 return;
-            var arrayBuffer = ArrayPool.Rent(AspNetCoreWebSocket.WebSocketBufferSize);
+            var arrayBuffer = ArrayPool.Rent(BufferSize);
             try
             {
-                var memory = arrayBuffer.AsMemory(..AspNetCoreWebSocket.WebSocketBufferSize);
+                var memory = arrayBuffer.AsMemory(..BufferSize);
                 while (!EndOfMessage)
                 {
                     // Read the rest of the message

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Auth;
+using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
 
@@ -15,28 +16,23 @@ namespace RESTable.AspNetCore
     public static class ApplicationBuilderExtensions
     {
         /// <summary>
-        /// Adds ASP.NET core routings to work according to the existing RESTable configuration. If RESTable is
-        /// not configured prior to this method being called, the default configuration is used. 
+        /// Adds ASP.NET core routings to work according to the existing RESTable configuration. 
         /// </summary>
         /// <param name="builder"></param>
+        /// <param name="rootUri">The root URI to use for the RESTable REST API</param>
         /// <returns></returns>
-        public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder)
+        public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder, string rootUri = "/restable")
         {
-            var configurator = builder.ApplicationServices.GetRequiredService<RESTableConfigurator>();
-            if (!configurator.IsConfigured)
-                configurator.ConfigureRESTable();
-            var config = builder.ApplicationServices.GetRequiredService<RESTableConfiguration>();
-            var authenticator = builder.ApplicationServices.GetService<IRequestAuthenticator>() ??
-                                builder.ApplicationServices.GetRequiredService<IAllowAllAuthenticator>();
+            var services = builder.ApplicationServices.GetRequiredService<RootContext>();
+            var authenticator = services.GetService<IRequestAuthenticator>() ?? services.GetRequiredService<IAllowAllAuthenticator>();
 
-            var rootUri = config.RootUri;
             var template = rootUri + "/{resource?}/{conditions?}/{metaconditions?}";
 
             builder.UseRouter(router =>
             {
                 router.MapVerb("OPTIONS", template, context => HandleOptionsRequest(rootUri, context));
 
-                foreach (var method in config.Methods)
+                foreach (var method in EnumMember<Method>.Values)
                 {
                     router.MapVerb(method.ToString(), template, hc => HandleRequest(rootUri, method, hc, authenticator, hc.RequestAborted));
                 }
