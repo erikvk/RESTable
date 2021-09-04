@@ -3,57 +3,58 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
-using RESTable.SQLite.Meta;
 using RESTable.Linq;
+using RESTable.Sqlite.Meta;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
-    internal static class SQLiteOperations<T> where T : SQLiteTable
+    internal static class SqliteOperations<T> where T : SqliteTable
     {
-        public static IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken)
+        public static IAsyncEnumerable<T> SelectAsync(IRequest<T> request)
         {
-            var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
+                var (sql, post) = request.Conditions.Split(IsSqliteQueryable);
             request.Conditions = post;
-            return SQLite<T>.Select
+            return Sqlite<T>.Select
             (
-                request.Context,
-                where: sql.ToSQLiteWhereClause(),
-                onlyRowId: request.Method == Method.DELETE && !request.Conditions.Any(),
-                cancellationToken: cancellationToken
+                where: sql.ToSqliteWhereClause(),
+                onlyRowId: request.Method == Method.DELETE && !request.Conditions.Any()
             );
         }
 
         public static IAsyncEnumerable<T> InsertAsync(IRequest<T> request, CancellationToken cancellationToken)
         {
-            return SQLite<T>.Insert(request.Context, request.GetInputEntitiesAsync(), cancellationToken);
+            return Sqlite<T>.Insert(request.GetInputEntitiesAsync(), cancellationToken);
         }
 
         public static IAsyncEnumerable<T> UpdateAsync(IRequest<T> request, CancellationToken cancellationToken)
         {
-            return SQLite<T>.Update(request.Context, request.GetInputEntitiesAsync(), cancellationToken);
+            return Sqlite<T>.Update(request.GetInputEntitiesAsync(), cancellationToken);
         }
 
-        public static async ValueTask<int> DeleteAsync(IRequest<T> request, CancellationToken cancellationToken)
+        public static async ValueTask<long> DeleteAsync(IRequest<T> request, CancellationToken cancellationToken)
         {
-            return await SQLite<T>.Delete(request.Context, request.GetInputEntitiesAsync(), cancellationToken).ConfigureAwait(false);
+            return await Sqlite<T>.Delete(request.GetInputEntitiesAsync(), cancellationToken).ConfigureAwait(false);
         }
 
         public static async ValueTask<long> CountAsync(IRequest<T> request, CancellationToken cancellationToken)
         {
-            var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
+            var (sql, post) = request.Conditions.Split(IsSqliteQueryable);
             if (post.Any())
             {
-                return await SQLite<T>
-                    .Select(request.Context, sql.ToSQLiteWhereClause(), cancellationToken: cancellationToken)
+                return await Sqlite<T>
+                    .Select(sql.ToSqliteWhereClause())
                     .Where(post)
                     .CountAsync(cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
             }
-            return await SQLite<T>.Count(request.Context, sql.ToSQLiteWhereClause(), cancellationToken).ConfigureAwait(false);
+            return await Sqlite<T>.Count(sql.ToSqliteWhereClause(), cancellationToken).ConfigureAwait(false);
         }
 
-        private static bool IsSQLiteQueryable(ICondition condition) => condition.Term.Count == 1 &&
-                                                                       condition.Term.First?.Name is string firstName &&
-                                                                       TableMapping<T>.SQLColumnNames.Contains(firstName);
+        private static bool IsSqliteQueryable(ICondition condition)
+        {
+            return condition.Term.Count == 1 &&
+                   condition.Term.First?.Name is string firstName &&
+                   TableMapping<T>.SqlColumnNames.Contains(firstName);
+        }
     }
 }

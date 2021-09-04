@@ -1,9 +1,9 @@
-﻿namespace RESTable.SQLite
+﻿namespace RESTable.Sqlite
 {
     /// <summary>
-    /// The data types supported in SQLite tables
+    /// The data types supported in Sqlite tables
     /// </summary>
-    public enum SQLDataType
+    public enum SqlDataType
     {
         /// <summary />
         Unsupported = 0,

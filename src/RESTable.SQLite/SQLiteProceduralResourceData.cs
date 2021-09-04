@@ -1,6 +1,6 @@
-﻿namespace RESTable.SQLite
+﻿namespace RESTable.Sqlite
 {
-    internal class SQLiteProceduralResourceData
+    internal class SqliteProceduralResourceData
     {
         public string? BaseTypeName { get; set; }
     }

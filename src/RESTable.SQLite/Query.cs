@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     public class Query
     {

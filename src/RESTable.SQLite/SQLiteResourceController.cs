@@ -6,7 +6,7 @@ using System.Threading;
 using RESTable.Requests;
 using RESTable.Resources;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     /// <inheritdoc />
     /// <summary>
@@ -15,16 +15,16 @@ namespace RESTable.SQLite
     /// </summary>
     /// <typeparam name="TController"></typeparam>
     /// <typeparam name="TBaseType"></typeparam>
-    public abstract class SQLiteResourceController<TController, TBaseType> : ResourceController<TController, SQLiteEntityResourceProvider>
-        where TController : SQLiteResourceController<TController, TBaseType>, new()
-        where TBaseType : ElasticSQLiteTable
+    public abstract class SqliteResourceController<TController, TBaseType> : ResourceController<TController, SqliteEntityResourceProvider>
+        where TController : SqliteResourceController<TController, TBaseType>, new()
+        where TBaseType : ElasticSqliteTable
     {
         /// <inheritdoc />
         /// <summary>
         /// The ElasticSQLiteTableController used for retreiving and modifying the table definition
         /// of generated procedural SQLite resources
         /// </summary>
-        public class TableDefinition : ElasticSQLiteTableController<TableDefinition, TBaseType> { }
+        public class TableDefinition : ElasticSqliteTableController<TableDefinition, TBaseType> { }
 
         /// <inheritdoc />
         protected override dynamic Data { get; }
@@ -43,7 +43,7 @@ namespace RESTable.SQLite
             .Where(item => item.Type?.IsSubclassOf(BaseType) == true)
             .Select(item =>
             {
-                item.Definition = TableDefinition.Select().First(s => s.CLRTypeName == item.Name);
+                item.Definition = TableDefinition.Select().First(s => s.ClrTypeName == item.Name);
                 return item;
             });
 
@@ -59,13 +59,13 @@ namespace RESTable.SQLite
         }
 
         /// <inheritdoc />
-        protected SQLiteResourceController()
+        protected SqliteResourceController()
         {
             BaseType = typeof(TBaseType);
-            if (!BaseType.IsSubclassOf(typeof(ElasticSQLiteTable)))
-                throw new SQLiteException($"Cannot create procedural SQLite resource from base type '{BaseType}'. Must be a " +
-                                          "subclass of RESTable.SQLite.ElasticSQLiteTable with at least one defined column property.");
-            Data = new SQLiteProceduralResourceData {BaseTypeName = BaseType.AssemblyQualifiedName};
+            if (!BaseType.IsSubclassOf(typeof(ElasticSqliteTable)))
+                throw new SqliteException($"Cannot create procedural Sqlite resource from base type '{BaseType}'. Must be a " +
+                                          "subclass of RESTable.Sqlite.ElasticSqliteTable with at least one defined column property.");
+            Data = new SqliteProceduralResourceData {BaseTypeName = BaseType.AssemblyQualifiedName};
         }
     }
 }

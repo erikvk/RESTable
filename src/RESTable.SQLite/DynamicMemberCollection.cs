@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTable.Meta;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     /// <inheritdoc cref="IDictionary{TKey,TValue}" />
     /// <inheritdoc cref="IDynamicMemberValueProvider" />
     /// <summary>
-    /// Defines the dynamic members of an elastic SQLite table
+    /// Defines the dynamic members of an elastic Sqlite table
     /// </summary>
     public class DynamicMemberCollection : IDictionary<string, object?>, IDynamicMemberValueProvider
     {

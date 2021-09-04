@@ -6,11 +6,11 @@ using System.Data.SQLite;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
-using RESTable.SQLite.Meta;
+using RESTable.Sqlite.Meta;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
-    internal class EntityEnumerator<T> : IAsyncEnumerator<T> where T : SQLiteTable
+    internal class EntityEnumerator<T> : IAsyncEnumerator<T> where T : SqliteTable
     {
         private static readonly ParameterlessConstructor<T> ParameterlessConstructor;
 
@@ -79,7 +79,7 @@ namespace RESTable.SQLite
                     var column = TransactMappings[index];
                     if (column.CLRProperty.Set is not Setter setter)
                         continue;
-                    var value = record[column.SQLColumn.Name];
+                    var value = record[column.SqlColumn.Name];
                     if (value is not DBNull)
                     {
                         await setter.Invoke(entity, value).ConfigureAwait(false);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace RESTable.SQLite.Meta
+namespace RESTable.Sqlite.Meta
 {
     internal class NoCaseComparer : IEqualityComparer<string>
     {
@@ -24,7 +24,7 @@ namespace RESTable.SQLite.Meta
                 this[item.CLRProperty.Name] = item;
         }
 
-        internal string ToSQL() => string.Join(", ", Values.Where(m => !m.IsRowId).Select(c => c.SQLColumn.ToSql()));
+        internal string ToSql() => string.Join(", ", Values.Where(m => !m.IsRowId).Select(c => c.SqlColumn.ToSql()));
 
         internal async Task Push()
         {

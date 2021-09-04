@@ -3,14 +3,14 @@ using System.Reflection;
 using System.Reflection.Emit;
 using static System.Reflection.TypeAttributes;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     internal static class TypeBuilder
     {
         private static AssemblyName AssemblyName { get; }
         private static AssemblyBuilder AssemblyBuilder { get; }
         private static ModuleBuilder ModuleBuilder { get; }
-        private const string AssemblyNameString = "RESTable.SQLite.Dynamic";
+        private const string AssemblyNameString = "RESTable.Sqlite.Dynamic";
         internal static Assembly Assembly => AssemblyBuilder;
 
         static TypeBuilder()

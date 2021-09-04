@@ -1,7 +1,7 @@
-﻿namespace RESTable.SQLite
+﻿namespace RESTable.Sqlite
 {
     /// <summary>
-    /// Allowed CLR data types for mapping with SQLite tables
+    /// Allowed CLR data types for mapping with Sqlite tables
     /// </summary>
     public enum CLRDataType
     {

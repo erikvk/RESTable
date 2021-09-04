@@ -2,20 +2,20 @@
 using RESTable.Meta;
 using RESTable.Resources;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
-    /// <inheritdoc cref="SQLiteTable" />
+    /// <inheritdoc cref="SqliteTable" />
     /// <inheritdoc cref="IDynamicMemberValueProvider" />
     /// <summary>
-    /// Defines an elastic SQLite table
+    /// Defines an elastic Sqlite table
     /// </summary>
-    public abstract class ElasticSQLiteTable : SQLiteTable, IDynamicMemberValueProvider
+    public abstract class ElasticSqliteTable : SqliteTable, IDynamicMemberValueProvider
     {
         /// <summary>
         /// The dynamic members stored for this instance
         /// </summary>
         [
-            SQLiteMember(ignore: true),
+            SqliteMember(ignore: true),
             RESTableMember(hide: true, mergeOntoOwner: true)
         ]
         public DynamicMemberCollection DynamicMembers { get; }
@@ -30,9 +30,9 @@ namespace RESTable.SQLite
         }
 
         /// <summary>
-        /// Creates a new instance of this ElasticSQLiteTable type
+        /// Creates a new instance of this ElasticSqliteTable type
         /// </summary>
-        protected ElasticSQLiteTable()
+        protected ElasticSqliteTable()
         {
             var tableMapping = TableMapping.GetTableMapping(GetType());
             if (tableMapping is null)

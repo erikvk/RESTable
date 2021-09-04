@@ -5,32 +5,32 @@ using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources.Operations;
-using RESTable.SQLite.Meta;
+using RESTable.Sqlite.Meta;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <inheritdoc cref="IAsyncUpdater{T}" />
     /// <summary>
-    /// Defines a controller for a given elastic SQLite table mapping
+    /// Defines a controller for a given elastic Sqlite table mapping
     /// </summary>
     /// <typeparam name="TController"></typeparam>
     /// <typeparam name="TTable"></typeparam>
-    public class ElasticSQLiteTableController<TController, TTable> : IAsyncSelector<TController>, IAsyncUpdater<TController>
-        where TTable : ElasticSQLiteTable
-        where TController : ElasticSQLiteTableController<TController, TTable>, new()
+    public class ElasticSqliteTableController<TController, TTable> : IAsyncSelector<TController>, IAsyncUpdater<TController>
+        where TTable : ElasticSqliteTable
+        where TController : ElasticSqliteTableController<TController, TTable>, new()
     {
         private TableMapping TableMapping { get; set; }
 
         /// <summary>
-        /// The name of the CLR type of the elastic SQLite table mapping
+        /// The name of the CLR type of the elastic Sqlite table mapping
         /// </summary>
-        public string CLRTypeName { get; private set; }
+        public string ClrTypeName { get; private set; }
 
         /// <summary>
-        /// The name of the SQL table of the elastic SQLite table mapping
+        /// The name of the Sql table of the elastic Sqlite table mapping
         /// </summary>
-        public string SQLTableName { get; private set; }
+        public string SqlTableName { get; private set; }
 
         /// <summary>
         /// The column definitions for this table mapping, including dynamic members
@@ -38,7 +38,7 @@ namespace RESTable.SQLite
         public Dictionary<string, CLRDataType> Columns { get; private set; }
 
         /// <summary>
-        /// Add column names to this array to drop them from the table mapping, as well as the SQL table
+        /// Add column names to this array to drop them from the table mapping, as well as the Sqlite table
         /// </summary>
         public string[] DroppedColumns { get; set; }
 
@@ -50,11 +50,11 @@ namespace RESTable.SQLite
             .GetInputEntitiesAsync()
             .WhereAwait(async entity => await entity.Update().ConfigureAwait(false));
 
-        protected ElasticSQLiteTableController()
+        protected ElasticSqliteTableController()
         {
             TableMapping = null!;
-            CLRTypeName = null!;
-            SQLTableName = null!;
+            ClrTypeName = null!;
+            SqlTableName = null!;
             Columns = null!;
             DroppedColumns = null!;
         }
@@ -68,8 +68,8 @@ namespace RESTable.SQLite
             .Select(mapping => new TController
             {
                 TableMapping = mapping,
-                CLRTypeName = mapping.CLRClass.FullName!,
-                SQLTableName = mapping.TableName,
+                ClrTypeName = mapping.CLRClass.FullName!,
+                SqlTableName = mapping.TableName,
                 Columns = mapping.ColumnMappings.Values.ToDictionary(
                     keySelector: columnMapping => columnMapping.CLRProperty.Name,
                     elementSelector: columnMapping => columnMapping.CLRProperty.Type),
@@ -77,7 +77,7 @@ namespace RESTable.SQLite
             });
 
         /// <summary>
-        /// Drops a list of columns (by name) from this elastic table mapping, as well as from the SQL table
+        /// Drops a list of columns (by name) from this elastic table mapping, as well as from the Sqlite table
         /// </summary>
         /// <param name="columnNames"></param>
         /// <returns></returns>
@@ -90,7 +90,7 @@ namespace RESTable.SQLite
                     var mapping = TableMapping.ColumnMappings.Values.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
                     if (mapping is null) continue;
                     if (mapping.IsRowId || mapping.CLRProperty.IsDeclared)
-                        throw new SQLiteException($"Cannot drop column '{mapping.SQLColumn.Name}' from table '{TableMapping.TableName}'. " +
+                        throw new SqliteException($"Cannot drop column '{mapping.SqlColumn.Name}' from table '{TableMapping.TableName}'. " +
                                                   "Column is not editable.");
                     yield return mapping;
                 }
@@ -103,14 +103,14 @@ namespace RESTable.SQLite
         }
 
         /// <summary>
-        /// Updates the column definition and pushes it to the SQL table
+        /// Updates the column definition and pushes it to the Sqlite table
         /// </summary>
         /// <returns></returns>
         public async Task<bool> Update()
         {
             var updated = false;
             var columnsToAdd = Columns.Keys
-                .Except(TableMapping.SQLColumnNames)
+                .Except(TableMapping.SqlColumnNames)
                 .Select(name => (name, type: Columns[name]));
             await DropColumns(DroppedColumns).ConfigureAwait(false);
             foreach (var (name, type) in columnsToAdd.Where(c => c.type != CLRDataType.Unsupported))
@@ -119,7 +119,7 @@ namespace RESTable.SQLite
                 (
                     tableMapping: TableMapping,
                     clrProperty: new CLRProperty(name, type),
-                    sqlColumn: new SQLColumn(name, type.ToSQLDataType())
+                    sqlColumn: new SqlColumn(name, type.ToSqlDataType())
                 );
                 updated = true;
             }

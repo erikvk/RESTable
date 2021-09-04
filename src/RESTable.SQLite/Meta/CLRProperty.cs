@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Resources;
 
-namespace RESTable.SQLite.Meta
+namespace RESTable.Sqlite.Meta
 {
     /// <summary>
     /// An object representing a property of a CLR class
@@ -28,7 +28,7 @@ namespace RESTable.SQLite.Meta
         public bool IsDeclared { get; }
 
         /// <summary>
-        /// Is this CLR property ignored when materializing entities from SQL?
+        /// Is this CLR property ignored when materializing entities from Sql?
         /// </summary>
         public bool IsIgnored { get; private set; }
 
@@ -45,9 +45,9 @@ namespace RESTable.SQLite.Meta
         public Setter? Set { get; }
 
         /// <summary>
-        /// The optional SQLiteMemberAttribute associated with this CLR property
+        /// The optional SqliteMemberAttribute associated with this CLR property
         /// </summary>
-        public SQLiteMemberAttribute? MemberAttribute { get; }
+        public SqliteMemberAttribute? MemberAttribute { get; }
 
         internal void SetMapping(ColumnMapping mapping)
         {
@@ -64,15 +64,15 @@ namespace RESTable.SQLite.Meta
         public CLRProperty(PropertyInfo propertyInfo)
         {
             Name = propertyInfo.Name;
-            Type = propertyInfo.PropertyType.ResolveCLRTypeCode();
+            Type = propertyInfo.PropertyType.ResolveClrTypeCode();
             Getter = propertyInfo.MakeDynamicGetter();
             Set = propertyInfo.MakeDynamicSetter();
-            MemberAttribute = propertyInfo.GetCustomAttribute<SQLiteMemberAttribute>();
+            MemberAttribute = propertyInfo.GetCustomAttribute<SqliteMemberAttribute>();
             IsDeclared = true;
         }
 
         /// <summary>
-        /// From SQL
+        /// From Sql
         /// </summary>
         public CLRProperty(string name, CLRDataType typeCode)
         {

@@ -4,11 +4,11 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using RESTable.Meta;
-using RESTable.SQLite.Meta;
+using RESTable.Sqlite.Meta;
 using static System.Reflection.BindingFlags;
 using static RESTable.Method;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     internal static class ExtensionMethods
     {
@@ -16,7 +16,7 @@ namespace RESTable.SQLite
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             return type.GetProperties(Public | Instance)
-                .Where(property => !property.HasAttribute<SQLiteMemberAttribute>(out var attribute) || attribute!.Ignored == false)
+                .Where(property => !property.HasAttribute<SqliteMemberAttribute>(out var attribute) || attribute!.Ignored == false)
                 .Where(property =>
                 {
                     var getter = property.GetGetMethod();
@@ -25,23 +25,23 @@ namespace RESTable.SQLite
                     if (!(getter ?? setter).HasAttribute<CompilerGeneratedAttribute>(out _))
                         return false;
                     if (getter is null)
-                        throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                        throw new SqliteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a non-defined or non-public get accessor. This property cannot be used with SQLite. To ignore this " +
                                                   "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
-                    if (setter is null && property.Name != nameof(SQLiteTable.RowId))
-                        throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                    if (setter is null && property.Name != nameof(SqliteTable.RowId))
+                        throw new SqliteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a non-public set accessor. This property cannot be used with SQLite. To ignore this " +
                                                   "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
-                    if (!property.PropertyType.IsSQLiteCompatibleValueType())
-                        throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                    if (!property.PropertyType.IsSqliteCompatibleValueType())
+                        throw new SqliteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   $"with a non-compatible type '{property.PropertyType.Name}'. This property cannot be used with SQLite. " +
                                                   "To ignore this property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true. " +
                                                   $"Valid property types: {string.Join(", ", EnumMember<CLRDataType>.Names)}");
-                    if (property.HasAttribute<SQLiteMemberAttribute>(out var attr) && attr!.ColumnName?.Equals("rowid", StringComparison.OrdinalIgnoreCase) == true)
-                        throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                    if (property.HasAttribute<SqliteMemberAttribute>(out var attr) && attr!.ColumnName?.Equals("rowid", StringComparison.OrdinalIgnoreCase) == true)
+                        throw new SqliteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a custom column name 'rowid'. This name is reserved by SQLite and cannot be used.");
                     if (!names.Add(property.Name))
-                        throw new SQLiteException($"The type definition for class '{type}' contained multiple properties with the name " +
+                        throw new SqliteException($"The type definition for class '{type}' contained multiple properties with the name " +
                                                   $"'{property.Name}' (case insensitive). SQL is case insensitive, so for mapping to work, all mapped " +
                                                   "properties must have unique case insensitive names.");
                     return true;
