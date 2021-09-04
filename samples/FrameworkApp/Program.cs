@@ -46,10 +46,7 @@ namespace FrameworkApp
             await using var services = new ServiceCollection()
                 .AddRESTable()
                 .BuildServiceProvider();
-            var configurator = services.GetRequiredService<RESTableConfigurator>();
-            configurator.ConfigureRESTable();
-            var rootClient = services.GetRequiredService<RootClient>();
-            var context = new RESTableContext(rootClient, services);
+            var context = services.GetRequiredService<RootContext>();
 
             // Welcome
             Console.WriteLine("App is running...");

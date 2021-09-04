@@ -17,7 +17,7 @@ using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using RESTable.SQLite;
+using RESTable.Sqlite;
 using RESTable.WebSockets;
 using static System.StringComparison;
 using static RESTable.Method;
@@ -51,17 +51,18 @@ namespace RESTable.Tutorial
     /// </summary>
     public class Tutorial
     {
-        public static void Main(string[] args) => WebHost
+        public static Task Main(string[] args) => WebHost
             .CreateDefaultBuilder(args)
             .UseStartup<Tutorial>()
             .Build()
-            .Run();
+            .RunAsync();
 
         public void ConfigureServices(IServiceCollection services) => services
-            .AddODataProvider()
-            .AddSqliteProvider(dbPath: "./database")
-            .AddExcelProvider()
             .AddRESTable()
+            .AddODataProvider()
+            .AddSqliteProvider()
+//            .Configure<SqliteOptions>(o => o.SqliteDatabasePath = "./database")
+            .AddExcelProvider()
             .AddHttpContextAccessor();
 
         public void Configure(IApplicationBuilder app) => app
@@ -84,8 +85,8 @@ namespace RESTable.Tutorial
     /// Database is a subset of https://github.com/fivethirtyeight/data/tree/master/comic-characters
     /// - which is, in turn, taken from Marvel and DC Comics respective sites.
     /// </summary>
-    [SQLite(customTableName: "Heroes"), RESTable]
-    public class Superhero : SQLiteTable
+    [Sqlite(customTableName: "Heroes"), RESTable]
+    public class Superhero : SqliteTable
     {
         public string? Name { get; set; }
 
@@ -390,8 +391,8 @@ namespace RESTable.Tutorial
         }
     }
 
-    [RESTable, SQLite]
-    public class Person : ElasticSQLiteTable, IValidator<Person>
+    [RESTable, Sqlite]
+    public class Person : ElasticSqliteTable, IValidator<Person>
     {
         public string? Name { get; set; }
 
@@ -403,7 +404,7 @@ namespace RESTable.Tutorial
     }
 
     [RESTable]
-    public class PersonController : SQLiteResourceController<PersonController, Person> { }
+    public class PersonController : SqliteResourceController<PersonController, Person> { }
 
     #endregion
 
