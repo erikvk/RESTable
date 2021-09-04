@@ -13,7 +13,7 @@ namespace RESTable.Json.Converters
         private ISerializationMetadata<ProcessedEntity> Metadata { get; }
         private IJsonProvider JsonProvider { get; }
 
-        internal ProcessedEntityConverter(ISerializationMetadata<ProcessedEntity> metadata, IJsonProvider jsonProvider)
+        public ProcessedEntityConverter(ISerializationMetadata<ProcessedEntity> metadata, IJsonProvider jsonProvider)
         {
             Metadata = metadata;
             JsonProvider = jsonProvider;
