@@ -3,6 +3,10 @@
     <Import Project="..\pack.props" />
     <Import Project="..\common.props" />
 
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+    
     <ItemGroup>
         <ProjectReference Include="..\RESTable\RESTable.csproj" />
     </ItemGroup>
