@@ -42,7 +42,7 @@ namespace RESTable.DefaultProtocol
 
             switch (conditions)
             {
-                case string { Length: 0 }:
+                case string {Length: 0}:
                 case "_": break;
                 default:
                 {
@@ -54,7 +54,7 @@ namespace RESTable.DefaultProtocol
 
             switch (metaConditions)
             {
-                case string { Length: 0 }:
+                case string {Length: 0}:
                 case "_": break;
                 default:
                 {
@@ -124,6 +124,22 @@ namespace RESTable.DefaultProtocol
         public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings => ExternalContentTypeProviderSettings.AllowAll;
 
         public IEnumerable<IContentTypeProvider>? GetCustomContentTypeProviders() => null;
+
+        public IContentTypeProvider GetDefaultInputContentTypeProvider(ICollection<IContentTypeProvider> registeredProviders)
+        {
+            var json = registeredProviders.FirstOrDefault(p => p.ContentType == ContentType.JSON);
+            if (json is not null)
+                return json;
+            return registeredProviders.First();
+        }
+
+        public IContentTypeProvider GetDefaultOutputContentTypeProvider(ICollection<IContentTypeProvider> registeredProviders)
+        {
+            var json = registeredProviders.FirstOrDefault(p => p.ContentType == ContentType.JSON);
+            if (json is not null)
+                return json;
+            return registeredProviders.First();
+        }
 
         /// <inheritdoc />
         public string MakeRelativeUri(IUriComponents components) => ToUriString(components);
