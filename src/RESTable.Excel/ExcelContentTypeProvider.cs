@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using OfficeOpenXml;
 using RESTable.ContentTypeProviders;
 using RESTable.Meta;
@@ -22,7 +23,7 @@ namespace RESTable.Excel
         private const string RESTableSpecific = "application/restable-excel";
         private const string Brief = "excel";
 
-        private ExcelSettings ExcelSettings { get; }
+        private ExcelOptions ExcelOptions { get; }
         private ISerializationMetadataAccessor MetadataAccessor { get; }
         private IJsonProvider JsonProvider { get; }
         private TypeCache TypeCache { get; }
@@ -34,12 +35,12 @@ namespace RESTable.Excel
         public bool CanWrite => true;
         public string ContentDispositionFileExtension => ".xlsx";
 
-        public ExcelContentTypeProvider(ExcelSettings excelSettings, ISerializationMetadataAccessor metadataAccessor, IJsonProvider jsonProvider, TypeCache typeCache)
+        public ExcelContentTypeProvider(IOptions<ExcelOptions> excelOptions, ISerializationMetadataAccessor metadataAccessor, IJsonProvider jsonProvider, TypeCache typeCache)
         {
             MetadataAccessor = metadataAccessor;
             JsonProvider = jsonProvider;
             TypeCache = typeCache;
-            ExcelSettings = excelSettings;
+            ExcelOptions = excelOptions.Value;
         }
 
         public async Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken)
@@ -110,6 +111,9 @@ namespace RESTable.Excel
                 worksheet.Cells.AutoFitColumns(0);
                 package.Save();
                 localStream.Seek(0, SeekOrigin.Begin);
+                
+                
+                
                 await localStream.CopyToAsync(stream, 81920, cancellationToken).ConfigureAwait(false);
                 return (long) currentRow - 1;
             }

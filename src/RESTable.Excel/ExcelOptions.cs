@@ -2,11 +2,11 @@
 
 namespace RESTable.Excel
 {
-    public class ExcelSettings
+    public class ExcelOptions
     {
         public Encoding Encoding { get; set; }
 
-        public ExcelSettings()
+        public ExcelOptions()
         {
             Encoding = new UTF8Encoding(false);
         }
