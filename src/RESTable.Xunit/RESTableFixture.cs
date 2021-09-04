@@ -1,8 +1,10 @@
 ﻿using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using RESTable.Requests;
 
-namespace RESTable.Tests
+namespace RESTable.Xunit
 {
     public class RESTableFixture : ServiceCollection, IServiceProvider
     {
@@ -25,9 +27,10 @@ namespace RESTable.Tests
 
         public void Configure()
         {
-            ServiceProvider = this.BuildServiceProvider();
-            var configurator = ServiceProvider.GetRequiredService<RESTableConfigurator>();
-            configurator.ConfigureRESTable();
+            this.TryAddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+            ServiceProvider = this
+                .BuildServiceProvider()
+                .GetRequiredService<RootContext>();
         }
 
         public object? GetService(Type serviceType) => ServiceProvider.GetService(serviceType);
