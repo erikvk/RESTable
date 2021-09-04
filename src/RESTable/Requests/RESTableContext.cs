@@ -2,10 +2,12 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using RESTable.Meta;
 using RESTable.Results;
 using RESTable.WebSockets;
 using static RESTable.Method;
+using Options = RESTable.Results.Options;
 
 namespace RESTable.Requests
 {
@@ -22,6 +24,8 @@ namespace RESTable.Requests
         internal bool IsBottomOfStack => StackDepth < 1;
         private IServiceProvider Services { get; }
         public object? GetService(Type serviceType) => Services.GetService(serviceType);
+        private IOptionsMonitor<RESTableConfiguration> OptionsMonitor { get; }
+        public RESTableConfiguration Configuration => OptionsMonitor.CurrentValue;
 
         public RESTableContext Context => this;
 
@@ -93,7 +97,7 @@ namespace RESTable.Requests
 
 #if !NETSTANDARD2_0
 
-        #region Get and Replace
+        #region Retreiving things
 
         public ValueTask<ReadOnlyMemory<T>> All<T>() where T : class
         {
@@ -126,12 +130,46 @@ namespace RESTable.Requests
             return new EntityBufferTask<T>(CreateRequest<T>()).At(index);
         }
 
-        public ValueTask<T> Patch<T>(Index index, T item) where T : class
+        #endregion
+
+        #region Updating things
+
+        public ValueTask<bool> Put<T>(Index index, T item) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Put(index, item);
+        }
+
+        public ValueTask<bool> Put<T>(int index, T item) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Put(index, item);
+        }
+
+        public ValueTask<bool> Insert<T>(T item) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Insert(item);
+        }
+
+        public ValueTask<ReadOnlyMemory<T>> Insert<T>(params T[] items) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Insert(items);
+        }
+
+        public ValueTask<ReadOnlyMemory<T>> Insert<T>(ReadOnlyMemory<T> buffer) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Insert(buffer);
+        }
+
+        public ValueTask<ReadOnlyMemory<T>> Insert<T>(ReadOnlySpan<T> buffer) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Insert(buffer);
+        }
+
+        public ValueTask<bool> Patch<T>(Index index, T item) where T : class
         {
             return new EntityBufferTask<T>(CreateRequest<T>()).Patch(index, item);
         }
 
-        public ValueTask<T> Patch<T>(int index, T item) where T : class
+        public ValueTask<bool> Patch<T>(int index, T item) where T : class
         {
             return new EntityBufferTask<T>(CreateRequest<T>()).Patch(index, item);
         }
@@ -141,6 +179,30 @@ namespace RESTable.Requests
             return new EntityBufferTask<T>(CreateRequest<T>()).Patch(range, updatedBuffer);
         }
 
+        public ValueTask<ReadOnlyMemory<T>> Patch<T>(Range range, ReadOnlySpan<T> updatedBuffer) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Patch(range, updatedBuffer);
+        }
+
+        #endregion
+
+        #region Deleting things
+
+        public ValueTask<long> Delete<T>(Index index) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Delete(index);
+        }
+
+        public ValueTask<long> Delete<T>(int index) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Delete(index);
+        }
+
+        public ValueTask<long> Delete<T>(Range range) where T : class
+        {
+            return new EntityBufferTask<T>(CreateRequest<T>()).Delete(range);
+        }
+
         #endregion
 
         #region Entities
@@ -148,6 +210,12 @@ namespace RESTable.Requests
         public EntityBufferTask<T> Entities<T>() where T : class
         {
             return new EntityBufferTask<T>(CreateRequest<T>());
+        }
+
+        public EntityBufferTask<T> Entities<T>(Range range) where T : class
+        {
+            var (offset, limit) = range.ToOffsetAndLimit();
+            return new EntityBufferTask<T>(CreateRequest<T>(), offset, limit, System.Collections.Immutable.ImmutableList<Condition<T>>.Empty);
         }
 
         #endregion
@@ -282,6 +350,13 @@ namespace RESTable.Requests
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
             Services = services ?? throw new ArgumentNullException(nameof(services));
+
+            // Ensures that RESTable is initialized. If it fails, the service provider
+            // does not contain the RESTable services
+            services.GetRequiredService<RESTableInitializer>();
+
+            OptionsMonitor = services.GetRequiredService<IOptionsMonitor<RESTableConfiguration>>();
+
             TraceId = NextId;
             StackDepth = 0;
         }
@@ -293,18 +368,19 @@ namespace RESTable.Requests
             get
             {
                 var id = IdNr += 1;
-                var bytes = id switch
+                var neededBytes = id switch
                 {
-                    < 1 << 8 => new[] {(byte) id},
-                    < 2 << 8 => new[] {byte.MaxValue, (byte) (id - 1 << 8)},
-                    < 3 << 8 => new[] {byte.MaxValue, byte.MaxValue, (byte) (id - 2 << 8)},
-                    < 4 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 3 << 8)},
-                    < 5 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 4 << 8)},
-                    < 6 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 5 << 8)},
-                    < 7 << 8 => new[] {byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, (byte) (id - 6 << 8)},
-                    _ => BitConverter.GetBytes(IdNr)
+                    < 256 => 1,
+                    < 65536 => 2,
+                    < 16777216 => 3,
+                    < 4294967296 => 4,
+                    < 1099511627776 => 5,
+                    < 281474976710656 => 6,
+                    < 72057594037927940 => 7,
+                    _ => 8
                 };
-                return Convert.ToBase64String(bytes).TrimEnd('=');
+                var bytes = BitConverter.GetBytes(id);
+                return Convert.ToBase64String(bytes, 0, neededBytes).TrimEnd('=');
             }
         }
 
