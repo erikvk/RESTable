@@ -22,6 +22,7 @@ namespace RESTable.Requests
         public RequestParameters Parameters { get; }
         public IResource<T> Resource { get; }
         public ITarget<T> Target { get; }
+        public EntityOperations<T> EntityOperations { get; }
         ITarget IRequest.Target => Target;
         private Exception? Error { get; }
         private bool IsEvaluating { get; set; }
@@ -236,7 +237,7 @@ namespace RESTable.Requests
                             if (!entityResource.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
                             if (!entityResource.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
                         }
-                        var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
+                        var evaluator = EntityOperations.GetMethodEvaluator(Method);
                         var result = await evaluator(this, cancellationToken).ConfigureAwait(false);
                         foreach (var (key, value) in ResponseHeaders)
                             result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
@@ -306,6 +307,7 @@ namespace RESTable.Requests
             Stopwatch = new Stopwatch();
             var termFactory = this.GetRequiredService<TermFactory>();
             Configuration = this.GetRequiredService<RESTableConfiguration>();
+            EntityOperations = this.GetRequiredService<EntityOperations<T>>();
 
             try
             {
@@ -360,6 +362,7 @@ namespace RESTable.Requests
             CachedProtocolProvider = cachedProtocolProvider;
             Stopwatch = new Stopwatch();
             Configuration = this.GetRequiredService<RESTableConfiguration>();
+            EntityOperations = this.GetRequiredService<EntityOperations<T>>();
         }
 
         #region Source and destination
