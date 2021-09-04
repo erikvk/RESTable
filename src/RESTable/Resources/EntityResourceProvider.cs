@@ -319,7 +319,7 @@ namespace RESTable.Resources
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
         [MethodNotImplemented]
-        protected virtual ValueTask<int> DefaultDeleteAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class, TBase
+        protected virtual ValueTask<long> DefaultDeleteAsync<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class, TBase
         {
             throw new NotImplementedException();
         }

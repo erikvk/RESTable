@@ -144,7 +144,7 @@ namespace RESTable.Resources
             }
         }
 
-        public virtual async ValueTask<int> DeleteAsync(IRequest<TController> request, CancellationToken cancellationToken)
+        public virtual async ValueTask<long> DeleteAsync(IRequest<TController> request, CancellationToken cancellationToken)
         {
             var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().WithCancellation(cancellationToken).ConfigureAwait(false))

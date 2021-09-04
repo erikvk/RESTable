@@ -63,7 +63,7 @@ namespace RESTable.Meta.Internal
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.SelectAsync(request, cancellationToken);
         public IAsyncEnumerable<T> InsertAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.InsertAsync(request, cancellationToken);
         public IAsyncEnumerable<T> UpdateAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.UpdateAsync(request, cancellationToken);
-        public ValueTask<int> DeleteAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.DeleteAsync(request, cancellationToken);
+        public ValueTask<long> DeleteAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.DeleteAsync(request, cancellationToken);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.AuthenticateAsync(request, cancellationToken);
         public ValueTask<long> CountAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.CountAsync(request, cancellationToken);
 

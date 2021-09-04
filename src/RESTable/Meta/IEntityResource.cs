@@ -93,7 +93,7 @@ namespace RESTable.Meta
 
         IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
         IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
-        ValueTask<int> DeleteAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
+        ValueTask<long> DeleteAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
         ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
         ValueTask<long> CountAsync(IRequest<TResource> request, CancellationToken cancellationToken = new());
         IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context, CancellationToken cancellationToken = new());

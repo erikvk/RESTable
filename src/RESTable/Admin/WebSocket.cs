@@ -77,7 +77,7 @@ namespace RESTable.Admin
         }
 
         /// <inheritdoc />
-        public async ValueTask<int> DeleteAsync(IRequest<WebSocket> request, CancellationToken cancellationToken)
+        public async ValueTask<long> DeleteAsync(IRequest<WebSocket> request, CancellationToken cancellationToken)
         {
             var count = 0;
             await foreach (var entity in request.GetInputEntitiesAsync().WithCancellation(cancellationToken).ConfigureAwait(false))

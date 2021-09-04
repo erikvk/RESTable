@@ -11,9 +11,9 @@ namespace RESTable.Results
         /// <summary>
         /// The number of entities deleted
         /// </summary>
-        public int DeletedCount { get; }
+        public long DeletedCount { get; }
 
-        public DeletedEntities(IRequest request, int count) : base(request, count, System.Array.Empty<T>())
+        public DeletedEntities(IRequest request, long count) : base(request, count, System.Array.Empty<T>())
         {
             DeletedCount = count;
             Headers.Info = $"{count} entities deleted from '{request.Resource}'";
