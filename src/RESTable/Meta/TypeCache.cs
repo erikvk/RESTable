@@ -27,12 +27,7 @@ namespace RESTable.Meta
         internal TermFactory TermFactory { get; }
         private ResourceCollection ResourceCollection { get; }
 
-        public TypeCache
-        (
-            IEnumerable<IEntityTypeContractResolver> entityTypeContractResolvers,
-            ResourceCollection resourceCollection,
-            TermCache termCache
-        )
+        public TypeCache(IEnumerable<IEntityTypeContractResolver> entityTypeContractResolvers, ResourceCollection resourceCollection, TermCache termCache)
         {
             EntityTypeContractResolvers = entityTypeContractResolvers;
             ResourceCollection = resourceCollection;

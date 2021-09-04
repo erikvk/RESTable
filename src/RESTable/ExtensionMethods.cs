@@ -914,8 +914,6 @@ namespace RESTable
         #region Conversion
 
 #if !NETSTANDARD2_0
-        internal static Index GetNext(this Index index) => new(index.IsFromEnd ? index.Value - 1 : index.Value + 1, index.IsFromEnd);
-
         internal static (int offset, int limit) ToOffsetAndLimit(this Range range)
         {
             var offset = range.Start switch

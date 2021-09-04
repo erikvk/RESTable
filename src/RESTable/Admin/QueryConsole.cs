@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using RESTable.Requests;
+using RESTable.Meta;
 using RESTable.Resources;
 using RESTable.Resources.Templates;
 using RESTable.WebSockets;
@@ -18,9 +18,9 @@ namespace RESTable.Admin
     [RESTable]
     public class QueryConsole : FeedTerminal
     {
-        public static async Task Publish(RESTableContext context, string query, CancellationToken cancellationToken, params object[]? args)
+        public static async Task Publish(string query, CancellationToken cancellationToken, params object[]? args)
         {
-            var consoles = context.GetRequiredService<ICombinedTerminal<QueryConsole>>();
+            var consoles = ApplicationServicesAccessor.ApplicationServiceProvider.GetRequiredService<ICombinedTerminal<QueryConsole>>();
             if (consoles.Count == 0) return;
             var argsString = args is null ? null : $"{NewLine}Args: {string.Join(", ", args)}";
             var message = $"{DateTime.UtcNow:O}: {query}{argsString}{NewLine}";
