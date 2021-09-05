@@ -13,7 +13,7 @@ namespace RESTable.Sqlite.Meta
         /// <summary>
         /// The CLR property of the mapping
         /// </summary>
-        public CLRProperty CLRProperty { get; }
+        public ClrProperty ClrProperty { get; }
 
         /// <summary>
         /// The Sql column of the mapping
@@ -34,14 +34,14 @@ namespace RESTable.Sqlite.Meta
         /// <summary>
         /// Creates a column from a CLR PropertyInfo
         /// </summary>
-        internal ColumnMapping(TableMapping tableMapping, CLRProperty clrProperty, SqlColumn sqlColumn)
+        internal ColumnMapping(TableMapping tableMapping, ClrProperty clrProperty, SqlColumn sqlColumn)
         {
             TableMapping = tableMapping;
-            CLRProperty = clrProperty;
+            ClrProperty = clrProperty;
             SqlColumn = sqlColumn;
             IsRowId = sqlColumn.IsRowId;
             SqlColumn.SetMapping(this);
-            CLRProperty.SetMapping(this);
+            ClrProperty.SetMapping(this);
         }
     }
 }

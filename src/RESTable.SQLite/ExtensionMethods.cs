@@ -12,7 +12,7 @@ namespace RESTable.Sqlite
 {
     internal static class ExtensionMethods
     {
-        internal static IDictionary<string, CLRProperty> GetDeclaredColumnProperties(this Type type)
+        internal static IDictionary<string, ClrProperty> GetDeclaredColumnProperties(this Type type)
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             return type.GetProperties(Public | Instance)
@@ -36,7 +36,7 @@ namespace RESTable.Sqlite
                         throw new SqliteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   $"with a non-compatible type '{property.PropertyType.Name}'. This property cannot be used with SQLite. " +
                                                   "To ignore this property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true. " +
-                                                  $"Valid property types: {string.Join(", ", EnumMember<CLRDataType>.Names)}");
+                                                  $"Valid property types: {string.Join(", ", EnumMember<ClrDataType>.Names)}");
                     if (property.HasAttribute<SqliteMemberAttribute>(out var attr) && attr!.ColumnName?.Equals("rowid", StringComparison.OrdinalIgnoreCase) == true)
                         throw new SqliteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a custom column name 'rowid'. This name is reserved by SQLite and cannot be used.");
@@ -48,7 +48,7 @@ namespace RESTable.Sqlite
                 })
                 .ToDictionary(
                     keySelector: property => property.Name,
-                    elementSelector: property => new CLRProperty(property),
+                    elementSelector: property => new ClrProperty(property),
                     comparer: StringComparer.OrdinalIgnoreCase
                 );
         }

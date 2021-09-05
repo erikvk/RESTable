@@ -21,7 +21,7 @@ namespace RESTable.Sqlite.Meta
         public ColumnMappings(IEnumerable<ColumnMapping> collection) : base(new NoCaseComparer())
         {
             foreach (var item in collection) 
-                this[item.CLRProperty.Name] = item;
+                this[item.ClrProperty.Name] = item;
         }
 
         internal string ToSql() => string.Join(", ", Values.Where(m => !m.IsRowId).Select(c => c.SqlColumn.ToSql()));

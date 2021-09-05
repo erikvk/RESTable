@@ -66,7 +66,7 @@ namespace RESTable.Sqlite
                     await entity._OnInsert().ConfigureAwait(false);
                     for (var i = 0; i < mappings.Length; i++)
                     {
-                        var getter = mappings[i].CLRProperty.Getter;
+                        var getter = mappings[i].ClrProperty.Getter;
                         object? propertyValue = null;
                         if (getter is not null)
                             propertyValue = await getter(entity).ConfigureAwait(false);
@@ -113,7 +113,7 @@ namespace RESTable.Sqlite
                     command.Parameters[RowIdParameter].Value = entity.RowId;
                     for (var i = 0; i < mappings.Length; i++)
                     {
-                        var getter = mappings[i].CLRProperty.Getter;
+                        var getter = mappings[i].ClrProperty.Getter;
                         object? propertyValue = null;
                         if (getter is not null)
                             propertyValue = await getter(entity).ConfigureAwait(false);

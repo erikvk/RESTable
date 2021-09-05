@@ -8,7 +8,7 @@ namespace RESTable.Sqlite.Meta
     /// <summary>
     /// An object representing a property of a CLR class
     /// </summary>
-    public class CLRProperty
+    public class ClrProperty
     {
         private ColumnMapping? Mapping { get; set; }
 
@@ -20,7 +20,7 @@ namespace RESTable.Sqlite.Meta
         /// <summary>
         /// The type of the CLR property, defined as a TypeCode
         /// </summary>
-        public CLRDataType Type { get; }
+        public ClrDataType Type { get; }
 
         /// <summary>
         /// Is this CLR property declared, or was it defined at runtime?
@@ -52,7 +52,7 @@ namespace RESTable.Sqlite.Meta
         internal void SetMapping(ColumnMapping mapping)
         {
             Mapping = mapping;
-            IsIgnored = Type == CLRDataType.Unsupported
+            IsIgnored = Type == ClrDataType.Unsupported
                         || Name == "RowId"
                         || mapping.TableMapping.TableMappingKind == TableMappingKind.Static && !IsDeclared;
         }
@@ -61,7 +61,7 @@ namespace RESTable.Sqlite.Meta
         /// From CLR
         /// </summary>
         /// <param name="propertyInfo"></param>
-        public CLRProperty(PropertyInfo propertyInfo)
+        public ClrProperty(PropertyInfo propertyInfo)
         {
             Name = propertyInfo.Name;
             Type = propertyInfo.PropertyType.ResolveClrTypeCode();
@@ -74,7 +74,7 @@ namespace RESTable.Sqlite.Meta
         /// <summary>
         /// From Sql
         /// </summary>
-        public CLRProperty(string name, CLRDataType typeCode)
+        public ClrProperty(string name, ClrDataType typeCode)
         {
             MemberAttribute = null!;
             Name = name;

@@ -77,14 +77,14 @@ namespace RESTable.Sqlite
                 for (var index = 0; index < TransactMappings.Length; index++)
                 {
                     var column = TransactMappings[index];
-                    if (column.CLRProperty.Set is not Setter setter)
+                    if (column.ClrProperty.Set is not Setter setter)
                         continue;
                     var value = record[column.SqlColumn.Name];
                     if (value is not DBNull)
                     {
                         await setter.Invoke(entity, value).ConfigureAwait(false);
                     }
-                    else if (!column.CLRProperty.IsDeclared)
+                    else if (!column.ClrProperty.IsDeclared)
                     {
                         await setter.Invoke(entity, null).ConfigureAwait(false);
                     }

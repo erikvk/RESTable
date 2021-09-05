@@ -45,12 +45,12 @@ namespace RESTable.Sqlite
         /// The CLR class of the mapping
         /// </summary>
         [RESTableMember(ignore: true)]
-        public Type CLRClass { get; }
+        public Type ClrClass { get; }
 
         /// <summary>
         /// The name of the CLR class of the mapping
         /// </summary>
-        public string? ClassName => CLRClass.FullName?.Replace('+', '.');
+        public string? ClassName => ClrClass.FullName?.Replace('+', '.');
 
         /// <summary>
         /// The name of the mapped Sqlite table
@@ -135,13 +135,13 @@ namespace RESTable.Sqlite
             Validate(clrClass);
             TableMappingKind = clrClass.IsSubclassOf(typeof(ElasticSqliteTable)) ? TableMappingKind.Elastic : TableMappingKind.Static;
             IsDeclared = !clrClass.Assembly.Equals(TypeBuilder.Assembly);
-            CLRClass = clrClass;
+            ClrClass = clrClass;
             TableName = clrClass.GetCustomAttribute<SqliteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('+', '.').Replace('.', '$')
                 ?? throw new SqliteException("RESTable.SQLite encountered an unknown CLR class when creating table mappings");
             Resource = null!;
             TransactMappings = null!;
             SqlColumnNames = null!;
-            TableMappingByType[CLRClass] = this;
+            TableMappingByType[ClrClass] = this;
             ColumnMappings = null!;
             TableInfoQuery = new Query($"PRAGMA table_info({TableName})");
             DropTableQuery = new Query($"DROP TABLE IF EXISTS {TableName}");
@@ -184,7 +184,7 @@ namespace RESTable.Sqlite
         internal async Task DropColumns(List<ColumnMapping> mappings)
         {
             foreach (var mapping in mappings)
-                ColumnMappings.Remove(mapping.CLRProperty.Name);
+                ColumnMappings.Remove(mapping.ClrProperty.Name);
             ReloadColumnNames(ColumnMappings);
             var tempColumnNames = new HashSet<string>(SqlColumnNames);
             tempColumnNames.Remove("rowid");
@@ -227,12 +227,12 @@ namespace RESTable.Sqlite
                 columnMappings[column.Name] = new ColumnMapping
                 (
                     tableMapping: this,
-                    clrProperty: new CLRProperty(column.Name, column.Type.ToClrTypeCode()),
+                    clrProperty: new ClrProperty(column.Name, column.Type.ToClrTypeCode()),
                     sqlColumn: column
                 );
             }
             ReloadColumnNames(columnMappings);
-            TransactMappings = columnMappings.Values.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
+            TransactMappings = columnMappings.Values.Where(mapping => !mapping.ClrProperty.IsIgnored).ToArray();
             ColumnMappings = columnMappings;
         }
 
@@ -243,7 +243,7 @@ namespace RESTable.Sqlite
 
         private ColumnMappings GetDeclaredColumnMappings()
         {
-            var columnMappings = CLRClass
+            var columnMappings = ClrClass
                 .GetDeclaredColumnProperties()
                 .Values
                 .Select(property => new ColumnMapping

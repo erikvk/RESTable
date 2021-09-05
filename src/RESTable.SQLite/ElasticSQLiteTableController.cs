@@ -35,7 +35,7 @@ namespace RESTable.Sqlite
         /// <summary>
         /// The column definitions for this table mapping, including dynamic members
         /// </summary>
-        public Dictionary<string, CLRDataType> Columns { get; private set; }
+        public Dictionary<string, ClrDataType> Columns { get; private set; }
 
         /// <summary>
         /// Add column names to this array to drop them from the table mapping, as well as the Sqlite table
@@ -64,15 +64,15 @@ namespace RESTable.Sqlite
         /// </summary>
         /// <returns></returns>
         public static IEnumerable<TController> Select() => TableMapping.All
-            .Where(mapping => typeof(TTable).IsAssignableFrom(mapping.CLRClass))
+            .Where(mapping => typeof(TTable).IsAssignableFrom(mapping.ClrClass))
             .Select(mapping => new TController
             {
                 TableMapping = mapping,
-                ClrTypeName = mapping.CLRClass.FullName!,
+                ClrTypeName = mapping.ClrClass.FullName!,
                 SqlTableName = mapping.TableName,
                 Columns = mapping.ColumnMappings.Values.ToDictionary(
-                    keySelector: columnMapping => columnMapping.CLRProperty.Name,
-                    elementSelector: columnMapping => columnMapping.CLRProperty.Type),
+                    keySelector: columnMapping => columnMapping.ClrProperty.Name,
+                    elementSelector: columnMapping => columnMapping.ClrProperty.Type),
                 DroppedColumns = Array.Empty<string>()
             });
 
@@ -87,9 +87,9 @@ namespace RESTable.Sqlite
             {
                 foreach (var columnName in columnNames)
                 {
-                    var mapping = TableMapping.ColumnMappings.Values.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
+                    var mapping = TableMapping.ColumnMappings.Values.FirstOrDefault(cm => cm.ClrProperty.Name.EqualsNoCase(columnName));
                     if (mapping is null) continue;
-                    if (mapping.IsRowId || mapping.CLRProperty.IsDeclared)
+                    if (mapping.IsRowId || mapping.ClrProperty.IsDeclared)
                         throw new SqliteException($"Cannot drop column '{mapping.SqlColumn.Name}' from table '{TableMapping.TableName}'. " +
                                                   "Column is not editable.");
                     yield return mapping;
@@ -113,12 +113,12 @@ namespace RESTable.Sqlite
                 .Except(TableMapping.SqlColumnNames)
                 .Select(name => (name, type: Columns[name]));
             await DropColumns(DroppedColumns).ConfigureAwait(false);
-            foreach (var (name, type) in columnsToAdd.Where(c => c.type != CLRDataType.Unsupported))
+            foreach (var (name, type) in columnsToAdd.Where(c => c.type != ClrDataType.Unsupported))
             {
                 TableMapping.ColumnMappings[name] = new ColumnMapping
                 (
                     tableMapping: TableMapping,
-                    clrProperty: new CLRProperty(name, type),
+                    clrProperty: new ClrProperty(name, type),
                     sqlColumn: new SqlColumn(name, type.ToSqlDataType())
                 );
                 updated = true;

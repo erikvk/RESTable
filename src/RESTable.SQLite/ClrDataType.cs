@@ -3,7 +3,7 @@
     /// <summary>
     /// Allowed CLR data types for mapping with Sqlite tables
     /// </summary>
-    public enum CLRDataType
+    public enum ClrDataType
     {
         /// <summary />
         Unsupported = 0,

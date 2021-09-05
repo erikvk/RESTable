@@ -109,7 +109,7 @@ namespace RESTable.Sqlite
             if (TryGetValue(memberName, out _, out var actualMemberName))
                 memberName = actualMemberName!;
             else if (TableMapping.ColumnMappings.TryGetValue(memberName, out var match))
-                memberName = match!.CLRProperty.Name;
+                memberName = match!.ClrProperty.Name;
             ValueDictionary[memberName!] = new KeyValuePair<string, object?>(memberName, value);
             return true;
         }
