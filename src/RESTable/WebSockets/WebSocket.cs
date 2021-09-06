@@ -35,7 +35,7 @@ namespace RESTable.WebSockets
         internal Terminal? Terminal => TerminalConnection?.Terminal;
         internal AppProfile GetAppProfile() => new(this);
         private CancellationTokenSource WebSocketClosed { get; }
-        internal void Cancel() => WebSocketClosed.Cancel();
+        protected void Cancel() => WebSocketClosed.Cancel();
 
         /// <summary>
         /// The ID of the WebSocket
@@ -87,12 +87,18 @@ namespace RESTable.WebSockets
         /// </summary>
         public RESTableContext Context { get; private set; }
 
+        /// <summary>
+        /// A task representing the lifetime of this WebSocket comnection
+        /// </summary>
         public Task LifetimeTask { get; private set; }
 
         /// <summary>
         /// Is the WebSocket currently connected?
         /// </summary>
         protected abstract bool IsConnected { get; }
+
+        /// <inheritdoc />
+        public CancellationToken WebSocketAborted => WebSocketClosed.Token;
 
         #endregion
 

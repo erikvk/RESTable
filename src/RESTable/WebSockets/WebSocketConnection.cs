@@ -28,6 +28,8 @@ namespace RESTable.WebSockets
         public RESTableContext Context { get; private set; }
         private TaskCompletionSource<byte> SuspendTaskSource { get; set; }
 
+        public CancellationToken WebSocketAborted => WebSocket.WebSocketAborted;
+
         private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
 
         internal WebSocketConnection(WebSocket webSocket, Terminal terminal)

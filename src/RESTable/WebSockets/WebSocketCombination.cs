@@ -31,9 +31,10 @@ namespace RESTable.WebSockets
         public ReadonlyCookies Cookies => throw new NotSupportedException();
         IContentTypeProvider IContentTypeHolder.InputContentTypeProvider => throw new NotSupportedException();
         IContentTypeProvider IContentTypeHolder.OutputContentTypeProvider => throw new NotSupportedException();
+        public CancellationToken WebSocketAborted => throw new NotSupportedException();
 
         #endregion
-
+        
         public WebSocketStatus Status => WebSocketStatus.Open;
 
         private IWebSocket[] WebSockets { get; }
@@ -63,7 +64,7 @@ namespace RESTable.WebSockets
         {
             return DoForAll(ws => ws.Send(data, asText, cancellationToken));
         }
-        
+
         public Task SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, CancellationToken cancellationToken = new())
         {
             return DoForAll(ws => ws.SendResult(result, timeElapsed, writeHeaders, cancellationToken));

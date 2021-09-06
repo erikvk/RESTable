@@ -77,5 +77,10 @@ namespace RESTable.WebSockets
         /// The current status of this WebSocket
         /// </summary>
         WebSocketStatus Status { get; }
+        
+        /// <summary>
+        /// A cancellation token that is cancelled when the the WebSocket has been aborted
+        /// </summary>
+        CancellationToken WebSocketAborted { get; }
     }
 }

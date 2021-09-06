@@ -29,6 +29,7 @@ namespace RESTable.WebSockets
         public ReadonlyCookies Cookies => WebSocket.Cookies;
         public IContentTypeProvider InputContentTypeProvider => WebSocket.InputContentTypeProvider;
         public IContentTypeProvider OutputContentTypeProvider => WebSocket.OutputContentTypeProvider;
+        public CancellationToken WebSocketAborted => WebSocket.WebSocketAborted;
 
         /// <inheritdoc />
         public async void SetStatus(WebSocketStatus status)

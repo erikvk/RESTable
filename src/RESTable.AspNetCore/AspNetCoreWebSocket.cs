@@ -105,48 +105,52 @@ namespace RESTable.AspNetCore
 
         protected override async Task InitMessageReceiveListener(CancellationToken cancellationToken)
         {
-            while (!WebSocket.CloseStatus.HasValue)
+            try
             {
                 try
                 {
-                    var (messageType, endOfMessage, byteCount) = await GetInitial(WebSocket, cancellationToken).ConfigureAwait(false);
-                    switch (messageType)
+                    while (!WebSocket.CloseStatus.HasValue)
                     {
-                        case Binary:
+                        var (messageType, endOfMessage, byteCount) = await GetInitial(WebSocket, cancellationToken).ConfigureAwait(false);
+                        switch (messageType)
                         {
-                            var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken);
-                            await using (nextMessage.ConfigureAwait(false))
+                            case Binary:
                             {
-                                await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
-                            }
-                            break;
-                        }
-                        case Text:
-                        {
-                            var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken);
-                            Task handleTask;
-                            await using (nextMessage.ConfigureAwait(false))
-                            {
-                                using (var reader = new StreamReader(nextMessage, Encoding.Default, true, 4096, leaveOpen: true))
+                                var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize,
+                                    cancellationToken);
+                                await using (nextMessage.ConfigureAwait(false))
                                 {
-                                    var stringMessage = await reader.ReadToEndAsync().ConfigureAwait(false);
-                                    handleTask = HandleTextInput(stringMessage, cancellationToken);
+                                    await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
                                 }
+                                break;
                             }
-                            await handleTask.ConfigureAwait(false);
-                            break;
+                            case Text:
+                            {
+                                var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize,
+                                    cancellationToken);
+                                Task handleTask;
+                                await using (nextMessage.ConfigureAwait(false))
+                                {
+                                    using (var reader = new StreamReader(nextMessage, Encoding.Default, true, 4096, leaveOpen: true))
+                                    {
+                                        var stringMessage = await reader.ReadToEndAsync().ConfigureAwait(false);
+                                        handleTask = HandleTextInput(stringMessage, cancellationToken);
+                                    }
+                                }
+                                await handleTask.ConfigureAwait(false);
+                                break;
+                            }
                         }
                     }
                 }
-                catch (TaskCanceledException)
+                finally
                 {
-                    return;
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
+                    // WebSocket is closed
+                    Cancel();
                 }
             }
+            catch (TaskCanceledException) { }
+            catch (OperationCanceledException) { }
         }
 
         protected override async Task Close(CancellationToken cancellationToken)
