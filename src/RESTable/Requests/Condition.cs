@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Results;
@@ -260,6 +261,19 @@ namespace RESTable.Requests
                 list.Add(condition);
             }
             return list;
+        }
+
+        public static Condition<T> Create(string key, Operators op, object value)
+        {
+            var termFactory = ApplicationServicesAccessor.ApplicationServiceProvider.GetRequiredService<TermFactory>();
+            var resourceCollection = ApplicationServicesAccessor.ApplicationServiceProvider.GetRequiredService<ResourceCollection>();
+            var resource = resourceCollection.SafeGetResource<T>() ?? throw new UnknownResource(typeof(T).GetRESTableTypeName());
+            return new Condition<T>
+            (
+                term: termFactory.MakeConditionTerm(resource, key),
+                op: op,
+                value: value
+            );
         }
 
         public void Deconstruct(out string key, out object? value)
