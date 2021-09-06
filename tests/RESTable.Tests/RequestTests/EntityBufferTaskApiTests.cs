@@ -222,6 +222,64 @@ namespace RESTable.Tests.RequestTests
             Assert.Equal(200, first.ActualNumber);
         }
 
+        [Fact]
+        public async Task ThreeWaysToPutAndTheyreAllEquivalent()
+        {
+            var context = Fixture.Context;
+
+            // 1
+
+            var all = context.Entities<GetApiExplicitEmptyPatchTestResource5>();
+            var allBuffer = await all;
+            Assert.Equal(0, allBuffer.Length);
+
+            {
+                var first = all[..1];
+                var firstRawBuffer = await first.Raw;
+                var item = firstRawBuffer.Span[0] ??= new GetApiExplicitEmptyPatchTestResource5(200);
+                item.Number = 300;
+                await first.Put(item);
+
+                var firstBuffer2 = await first;
+                Assert.Equal(1, firstBuffer2.Length);
+                Assert.Equal(300, firstBuffer2.Span[0].ActualNumber);
+            }
+
+            await context.Delete<GetApiExplicitEmptyPatchTestResource5>(..);
+            allBuffer = await all;
+            Assert.Equal(0, allBuffer.Length);
+
+            // 2
+
+            {
+                var item = await all.TryAt(0) ?? new GetApiExplicitEmptyPatchTestResource5(200);
+                item.Number = 300;
+                await all.Slice(0).Put(item);
+
+                var firstBuffer2 = await all[..1];
+                Assert.Equal(1, firstBuffer2.Length);
+                Assert.Equal(300, firstBuffer2.Span[0].ActualNumber);
+            }
+
+            await context.Delete<GetApiExplicitEmptyPatchTestResource5>(..);
+            allBuffer = await all;
+            Assert.Equal(0, allBuffer.Length);
+
+            // 3
+
+            {
+                var first = all.Single(0);
+                var item = await first.TryFirst ?? new GetApiExplicitEmptyPatchTestResource5(200);
+                item.Number = 300;
+                await first.Put(item);
+
+                var firstBuffer2 = await first;
+                Assert.Equal(1, firstBuffer2.Length);
+                Assert.Equal(300, firstBuffer2.Span[0].ActualNumber);
+            }
+        }
+
+
         public EntityBufferTaskApiTests(RESTableFixture fixture) : base(fixture)
         {
             Fixture.Configure();
