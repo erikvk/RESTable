@@ -123,6 +123,12 @@ namespace RESTable.Requests
         public ValueTask<T> Last => Entities.LastAsync();
 
         /// <summary>
+        /// Gets a raw memory buffer from this buffer task, possibly containing nulls
+        /// if the selection limit is greater than the returned entity count.
+        /// </summary>
+        public ValueTask<Memory<T?>> Raw => AsRawMemoryAsync(); 
+
+        /// <summary>
         /// Gets the first element selected by this buffer task
         /// </summary>
         public ValueTask<T?> TryFirst => Entities.FirstOrDefaultAsync();
@@ -145,7 +151,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Returns the entity at the given index
         /// </summary>
-        public ValueTask<T> At(Index index) => Slice(index).At(0);
+        public ValueTask<T> At(Index index) => Single(index).At(0);
 
         /// <summary>
         /// Slices this buffer to a new one with a given range
@@ -175,7 +181,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Returns the entity at the given index, or default if there is no such entity
         /// </summary>
-        public ValueTask<T?> TryAt(Index index) => Slice(index).TryAt(0);
+        public ValueTask<T?> TryAt(Index index) => Single(index).TryAt(0);
 
         internal EntityBufferTask(IRequest<T> request)
         {
@@ -195,6 +201,31 @@ namespace RESTable.Requests
             Conditions = conditions;
         }
 
+        /// <summary>
+        /// Creates a raw memory buffer from this buffer task, possibly containing nulls if the
+        /// selection limit is greater than the returned entity count.
+        /// </summary>
+        /// <returns></returns>
+        public async ValueTask<Memory<T?>> AsRawMemoryAsync()
+        {
+            switch (Limit)
+            {
+                case < 0: return await Entities.ToArrayAsync().ConfigureAwait(false);
+                case 0: return Array.Empty<T>();
+                case > 0:
+                {
+                    var array = new T[Limit];
+                    var i = 0;
+                    await foreach (var item in Entities.ConfigureAwait(false))
+                    {
+                        array[i] = item;
+                        i += 1;
+                    }
+                    return array;
+                }
+            }
+        }
+        
         /// <summary>
         /// Creates a ReadOnlyMemory buffer from this buffer task
         /// </summary>
@@ -295,7 +326,7 @@ namespace RESTable.Requests
         /// Slices the buffer task to the given index, then calls the resource Update() with the provided entity as input for the resources that
         /// require Update() calls to mutate resource state, and returns true if and only if the entity was updated.
         /// </summary>
-        public ValueTask<bool> Patch(Index index, T updatedItem) => Slice(index).Patch(updatedItem);
+        public ValueTask<bool> Patch(Index index, T updatedItem) => Single(index).Patch(updatedItem);
 
         /// <summary>
         /// Calls the resource Update() with the provided entities as input for the resources that
@@ -341,7 +372,7 @@ namespace RESTable.Requests
         /// resource at the place specified by that buffer task, or otherwise updates it to match the item provided.
         /// Returns true if and only if the resource is updated.
         /// </summary>
-        public ValueTask<bool> Put(Index index, T item) => Slice(index).Put(item);
+        public ValueTask<bool> Put(Index index, T item) => Single(index).Put(item);
 
         #endregion
 
@@ -383,7 +414,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Deletes the entity at the given index
         /// </summary>
-        public ValueTask<long> Delete(Index index) => Slice(index).DeleteInternal();
+        public ValueTask<long> Delete(Index index) => Single(index).DeleteInternal();
 
         /// <summary>
         /// Slices the buffer task to the range and then deletes the entities selected by that buffer task
@@ -398,7 +429,7 @@ namespace RESTable.Requests
 
         public EntityBufferTask<T> Slice(int offset, int length) => Slice(offset..(offset + length));
 
-        public EntityBufferTask<T> Slice(Index index)
+        public EntityBufferTask<T> Single(Index index)
         {
             var range = index..new Index(index.IsFromEnd ? index.Value - 1 : index.Value + 1, index.IsFromEnd);
             var (offset, limit) = range.ToSlicedOffsetAndLimit(Offset, Limit);
