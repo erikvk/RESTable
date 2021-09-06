@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.Results;
 
@@ -23,7 +23,7 @@ namespace RESTable
 
         private bool IsIngoing { get; }
 
-        public object? UninitializedBodyObject { get; set; }
+        private IAsyncEnumerable<object>? UninitializedAsyncBodyObject { get; set; }
 
         public ContentType ContentType => IsIngoing
             ? ProtocolHolder.InputContentTypeProvider.ContentType
@@ -116,82 +116,54 @@ namespace RESTable
 
         private SwappingStream ResolveStream(object? bodyObject)
         {
+            var jsonProvider = ProtocolHolder.Context.GetRequiredService<IJsonProvider>();
+
             switch (bodyObject)
             {
                 case null: return new SwappingStream();
                 case string str: return new SwappingStream(str.ToBytes());
+                case Memory<byte> bytes: return new SwappingStream(bytes);
+                case ReadOnlyMemory<byte> bytes: return new SwappingStream(bytes.ToArray());
+                case ArraySegment<byte> bytes: return new SwappingStream(bytes);
+                case ReadOnlySequence<byte> bytes: return new SwappingStream(bytes.ToArray());
                 case byte[] bytes: return new SwappingStream(bytes);
 
-                case var _ when TryGetStream(bodyObject, out var stream): return stream!;
-                default:
-                    UninitializedBodyObject = bodyObject;
-                    return new SwappingStream();
-            }
-        }
-
-        private bool TryGetStream(object? bodyObject, out SwappingStream? stream)
-        {
-            switch (bodyObject)
-            {
                 case Body body:
                 {
                     ProtocolHolder.Headers.ContentType = body.ContentType;
                     body.TryRewind();
-                    stream = body.Stream;
-                    return true;
+                    return body.Stream;
                 }
-                case SwappingStream swappingStream:
-                    stream = swappingStream.Rewind();
-                    return true;
-                case Stream otherStream:
-                    stream = new SwappingStream(otherStream);
-                    return true;
-                default:
-                    stream = null;
-                    return false;
+                case SwappingStream swappingStream: return swappingStream.Rewind();
+                case Stream otherStream: return new SwappingStream(otherStream);
+
+                // We don't write this to a stream in a synchronous context. Instead we wait until Initialize() is called
+                case IAsyncEnumerable<object> asyncEnumerable:
+                {
+                    UninitializedAsyncBodyObject = asyncEnumerable;
+                    return new SwappingStream();
+                }
+                case { } other:
+                {
+                    var json = jsonProvider.SerializeToUtf8Bytes(other, other.GetType(), prettyPrint: false);
+                    return new SwappingStream(json);
+                }
             }
         }
 
         public async Task Initialize(CancellationToken cancellationToken)
         {
-            if (UninitializedBodyObject is null)
+            if (UninitializedAsyncBodyObject is null)
                 return;
-
-            if (TryGetStream(UninitializedBodyObject, out var stream) && stream is not null)
-            {
-                var previous = Stream;
-                Stream = stream;
-                await previous.DisposeAsync().ConfigureAwait(false);
-                return;
-            }
-
-            var contentTypeProvider = ProtocolHolder.GetInputContentTypeProvider();
-
-            switch (UninitializedBodyObject)
-            {
-                case IDictionary<string, object?> dict:
-                    await contentTypeProvider.SerializeAsync(Stream, dict, cancellationToken).ConfigureAwait(false);
-                    break;
-                case IAsyncEnumerable<object> aie:
-                    await contentTypeProvider.SerializeAsyncEnumerable(Stream, aie, cancellationToken).ConfigureAwait(false);
-                    break;
-                case IEnumerable<object> ie:
-                    await contentTypeProvider.SerializeAsyncEnumerable(Stream, ie.ToAsyncEnumerable(), cancellationToken).ConfigureAwait(false);
-                    break;
-                case IEnumerable ie:
-                    await contentTypeProvider.SerializeAsyncEnumerable(Stream, ie.Cast<object>().ToAsyncEnumerable(), cancellationToken).ConfigureAwait(false);
-                    break;
-                case { } other:
-                    await contentTypeProvider.SerializeAsync(Stream, other, cancellationToken).ConfigureAwait(false);
-                    break;
-            }
+            var jsonProvider = ProtocolHolder.Context.GetRequiredService<IJsonProvider>();
+            await jsonProvider.SerializeAsyncEnumerable(Stream, UninitializedAsyncBodyObject, cancellationToken).ConfigureAwait(false);
             Stream.Rewind();
-            UninitializedBodyObject = null;
+            UninitializedAsyncBodyObject = null;
         }
 
         internal static Body CreateOutputBody(IProtocolHolder protocolHolder, Stream? customOutputStream)
         {
-            return new(protocolHolder, customOutputStream);
+            return new Body(protocolHolder, customOutputStream);
         }
 
         private const int MaxStringLength = 10_000;
