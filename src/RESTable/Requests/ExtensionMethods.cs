@@ -68,9 +68,7 @@ namespace RESTable.Requests
         /// </summary>
         public static IRequest WithBody(this IRequest request, object? bodyObject)
         {
-            if (request.Body.IsClosed)
-                request.Body = new Body(request, bodyObject);
-            else request.Body.UninitializedBodyObject = bodyObject;
+            request.Body = new Body(request, bodyObject);
             return request;
         }
 
@@ -79,9 +77,7 @@ namespace RESTable.Requests
         /// </summary>
         public static IRequest<T> WithBody<T>(this IRequest<T> request, object? bodyObject) where T : class
         {
-            if (request.Body.IsClosed)
-                request.Body = new Body(request, bodyObject);
-            else request.Body.UninitializedBodyObject = bodyObject;
+            request.Body = new Body(request, bodyObject);
             return request;
         }
 
