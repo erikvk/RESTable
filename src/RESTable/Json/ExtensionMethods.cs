@@ -70,8 +70,9 @@ namespace RESTable.Json
                     TypeCode.Double when element.TryGetDouble(out var v) && v is T t => t,
                     TypeCode.Decimal when element.TryGetDecimal(out var v) && v is T t => t,
 
-                    // If object, either get a long or a decimal for it (whatever works first)
-                    TypeCode.Object when element.TryGetUInt64(out var v) && v is T t => t,
+                    // If object, either get an int, long or a decimal for it (whatever works first)
+                    TypeCode.Object when element.TryGetInt32(out var v) && v is T t => t,
+                    TypeCode.Object when element.TryGetInt64(out var v) && v is T t => t,
                     TypeCode.Object when element.TryGetDecimal(out var v) && v is T t => t,
 
                     // Allow getting numbers as strings
