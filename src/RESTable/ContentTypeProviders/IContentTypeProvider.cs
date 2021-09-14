@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,7 +48,17 @@ namespace RESTable.ContentTypeProviders
         string ContentDispositionFileExtension { get; }
 
         /// <summary>
-        /// Serializes the entity to the given Stream and returns the number of entities serialized.
+        /// Serializes the entity to the given Stream
+        /// </summary>
+        byte[] SerializeToBytes<T>(T item);
+
+        /// <summary>
+        /// Serializes the entity to the given Stream
+        /// </summary>
+        byte[] SerializeToBytes(object item, Type itemType);
+
+        /// <summary>
+        /// Serializes the entity to the given Stream
         /// </summary>
         Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken);
 

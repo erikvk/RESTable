@@ -11,28 +11,23 @@ namespace RESTable.Meta
         private ParameterlessConstructor<T>? ParameterLessConstructor { get; }
         private ParameterizedConstructor<T>? CustomParameterizedConstructor { get; }
         private ParameterInfo[] CustomParameterizedConstructorParameters { get; }
-
         private IReadOnlyDictionary<string, DeclaredProperty> DeclaredProperties { get; }
 
         public Type Type => typeof(T);
-
         public DeclaredProperty[] PropertiesToSerialize { get; }
+        public int DeclaredPropertyCount => DeclaredProperties.Count;
+        public bool UsesParameterizedConstructor { get; }
+        public int ParameterizedConstructorParameterCount => CustomParameterizedConstructorParameters.Length;
+        public bool TypeIsDictionary { get; }
+        public bool TypeIsWritableDictionary { get; }
+        public bool TypeIsNonDictionaryEnumerable { get; }
+        public bool TypeIsAsyncEnumerable { get; }
 
         public DeclaredProperty? GetProperty(string name)
         {
             DeclaredProperties.TryGetValue(name, out var property);
             return property;
         }
-
-        public int DeclaredPropertyCount => DeclaredProperties.Count;
-
-        public bool UsesParameterizedConstructor { get; }
-
-        public int ParameterizedConstructorParameterCount => CustomParameterizedConstructorParameters.Length;
-
-        public bool TypeIsDictionary { get; }
-
-        public bool TypeIsWritableDictionary { get; }
 
         object ISerializationMetadata.InvokeParameterlessConstructor() => InvokeParameterlessConstructor()!;
 
@@ -89,6 +84,8 @@ namespace RESTable.Meta
                 .ToArray();
             TypeIsDictionary = typeof(T).IsDictionary(out var isWritable);
             TypeIsWritableDictionary = isWritable;
+            TypeIsAsyncEnumerable = typeof(T).ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out _);
+            TypeIsNonDictionaryEnumerable = !TypeIsDictionary && !TypeIsAsyncEnumerable && typeof(T).ImplementsEnumerableInterface(out _);
             ParameterLessConstructor = typeof(T).MakeParameterlessConstructor<T>();
             if (typeof(T).GetCustomConstructor() is ConstructorInfo constructor && constructor.GetParameters() is {Length: > 0} parameters)
             {

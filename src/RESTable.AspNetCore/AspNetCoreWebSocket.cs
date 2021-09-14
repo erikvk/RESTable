@@ -143,6 +143,10 @@ namespace RESTable.AspNetCore
                         }
                     }
                 }
+                catch (WebSocketException)
+                {
+                    // Client closed without completing close handshake
+                }
                 finally
                 {
                     // WebSocket is closed

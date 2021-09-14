@@ -64,6 +64,9 @@ namespace RESTable.Json
             return options;
         }
 
+        byte[] IContentTypeProvider.SerializeToBytes<T>(T item) => SerializeToUtf8Bytes(item);
+        byte[] IContentTypeProvider.SerializeToBytes(object item, Type itemType) => SerializeToUtf8Bytes(item, itemType);
+
         public string Serialize(object value, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             var options = GetOptions(prettyPrint, ignoreNulls);

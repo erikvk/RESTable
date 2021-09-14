@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using RESTable;
@@ -74,6 +75,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             serviceCollection.AddOptions<RESTableConfiguration>().BindConfiguration(RESTableConfiguration.ConfigSection, o => o.BindNonPublicProperties = true);
             serviceCollection.AddSingleton<RESTableInitializer>();
+
+            var terminalSubject = new Subject<Terminal>();
+            serviceCollection.AddSingleton(new TerminalSubjectAccessor(terminalSubject));
+            serviceCollection.AddSingleton(typeof(ITerminalObservable<>), typeof(TerminalObservable<>));
+            serviceCollection.AddSingleton(typeof(ITerminalObservable), typeof(TerminalObservable));
 
             serviceCollection.AddSingleton<IApplicationServiceProvider>(sp => new ApplicationServiceProvider(sp));
             serviceCollection.TryAddSingleton<WebSocketManager>();

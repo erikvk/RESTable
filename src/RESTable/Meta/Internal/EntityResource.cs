@@ -110,9 +110,7 @@ namespace RESTable.Meta.Internal
             DeclaredPropertiesFlagged = typeof(T).IsDictionary(out _) || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T));
             GETAvailableToAll = attribute.GETAvailableToAll;
             ResourceKind = ResourceKind.EntityResource;
-            if (DeclaredPropertiesFlagged)
-                OutputBindingRule = TermBindingRule.DeclaredWithDynamicFallback;
-            else OutputBindingRule = TermBindingRule.OnlyDeclared;
+            OutputBindingRule = TermBindingRule.DeclaredWithDynamicFallback;
             RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));
             IsDDictionary = false;
             IsDynamic = IsDDictionary || typeof(IDictionary).IsAssignableFrom(typeof(T));

@@ -30,7 +30,7 @@ namespace RESTable.Excel
 
         public string Name => "Microsoft Excel";
         public ContentType ContentType => ExcelMimeType;
-        public string[] MatchStrings => new[] { ExcelMimeType, RESTableSpecific, Brief };
+        public string[] MatchStrings => new[] {ExcelMimeType, RESTableSpecific, Brief};
         public bool CanRead => true;
         public bool CanWrite => true;
         public string ContentDispositionFileExtension => ".xlsx";
@@ -42,6 +42,9 @@ namespace RESTable.Excel
             TypeCache = typeCache;
             ExcelOptions = excelOptions.Value;
         }
+
+        public byte[] SerializeToBytes<T>(T item) => throw new NotSupportedException();
+        public byte[] SerializeToBytes(object item, Type itemType) => throw new NotSupportedException();
 
         public async Task SerializeAsync<T>(Stream stream, T item, CancellationToken cancellationToken)
         {
@@ -111,9 +114,8 @@ namespace RESTable.Excel
                 worksheet.Cells.AutoFitColumns(0);
                 package.Save();
                 localStream.Seek(0, SeekOrigin.Begin);
-                
-                
-                
+
+
                 await localStream.CopyToAsync(stream, 81920, cancellationToken).ConfigureAwait(false);
                 return (long) currentRow - 1;
             }
@@ -177,7 +179,7 @@ namespace RESTable.Excel
             {
                 // Read property names from the first row
                 var propertyName = worksheet.Cells[rowNumber, columnIndex].GetValue<string>();
-                if (metadata.GetProperty(propertyName) is { IsWritable: true } writeable)
+                if (metadata.GetProperty(propertyName) is {IsWritable: true} writeable)
                     referencedPropertiesList.Add((writeable, columnIndex));
                 else if (metadata.TypeIsDictionary)
                     referencedPropertiesList.Add((DynamicProperty.Parse(propertyName), columnIndex));
@@ -264,10 +266,10 @@ namespace RESTable.Excel
                 case char @char:
                     target.Value = @char.ToString();
                     break;
-                case JsonElement { ValueKind: JsonValueKind.Array } jarr:
+                case JsonElement {ValueKind: JsonValueKind.Array} jarr:
                     target.Value = string.Join(", ", jarr.EnumerateArray().Select(o => JsonProvider.ToObject<object>(o)?.ToString()));
                     break;
-                case JsonElement { ValueKind: JsonValueKind.Object }:
+                case JsonElement {ValueKind: JsonValueKind.Object}:
                     target.Value = typeof(JsonElement).FullName;
                     break;
                 case JsonElement element:

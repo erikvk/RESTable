@@ -283,16 +283,15 @@ namespace RESTable
                             else timeoutCancellationTokenSource = new CancellationTokenSource();
                             var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
                             var _cancellationToken = cancellationTokenSource.Token;
+                            var acceptProvider = WebSocket.GetOutputContentTypeProvider();
 
                             await using var result = await GetResult(GET, cancellationToken: _cancellationToken).ConfigureAwait(false);
+                            await WebSocket.SendResult(result, null, WriteHeaders, cancellationToken).ConfigureAwait(false);
                             if (result is not IEntities<object> entities)
-                            {
-                                await SendResult(result, cancellationToken: _cancellationToken).ConfigureAwait(false);
                                 break;
-                            }
                             await foreach (var entity in entities.WithCancellation(_cancellationToken))
                             {
-                                var entityData = JsonProvider.SerializeToUtf8Bytes(entity, entities.EntityType);
+                                var entityData = acceptProvider.SerializeToBytes(entity, entities.EntityType);
                                 await WebSocket.Send(entityData, true, _cancellationToken).ConfigureAwait(false);
                             }
                             break;

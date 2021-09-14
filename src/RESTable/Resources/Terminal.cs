@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.WebSockets;
 
@@ -61,7 +62,12 @@ namespace RESTable.Resources
 
         internal void SetTerminalResource(ITerminalResource terminalResource) => TerminalResource = terminalResource;
 
-        internal Task OpenTerminal(CancellationToken cancellationToken) => Open(cancellationToken);
+        internal async Task OpenTerminal(CancellationToken cancellationToken)
+        {
+            var terminalSubject = Services.GetRequiredService<TerminalSubjectAccessor>().Subject;
+            terminalSubject.OnNext(this);
+            await Open(cancellationToken).ConfigureAwait(false);
+        }
 
         /// <summary>
         /// This method is called when the WebSocket is opened, and when data can be sent   

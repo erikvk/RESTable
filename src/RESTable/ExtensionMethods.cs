@@ -141,7 +141,6 @@ namespace RESTable
             return false;
         }
 
-
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
             .ToList();

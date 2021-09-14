@@ -100,7 +100,7 @@ namespace RESTable
         /// Creates a new ContentType from a header value or MIME type, for example "application/json" or "application/json; charset=utf-8"
         /// </summary>
         /// <param name="headerValue"></param>
-        private ContentType(string headerValue)
+        public ContentType(string headerValue)
         {
             if (string.IsNullOrWhiteSpace(headerValue))
                 headerValue = "*/*";

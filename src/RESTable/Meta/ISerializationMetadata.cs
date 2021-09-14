@@ -26,6 +26,8 @@ namespace RESTable.Meta
         int DeclaredPropertyCount { get; }
         bool TypeIsDictionary { get; }
         bool TypeIsWritableDictionary { get; }
+        bool TypeIsNonDictionaryEnumerable { get; }
+        bool TypeIsAsyncEnumerable { get; }
     }
 
     public interface ISerializationMetadata<out T> : ISerializationMetadata

@@ -9,7 +9,7 @@ namespace RESTable.AspNetCore
     {
         public override bool CanRead => false;
         public override bool CanWrite => true;
-        
+
         private SemaphoreSlim WriteSemaphore { get; }
 
         private bool SemaphoreOpen { get; set; }
@@ -51,6 +51,12 @@ namespace RESTable.AspNetCore
         public override async ValueTask DisposeAsync()
         {
             if (!SemaphoreOpen || IsDisposed) return;
+            if (WebSocketCancelledToken.IsCancellationRequested)
+            {
+                // Not much we can do in this case. The WebSocket is closed, so we can't send
+                // the final frame.
+                return;
+            }
             try
             {
                 await WebSocket.SendAsync

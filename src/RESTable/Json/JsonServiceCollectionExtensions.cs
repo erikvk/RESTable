@@ -44,6 +44,7 @@ namespace RESTable.Json
             });
 
             serviceCollection.AddSingleton<IContentTypeProvider>(pr => pr.GetRequiredService<IJsonProvider>());
+            serviceCollection.AddSingleton<IContentTypeProvider, JsonLinesProvider>();
             return serviceCollection;
         }
 

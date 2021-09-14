@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
 using RESTable.Linq;
-using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -287,19 +286,19 @@ namespace RESTable.Tutorial
     [RESTable]
     public class MyTerminal : Terminal
     {
-        public Version Version { get; }
+        private Task? RunTask { get; set; }
 
-        public MyTerminal
-        (
-            string version,
-            ITraceable trace,
-            IHeaders headers,
-            ResourceCollection r,
-            ITerminalCollection<MyTerminal> tc,
-            ICombinedTerminal<MyTerminal> comb
-        )
+        protected override Task Open(CancellationToken cancellationToken)
         {
-            Version = Version.Parse(version);
+            var observable = Services.GetRequiredService<ITerminalObservable<Shell>>();
+            RunTask = Task.Run(async () =>
+            {
+                await foreach (var terminal in observable.ToAsyncEnumerable().WithCancellation(cancellationToken))
+                {
+                    await WebSocket.SendText(terminal.TerminalResource.Name, cancellationToken);
+                }
+            }, cancellationToken);
+            return WebSocket.SendText("Now open!", cancellationToken);
         }
 
         public override Task HandleTextInput(string input, CancellationToken cancellationToken)
