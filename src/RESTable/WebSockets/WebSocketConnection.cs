@@ -88,7 +88,7 @@ namespace RESTable.WebSockets
         }
 
         /// <inheritdoc />
-        public Task Send(Memory<byte> data, bool asText, CancellationToken cancellationToken = new())
+        public Task Send(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken = new())
         {
             return WebSocket.Send(data, asText, cancellationToken);
         }

@@ -57,7 +57,7 @@ namespace RESTable.WebSockets
             await WebSocket.SendText(d, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task Send(Memory<byte> data, bool asText, CancellationToken cancellationToken = new())
+        public async Task Send(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken = new())
         {
             await WaitTask.ConfigureAwait(false);
             await WebSocket.Send(data, asText, cancellationToken).ConfigureAwait(false);

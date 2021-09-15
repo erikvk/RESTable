@@ -51,7 +51,7 @@ namespace RESTable.AspNetCore
             }
         }
 
-        protected override async Task SendBuffered(Memory<byte> data, bool asText, CancellationToken cancellationToken)
+        protected override async Task SendBuffered(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken)
         {
             await SendMessageSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try

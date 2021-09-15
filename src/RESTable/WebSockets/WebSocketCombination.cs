@@ -60,7 +60,7 @@ namespace RESTable.WebSockets
             return DoForAll(ws => ws.SendText(data, cancellationToken));
         }
 
-        public Task Send(Memory<byte> data, bool asText, CancellationToken cancellationToken = new())
+        public Task Send(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken = new())
         {
             return DoForAll(ws => ws.Send(data, asText, cancellationToken));
         }

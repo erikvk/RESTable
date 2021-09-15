@@ -26,7 +26,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Sends the buffered data over the websocket as either text or binary
         /// </summary>
-        Task Send(Memory<byte> data, bool asText, CancellationToken cancellationToken = new());
+        Task Send(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken = new());
 
         /// <summary>
         /// Returns a stream that, when written to, writes data over the websocket over a single message until the stream is disposed
@@ -77,7 +77,7 @@ namespace RESTable.WebSockets
         /// The current status of this WebSocket
         /// </summary>
         WebSocketStatus Status { get; }
-        
+
         /// <summary>
         /// A cancellation token that is cancelled when the the WebSocket has been aborted
         /// </summary>

@@ -289,7 +289,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Send the buffered binary data over the websocket as either text or binary
         /// </summary>
-        protected abstract Task SendBuffered(Memory<byte> data, bool asText, CancellationToken cancellationToken);
+        protected abstract Task SendBuffered(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken);
 
         /// <summary>
         /// Returns a stream that, when written to, writes data over the websocket as a single
@@ -402,7 +402,7 @@ namespace RESTable.WebSockets
 
         #endregion
 
-        public Task Send(Memory<byte> data, bool asText, CancellationToken cancellationToken = new())
+        public Task Send(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken = new())
         {
             return SendBufferedInternal(data, asText, cancellationToken);
         }
@@ -439,7 +439,7 @@ namespace RESTable.WebSockets
             }
         }
 
-        private async Task SendBufferedInternal(Memory<byte> data, bool asText, CancellationToken cancellationToken)
+        private async Task SendBufferedInternal(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken)
         {
             switch (Status)
             {
