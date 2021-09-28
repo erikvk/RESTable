@@ -12,7 +12,7 @@ namespace RESTable.Sqlite
     {
         public static IAsyncEnumerable<T> SelectAsync(IRequest<T> request)
         {
-                var (sql, post) = request.Conditions.Split(IsSqliteQueryable);
+            var (sql, post) = request.Conditions.Split(IsSqliteQueryable);
             request.Conditions = post;
             return Sqlite<T>.Select
             (

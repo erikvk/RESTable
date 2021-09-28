@@ -166,7 +166,8 @@ namespace RESTable.Meta.Internal
             {
                 HasParameterizedConstructor = true;
                 var parameter = ConstructorParameterInfos[i];
-                ConstructorParameterIndexes[parameter.Name!] = i;
+                var parameterName = parameter.RESTableParameterName(typeof(T).IsDictionary(out _, out _));
+                ConstructorParameterIndexes[parameterName] = i;
             }
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
             IsDynamicTerminal = typeof(IDictionary<string, object?>).IsAssignableFrom(typeof(T));

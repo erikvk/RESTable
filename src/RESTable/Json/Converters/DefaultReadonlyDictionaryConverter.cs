@@ -8,9 +8,8 @@ using RESTable.Meta;
 namespace RESTable.Json.Converters
 {
     /// <summary>
-    /// Converter for declared types that are dictionaries, defined as implementing IEnumerable{T} where
+    /// Converter for declared types that are dictionaries, defined as implementing ICollection{T} where
     /// T is some KeyValuePair{TKey,TValue} type.
-    /// member.
     /// </summary>
     [BuiltInConverter]
     public class DefaultReadonlyDictionaryConverter<T, TKey, TValue> : JsonConverter<T> where T : ICollection<KeyValuePair<TKey, TValue?>> where TKey : notnull

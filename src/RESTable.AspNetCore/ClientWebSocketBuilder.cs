@@ -116,7 +116,7 @@ namespace RESTable.AspNetCore
             {
                 clientWebSocket.Options.SetRequestHeader("Authorization", authHeader);
             }
-            
+
             var aspNetCoreWebSocket = new AspNetCoreClientWebSocket
             (
                 webSocket: clientWebSocket,

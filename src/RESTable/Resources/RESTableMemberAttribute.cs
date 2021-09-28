@@ -29,7 +29,7 @@ namespace RESTable.Resources
         /// Should this property be hidden in output by default? It can still be added and queried against.
         /// To make RESTable completely ignore a property, use the Ignored property.
         /// </summary>
-        public bool Hidden { get; }
+        public bool? Hidden { get; }
 
         /// <summary>
         /// Should this property be hidden in output if the value is null? Only applies to JSON output.

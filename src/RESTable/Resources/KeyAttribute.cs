@@ -2,7 +2,5 @@
 
 namespace RESTable.Resources
 {
-    public class KeyAttribute : Attribute
-    {
-    }
+    public class KeyAttribute : Attribute { }
 }

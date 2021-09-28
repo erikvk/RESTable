@@ -32,7 +32,7 @@ namespace RESTable.DefaultProtocol.Serialized
 
         public double TimeElapsedMs => InvalidEntity.TimeElapsed.GetRESTableElapsedMs();
 
-        public SerializedInvalidEntity(InvalidInputEntity invalidEntity, string? uri )
+        public SerializedInvalidEntity(InvalidInputEntity invalidEntity, string? uri)
         {
             InvalidEntity = invalidEntity;
             Data = invalidEntity.InvalidEntity.InvalidMembers.ToDictionary(m => m.MemberName, m => m.Message);

@@ -34,7 +34,7 @@ namespace RESTable.WebSockets
         public CancellationToken WebSocketAborted => throw new NotSupportedException();
 
         #endregion
-        
+
         public WebSocketStatus Status => WebSocketStatus.Open;
 
         private IWebSocket[] WebSockets { get; }

@@ -16,7 +16,8 @@ namespace RESTable.Sqlite
 
         static EntityEnumerator()
         {
-            ParameterlessConstructor = typeof(T).MakeParameterlessConstructor<T>() ?? throw new InvalidOperationException($"Could not create constructor for type '{typeof(T).GetRESTableTypeName()}'");
+            ParameterlessConstructor = typeof(T).MakeParameterlessConstructor<T>() ??
+                                       throw new InvalidOperationException($"Could not create constructor for type '{typeof(T).GetRESTableTypeName()}'");
         }
 
         private SQLiteConnection? Connection { get; set; }

@@ -36,7 +36,7 @@ namespace RESTable
         private static readonly IEqualityComparer<JsonElement> EqualityComparer = new JsonElementComparer();
 
         public SetOperations() { }
-       
+
         private SetOperations(IDictionary<string, object?> other) : base(other) { }
 
         /// <inheritdoc />
@@ -45,7 +45,7 @@ namespace RESTable
             var inputElement = await request.Expecting
             (
                 selector: async r => await r.Body
-                    .Deserialize<JsonElement>(cancellationToken)
+                    .DeserializeAsyncEnumerable<JsonElement>(cancellationToken)
                     .FirstAsync(cancellationToken)
                     .ConfigureAwait(false),
                 errorMessage: "Expected expression tree as request body"

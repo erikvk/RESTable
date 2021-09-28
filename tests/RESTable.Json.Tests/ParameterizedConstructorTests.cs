@@ -27,6 +27,24 @@ namespace RESTable.Json.Tests
             Assert.Equal(holder.Second, deserializedHolder.Second);
         }
 
+
+        [Fact]
+        public void InvokeDictionaryParameterizedConstructor()
+        {
+            var item = new ParameterizedConstructorTestClass("Str", 100, DateTime.Now, new Holder<int> {Item = 200});
+            var json = JsonProvider.SerializeToUtf8Bytes(item);
+            var reader = new Utf8JsonReader(json);
+            var jsonReader = JsonProvider.GetJsonReader();
+
+            var parameterizedMetadata = Fixture.GetRequiredService<ISerializationMetadata<ParameterizedConstructorTestDictionaryClass>>();
+
+            var deserializedHolder = jsonReader.ReadToObject(ref reader, parameterizedMetadata);
+            Assert.Equal(item.Str, deserializedHolder.Str);
+            Assert.Equal(item.Int, deserializedHolder.Int);
+            Assert.Equal(item.DateTime, deserializedHolder.DateTime);
+            Assert.Equal(item.IntHolder.Item, deserializedHolder.IntHolder.Item);
+        }
+
         [Fact]
         public void InvokeComplexParameterizedConstructor()
         {

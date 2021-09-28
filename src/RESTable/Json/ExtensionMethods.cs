@@ -47,6 +47,7 @@ namespace RESTable.Json
                 return JsonSerializer.Deserialize<T>(bufferWriter.WrittenSpan, options);
             }
 #endif
+            var typeCode = Type.GetTypeCode(typeof(T));
 
             return element.ValueKind switch
             {
@@ -54,8 +55,7 @@ namespace RESTable.Json
                 JsonValueKind.Null => default,
                 JsonValueKind.String when typeof(T).IsEnum => (T) Enum.Parse(typeof(T), element.GetString()!),
                 JsonValueKind.String when element.GetString() is T t => t,
-                JsonValueKind.String => throw exception(element.GetString()),
-                JsonValueKind.Number => Type.GetTypeCode(typeof(T)) switch
+                JsonValueKind.Number => typeCode switch
                 {
                     // Match types
                     TypeCode.SByte when element.TryGetSByte(out var v) && v is T t => t,
@@ -120,7 +120,8 @@ namespace RESTable.Json
                 JsonValueKind.Undefined => default,
                 JsonValueKind.Null => default,
                 JsonValueKind.String when targetType.IsEnum => Enum.Parse(targetType, element.GetString()!),
-                JsonValueKind.String when typeCode == TypeCode.String => element.GetString(),
+                JsonValueKind.String when typeCode is TypeCode.String => element.GetString(),
+                JsonValueKind.String when targetType == typeof(object) => element.GetString(),
                 JsonValueKind.Number => typeCode switch
                 {
                     // Match types
@@ -136,8 +137,9 @@ namespace RESTable.Json
                     TypeCode.Double when element.TryGetDouble(out var v) => v,
                     TypeCode.Decimal when element.TryGetDecimal(out var v) => v,
 
-                    // If object, either get a long or a decimal for it (whatever works first)
-                    TypeCode.Object when element.TryGetUInt64(out var v) => v,
+                    // If object, either get an int, a long or a decimal for it (whatever works first)
+                    TypeCode.Object when element.TryGetInt32(out var v) => v,
+                    TypeCode.Object when element.TryGetInt64(out var v) => v,
                     TypeCode.Object when element.TryGetDecimal(out var v) => v,
 
                     // Allow getting numbers as strings

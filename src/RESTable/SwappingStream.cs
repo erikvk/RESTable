@@ -65,7 +65,7 @@ namespace RESTable
             Stream = MemoryStreamManager.GetStream(bytes);
             Swapped = false;
         }
-        
+
         public SwappingStream(Stream? existing)
         {
             Stream = existing ?? MemoryStreamManager.GetStream();

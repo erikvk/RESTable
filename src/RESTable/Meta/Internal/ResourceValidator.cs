@@ -180,7 +180,7 @@ namespace RESTable.Meta.Internal
 
                 #region Check for invalid IDictionary implementation
 
-                var validTypes = new[] { typeof(string), typeof(object) };
+                var validTypes = new[] {typeof(string), typeof(object)};
                 if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out var typeParams) && !typeParams!.SequenceEqual(validTypes))
                 {
                     throw new InvalidResourceDeclarationException(
@@ -274,14 +274,15 @@ namespace RESTable.Meta.Internal
                     var properties = TypeCache.GetDeclaredProperties(terminal);
                     foreach (var parameter in constructors[0].GetParameters())
                     {
-                        if (!constructorParameterNames.Add(parameter.Name!))
+                        var parameterName = parameter.RESTableParameterName(terminal.IsDictionary(out _, out _));
+                        if (!constructorParameterNames.Add(parameterName))
                             throw new InvalidTerminalDeclarationException(terminal, "must not define multiple constructor parameters with the same case " +
-                                                                                    $"insensitive parameter name. Found duplicate of '{parameter.Name!.ToLowerInvariant()}'");
-                        if (parameter.ParameterType.IsOfValueLiteralType() && !properties.ContainsKey(parameter.Name!))
+                                                                                    $"insensitive parameter name. Found duplicate of '{parameterName.ToLowerInvariant()}'");
+                        if (parameter.ParameterType.IsOfValueLiteralType() && !properties.ContainsKey(parameterName))
                         {
                             throw new InvalidTerminalDeclarationException(terminal, "must not define a condition-resolved constructor parameter with a name that does not " +
                                                                                     "equal the name of a public instance property on the same type (case insensitive). Found " +
-                                                                                    $"parameter '{parameter.Name!.ToLowerInvariant()}' with no matching public instance property.");
+                                                                                    $"parameter '{parameterName.ToLowerInvariant()}' with no matching public instance property.");
                         }
                     }
                     if (terminal.ImplementsGenericInterface(typeof(IEnumerable<>)))

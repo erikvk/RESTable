@@ -32,7 +32,7 @@ namespace RESTable
         {
             var template = await request.Expecting
             (
-                selector: async r => await r.Body.Deserialize<Aggregator>(cancellationToken).FirstAsync(cancellationToken).ConfigureAwait(false),
+                selector: async r => await r.Body.DeserializeAsyncEnumerable<Aggregator>(cancellationToken).FirstAsync(cancellationToken).ConfigureAwait(false),
                 errorMessage: "Expected an aggregator template as request body"
             ).ConfigureAwait(false);
 
@@ -61,7 +61,7 @@ namespace RESTable
                             aggregator[key] = value;
                         }
                         return aggregator;
-                    case JsonElement { ValueKind: JsonValueKind.Array } array:
+                    case JsonElement {ValueKind: JsonValueKind.Array} array:
                     {
                         var list = new List<object>();
                         foreach (var item in array.EnumerateArray())
@@ -72,7 +72,7 @@ namespace RESTable
                         }
                         return list;
                     }
-                    case JsonElement { ValueKind: JsonValueKind.Object } obj:
+                    case JsonElement {ValueKind: JsonValueKind.Object} obj:
                     {
                         return await Populator(jsonProvider!.ToObject<Aggregator>(obj)!).ConfigureAwait(false);
                     }
@@ -116,7 +116,7 @@ namespace RESTable
             yield return await Populator(template).ConfigureAwait(false) switch
             {
                 Aggregator aggregator => aggregator,
-                long integer => new Aggregator { ["Result"] = integer },
+                long integer => new Aggregator {["Result"] = integer},
                 var other => throw new InvalidOperationException($"An error occured when reading the request template, the root object was resolved to {other.GetType().FullName}")
             };
         }

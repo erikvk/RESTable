@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -45,20 +46,46 @@ namespace RESTable.ContentTypeProviders
             Utf8JsonWriter.WriteEndObject();
         }
 
+        public void WriteDictionary(IDictionary? dictionary, ISerializationMetadata metadata)
+        {
+            if (dictionary is null)
+            {
+                Utf8JsonWriter.WriteNullValue();
+                return;
+            }
+            Utf8JsonWriter.WriteStartObject();
+            WriteDynamicMembers(dictionary);
+            WriteDeclaredMembers(dictionary, metadata);
+            Utf8JsonWriter.WriteEndObject();
+        }
+
         public void WriteDynamicMembers<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue?>> instance) where TKey : notnull
         {
-            foreach (var (dynamicKey, dynamicValue) in instance)
+            foreach (var (key, value) in instance)
             {
-                var propertyName = dynamicKey is Type type ? type.GetRESTableTypeName() : dynamicKey.ToString();
-                Utf8JsonWriter.WritePropertyName(propertyName!);
-                if (dynamicValue is null)
-                {
-                    // The type is unknown, so we can't call the appropriate converter to 
-                    // deal with the null value. Instead we just write null.
-                    Utf8JsonWriter.WriteNullValue();
-                }
-                else JsonSerializer.Serialize(Utf8JsonWriter, dynamicValue, dynamicValue.GetType(), Options);
+                WriteDynamicMember(key, value);
             }
+        }
+
+        public void WriteDynamicMembers(IDictionary instance)
+        {
+            foreach (DictionaryEntry entry in instance)
+            {
+                WriteDynamicMember(entry.Key, entry.Value);
+            }
+        }
+
+        private void WriteDynamicMember(object dynamicKey, object? dynamicValue)
+        {
+            var propertyName = dynamicKey is Type type ? type.GetRESTableTypeName() : dynamicKey.ToString();
+            Utf8JsonWriter.WritePropertyName(propertyName!);
+            if (dynamicValue is null)
+            {
+                // The type is unknown, so we can't call the appropriate converter to 
+                // deal with the null value. Instead we just write null.
+                Utf8JsonWriter.WriteNullValue();
+            }
+            else JsonSerializer.Serialize(Utf8JsonWriter, dynamicValue, dynamicValue.GetType(), Options);
         }
 
         public void WriteDeclaredMembers(object value, ISerializationMetadata metadata)

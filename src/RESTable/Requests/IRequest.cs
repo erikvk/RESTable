@@ -67,7 +67,7 @@ namespace RESTable.Requests
         /// content type provided in the Content-Type header.
         /// </summary>
         Func<IAsyncEnumerable<T>, IAsyncEnumerable<T>>? Updater { set; }
-        
+
         /// <summary>
         /// Gets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTable
         /// internally to pass custom data between operations, for example account or session information. Each resource can have its

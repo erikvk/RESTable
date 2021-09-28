@@ -7,7 +7,6 @@
     internal class MacrosNotSupported : NotFound
     {
         internal MacrosNotSupported() : base(ErrorCodes.UnknownMacro,
-            $"This version of RESTable does not support macros")
-        { }
+            $"This version of RESTable does not support macros") { }
     }
 }

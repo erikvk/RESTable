@@ -25,6 +25,7 @@ namespace RESTable.Meta
         DeclaredProperty? GetProperty(string name);
         int DeclaredPropertyCount { get; }
         bool TypeIsDictionary { get; }
+        Type? DictionaryValueType { get; }
         bool TypeIsWritableDictionary { get; }
         bool TypeIsNonDictionaryEnumerable { get; }
         bool TypeIsAsyncEnumerable { get; }

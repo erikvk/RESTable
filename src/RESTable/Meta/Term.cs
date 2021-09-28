@@ -107,7 +107,7 @@ namespace RESTable.Meta
             foreach (var property in Store)
             {
                 isDeclared = isDeclared && property is DeclaredProperty;
-                if (property is DeclaredProperty { SkipConditions: true })
+                if (property is DeclaredProperty {SkipConditions: true})
                     conditionSkip = true;
             }
             IsDeclared = isDeclared;
@@ -168,7 +168,7 @@ namespace RESTable.Meta
                 // and select). This code handles those cases.
                 if (target is ProcessedEntity processedEntity)
                 {
-                    if (processedEntity.TryFindInDictionary(term.Key, out var processedKey, out var processedValue))
+                    if (processedEntity.TryFindInDictionary<object?>(term.Key, out var processedKey, out var processedValue))
                     {
                         actualKey = processedKey!;
                         parent = processedEntity;

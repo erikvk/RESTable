@@ -38,7 +38,7 @@ namespace RESTable
                 yield return conditionEcho;
             }
 
-            await foreach (var bodyObject in request.Body.Deserialize<Echo>(cancellationToken).ConfigureAwait(false))
+            await foreach (var bodyObject in request.Body.DeserializeAsyncEnumerable<Echo>(cancellationToken).ConfigureAwait(false))
             {
                 var bodyEcho = new Echo();
                 foreach (var (key, value) in bodyObject)

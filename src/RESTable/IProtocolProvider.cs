@@ -71,7 +71,7 @@ namespace RESTable
         Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken);
 
         void SetResultHeaders(IResult result);
-        
+
         /// <summary>
         /// This method is called when RESTableConfig.Init() is done initializing the RESTable instance.
         /// </summary>

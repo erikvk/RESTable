@@ -44,8 +44,6 @@ namespace RESTable.Sqlite.Tests
 
             var five = await table.Insert(new Table {Number = 0}, new Table {Number = 1}, new Table {Number = 2}, new Table {Number = 3}, new Table {Number = 4});
             Assert.Equal(5, five.Length);
-            
-            
         }
 
         public SqliteEntityBufferTaskTests(RESTableFixture fixture) : base(fixture)

@@ -52,7 +52,7 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
                 .Build();
             fixture.AddSingleton<IConfiguration>(configuration);
             fixture.AddApiKeys();
-            
+
             fixture.Configure();
 
             Context = fixture.Context;

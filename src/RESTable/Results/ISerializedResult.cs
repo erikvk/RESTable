@@ -29,7 +29,7 @@ namespace RESTable.Results
         /// Is this a paged result with a next page?
         /// </summary>
         bool HasNextPage { get; }
-        
+
         /// <summary>
         /// Is this a paged result with a previous page?
         /// </summary>

@@ -10,7 +10,7 @@ namespace RESTable.Sqlite.Meta
         public bool Equals(string? x, string? y) => string.Equals(x, y, StringComparison.CurrentCultureIgnoreCase);
         public int GetHashCode(string obj) => obj.ToLower().GetHashCode();
     }
-    
+
     /// <inheritdoc />
     /// <summary>
     /// A collection of ColumnMapping instances, indexed on CLR property name
@@ -20,7 +20,7 @@ namespace RESTable.Sqlite.Meta
         /// <inheritdoc />
         public ColumnMappings(IEnumerable<ColumnMapping> collection) : base(new NoCaseComparer())
         {
-            foreach (var item in collection) 
+            foreach (var item in collection)
                 this[item.ClrProperty.Name] = item;
         }
 

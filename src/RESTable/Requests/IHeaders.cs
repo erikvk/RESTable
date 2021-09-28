@@ -39,7 +39,7 @@ namespace RESTable.Requests
         /// The Origin header
         /// </summary>
         string? Origin { get; set; }
-        
+
         /// <summary>
         /// The Elapsed header
         /// </summary>

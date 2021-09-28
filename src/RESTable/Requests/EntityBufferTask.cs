@@ -126,7 +126,7 @@ namespace RESTable.Requests
         /// Gets a raw memory buffer from this buffer task, possibly containing nulls
         /// if the selection limit is greater than the returned entity count.
         /// </summary>
-        public ValueTask<Memory<T?>> Raw => AsRawMemoryAsync(); 
+        public ValueTask<Memory<T?>> Raw => AsRawMemoryAsync();
 
         /// <summary>
         /// Gets the first element selected by this buffer task
@@ -225,7 +225,7 @@ namespace RESTable.Requests
                 }
             }
         }
-        
+
         /// <summary>
         /// Creates a ReadOnlyMemory buffer from this buffer task
         /// </summary>

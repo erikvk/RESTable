@@ -52,7 +52,7 @@ namespace RESTable.Sqlite
                     comparer: StringComparer.OrdinalIgnoreCase
                 );
         }
-        
+
         internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
         internal static Method[] ToMethodsArray(this string methodsString)

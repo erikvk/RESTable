@@ -44,7 +44,7 @@ namespace RESTable.Meta
         {
             bool getValue() => !type.IsValueType &&
                                Type.GetTypeCode(type) == TypeCode.Object &&
-                               (type.IsDictionary(out var writeAble) && writeAble || !type.ImplementsEnumerableInterface(out _));
+                               (type.IsDictionary(out var writeAble, out _) && writeAble || !type.ImplementsEnumerableInterface(out _));
 
             if (!CanBePopulatedCache.TryGetValue(type, out var value))
             {
@@ -90,11 +90,11 @@ namespace RESTable.Meta
                 {
                     case null:
                     case { } when _type.HasAttribute<RESTableIgnoreMembersWithTypeAttribute>(): return Array.Empty<DeclaredProperty>();
-                    case { } when _type.IsDictionary(out _):
+                    case { } when _type.IsDictionary(out _, out _):
                     {
                         return FindAndParseDeclaredProperties(_type, flag: true).Select(p =>
                         {
-                            p.Hidden = true;
+                            p.Hidden = !p.HasAttribute<RESTableMemberAttribute>(out var attr) || attr!.Hidden != false;
                             return p;
                         });
                     }
@@ -217,7 +217,7 @@ namespace RESTable.Meta
 
         public bool TryFindDeclaredProperty(Type type, string key, out DeclaredProperty? declaredProperty)
         {
-            if (!type.IsDictionary(out _) && type.ImplementsEnumerableInterface(out var parameter))
+            if (!type.IsDictionary(out _, out _) && type.ImplementsEnumerableInterface(out var parameter))
             {
                 var collectionReadonly = typeof(IList).IsAssignableFrom(type) || type.ImplementsGenericInterface(typeof(IList<>));
                 switch (key)

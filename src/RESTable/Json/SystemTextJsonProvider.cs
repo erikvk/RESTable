@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 using RESTable.Meta;
+using RESTable.Results;
 
 // Async disposal differs between target frameworks
 #pragma warning disable 1998
@@ -175,6 +176,24 @@ namespace RESTable.Json
 #endif
             {
                 var jsonElement = await JsonSerializer.DeserializeAsync<JsonElement>(stream, Options, cancellationToken).ConfigureAwait(false);
+                if (jsonElement.ValueKind == JsonValueKind.Array)
+                {
+                    switch (jsonElement.GetArrayLength())
+                    {
+                        case 0:
+                        {
+                            await foreach (var item in entities.WithCancellation(cancellationToken).ConfigureAwait(false))
+                                yield return item;
+                            yield break;
+                        }
+                        case 1:
+                        {
+                            jsonElement = jsonElement.EnumerateArray().First();
+                            break;
+                        }
+                        default: throw new InvalidInputCount();
+                    }
+                }
                 var populateSource = GetPopulateSource(jsonElement, Options);
                 var populator = new Populator(typeof(T), populateSource, TypeCache);
                 await foreach (var item in entities.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -309,6 +328,11 @@ namespace RESTable.Json
         public JsonElement ToJsonElement<T>(T obj, JsonSerializerOptions? options = null) => obj.ToJsonElement(options ?? Options);
         public object? ToObject(JsonElement element, Type targetType, JsonSerializerOptions? options = null) => element.ToObject(targetType, options ?? Options);
         public JsonElement ToJsonElement(object obj, Type targetType, JsonSerializerOptions? options = null) => obj.ToJsonElement(targetType, options ?? Options);
+
+        public ValueTask<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken)
+        {
+            return JsonSerializer.DeserializeAsync<T>(stream, Options, cancellationToken);
+        }
 
         public async IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {

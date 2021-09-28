@@ -65,6 +65,11 @@ namespace RESTable.Json
             throw new NotSupportedException();
         }
 
+        public ValueTask<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
         public IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, CancellationToken cancellationToken) where T : notnull
         {
             throw new NotSupportedException();

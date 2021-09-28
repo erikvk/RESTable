@@ -45,14 +45,34 @@ namespace RESTable
         }
 
         /// <summary>
-        /// Deserializes the body to an IEnumerable of entities of the given type
+        /// Deserializes the body to an IAsyncEnumerable of entities of the given type
         /// </summary>
-        public IAsyncEnumerable<T> Deserialize<T>(CancellationToken cancellationToken = new())
+        public IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(CancellationToken cancellationToken = new())
         {
             if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
             try
             {
                 return ContentTypeProvider.DeserializeAsyncEnumerable<T>(Stream, cancellationToken);
+            }
+            finally
+            {
+                if (CanSeek)
+                {
+                    Stream.Rewind();
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Deserializes the body to an IAsyncEnumerable of entities of the given type
+        /// </summary>
+        public ValueTask<T?> DeserializeAsync<T>(CancellationToken cancellationToken = new())
+        {
+            if (IsClosed) throw new ObjectDisposedException(nameof(Stream));
+            try
+            {
+                return ContentTypeProvider.DeserializeAsync<T>(Stream, cancellationToken);
             }
             finally
             {

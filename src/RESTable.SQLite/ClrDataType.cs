@@ -36,6 +36,6 @@
         Boolean,
 
         /// <summary />
-        DateTime,
+        DateTime
     }
 }

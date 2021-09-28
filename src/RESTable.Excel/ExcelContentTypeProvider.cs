@@ -132,6 +132,11 @@ namespace RESTable.Excel
             _ => await prop.GetValue(target).ConfigureAwait(false)
         };
 
+        public ValueTask<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
         public async IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var localStream = new SwappingStream();

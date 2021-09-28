@@ -107,10 +107,10 @@ namespace RESTable.Meta.Internal
             IsInternal = attribute is RESTableInternalAttribute;
             InterfaceType = typeof(T).GetRESTableInterfaceType();
             (DynamicConditionsAllowed, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
-            DeclaredPropertiesFlagged = typeof(T).IsDictionary(out _) || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T));
+            DeclaredPropertiesFlagged = typeof(T).IsDictionary(out _, out _) || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T));
             GETAvailableToAll = attribute.GETAvailableToAll;
             ResourceKind = ResourceKind.EntityResource;
-            OutputBindingRule = TermBindingRule.DeclaredWithDynamicFallback;
+            OutputBindingRule = typeof(T).IsSealed ? TermBindingRule.OnlyDeclared : TermBindingRule.DeclaredWithDynamicFallback;
             RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));
             IsDDictionary = false;
             IsDynamic = IsDDictionary || typeof(IDictionary).IsAssignableFrom(typeof(T));

@@ -10,7 +10,7 @@ namespace RESTable.Tests.RequestTests
     public class MetaConditionsTests : RESTableTestBase
     {
         private RESTableContext Context { get; }
-        
+
         #region Unsafe
 
         #endregion
@@ -106,7 +106,7 @@ namespace RESTable.Tests.RequestTests
             await using var serialized = await result.Serialize();
             Assert.Equal(0, serialized.EntityCount);
         }
-        
+
         [Fact]
         public async Task NegativeOffsetAppliesNegativeSkip()
         {

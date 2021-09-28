@@ -47,6 +47,8 @@ namespace RESTable
             return flagged ? $"${name}" : name;
         }
 
+        public static string RESTableParameterName(this ParameterInfo p, bool flagged = false) => (flagged ? $"${p.Name}" : p.Name)!;
+
         public static bool RESTableIgnored(this MemberInfo m) => m.GetCustomAttribute<RESTableMemberAttribute>()?.Ignored == true ||
                                                                  m.HasAttribute<IgnoreDataMemberAttribute>();
 
@@ -58,7 +60,8 @@ namespace RESTable
             for (var i = 0; i < parameters.Length; i += 1)
             {
                 var parameter = parameters[i];
-                if (parameter.Name.EqualsNoCase(declaredProperty.Name))
+                var parameterName = parameter.RESTableParameterName(declaredProperty.Owner.IsDictionary(out _, out _));
+                if (parameterName.EqualsNoCase(declaredProperty.Name))
                 {
                     return parameter;
                 }
@@ -79,14 +82,14 @@ namespace RESTable
         /// <summary>
         /// Does this type implement the IDictionary{string, object} interface?
         /// </summary>
-        public static bool IsDictionary(this Type type, out bool isWritable)
+        public static bool IsDictionary(this Type type, out bool isWritable, out Type[]? parameters)
         {
-            if (type.ImplementsGenericInterface(typeof(IDictionary<,>)))
+            if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out parameters))
             {
                 isWritable = true;
                 return true;
             }
-            if (type.ImplementsGenericInterface(typeof(IReadOnlyDictionary<,>)))
+            if (type.ImplementsGenericInterface(typeof(IReadOnlyDictionary<,>), out parameters))
             {
                 isWritable = false;
                 return true;
@@ -345,6 +348,7 @@ namespace RESTable
         internal static (bool allowDynamic, TermBindingRule bindingRule) GetDynamicConditionHandling(this Type type, RESTableAttribute? attribute)
         {
             var dynamicConditionsAllowed = typeof(IDynamicMemberValueProvider).IsAssignableFrom(type) ||
+                                           type.IsDictionary(out _, out _) ||
                                            attribute?.AllowDynamicConditions == true;
             var conditionBindingRule = dynamicConditionsAllowed ? TermBindingRule.DeclaredWithDynamicFallback : TermBindingRule.OnlyDeclared;
             return (dynamicConditionsAllowed, conditionBindingRule);
@@ -540,30 +544,64 @@ namespace RESTable
         }
 
         /// <summary>
-        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// Gets the value of a key from an IDictionary_2, without case sensitivity, or null if the dictionary does 
         /// not contain the key. The actual key is returned in the actualKey out parameter.
         /// </summary>
         internal static bool TryFindInDictionary<T>(this IDictionary<string, T?> dict, string key, out string? actualKey, out T? result)
         {
-            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
+            var matches = dict
+                .Where(pair => pair.Key.EqualsNoCase(key))
+                .ToList();
             switch (matches.Count)
             {
                 case 0:
                     result = default;
                     actualKey = null;
                     return false;
-                case 1:
+                case >1 when dict.TryGetValue(key, out result):
+                {
+                    actualKey = key;
+                    return true;
+                }
+                default:
+                {
                     actualKey = matches[0].Key;
                     result = matches[0].Value;
                     return true;
-                default:
-                    if (!dict.TryGetValue(key, out result))
-                    {
-                        actualKey = null;
-                        return false;
-                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// not contain the key. The actual key is returned in the actualKey out parameter.
+        /// </summary>
+        internal static bool TryFindInDictionary(this IDictionary dict, string key, out string? actualKey, out object? result)
+        {
+            var matchKeys = dict.Keys
+                .Cast<string>()
+                .Where(key.EqualsNoCase)
+                .ToList();
+            switch (matchKeys.Count)
+            {
+                case 0:
+                {
+                    result = default;
+                    actualKey = null;
+                    return false;
+                }
+                case >1 when dict.Contains(key):
+                {
                     actualKey = key;
+                    result = dict[key];
                     return true;
+                }
+                default:
+                {
+                    actualKey = matchKeys[0];
+                    result = dict[actualKey];
+                    return true;
+                }
             }
         }
 
@@ -1072,7 +1110,7 @@ namespace RESTable
             .Select(parameter => new InvalidMember
             (
                 entityType: owner,
-                memberName: parameter.Name!,
+                memberName: parameter.RESTableParameterName(owner.IsDictionary(out _, out _)),
                 memberType: parameter.ParameterType,
                 message: $"Missing parameter of type '{parameter.ParameterType}'"
             )).ToList();

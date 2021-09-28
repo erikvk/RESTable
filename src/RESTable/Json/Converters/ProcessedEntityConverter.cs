@@ -27,7 +27,7 @@ namespace RESTable.Json.Converters
         public override void Write(Utf8JsonWriter writer, ProcessedEntity value, JsonSerializerOptions options)
         {
             var jsonWriter = JsonProvider.GetJsonWriter(writer, options);
-            jsonWriter.WriteDictionary(value, Metadata);
+            jsonWriter.WriteDictionary<string, object>(value, Metadata);
         }
     }
 }

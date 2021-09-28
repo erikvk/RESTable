@@ -77,7 +77,7 @@ namespace RESTable.Tests.RequestTests
             };
             await using var body = new Body(protocolHolder, dict);
 
-            await foreach (var item in body.Deserialize<Dictionary<string, object>>())
+            await foreach (var item in body.DeserializeAsyncEnumerable<Dictionary<string, object>>())
             {
                 Assert.Equal(2, item.Count);
                 Assert.Equal(1, item["First"]);
@@ -91,7 +91,7 @@ namespace RESTable.Tests.RequestTests
             };
             await using var body2 = new Body(protocolHolder, obj);
 
-            await foreach (var item in body2.Deserialize<Dictionary<string, object>>())
+            await foreach (var item in body2.DeserializeAsyncEnumerable<Dictionary<string, object>>())
             {
                 Assert.Equal(2, item.Count);
                 Assert.Equal(1, item["First"]);
@@ -140,7 +140,7 @@ namespace RESTable.Tests.RequestTests
                 .CountAsync();
             Assert.Equal(5, response1);
         }
-        
+
         public BodyTests(RESTableFixture fixture) : base(fixture)
         {
             fixture.Configure();

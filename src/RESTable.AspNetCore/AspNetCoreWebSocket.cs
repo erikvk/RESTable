@@ -131,7 +131,7 @@ namespace RESTable.AspNetCore
                                 Task handleTask;
                                 await using (nextMessage.ConfigureAwait(false))
                                 {
-                                    using (var reader = new StreamReader(nextMessage, Encoding.Default, true, 4096, leaveOpen: true))
+                                    using (var reader = new StreamReader(nextMessage, Encoding.Default, true, WebSocketBufferSize, leaveOpen: true))
                                     {
                                         var stringMessage = await reader.ReadToEndAsync().ConfigureAwait(false);
                                         handleTask = HandleTextInput(stringMessage, cancellationToken);

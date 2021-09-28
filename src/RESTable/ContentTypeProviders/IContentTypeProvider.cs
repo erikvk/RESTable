@@ -70,6 +70,11 @@ namespace RESTable.ContentTypeProviders
         /// <summary>
         /// Deserializes the data from the stream to the given IAsyncEnumerable type.
         /// </summary>
+        ValueTask<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Deserializes the data from the stream to the given IAsyncEnumerable type.
+        /// </summary>
         IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream stream, CancellationToken cancellationToken);
 
         /// <summary>

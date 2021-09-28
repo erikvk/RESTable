@@ -244,7 +244,7 @@ namespace FileSenderSample
             }
 
             var messageStream = await combinedTerminals.CombinedWebSocket.GetMessageStream(asText: false, cancellationToken);
-            
+
             await using (file)
             await using (messageStream)
             {

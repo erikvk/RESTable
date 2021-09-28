@@ -22,9 +22,15 @@ namespace RESTable.Meta
         public bool TypeIsWritableDictionary { get; }
         public bool TypeIsNonDictionaryEnumerable { get; }
         public bool TypeIsAsyncEnumerable { get; }
+        public Type? DictionaryValueType { get; }
 
         public DeclaredProperty? GetProperty(string name)
         {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            if (TypeIsDictionary && name[0] != '$')
+            {
+                name = $"${name}";
+            }
             DeclaredProperties.TryGetValue(name, out var property);
             return property;
         }
@@ -82,10 +88,21 @@ namespace RESTable.Meta
                 .Where(p => !p.Hidden)
                 .OrderBy(p => p.Order)
                 .ToArray();
-            TypeIsDictionary = typeof(T).IsDictionary(out var isWritable);
-            TypeIsWritableDictionary = isWritable;
+            if (typeof(T).IsDictionary(out var isWritable, out var dictionaryParameters))
+            {
+                TypeIsDictionary = true;
+                TypeIsWritableDictionary = isWritable;
+                DictionaryValueType = dictionaryParameters![1];
+            }
+            else
+            {
+                TypeIsDictionary = false;
+                TypeIsWritableDictionary = false;
+                DictionaryValueType = null;
+            }
             TypeIsAsyncEnumerable = typeof(T).ImplementsGenericInterface(typeof(IAsyncEnumerable<>), out _);
             TypeIsNonDictionaryEnumerable = !TypeIsDictionary && !TypeIsAsyncEnumerable && typeof(T).ImplementsEnumerableInterface(out _);
+
             ParameterLessConstructor = typeof(T).MakeParameterlessConstructor<T>();
             if (typeof(T).GetCustomConstructor() is ConstructorInfo constructor && constructor.GetParameters() is {Length: > 0} parameters)
             {
@@ -94,11 +111,12 @@ namespace RESTable.Meta
                 CustomParameterizedConstructorParameters = parameters;
                 foreach (var parameter in CustomParameterizedConstructorParameters)
                 {
-                    if (!DeclaredProperties.TryGetValue(parameter.Name!, out _))
+                    var parameterName = parameter.RESTableParameterName(TypeIsDictionary);
+                    if (!DeclaredProperties.TryGetValue(parameterName, out _))
                     {
                         throw new InvalidOperationException(
                             $"Invalid custom parameterized constructor for type '{typeof(T).GetRESTableTypeName()}'. Expected each constructor parameter to " +
-                            $"have the same name (case insensitive) as a public instance property. Found parameter '{parameter.Name}' with no such matching property"
+                            $"have the same name (case insensitive) as a public instance property. Found parameter '{parameterName}' with no such matching property"
                         );
                     }
                 }

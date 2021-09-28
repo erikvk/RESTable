@@ -197,7 +197,7 @@ namespace RESTable.Meta.Internal
                 .Where(group => group.Key is not null);
             foreach (var group in resourceGroups)
             {
-                var parentResource = (IResourceInternal?)ResourceCollection.SafeGetResource(group.Key!);
+                var parentResource = (IResourceInternal?) ResourceCollection.SafeGetResource(group.Key!);
                 if (parentResource is null)
                     throw new InvalidResourceDeclarationException(
                         $"Resource type(s) {string.Join(", ", group.Select(item => $"'{item.Name}'"))} is/are declared " +

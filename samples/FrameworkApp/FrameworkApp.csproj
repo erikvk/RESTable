@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\RESTable\RESTable.csproj" />
+        <ProjectReference Include="..\..\src\RESTable\RESTable.csproj"/>
     </ItemGroup>
 
 </Project>

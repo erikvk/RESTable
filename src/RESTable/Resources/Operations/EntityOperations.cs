@@ -105,7 +105,7 @@ namespace RESTable.Resources.Operations
             {
                 IAsyncEnumerable<T> RequestEntitiesProducer()
                 {
-                    var selector = request.GetCustomSelector() ?? (() => request.Body.Deserialize<T>(cancellationToken));
+                    var selector = request.GetCustomSelector() ?? (() => request.Body.DeserializeAsyncEnumerable<T>(cancellationToken));
                     var entities = selector();
                     return entities.InputLimit(limit).Validate(request.EntityResource, request.Context, cancellationToken);
                 }
@@ -462,7 +462,7 @@ namespace RESTable.Resources.Operations
                         return new Condition<T>(term, Operators.EQUALS, null);
                     })
                     .ToList();
-                await foreach (var jsonElement in body.Deserialize<JsonElement>().ConfigureAwait(false))
+                await foreach (var jsonElement in body.DeserializeAsyncEnumerable<JsonElement>().ConfigureAwait(false))
                 {
                     foreach (var cond in conditions)
                     {

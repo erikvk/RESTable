@@ -47,7 +47,7 @@ namespace RESTable.Meta.IL
 
             foreach (var field in fields)
             {
-                var opcode = (OpCode) (field.GetValue(null) ?? default(OpCode)); 
+                var opcode = (OpCode) (field.GetValue(null) ?? default(OpCode));
                 if (opcode.OpCodeType == OpCodeType.Nternal)
                     continue;
 

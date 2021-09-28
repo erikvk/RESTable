@@ -8,7 +8,8 @@ namespace RESTable.Sqlite.Meta
     /// </summary>
     public class ColumnMapping
     {
-        [RESTableMember(hide: true)] internal TableMapping TableMapping { get; }
+        [RESTableMember(hide: true)]
+        internal TableMapping TableMapping { get; }
 
         /// <summary>
         /// The CLR property of the mapping

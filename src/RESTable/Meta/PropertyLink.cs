@@ -42,7 +42,7 @@ namespace RESTable.Meta
                 var definesTarget = termValue.Parent;
                 var definesProperty = termValue.Property;
                 var definesNewValue = termValue.Value;
-                var definesDeclaredProperty = (DeclaredProperty?)definesProperty;
+                var definesDeclaredProperty = (DeclaredProperty?) definesProperty;
                 definesDeclaredProperty?.NotifyChange
                 (
                     target: definesTarget!,
