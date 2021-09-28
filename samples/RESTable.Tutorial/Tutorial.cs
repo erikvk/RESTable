@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -60,7 +61,6 @@ namespace RESTable.Tutorial
             .AddRESTable()
             .AddODataProvider()
             .AddSqliteProvider()
-//            .Configure<SqliteOptions>(o => o.SqliteDatabasePath = "./database")
             .AddExcelProvider()
             .AddHttpContextAccessor();
 
@@ -177,15 +177,57 @@ namespace RESTable.Tutorial
 
     #region A bunch of test things to try
 
+    [RESTable, InMemory]
+    public class TestResource
+    {
+        public string S { get; }
+        public int I { get; }
+        public TestResource Inner { get; }
+        public ImmutableDictionary<string, string> Dict { get; }
+
+        public TestResource(string s, int i, TestResource inner)
+        {
+            S = s;
+            I = i;
+            Inner = inner;
+            var builder = ImmutableDictionary.CreateBuilder<string, string>();
+            builder.Add("Foo", "FooBar");
+            Dict = builder.ToImmutable();
+        }
+    }
+
     public interface IMyTest
     {
         string? Name { get; }
     }
 
+    [RESTable(GET, PATCH)]
+    public class MySomDict : ResourceWrapper<SomeDict>, IAsyncSelector<SomeDict>, IAsyncUpdater<SomeDict>
+    {
+        private static HashSet<SomeDict> Things { get; } = new() {new SomeDict {["Foo"] = "Bar"}};
+
+        public IAsyncEnumerable<SomeDict> SelectAsync(IRequest<SomeDict> request, CancellationToken cancellationToken)
+        {
+            return Things.ToAsyncEnumerable();
+        }
+
+        public IAsyncEnumerable<SomeDict> UpdateAsync(IRequest<SomeDict> request, CancellationToken cancellationToken)
+        {
+            return request.GetInputEntitiesAsync();
+        }
+    }
+
+    public class SomeDict : Dictionary<string, string> { }
+
     [RESTable, InMemory]
     public class MyDict : Dictionary<string, object?>
     {
+        [RESTableMember(hide: false)]
         public string? Name { get; set; }
+
+        [RESTableMember(hide: false)]
+        public new int Count => base.Count;
+
         public MyDict? Inner { get; set; }
         public int? InnerId => Inner?.GetHashCode();
         public List<MyDict> Inners { get; set; } = new();
