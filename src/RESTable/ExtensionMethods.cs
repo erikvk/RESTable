@@ -402,39 +402,24 @@ namespace RESTable
             return false;
         }
 
-        public static async ValueTask<ProcessedEntity> MakeProcessedEntity<T>(this T entity, TypeCache typeCache) where T : notnull
+        public static async ValueTask<ProcessedEntity> MakeProcessedEntity<T>(this T entity, ISerializationMetadata metadata) where T : notnull
         {
-            switch (entity)
+            if (entity is ProcessedEntity processedEntity)
+                return processedEntity;
+
+            var toPopulate = entity switch
             {
-                case ProcessedEntity processedEntity:
-                {
-                    return processedEntity;
-                }
-                case Dictionary<string, object?> dictionary:
-                {
-                    return new ProcessedEntity(dictionary);
-                }
-                case IDictionary idict:
-                {
-                    var processedEntity = new ProcessedEntity(idict.Count);
-                    foreach (var entry in idict.Cast<DictionaryEntry>())
-                    {
-                        processedEntity.Add(entry.Key.ToString()!, entry.Value);
-                    }
-                    return processedEntity;
-                }
-                default:
-                {
-                    var processedEntity = new ProcessedEntity();
-                    var properties = typeCache
-                        .GetDeclaredProperties(entity.GetType())
-                        .Values
-                        .Where(p => !p.Hidden);
-                    foreach (var property in properties)
-                        processedEntity[property.Name] = await property.GetValue(entity).ConfigureAwait(false);
-                    return processedEntity;
-                }
+                IDictionary<string, object?> dictionary => new ProcessedEntity(dictionary),
+                IEnumerable<KeyValuePair<string, object?>> keyValuePairs => new ProcessedEntity(keyValuePairs),
+                IDictionary dictionary => new ProcessedEntity(dictionary),
+                _ => new ProcessedEntity()
+            };
+
+            foreach (var property in metadata.PropertiesToSerialize)
+            {
+                toPopulate[property.Name] = await property.GetValue(entity).ConfigureAwait(false);
             }
+            return toPopulate;
         }
 
         internal static string GetEntityResourceProviderId(this Type providerType)
@@ -463,12 +448,12 @@ namespace RESTable
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IAsyncEnumerable<ProcessedEntity> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors) where T : notnull
+        internal static IAsyncEnumerable<ProcessedEntity> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors, ISerializationMetadata metadata) where T : notnull
         {
-            var target = processors[0].Apply(entities);
+            var target = processors[0].Apply(entities, metadata);
             for (var i = 1; i < processors.Count; i += 1)
             {
-                target = processors[i].Apply(target);
+                target = processors[i].Apply(target, metadata);
             }
             return target;
         }

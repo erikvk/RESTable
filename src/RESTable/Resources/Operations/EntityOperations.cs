@@ -44,9 +44,10 @@ namespace RESTable.Resources.Operations
             IAsyncEnumerable<T> DefaultSelector() => request.Target.SelectAsync(request, cancellationToken);
 
             var selector = request.GetCustomSelector() ?? DefaultSelector;
+            var metadata = request.GetRequiredService<ISerializationMetadata<T>>();
             return selector()
                 .Where(request.Conditions)
-                .Process(request.MetaConditions.Processors)
+                .Process(request.MetaConditions.Processors, metadata)
                 .Filter(request.MetaConditions.Distinct)
                 .Filter(request.MetaConditions.Search)
                 .Filter(request.MetaConditions.OrderBy)
@@ -207,9 +208,10 @@ namespace RESTable.Resources.Operations
 
         private static async Task<IReadOnlyCollection<object>> ProcessChangedEntities(IRequest request, IEnumerable<T> entities, CancellationToken cancellationToken)
         {
+            var metadata = request.GetRequiredService<ISerializationMetadata<T>>();
             var list = await entities
                 .ToAsyncEnumerable()
-                .Process(request.MetaConditions.Processors)
+                .Process(request.MetaConditions.Processors, metadata)
                 .Filter(request.MetaConditions.OrderBy)
                 .ToListAsync(cancellationToken: cancellationToken)
                 .ConfigureAwait(false);

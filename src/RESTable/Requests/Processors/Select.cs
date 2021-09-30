@@ -31,7 +31,7 @@ namespace RESTable.Requests.Processors
         /// <summary>
         /// Selects a set of properties from an IEnumerable of entities
         /// </summary>
-        public async IAsyncEnumerable<ProcessedEntity> Apply<T>(IAsyncEnumerable<T> entities) where T : notnull
+        public async IAsyncEnumerable<ProcessedEntity> Apply<T>(IAsyncEnumerable<T> entities, ISerializationMetadata metadata) where T : notnull
         {
             await foreach (var entity in entities)
             {
