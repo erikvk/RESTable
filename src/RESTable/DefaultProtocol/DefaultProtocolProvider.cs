@@ -288,6 +288,13 @@ namespace RESTable.DefaultProtocol
                 toSerialize.EntityCount = count;
                 return;
             }
+
+            if (RequestsRawJson(entities))
+            {
+                await SerializeRaw(entities, toSerialize, jsonProvider, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
 #if NET6_0_OR_GREATER
             var serializedContent = new SerializedEntitiesAsyncEnumerable<T>(entities, toSerialize);
 #else
@@ -304,6 +311,12 @@ namespace RESTable.DefaultProtocol
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return Task.CompletedTask;
 
+            if (RequestsRawJson(change))
+            {
+                toSerialize.EntityCount = change.Count;
+                return jsonProvider.SerializeAsync(toSerialize.Body, change.Entities, cancellationToken: cancellationToken);
+            }
+
             var serializedChange = new SerializedChange<T>(change);
             return jsonProvider.SerializeAsync(toSerialize.Body, serializedChange, cancellationToken: cancellationToken);
         }
@@ -314,6 +327,13 @@ namespace RESTable.DefaultProtocol
             toSerialize.EntityCount = 1;
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return Task.CompletedTask;
+
+            if (RequestsRawJson(report))
+            {
+                toSerialize.EntityCount = 1;
+                return jsonProvider.SerializeAsync(toSerialize.Body, report.Count, cancellationToken: cancellationToken);
+            }
+
             var serializedReport = new SerializedReport(report);
             return jsonProvider.SerializeAsync(toSerialize.Body, serializedReport, cancellationToken: cancellationToken);
         }
@@ -326,5 +346,44 @@ namespace RESTable.DefaultProtocol
         }
 
         public void OnInit() { }
+
+        private static bool RequestsRawJson(IResult result)
+        {
+            var rawValue = "false";
+            return result.Request.Headers.Accept?.FirstOrDefault().Data?.TryGetValue("raw", out rawValue) == true && rawValue == "true";
+        }
+
+        private static async Task SerializeRaw<T>
+        (
+            IAsyncEnumerable<T> entities,
+            ISerializedResult toSerialize,
+            IJsonProvider jsonProvider,
+            CancellationToken cancellationToken
+        )
+            where T : class
+        {
+            var counter = 0L;
+#if NET6_0_OR_GREATER
+                async IAsyncEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
+                {
+                    await foreach (var entity in _entities.ConfigureAwait(false))
+                    {
+                        counter += 1;
+                        yield return entity;
+                    }
+                }
+#else
+            IEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
+            {
+                foreach (var entity in _entities.ToEnumerable())
+                {
+                    counter += 1;
+                    yield return entity;
+                }
+            }
+#endif
+            await jsonProvider.SerializeAsync(toSerialize.Body, enumerateAndCount(entities), cancellationToken: cancellationToken).ConfigureAwait(false);
+            toSerialize.EntityCount = counter;
+        }
     }
 }
