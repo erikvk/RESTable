@@ -448,7 +448,8 @@ namespace RESTable
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IAsyncEnumerable<ProcessedEntity> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors, ISerializationMetadata metadata) where T : notnull
+        internal static IAsyncEnumerable<ProcessedEntity> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors, ISerializationMetadata metadata)
+            where T : notnull
         {
             var target = processors[0].Apply(entities, metadata);
             for (var i = 1; i < processors.Count; i += 1)

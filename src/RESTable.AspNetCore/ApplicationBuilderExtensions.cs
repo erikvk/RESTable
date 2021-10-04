@@ -127,8 +127,6 @@ namespace RESTable.AspNetCore
         {
             var clientIp = context.Connection.RemoteIpAddress;
             var proxyIp = default(IPAddress);
-            var host = context.Request.Host.Host;
-            var userAgent = context.Request.Headers["User-Agent"];
             if (context.Request.Headers.TryGetValue("X-Forwarded-For", out var ip))
             {
                 clientIp = IPAddress.Parse(ip.First().Split(':')[0]);
@@ -138,8 +136,8 @@ namespace RESTable.AspNetCore
             (
                 clientIp: clientIp,
                 proxyIp: proxyIp,
-                userAgent: userAgent,
-                host: host,
+                userAgent: context.Request.Headers["User-Agent"],
+                host: context.Request.Host.Value,
                 https: context.Request.IsHttps,
                 cookies: new Cookies(context.Request.Cookies),
                 accessRights: accessRights

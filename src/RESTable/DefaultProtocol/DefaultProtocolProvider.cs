@@ -289,9 +289,18 @@ namespace RESTable.DefaultProtocol
                 return;
             }
 
-            if (RequestsRawJson(entities))
+            if (RequestsRawJson(entities, out var single))
             {
-                await SerializeRaw(entities, toSerialize, jsonProvider, cancellationToken).ConfigureAwait(false);
+                if (single)
+                {
+                    var singleItem = await entities.SingleAsync(cancellationToken).ConfigureAwait(false);
+                    toSerialize.EntityCount = 1;
+                    await jsonProvider.SerializeAsync(toSerialize.Body, singleItem, cancellationToken: cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await SerializeRaw(entities, toSerialize, jsonProvider, cancellationToken).ConfigureAwait(false);
+                }
                 return;
             }
 
@@ -311,8 +320,14 @@ namespace RESTable.DefaultProtocol
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return Task.CompletedTask;
 
-            if (RequestsRawJson(change))
+            if (RequestsRawJson(change, out var single))
             {
+                if (single)
+                {
+                    var singleItem = change.Entities.Single();
+                    toSerialize.EntityCount = 1;
+                    return jsonProvider.SerializeAsync(toSerialize.Body, singleItem, cancellationToken: cancellationToken);
+                }
                 toSerialize.EntityCount = change.Count;
                 return jsonProvider.SerializeAsync(toSerialize.Body, change.Entities, cancellationToken: cancellationToken);
             }
@@ -328,7 +343,7 @@ namespace RESTable.DefaultProtocol
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return Task.CompletedTask;
 
-            if (RequestsRawJson(report))
+            if (RequestsRawJson(report, out _))
             {
                 toSerialize.EntityCount = 1;
                 return jsonProvider.SerializeAsync(toSerialize.Body, report.Count, cancellationToken: cancellationToken);
@@ -347,10 +362,16 @@ namespace RESTable.DefaultProtocol
 
         public void OnInit() { }
 
-        private static bool RequestsRawJson(IResult result)
+        private static bool RequestsRawJson(IResult result, out bool single)
         {
-            var rawValue = "false";
-            return result.Request.Headers.Accept?.FirstOrDefault().Data?.TryGetValue("raw", out rawValue) == true && rawValue == "true";
+            var data = result.Request.Headers.Accept?.FirstOrDefault().Data;
+            if (data is null)
+            {
+                single = false;
+                return false;
+            }
+            single = data.TryGetValue("single", out var singleValue) && singleValue == "true";
+            return data.TryGetValue("raw", out var rawValue) && rawValue == "true";
         }
 
         private static async Task SerializeRaw<T>
@@ -364,14 +385,14 @@ namespace RESTable.DefaultProtocol
         {
             var counter = 0L;
 #if NET6_0_OR_GREATER
-                async IAsyncEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
+            async IAsyncEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
+            {
+                await foreach (var entity in _entities.ConfigureAwait(false))
                 {
-                    await foreach (var entity in _entities.ConfigureAwait(false))
-                    {
-                        counter += 1;
-                        yield return entity;
-                    }
+                    counter += 1;
+                    yield return entity;
                 }
+            }
 #else
             IEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
             {

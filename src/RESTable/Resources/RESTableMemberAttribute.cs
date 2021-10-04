@@ -8,7 +8,7 @@ namespace RESTable.Resources
     /// Adds a configuration to this RESTable resource type member
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
-    public sealed class RESTableMemberAttribute : Attribute
+    public class RESTableMemberAttribute : Attribute
     {
         /// <summary>
         /// Should this property be completely ignored by RESTable? Equivalent to using the .NET standard IgnoreDataMemberAttribute 

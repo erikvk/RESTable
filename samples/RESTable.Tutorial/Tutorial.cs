@@ -217,6 +217,17 @@ namespace RESTable.Tutorial
         }
     }
 
+    [RESTable(GET)]
+    public class R : ISelector<R>
+    {
+        public string X => "Foo";
+
+        public IEnumerable<R> Select(IRequest<R> request)
+        {
+            yield return new R();
+        }
+    }
+
     public class SomeDict : Dictionary<string, string> { }
 
     [RESTable, InMemory]
@@ -389,6 +400,9 @@ namespace RESTable.Tutorial
 
         public async IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
+            var val = request.Conditions.HasParameter(nameof(Count), out int v);
+
+
             var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
             for (var i = 0; i < number; i += 1)
             {

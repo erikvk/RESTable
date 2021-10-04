@@ -52,6 +52,21 @@ namespace RESTable.Linq
         }
 
         /// <summary>
+        /// Access a condition by its key (case insensitive) and operator
+        /// </summary>
+        public static bool HasParameter<TResource, TValue>(this IEnumerable<Condition<TResource>> conds, string key, out TValue? value) where TResource : class
+        {
+            var parameter = conds.FirstOrDefault(c => c.Operator == Operators.EQUALS && c.Key.EqualsNoCase(key));
+            if (parameter is {Value: TValue _value})
+            {
+                value = _value;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        /// <summary>
         /// Gets the first condition from a collection by its key (case insensitive) and operator, and removes
         /// it from the collection. 
         /// </summary>

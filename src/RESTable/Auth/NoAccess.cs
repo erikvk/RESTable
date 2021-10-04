@@ -8,6 +8,6 @@ namespace RESTable.Auth
     /// </summary>
     public class NoAccess : AccessRights
     {
-        public NoAccess() : base(null, new Dictionary<IResource, Method[]>()) { }
+        public NoAccess() : base(null, null, new Dictionary<IResource, Method[]>()) { }
     }
 }

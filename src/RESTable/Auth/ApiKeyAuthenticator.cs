@@ -116,7 +116,7 @@ namespace RESTable.Auth
                                     "whitespace or parentheses, and only containing ASCII characters 33 through 126");
             var keyHash = ComputeHash(apiKey);
             var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess ?? Array.Empty<AllowAccess>(), ResourceCollection);
-            var accessRights = new AccessRights(keyHash, assignments);
+            var accessRights = new AccessRights(this, keyHash, assignments);w
 
             if (ApiKeys.TryGetValue(keyHash, out var existing))
             {
