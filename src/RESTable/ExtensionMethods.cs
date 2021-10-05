@@ -163,6 +163,21 @@ namespace RESTable
             })
             .Where(type => type.IsSubclassOf(baseType));
 
+        internal static IEnumerable<Type> GetSubtypes(this Type baseType) => AppDomain.CurrentDomain
+            .GetAssemblies()
+            .SelectMany(assembly =>
+            {
+                try
+                {
+                    return assembly.GetTypes();
+                }
+                catch
+                {
+                    return Array.Empty<Type>();
+                }
+            })
+            .Where(baseType.IsAssignableFrom);
+
         internal static bool HasAttribute(this MemberInfo type, Type attributeType)
         {
             return type.GetCustomAttributes(attributeType).Any();
@@ -336,6 +351,8 @@ namespace RESTable
 
         #region Resource helpers
 
+        internal static bool IsDynamic(this Type type) => typeof(IDynamicMemberValueProvider).IsAssignableFrom(type) || type.IsDictionary(out _, out _);
+
         internal static ResourceKind GetResourceKind(this Type metatype) => metatype switch
         {
             _ when typeof(IEntityResource).IsAssignableFrom(metatype) => ResourceKind.EntityResource,
@@ -344,6 +361,20 @@ namespace RESTable
             _ when typeof(IEventResource).IsAssignableFrom(metatype) => ResourceKind.EventResource,
             _ => ResourceKind.All
         };
+
+        internal static TermBindingRule GetBindingRule(this Type type, bool input) => input ? type.GetInputBindingRule() : type.GetOutputBindingRule();
+
+        internal static TermBindingRule GetInputBindingRule(this Type type)
+        {
+            var attribute = type.GetCustomAttribute<RESTableAttribute>();
+            return type.IsDynamic() || attribute?.AllowDynamicConditions == true
+                ? TermBindingRule.DeclaredWithDynamicFallback
+                : TermBindingRule.OnlyDeclared;
+        }
+
+        internal static TermBindingRule GetOutputBindingRule(this Type type) => type.IsDynamic()
+            ? TermBindingRule.DeclaredWithDynamicFallback
+            : TermBindingRule.OnlyDeclared;
 
         internal static (bool allowDynamic, TermBindingRule bindingRule) GetDynamicConditionHandling(this Type type, RESTableAttribute? attribute)
         {

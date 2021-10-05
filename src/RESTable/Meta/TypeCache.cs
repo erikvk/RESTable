@@ -183,7 +183,6 @@ namespace RESTable.Meta
                     var propertyList = new List<DeclaredProperty>();
                     foreach (var property in Make(type))
                     {
-                        EstablishPropertyDependancies(property);
                         propertyList.Add(property);
                     }
                     var contract = EntityTypeContracts[type] = new EntityTypeContract(type, propertyList);
@@ -242,16 +241,6 @@ namespace RESTable.Meta
             }
             declaredProperty = null;
             return false;
-        }
-
-        internal void EstablishPropertyDependancies(DeclaredProperty property)
-        {
-            if (property.HasAttribute<DefinesAttribute>(out var dAttribute) && dAttribute!.Terms is string[] dArgs && dArgs.Any())
-            {
-                foreach (var term in dArgs.Select(name => TermFactory.MakeOrGetCachedTerm(property.Owner!, name, ".", TermBindingRule.OnlyDeclared)))
-                    property.DefinesPropertyTerms.Add(term);
-                property.DefinesOtherProperties = true;
-            }
         }
 
         #endregion

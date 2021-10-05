@@ -222,9 +222,16 @@ namespace RESTable.Tutorial
     {
         public string X => "Foo";
 
+        public Dictionary<string, object?> Dict { get; set; }
+
         public IEnumerable<R> Select(IRequest<R> request)
         {
-            yield return new R();
+            var builder = ImmutableDictionary.CreateBuilder<string, object?>();
+            builder.Add("Foo", "123");
+            yield return new R
+            {
+                Dict = builder.ToImmutable().ToDictionary(p => p.Key, p => p.Value)
+            };
         }
     }
 

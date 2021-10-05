@@ -20,6 +20,7 @@ namespace RESTable.AspNetCore
         public Headers Headers { get; }
         public string? HeadersStringCache { get; set; }
         public bool ExcludeHeaders => false;
+        private bool CertificateErrorsIgnored { get; set; }
         public string ProtocolIdentifier { get; }
         public CachedProtocolProvider CachedProtocolProvider { get; }
         private Terminal? Terminal { get; set; }
@@ -62,6 +63,12 @@ namespace RESTable.AspNetCore
             if (string.IsNullOrWhiteSpace(id))
                 return this;
             WebSocketId = id;
+            return this;
+        }
+
+        public ClientWebSocketBuilder IgnoreCertificateErrors(bool ignore)
+        {
+            CertificateErrorsIgnored = ignore;
             return this;
         }
 
@@ -122,7 +129,8 @@ namespace RESTable.AspNetCore
                 webSocket: clientWebSocket,
                 remoteUri: Uri!,
                 webSocketId: WebSocketId,
-                context: Context
+                context: Context,
+                ignoreCertificateErrors: CertificateErrorsIgnored
             );
             await aspNetCoreWebSocket.OpenAndAttachClientSocketToTerminal
             (
