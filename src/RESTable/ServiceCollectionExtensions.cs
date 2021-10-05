@@ -2,6 +2,7 @@
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using RESTable;
 using RESTable.Auth;
 using RESTable.DefaultProtocol;
@@ -18,9 +19,12 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection, Action<OptionsBuilder<ApiKeys>>? builderAction = null)
         {
-            serviceCollection.AddOptions<ApiKeys>().BindConfiguration(ApiKeys.ConfigSection);
+            var builder = serviceCollection.AddOptions<ApiKeys>();
+            if (builderAction is not null)
+                builderAction.Invoke(builder);
+            else builder.BindConfiguration(ApiKeys.ConfigSection);
             serviceCollection.TryAddSingleton<IApiKeyAuthenticator, ApiKeyAuthenticator>();
             serviceCollection.TryAddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
             serviceCollection.AddStartupActivator<IRequestAuthenticator>();
