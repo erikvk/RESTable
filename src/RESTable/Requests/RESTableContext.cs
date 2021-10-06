@@ -96,7 +96,6 @@ namespace RESTable.Requests
         public Client Client { get; }
 
 #if !NETSTANDARD2_0
-
         #region Retreiving things
 
         public ValueTask<ReadOnlyMemory<T>> All<T>() where T : class

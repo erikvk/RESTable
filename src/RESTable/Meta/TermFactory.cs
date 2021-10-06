@@ -31,7 +31,6 @@ namespace RESTable.Meta
                 resource: target.Type,
                 key: key,
                 componentSeparator: ".",
-                bindingRule: target.ConditionBindingRule,
                 isInput: true
             );
         }
@@ -45,7 +44,6 @@ namespace RESTable.Meta
             resource: target.Type,
             key: key,
             componentSeparator: ".",
-            bindingRule: target.ConditionBindingRule,
             isInput: true
         );
 
@@ -55,18 +53,18 @@ namespace RESTable.Meta
         /// </summary>
         public Term MakeOutputTerm(IEntityResource target, string key, ICollection<string>? dynamicDomain) =>
             dynamicDomain is null
-                ? MakeOrGetCachedTerm(target.Type, key, ".", target.OutputBindingRule, false)
-                : Parse(target.Type, key, ".", target.OutputBindingRule, false, dynamicDomain);
+                ? MakeOrGetCachedTerm(target.Type, key, ".", false)
+                : Parse(target.Type, key, ".", false, dynamicDomain);
 
         /// <summary>
         /// Creates a new term for the given type, with the given key, component separator and binding rule. If a term with
         /// the given key already existed, simply returns that one.
         /// </summary>
-        public Term MakeOrGetCachedTerm(Type resource, string key, string componentSeparator, TermBindingRule bindingRule, bool isInput)
+        public Term MakeOrGetCachedTerm(Type resource, string key, string componentSeparator, bool isInput)
         {
-            var tuple = (resource.GetRESTableTypeName(), key.ToLower(), bindingRule);
+            var tuple = (resource.GetRESTableTypeName(), key.ToLower(), isInput);
             if (!TermCache.TryGetValue(tuple, out var term))
-                term = TermCache[tuple] = Parse(resource, key, componentSeparator, bindingRule, isInput, null);
+                term = TermCache[tuple] = Parse(resource, key, componentSeparator, isInput, null);
             return term;
         }
 
@@ -75,18 +73,18 @@ namespace RESTable.Meta
         /// The main caller is TypeCache.MakeTerm, but it's also called from places that use a 
         /// dynamic domain (processors).
         /// </summary>
-        public Term Parse(Type resource, string key, string componentSeparator, TermBindingRule bindingRule, bool isInput, ICollection<string>? dynDomain)
+        public Term Parse(Type resource, string key, string componentSeparator, bool isInput, ICollection<string>? dynDomain)
         {
             var term = new Term(componentSeparator);
             foreach (var s in key.Split(componentSeparator))
             {
-                term.Store.Add(AppendLink(s, dynDomain, term, resource, bindingRule, isInput));
+                term.Store.Add(AppendLink(s, dynDomain, term, resource, isInput));
             }
             term.SetCommonProperties();
             return term;
         }
 
-        private Property AppendLink(string key, ICollection<string>? dynDomain, Term term, Type resource, TermBindingRule bindingRule, bool isInput)
+        private Property AppendLink(string key, ICollection<string>? dynDomain, Term term, Type resource, bool isInput)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -98,7 +96,7 @@ namespace RESTable.Meta
             }
             return term.LastOrDefault() switch
             {
-                null => MakeLink(resource, bindingRule, key),
+                null => MakeLink(resource, resource.GetBindingRule(isInput), key),
                 DeclaredProperty declared => MakeLink(declared.Type, declared.Type.GetBindingRule(isInput), key),
                 _ => DynamicProperty.Parse(key)
             };
