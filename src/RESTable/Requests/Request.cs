@@ -162,11 +162,15 @@ namespace RESTable.Requests
                 result = await Execute(cancellationToken).ConfigureAwait(false);
             }
 
-            if (Context.HasWaitingWebSocket(out var webSocket) && result is not WebSocketUpgradeSuccessful)
+            if
+            (
+                Context.HasWaitingWebSocket(out var webSocket) && webSocket is not null &&
+                result is not (WebSocketUpgradeSuccessful or WebSocketUpgradeFailed)
+            )
             {
                 if (result is Forbidden forbidden)
-                    return new WebSocketUpgradeFailed(forbidden);
-                await webSocket!.UseOnce(this, async ws =>
+                    return new WebSocketUpgradeFailed(forbidden, webSocket);
+                await webSocket.UseOnce(this, async ws =>
                 {
                     await ws.SendResult(result, cancellationToken: cancellationToken).ConfigureAwait(false);
                     var message = await ws.GetMessageStream(false, cancellationToken).ConfigureAwait(false);
@@ -207,11 +211,18 @@ namespace RESTable.Requests
                     {
                         if (!Context.HasWebSocket)
                             throw new UpgradeRequired(terminalResource.Name);
-                        if (Context.HasWaitingWebSocket(out var webSocket))
+                        if (Context.HasWaitingWebSocket(out var webSocket) && webSocket is not null)
                         {
-                            // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
-                            await webSocket!.OpenAndAttachServerSocketToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
-                            return new WebSocketUpgradeSuccessful(this, webSocket);
+                            try
+                            {
+                                // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
+                                await webSocket.OpenAndAttachServerSocketToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
+                                return new WebSocketUpgradeSuccessful(this, webSocket);
+                            }
+                            catch (Exception exception)
+                            {
+                                return new WebSocketUpgradeFailed(exception.AsError().AsResultOf(this), webSocket);
+                            }
                         }
                         return await SwitchTerminal(Context.WebSocket!, terminalResource, cancellationToken).ConfigureAwait(false);
                     }

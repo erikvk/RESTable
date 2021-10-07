@@ -346,6 +346,11 @@ namespace RESTable.Tutorial
     [RESTable]
     public class MyTerminal : Terminal
     {
+        public MyTerminal()
+        {
+            throw new Exception("Oooops!");
+        }
+
         private Task? RunTask { get; set; }
 
         protected override Task Open(CancellationToken cancellationToken)

@@ -18,7 +18,7 @@ namespace RESTable.Results
 
         /// <inheritdoc />
         public MethodNotAllowed(Method method, ITarget target, bool failedAuth) : base(ErrorCodes.MethodNotAllowed,
-            $"Method '{method}' is not available for resource '{target.Name}'{(failedAuth ? " for the current API key" : "")}")
+            $"Method '{method}' is not available for resource '{target.Name}'{(failedAuth ? " due to the current client's access rights" : "")}")
         {
             NotAuthorized = failedAuth;
             StatusCode = HttpStatusCode.MethodNotAllowed;

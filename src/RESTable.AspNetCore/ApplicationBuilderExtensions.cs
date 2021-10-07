@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using RESTable.Auth;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
+using RESTable.WebSockets;
 
 namespace RESTable.AspNetCore
 {
@@ -34,7 +36,17 @@ namespace RESTable.AspNetCore
 
                 foreach (var method in EnumMember<Method>.Values)
                 {
-                    router.MapVerb(method.ToString(), template, hc => HandleRequest(rootUri, method, hc, authenticator, hc.RequestAborted));
+                    router.MapVerb(method.ToString(), template, hc =>
+                    {
+                        try
+                        {
+                            return HandleRequest(rootUri, method, hc, authenticator, hc.RequestAborted);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            return Task.FromCanceled(hc.RequestAborted);
+                        }
+                    });
                 }
             });
 
@@ -48,7 +60,7 @@ namespace RESTable.AspNetCore
             var client = GetClient(aspNetCoreContext, new NoAccess());
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
             var options = context.GetOptions(uri, headers);
-            WriteResponse(aspNetCoreContext, options);
+            WriteResponse(options, aspNetCoreContext);
 
             var remote = aspNetCoreContext.Response.Body;
 #if NETSTANDARD2_0
@@ -71,7 +83,7 @@ namespace RESTable.AspNetCore
                 var error = new Unauthorized();
                 if (headers.Metadata == "full")
                     error.Headers.Metadata = error.Metadata;
-                WriteResponse(aspNetCoreContext, error);
+                WriteResponse(error, aspNetCoreContext);
                 return;
             }
             var client = GetClient(aspNetCoreContext, accessRights);
@@ -82,40 +94,63 @@ namespace RESTable.AspNetCore
             await using var result = await request.GetResult(cancellationToken);
             switch (result)
             {
-                case WebSocketTransferSuccess:
-                    return;
-                case WebSocketUpgradeSuccessful ws:
+                case WebSocketTransferSuccess: return;
+                case WebSocketUpgradeFailed wuf:
                 {
-                    await using var webSocket = ws.WebSocket;
-                    await webSocket.LifetimeTask;
+                    // An error occured during the upgrade process
+                    var webSocket = wuf.WebSocket;
+                    if (webSocket.Status == WebSocketStatus.Open)
+                    {
+                        // We're already open. Set the close description and close the websocket.
+                        await using (webSocket.ConfigureAwait(false))
+                        {
+                            webSocket.CloseDescription = await wuf.Error.GetLogMessage().ConfigureAwait(false);
+                            break;
+                        }
+                    }
+                    // We're not open yet. Respond with a regular HTTP error response
+                    WriteResponse(wuf.Error, aspNetCoreContext);
+                    await WriteResponseBody(wuf.Error, aspNetCoreContext, cancellationToken).ConfigureAwait(false);
                     break;
+                }
+                case WebSocketUpgradeSuccessful {WebSocket: var webSocket}:
+                {
+                    await using (webSocket.ConfigureAwait(false))
+                    {
+                        await webSocket.LifetimeTask;
+                        break;
+                    }
                 }
                 default:
                 {
-                    WriteResponse(aspNetCoreContext, result);
-                    var remote = aspNetCoreContext.Response.Body;
-
-#if NETSTANDARD2_0
-                    using (remote)
-#else
-                    await using (remote)
-#endif
-                    {
-                        await using var serializedResult = await result.Serialize(remote, cancellationToken: cancellationToken);
-                    }
+                    WriteResponse(result, aspNetCoreContext);
+                    await WriteResponseBody(result, aspNetCoreContext, cancellationToken).ConfigureAwait(false);
                     break;
                 }
             }
         }
 
-        private static void WriteResponse(HttpContext context, IResult result)
+        private static async Task WriteResponseBody(IResult result, HttpContext aspNetCoreContext, CancellationToken cancellationToken)
+        {
+            var remote = aspNetCoreContext.Response.Body;
+#if NETSTANDARD2_0
+            using (remote)
+#else
+            await using (remote)
+#endif
+            {
+                await using var serializedResult = await result.Serialize(remote, cancellationToken: cancellationToken);
+            }
+        }
+
+        private static void WriteResponse(IResult result, HttpContext context)
         {
             context.Response.StatusCode = (ushort) result.StatusCode;
             foreach (var (key, value) in result.Headers)
             {
                 if (value is null) continue;
                 // Kestrel doesn't like line breaks in headers
-                context.Response.Headers[key] = value.Replace(System.Environment.NewLine, null);
+                context.Response.Headers[key] = value.Replace(Environment.NewLine, null);
             }
             foreach (var cookie in result.Cookies)
                 context.Response.Headers["Set-Cookie"] = cookie.ToString();

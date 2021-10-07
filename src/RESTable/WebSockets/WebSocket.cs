@@ -125,6 +125,7 @@ namespace RESTable.WebSockets
         {
             ProtocolHolder = null!; // Set on Open()
             LifetimeTask = null!; // Set on Open() where applicable
+            CloseDescription = "";
 
             Id = webSocketId;
             WebSocketClosed = new CancellationTokenSource();
@@ -244,6 +245,8 @@ namespace RESTable.WebSockets
 
         #region Disconnection / dispose
 
+        public string CloseDescription { get; set; }
+
         /// <inheritdoc />
         /// <summary>
         /// Disposes the WebSocket and closes its connection.
@@ -256,7 +259,7 @@ namespace RESTable.WebSockets
             var terminalName = TerminalConnection?.Resource?.Name;
             await ReleaseTerminal().ConfigureAwait(false);
             if (IsConnected)
-                await Close(CancellationToken.None).ConfigureAwait(false);
+                await Close(CloseDescription, CancellationToken.None).ConfigureAwait(false);
             WebSocketClosed.Cancel();
             Status = WebSocketStatus.Closed;
             ClosedAt = DateTime.Now;
@@ -312,7 +315,7 @@ namespace RESTable.WebSockets
         /// <summary>
         /// Disconnects the actual underlying WebSocket connection
         /// </summary>
-        protected abstract Task Close(CancellationToken cancellationToken);
+        protected abstract Task Close(string description, CancellationToken cancellationToken);
 
         #endregion
 

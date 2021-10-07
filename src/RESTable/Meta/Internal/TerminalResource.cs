@@ -47,10 +47,19 @@ namespace RESTable.Meta.Internal
         public async Task<Terminal> CreateTerminal(RESTableContext context, CancellationToken webSocketCancellationToken, IEnumerable<Condition<T>>? assignments = null)
         {
             var assignmentList = assignments?.ToList() ?? new List<Condition<T>>();
-
-            var newTerminal = HasParameterizedConstructor
-                ? InvokeParameterizedConstructor(context, webSocketCancellationToken, assignmentList)
-                : (Terminal) Constructor.Invoke(null);
+            
+            Terminal newTerminal;
+            try
+            {
+                newTerminal = HasParameterizedConstructor
+                    ? InvokeParameterizedConstructor(context, webSocketCancellationToken, assignmentList)
+                    : (Terminal) Constructor.Invoke(null);
+            }
+            catch (TargetInvocationException tie)
+            {
+                // An exception occured in the constructor
+                throw tie.InnerException ?? tie;
+            }
 
             foreach (var assignment in assignmentList)
             {

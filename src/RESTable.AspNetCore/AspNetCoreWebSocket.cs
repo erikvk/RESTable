@@ -20,7 +20,7 @@ namespace RESTable.AspNetCore
         /// </summary>
         private SemaphoreSlim SendMessageSemaphore { get; }
 
-        protected WebSocket WebSocket { get; set; }
+        protected WebSocket? WebSocket { get; set; }
         private ArrayPool<byte> ArrayPool { get; }
         private int WebSocketBufferSize { get; }
 
@@ -28,7 +28,6 @@ namespace RESTable.AspNetCore
         {
             WebSocketBufferSize = context.Configuration.WebSocketBufferSize;
             ArrayPool = ArrayPool<byte>.Create(WebSocketBufferSize, 32);
-            WebSocket = null!;
             SendMessageSemaphore = new SemaphoreSlim(MaxNumberOfConcurrentWriters, MaxNumberOfConcurrentWriters);
         }
 
@@ -43,7 +42,7 @@ namespace RESTable.AspNetCore
 #else
                 var byteData = buffer.AsMemory();
 #endif
-                await WebSocket.SendAsync(byteData, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
+                await WebSocket!.SendAsync(byteData, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -58,9 +57,9 @@ namespace RESTable.AspNetCore
             {
 #if NETSTANDARD2_0
                 var segment = new ArraySegment<byte>(data.ToArray());
-                await WebSocket.SendAsync(segment, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
+                await WebSocket!.SendAsync(segment, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
 #else
-                await WebSocket.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
+                await WebSocket!.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
 #endif
             }
             finally
@@ -73,14 +72,14 @@ namespace RESTable.AspNetCore
         {
             return new AspNetCoreOutputMessageStream
             (
-                webSocket: WebSocket,
+                webSocket: WebSocket!,
                 messageType: asText ? Text : Binary,
                 SendMessageSemaphore,
                 webSocketCancelledToken: cancellationToken
             );
         }
 
-        protected override bool IsConnected => WebSocket.State == WebSocketState.Open;
+        protected override bool IsConnected => WebSocket?.State == WebSocketState.Open;
 
         protected abstract override Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken);
 
@@ -109,7 +108,7 @@ namespace RESTable.AspNetCore
             {
                 try
                 {
-                    while (!WebSocket.CloseStatus.HasValue)
+                    while (!WebSocket!.CloseStatus.HasValue)
                     {
                         var (messageType, endOfMessage, byteCount) = await GetInitial(WebSocket, cancellationToken).ConfigureAwait(false);
                         switch (messageType)
@@ -147,19 +146,28 @@ namespace RESTable.AspNetCore
                 {
                     // Client closed without completing close handshake
                 }
+                catch (Exception exception)
+                {
+                    // An exception was thrown from the terminal, or when handling websocket messages. Let's 
+                    // collect some information about the error and set the close description, before returning 
+                    // from the lifetimetask.
+                    var error = exception.AsError();
+                    CloseDescription = await error.GetLogMessage().ConfigureAwait(false);
+                }
                 finally
                 {
-                    // WebSocket is closed
+                    // WebSocket is closing, so we cancel all tasks depending on its cancellation token.
                     Cancel();
                 }
             }
+            // Catch cancellation exceptions before returning
             catch (TaskCanceledException) { }
             catch (OperationCanceledException) { }
         }
 
-        protected override async Task Close(CancellationToken cancellationToken)
+        protected override async Task Close(string description, CancellationToken cancellationToken)
         {
-            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken).ConfigureAwait(false);
+            await WebSocket!.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
         }
     }
 }
