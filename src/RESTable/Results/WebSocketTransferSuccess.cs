@@ -9,6 +9,11 @@ namespace RESTable.Results
     /// </summary>
     public class WebSocketTransferSuccess : OK
     {
-        internal WebSocketTransferSuccess(IRequest request) : base(request) { }
+        public IResult Result { get; }
+
+        internal WebSocketTransferSuccess(IResult result, IRequest request) : base(request)
+        {
+            Result = result;
+        }
     }
 }

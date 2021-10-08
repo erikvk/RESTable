@@ -230,9 +230,9 @@ namespace RESTable.Meta.Internal
                     .Where(_provider => _provider is IProceduralEntityResourceProvider)
                     .FirstOrDefault(_provider => _provider.GetType() == provider);
                 if (resourceProvider is null)
-                    throw new InvalidResourceControllerException($"Invalid resource controller '{controller}'. A binding was made to " +
-                                                                 $"an EntityResourceProvider of type '{provider}'. No such provider has " +
-                                                                 "been included in the call to RESTableConfig.Init().");
+                {
+                    continue;
+                }
                 var providerProperty = baseType.GetProperty("ResourceProvider", Static | NonPublic)
                                        ?? throw new Exception($"Unable to locate property 'ResourceProvider' in type '{controller}'");
                 var baseNamespaceProperty = baseType.GetProperty("BaseNamespace", Static | NonPublic)

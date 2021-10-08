@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.DependencyInjection
             else builder.BindConfiguration(ApiKeys.ConfigSection);
             serviceCollection.TryAddSingleton<IApiKeyAuthenticator, ApiKeyAuthenticator>();
             serviceCollection.AddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
-            serviceCollection.AddStartupActivator<IRequestAuthenticator>();
+            serviceCollection.AddStartupActivator<IApiKeyAuthenticator>();
             return serviceCollection;
         }
 

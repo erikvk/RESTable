@@ -55,6 +55,7 @@ namespace RESTable.AspNetCore
                 WriteResponse(error, aspNetCoreContext);
                 return;
             }
+
             var client = GetClient(aspNetCoreContext, accessRights);
             var context = new AspNetCoreRESTableContext(client, aspNetCoreContext);
 
@@ -63,7 +64,14 @@ namespace RESTable.AspNetCore
             await using var result = await request.GetResult(cancellationToken);
             switch (result)
             {
-                case WebSocketTransferSuccess: return;
+                case WebSocketTransferSuccess wts:
+                {
+                    if (wts.Result is Error error)
+                    {
+                        Logger.LogError("{Message}", await error.GetLogMessage());
+                    }
+                    return;
+                }
                 case WebSocketUpgradeFailed wuf:
                 {
                     // An error occured during the upgrade process

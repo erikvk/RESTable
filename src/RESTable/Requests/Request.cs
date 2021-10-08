@@ -183,7 +183,7 @@ namespace RESTable.Requests
                         await result.Serialize(message, cancellationToken: cancellationToken).ConfigureAwait(false);
                     }
                 }, cancellationToken).ConfigureAwait(false);
-                return new WebSocketTransferSuccess(this);
+                return new WebSocketTransferSuccess(result, this);
             }
 
             if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
