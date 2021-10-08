@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Auth;
@@ -14,8 +15,10 @@ namespace RESTable.Results
     internal class Options : Success
     {
         public IResource? Resource { get; }
+        private Stopwatch Stopwatch { get; }
+        public sealed override IRequest Request { get; }
 
-        public sealed override IRequest Request => null!;
+        public override TimeSpan TimeElapsed => Stopwatch.Elapsed;
 
         public static Options Create(RequestParameters parameters)
         {
@@ -41,9 +44,11 @@ namespace RESTable.Results
 
         private Options(RequestParameters parameters) : base(parameters)
         {
+            Request = parameters.Context.CreateRequest(parameters);
             StatusCode = HttpStatusCode.OK;
             StatusDescription = "OK";
             Resource = parameters.iresource;
+            Stopwatch = Stopwatch.StartNew();
         }
     }
 }

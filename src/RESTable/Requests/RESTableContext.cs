@@ -96,6 +96,7 @@ namespace RESTable.Requests
         public Client Client { get; }
 
 #if !NETSTANDARD2_0
+
         #region Retreiving things
 
         public ValueTask<ReadOnlyMemory<T>> All<T>() where T : class
@@ -258,6 +259,19 @@ namespace RESTable.Requests
                 WebSocket = CreateServerWebSocket();
             }
             var parameters = new RequestParameters(this, method, uri, headers, body);
+            if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
+            return DynamicCreateRequest((dynamic) parameters.IResource, parameters);
+        }
+
+        /// <summary>
+        /// Creates a request in this context using the given parameters.
+        /// </summary>
+        internal IRequest CreateRequest(RequestParameters parameters)
+        {
+            if (IsWebSocketUpgrade)
+            {
+                WebSocket = CreateServerWebSocket();
+            }
             if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
             return DynamicCreateRequest((dynamic) parameters.IResource, parameters);
         }

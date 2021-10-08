@@ -30,8 +30,8 @@ namespace RESTable
 
         public async Task Activate()
         {
-            var service = ServiceProvider.GetRequiredService<TService>();
-            await OnActivate(service).ConfigureAwait(false);
+            foreach (var service in ServiceProvider.GetServices<TService>())
+                await OnActivate(service).ConfigureAwait(false);
         }
     }
 }
