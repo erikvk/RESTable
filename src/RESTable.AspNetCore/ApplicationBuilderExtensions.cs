@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
+using RESTable.Requests;
 
 namespace RESTable.AspNetCore
 {
@@ -20,6 +21,8 @@ namespace RESTable.AspNetCore
             var template = rootUri + "/{resource?}/{conditions?}/{metaconditions?}";
             builder.UseRouter(router =>
             {
+                // Make sure RESTable is initialized
+                var _ = builder.ApplicationServices.GetRequiredService<RootContext>();
                 var handler = ActivatorUtilities.CreateInstance<HttpRequestHandler>(builder.ApplicationServices);
 
                 router.MapVerb("OPTIONS", template, context => handler.HandleOptionsRequest(rootUri, context));

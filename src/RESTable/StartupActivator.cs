@@ -31,7 +31,9 @@ namespace RESTable
         public async Task Activate()
         {
             foreach (var service in ServiceProvider.GetServices<TService>())
+            {
                 await OnActivate(service).ConfigureAwait(false);
+            }
         }
     }
 }
