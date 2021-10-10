@@ -47,7 +47,7 @@ namespace RESTable.Meta.Internal
         public async Task<Terminal> CreateTerminal(RESTableContext context, CancellationToken webSocketCancellationToken, IEnumerable<Condition<T>>? assignments = null)
         {
             var assignmentList = assignments?.ToList() ?? new List<Condition<T>>();
-            
+
             Terminal newTerminal;
             try
             {

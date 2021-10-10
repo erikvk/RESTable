@@ -149,8 +149,10 @@ namespace RESTable.Json
                     _ => throw exception(element.GetRawText())
                 },
                 JsonValueKind.True when typeCode == TypeCode.Boolean => true,
-                JsonValueKind.True => throw exception(true),
                 JsonValueKind.False when typeCode == TypeCode.Boolean => false,
+                JsonValueKind.True when targetType == typeof(object) => true,
+                JsonValueKind.False when targetType == typeof(object) => false,
+                JsonValueKind.True => throw exception(true),
                 JsonValueKind.False => throw exception(false),
                 _ => reserialize()
             };

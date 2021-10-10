@@ -182,17 +182,11 @@ namespace RESTable.Tutorial
     {
         public string S { get; }
         public int I { get; }
-        public TestResource Inner { get; }
-        public ImmutableDictionary<string, string> Dict { get; }
 
-        public TestResource(string s, int i, TestResource inner)
+        public TestResource(string s, int i)
         {
             S = s;
             I = i;
-            Inner = inner;
-            var builder = ImmutableDictionary.CreateBuilder<string, string>();
-            builder.Add("Foo", "FooBar");
-            Dict = builder.ToImmutable();
         }
     }
 
