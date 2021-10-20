@@ -101,6 +101,8 @@ namespace RESTable.WebSockets
                         {
                             var profile = webSocket.GetAppProfile();
                             await JsonProvider.PopulateAsync(profile, json).ConfigureAwait(false);
+                            foreach (var (key, value) in profile.CustomHeaders)
+                                webSocket.Headers[key] = value;
                             await webSocket.SendText("Profile updated", cancellationToken).ConfigureAwait(false);
                             await sendJson(webSocket.GetAppProfile()).ConfigureAwait(false);
                         }

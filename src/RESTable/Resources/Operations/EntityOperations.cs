@@ -440,7 +440,7 @@ namespace RESTable.Resources.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e, e.Message);
+                throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e);
             }
         }
 
@@ -501,7 +501,7 @@ namespace RESTable.Resources.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e, e.Message);
+                throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e);
             }
         }
 

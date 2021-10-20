@@ -10,7 +10,7 @@ namespace RESTable.WebSockets
         public string? ClientIP { get; }
         public string ConnectedAt { get; }
         public string CurrentTerminal { get; }
-        public Headers CustomHeaders { get; }
+        public Headers CustomHeaders { get; set; }
 
         internal AppProfile(WebSocket webSocket)
         {
@@ -20,7 +20,9 @@ namespace RESTable.WebSockets
             ClientIP = webSocket.Context.Client.ClientIp;
             ConnectedAt = webSocket.OpenedAt.ToString("yyyy-MM-dd HH:mm:ss");
             CurrentTerminal = webSocket.TerminalResource?.Name ?? "none";
-            CustomHeaders = new Headers(webSocket.Headers!);
+            CustomHeaders = new Headers();
+            foreach (var (key, value) in webSocket.Headers.GetCustom())
+                CustomHeaders.Add(key, value);
         }
     }
 }

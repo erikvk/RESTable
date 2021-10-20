@@ -229,7 +229,7 @@ namespace RESTable.Requests
 
                     case IBinaryResource<T> binaryResource:
                     {
-                        var binaryResult = binaryResource.SelectBinary(this);
+                        var binaryResult = await binaryResource.SelectBinaryAsync(this, cancellationToken).ConfigureAwait(false);
                         if (!this.Accepts(binaryResult.ContentType, out var acceptHeader))
                             throw new NotAcceptable(acceptHeader!, binaryResult.ContentType.ToString());
                         var binaryContent = new Binary(this, binaryResult);

@@ -96,7 +96,6 @@ namespace RESTable.Requests
         public Client Client { get; }
 
 #if !NETSTANDARD2_0
-
         #region Retreiving things
 
         public ValueTask<ReadOnlyMemory<T>> All<T>() where T : class
@@ -363,13 +362,7 @@ namespace RESTable.Requests
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
             Services = services ?? throw new ArgumentNullException(nameof(services));
-
-            // Ensures that RESTable is initialized. If it fails, the service provider
-            // does not contain the RESTable services
-            services.GetRequiredService<RESTableInitializer>();
-
             OptionsMonitor = services.GetRequiredService<IOptionsMonitor<RESTableConfiguration>>();
-
             TraceId = NextId;
             StackDepth = 0;
         }

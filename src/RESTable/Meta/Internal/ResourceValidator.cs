@@ -53,7 +53,7 @@ namespace RESTable.Meta.Internal
             var entityTypes = types
                 .Where(t => !typeof(Terminal).IsAssignableFrom(t) &&
                             !typeof(IEvent).IsAssignableFrom(t) &&
-                            !t.ImplementsGenericInterface(typeof(IBinary<>)))
+                            !t.ImplementsGenericInterface(typeof(IBinaryInternal)))
                 .ToList();
             var regularTypes = entityTypes
                 .Where(t => !typeof(IResourceWrapper).IsAssignableFrom(t))
@@ -65,7 +65,7 @@ namespace RESTable.Meta.Internal
                 .Where(t => typeof(Terminal).IsAssignableFrom(t))
                 .ToList();
             var binaryTypes = types
-                .Where(t => t.ImplementsGenericInterface(typeof(IBinary<>)))
+                .Where(t => typeof(IBinaryInternal).IsAssignableFrom(t))
                 .ToList();
             var eventTypes = types
                 .Where(t => !t.IsAbstract && typeof(IEvent).IsAssignableFrom(t))

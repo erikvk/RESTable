@@ -209,32 +209,18 @@ namespace RESTable.DefaultProtocol
         public void SetResultHeaders(IResult result) { }
 
         /// <inheritdoc />
-        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        public Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
             switch (toSerialize.Result)
             {
-                case Options options:
-                    await SerializeOptions(options, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    break;
-                case Head head:
-                    head.Headers["EntityCount"] = head.EntityCount.ToString();
-                    return;
-                case Change change:
-                    await SerializeChange((dynamic) change, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    return;
-                case Binary binary:
-                    await binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken).ConfigureAwait(false);
-                    return;
-                case IEntities<object> entities:
-                    await SerializeEntities((dynamic) entities, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    break;
-                case Report report:
-                    await SerializeReport(report, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    break;
-                case Error error:
-                    await SerializeError(error, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    break;
-                default: return;
+                case Options options: return SerializeOptions(options, toSerialize, contentTypeProvider, cancellationToken);
+                case Head: return Task.CompletedTask;
+                case Change change: return SerializeChange((dynamic) change, toSerialize, contentTypeProvider, cancellationToken);
+                case Binary binary: return binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken);
+                case IEntities<object> entities: return SerializeEntities((dynamic) entities, toSerialize, contentTypeProvider, cancellationToken);
+                case Report report: return SerializeReport(report, toSerialize, contentTypeProvider, cancellationToken);
+                case Error error: return SerializeError(error, toSerialize, contentTypeProvider, cancellationToken);
+                default: return Task.CompletedTask;
             }
         }
 
@@ -335,7 +321,6 @@ namespace RESTable.DefaultProtocol
             var serializedChange = new SerializedChange<T>(change);
             return jsonProvider.SerializeAsync(toSerialize.Body, serializedChange, cancellationToken: cancellationToken);
         }
-
 
         private static Task SerializeReport(Report report, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {

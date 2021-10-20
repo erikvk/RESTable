@@ -22,7 +22,7 @@ namespace RESTable.Results
             {
                 if (customOutputStream is null)
                     await serializedResult.DisposeAsync().ConfigureAwait(false);
-                var errorResult = exception.AsResultOf(result.Request);
+                var errorResult = exception.AsResultOf(result.Request, cancellationToken.IsCancellationRequested);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     return new SerializedResult(errorResult);

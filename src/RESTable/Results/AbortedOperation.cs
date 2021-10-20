@@ -9,9 +9,9 @@ namespace RESTable.Results
     /// </summary>
     internal sealed class AbortedOperation : BadRequest
     {
-        internal AbortedOperation(IRequest request, ErrorCodes code, Exception ie, string? message = null) : base(code, message, ie)
+        internal AbortedOperation(IRequest request, ErrorCodes code, Exception ie) : base(code, ie.Message, ie)
         {
-            Headers.Info = $"Aborted {request.Method} on resource '{request.Resource}' due to an error: {this}";
+            Headers.Info = $"Aborted {request.Method} on resource '{request.Resource}' due to an error: {ie.Message}";
         }
     }
 }

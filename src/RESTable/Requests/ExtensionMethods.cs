@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RESTable.ContentTypeProviders;
 using RESTable.Meta;
 using RESTable.Requests.Filters;
 using RESTable.Results;
@@ -132,7 +134,34 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Sets the given conditions to the request, and returns the request
+        /// Sets a set of parameters from a given object to the request as conditions and returns the request
+        /// </summary>
+        public static IRequest<T> WithAddedParameters<T>(this IRequest<T> request, object? parameters) where T : class
+        {
+            if (parameters is null) return request;
+            var jsonProvider = request.GetRequiredService<IJsonProvider>();
+            var jsonElement = jsonProvider.ToJsonElement(parameters);
+            if (jsonElement.ValueKind != JsonValueKind.Object)
+            {
+                throw new ArgumentException($"Invalid parameters object. Expected object, found '{jsonElement.ValueKind}'");
+            }
+            foreach (var property in jsonElement.EnumerateObject())
+            {
+                request.WithAddedCondition(property.Name, Operators.EQUALS, jsonProvider.ToObject<object>(property.Value));
+            }
+            return request;
+        }
+
+        /// <summary>
+        /// Adds the given parameter as a condition to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithAddedParameter<T>(this IRequest<T> request, string key, object? value) where T : class
+        {
+            return request.WithAddedCondition(key, Operators.EQUALS, value);
+        }
+
+        /// <summary>
+        /// Adds the given conditions to the request, and returns the request
         /// </summary>
         public static IRequest<T> WithAddedConditions<T>(this IRequest<T> request, IEnumerable<Condition<T>> conditions) where T : class
         {
@@ -141,7 +170,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Sets the given conditions to the request, and returns the request
+        /// Adds the given conditions to the request, and returns the request
         /// </summary>
         public static IRequest<T> WithAddedConditions<T>(this IRequest<T> request, params Condition<T>[] conditionsArray) where T : class
         {
@@ -149,17 +178,17 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Sets the given conditions to the request, and returns the request
+        /// Adds the given conditions to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithAddedCondition<T>(this IRequest<T> request, string key, Operators op, object value) where T : class
+        public static IRequest<T> WithAddedCondition<T>(this IRequest<T> request, string key, Operators op, object? value) where T : class
         {
             return WithAddedConditions(request, (key, op, value));
         }
 
         /// <summary>
-        /// Sets the given conditions to the request, and returns the request
+        /// Adds the given conditions to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithAddedCondition<T>(this IRequest<T> request, string key, Operators op, object value, out Condition<T> condition) where T : class
+        public static IRequest<T> WithAddedCondition<T>(this IRequest<T> request, string key, Operators op, object? value, out Condition<T> condition) where T : class
         {
             var termFactory = request.GetRequiredService<TermFactory>();
             var target = request.Target;
@@ -173,9 +202,9 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Sets the given conditions to the request, and returns the request
+        /// Adds the given conditions to the request, and returns the request
         /// </summary>
-        public static IRequest<T> WithAddedConditions<T>(this IRequest<T> request, params (string key, Operators op, object value)[] conditions) where T : class
+        public static IRequest<T> WithAddedConditions<T>(this IRequest<T> request, params (string key, Operators op, object? value)[] conditions) where T : class
         {
             var termFactory = request.GetRequiredService<TermFactory>();
             var target = request.Target;

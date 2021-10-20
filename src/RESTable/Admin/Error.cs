@@ -140,7 +140,7 @@ namespace RESTable.Admin
                 stackTrace: stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 message: totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage
             );
-            InMemoryOperations<Error>.Insert(error);
+            var _ = InMemoryOperations<Error>.Insert(error).ToList();
             return error;
         }
     }

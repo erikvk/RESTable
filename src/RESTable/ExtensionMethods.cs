@@ -665,13 +665,13 @@ namespace RESTable
             _ => new Unknown(exception)
         };
 
-        public static Error AsResultOf(this Exception exception, IRequest? request)
+        public static Error AsResultOf(this Exception exception, IRequest? request, bool cancelled = false)
         {
             var error = exception.AsError();
             if (request is null) return error;
             error.SetContext(request.Context);
             error.Request = request;
-            if (error is not Forbidden && request.Method >= 0)
+            if (!cancelled && error is not Forbidden && request.Method >= 0)
             {
                 var errorId = Admin.Error.Create(error, request).Id;
                 error.Headers.Error = $"/restable.admin.error/id={errorId}";
@@ -807,9 +807,12 @@ namespace RESTable
                     if (protocolHolder.CachedProtocolProvider.OutputMimeBindings.TryGetValue(contentType.MediaType, out _))
                         return true;
                 }
+                acceptHeader = null;
+                return false;
             }
+            // No accept header means accept anything
             acceptHeader = null;
-            return false;
+            return true;
         }
 
         public static IContentTypeProvider GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)

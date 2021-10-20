@@ -31,6 +31,7 @@ namespace RESTable.WebSockets
         private IJsonProvider JsonProvider { get; }
         private WebSocketManager WebSocketManager { get; }
         private bool _disposed;
+        private string _closeDescription;
 
         internal Terminal? Terminal => TerminalConnection?.Terminal;
         internal AppProfile GetAppProfile() => new(this);
@@ -125,7 +126,7 @@ namespace RESTable.WebSockets
         {
             ProtocolHolder = null!; // Set on Open()
             LifetimeTask = null!; // Set on Open() where applicable
-            CloseDescription = "";
+            _closeDescription = "";
 
             Id = webSocketId;
             WebSocketClosed = new CancellationTokenSource();
@@ -245,7 +246,25 @@ namespace RESTable.WebSockets
 
         #region Disconnection / dispose
 
-        public string CloseDescription { get; set; }
+        public string CloseDescription
+        {
+            get => _closeDescription;
+            set
+            {
+#if NETSTANDARD2_0
+                var bytes = Encoding.UTF8.GetBytes(value);
+                if (bytes.Length > 123)
+                    bytes = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Take(bytes, 123));
+                _closeDescription = Encoding.UTF8.GetString(bytes);
+#else
+                var maxChars = Encoding.UTF8.GetMaxByteCount(value.Length);
+                Span<byte> byteBuffer = stackalloc byte[maxChars];
+                var length = Encoding.UTF8.GetBytes(value, byteBuffer);
+                var take = Math.Min(length, 123);
+                _closeDescription = Encoding.UTF8.GetString(byteBuffer[..take]);
+#endif
+            }
+        }
 
         /// <inheritdoc />
         /// <summary>

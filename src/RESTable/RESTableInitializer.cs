@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 using RESTable.Auth;
 using RESTable.Internal;
 using RESTable.Meta;
@@ -8,7 +10,7 @@ using RESTable.Meta.Internal;
 
 namespace RESTable
 {
-    public class RESTableInitializer
+    public class RESTableInitializer : BackgroundService
     {
         public RESTableInitializer
         (
@@ -31,5 +33,7 @@ namespace RESTable
             var startupTasks = startupActivators.Select(activator => activator.Activate());
             Task.WhenAll(startupTasks).Wait();
         }
+
+        protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
     }
 }
