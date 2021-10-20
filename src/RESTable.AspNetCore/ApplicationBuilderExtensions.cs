@@ -16,7 +16,7 @@ namespace RESTable.AspNetCore
         /// <param name="builder"></param>
         /// <param name="rootUri">The root URI to use for the RESTable REST API</param>
         /// <returns></returns>
-        public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder, string rootUri = "/restable")
+        public static IApplicationBuilder UseRESTableAspNetCore(this IApplicationBuilder builder, string rootUri = "/api")
         {
             var template = rootUri + "/{resource?}/{conditions?}/{metaconditions?}";
             builder.UseRouter(router =>
