@@ -10,7 +10,7 @@ namespace RESTable.Requests
     /// <summary>
     /// A collection of request headers. Key comparison is case insensitive.
     /// </summary>
-    public sealed class Headers : IHeaders, IHeadersInternal
+    public sealed class Headers : IHeaders, IHeadersInternal, IDictionary
     {
         #region Response headers
 
@@ -177,6 +177,38 @@ namespace RESTable.Requests
 
         #endregion
 
+        public void CopyTo(Array array, int index) => throw new NotImplementedException();
+
+        public bool IsSynchronized => false;
+        public object SyncRoot => null!;
+        public void Add(object key, object? value) => this._Set(key.ToString()!, value?.ToString());
+        public bool Contains(object key) => this._ContainsKey(key.ToString()!);
+
+        public readonly struct Enumerator : IDictionaryEnumerator
+        {
+            private IEnumerator<KeyValuePair<string, string?>> Inner { get; }
+            public Enumerator(IEnumerator<KeyValuePair<string, string?>> inner) : this() => Inner = inner;
+            public bool MoveNext() => Inner.MoveNext();
+            public void Reset() => Inner.Reset();
+            public object Current => Inner.Current;
+            public DictionaryEntry Entry => new(Key, Value);
+            public object Key => Inner.Current.Key;
+            public object? Value => Inner.Current.Value;
+        }
+
+        IDictionaryEnumerator IDictionary.GetEnumerator() => new Enumerator(GetHeaderEnumeration().GetEnumerator());
+
+        public void Remove(object key) => this._Remove(key.ToString()!);
+        public bool IsFixedSize => false;
+
+        public object? this[object key]
+        {
+            get => this[key.ToString()!];
+            set => this[key.ToString()!] = value?.ToString();
+        }
+
+        ICollection IDictionary.Keys => this._Keys();
+        ICollection IDictionary.Values => this._Values();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <inheritdoc />
@@ -205,7 +237,6 @@ namespace RESTable.Requests
         /// <inheritdoc />
         void ICollection<KeyValuePair<string, string?>>.Add(KeyValuePair<string, string?> pair) => this._Set(pair.Key, pair.Value);
 
-        /// <inheritdoc />
         public void Clear()
         {
             Accept = null;
@@ -232,7 +263,6 @@ namespace RESTable.Requests
         // We must use the HeadersEnumerator for this to work properly
         public int Count => GetHeaderEnumeration().Count();
 
-        /// <inheritdoc />
         public bool IsReadOnly => false;
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
