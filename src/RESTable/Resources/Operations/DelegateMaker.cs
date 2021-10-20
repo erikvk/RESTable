@@ -27,7 +27,7 @@ namespace RESTable.Resources.Operations
                 var d when d == typeof(AsyncDeleter<>).MakeGenericType(t) => typeof(IAsyncDeleter<>).MakeGenericType(t),
                 var d when d == typeof(AsyncCounter<>).MakeGenericType(t) => typeof(IAsyncCounter<>).MakeGenericType(t),
                 var d when d == typeof(AsyncAuthenticator<>).MakeGenericType(t) => typeof(IAsyncAuthenticatable<>).MakeGenericType(t),
-                var d when d == typeof(BinarySelector<>).MakeGenericType(t) => typeof(IBinary<>).MakeGenericType(t),
+                var d when d == typeof(AsyncBinarySelector<>).MakeGenericType(t) => typeof(IAsyncBinary<>).MakeGenericType(t),
                 var d when d == typeof(AsyncViewSelector<>).MakeGenericType(t) => typeof(IAsyncSelector<>).MakeGenericType(t),
 
                 _ => throw new ArgumentOutOfRangeException()

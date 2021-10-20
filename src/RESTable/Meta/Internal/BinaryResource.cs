@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -13,7 +14,7 @@ namespace RESTable.Meta.Internal
         /// <summary>
         /// Selects binary content asynchronously from a binary resource
         /// </summary>
-        BinaryResult SelectBinary(IRequest<T> request);
+        ValueTask<BinaryResult> SelectBinaryAsync(IRequest<T> request, CancellationToken cancellationToken);
     }
 
     internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResource<T> where T : class
@@ -34,14 +35,14 @@ namespace RESTable.Meta.Internal
         public bool GETAvailableToAll { get; }
         public Type? InterfaceType { get; }
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken) => throw new InvalidOperationException();
-        public BinaryResult SelectBinary(IRequest<T> request) => BinarySelector(request);
+        public ValueTask<BinaryResult> SelectBinaryAsync(IRequest<T> request, CancellationToken cancellationToken) => BinarySelector(request, cancellationToken);
         private List<IResource> InnerResources { get; }
         public void AddInnerResource(IResource resource) => InnerResources.Add(resource);
         public IEnumerable<IResource> GetInnerResources() => InnerResources.AsReadOnly();
         public ResourceKind ResourceKind { get; }
-        private BinarySelector<T> BinarySelector { get; }
+        private AsyncBinarySelector<T> BinarySelector { get; }
 
-        internal BinaryResource(BinarySelector<T> binarySelector, TypeCache typeCache)
+        internal BinaryResource(AsyncBinarySelector<T> binarySelector, TypeCache typeCache)
         {
             Name = typeof(T).GetRESTableTypeName();
             Type = typeof(T);

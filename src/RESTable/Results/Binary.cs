@@ -16,6 +16,14 @@ namespace RESTable.Results
         public Binary(IRequest request, BinaryResult binaryResult) : base(request, binaryResult.ContentType)
         {
             BinaryResult = binaryResult;
+            if (binaryResult.ContentLength is long contentLength)
+            {
+                Headers["Content-Length"] = contentLength.ToString();
+            }
+            if (binaryResult.ContentDisposition is string contentDisposition)
+            {
+                Headers["Content-Disposition"] = contentDisposition;
+            }
         }
 
         /// <inheritdoc />

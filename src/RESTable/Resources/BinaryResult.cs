@@ -9,11 +9,15 @@ namespace RESTable.Resources
     {
         public Func<Stream, CancellationToken, Task> WriteToStream { get; }
         public ContentType ContentType { get; }
+        public long? ContentLength { get; }
+        public string? ContentDisposition { get; }
 
-        public BinaryResult(Func<Stream, CancellationToken, Task> writeToStream, ContentType contentType)
+        public BinaryResult(Func<Stream, CancellationToken, Task> writeToStream, ContentType contentType, long? contentLength = null, string? contentDisposition = null)
         {
             WriteToStream = writeToStream;
             ContentType = contentType;
+            ContentLength = contentLength;
+            ContentDisposition = contentDisposition;
         }
     }
 }
