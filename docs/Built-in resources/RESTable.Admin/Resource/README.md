@@ -29,21 +29,3 @@ Views          | array of `ViewInfo`(read-only)  | The [views](../../../Consumin
 Provider       | `string` (read-only)            | The name of the [`ResourceProvider`](../../../Developing%20a%20RESTable%20API/entity%20resources/Resource%20providers) that generated this resource
 Kind           | `ResourceKind` (read-only)      | The [kind](../../Developing%20a%20RESTable%20API/Registering%20resources) of the resource, for example `EntityResource`
 InnerResources | array if `Resource` (read-only) | Resources declared within the scope of this resource
-
-**To get all resources currently registered by the server:**
-
-```
-GET https://my-server.com/rest/resource
-Headers: 'Authorization: apikey mykey'
-```
-
-**To list all resource names only:**
-
-```
-GET https://my-server.com/rest///select=name
-Headers: 'Authorization: apikey mykey'
-```
-
-## Adding resources
-
-Resources can be added during runtime by calling any procedural resource controller, for example the built-in [`RESTable.Dynamic.Resource`](../../RESTable.Dynamic) resource.

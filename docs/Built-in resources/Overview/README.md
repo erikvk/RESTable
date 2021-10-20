@@ -14,4 +14,4 @@ RESTable has a number of built-in web resources that provide useful utilities an
 
 > Utilities for administrators
 
-It is recommended that the `RESTable.Admin` namespace is [restricted to only administrators](../Administering%20a%20RESTable%20API/API%20keys). Use the sidebar menu to explore the namespaces.
+It is recommended that the `RESTable.Admin` namespace is [restricted to only administrators](../Administering%20a%20RESTable%20API/API%20keys).

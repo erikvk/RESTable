@@ -6,7 +6,7 @@ Entity resources are resources modelled as _sets of entities_, where each entity
 
 Entity resources – like all RESTable resources – are .NET classes, and the entities themselves are, not surprisingly, instances of these classes. There are two ways to register a class as an entity resource in RESTable:
 
-1. By decorating its class declaration with the [`RESTableAttribute`](APIREF) attribute.
+1. By decorating its class declaration with the `RESTableAttribute` attribute.
 2. By declaring a new class that inherits from `RESTable.ResourceWrapper<T>` where `T` is the class to register as entity resource. This class should also be decorated with the `RESTableAttribute` attribute.
 
 ### Using the `RESTableAttribute` attribute
@@ -14,7 +14,7 @@ Entity resources – like all RESTable resources – are .NET classes, and the e
 The easiest way to make an existing class, for example a Starcounter database class, work as a RESTable resource is to simply decorate it with the `RESTableAttribute` attribute and assign the REST methods we want to make available as parameters to its constructor.
 
 ```csharp
-[Database, RESTable(Methods.GET, Methods.POST)]
+[InMemory, RESTable(Methods.GET, Methods.POST)]
 public class Employee
 {
     public string Name;
@@ -23,7 +23,7 @@ public class Employee
 }
 ```
 
-The resource is then registered when the application calls [`RESTableConfig.Init()`]() is called, and made available for REST requests.
+The resource is then registered when the application is started, and made available for REST requests.
 
 ### Creating a `ResourceWrapper<T>` subclass
 

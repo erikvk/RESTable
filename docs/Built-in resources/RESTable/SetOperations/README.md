@@ -55,8 +55,8 @@ All the request examples below work with our [demo service](../../../Consuming%2
 ## Example 1:
 
 ```
-GET https://RESTablehelp.mopedo-drtb.com:8282/api/setoperations
-Headers: 'Authorization: apikey RESTable'
+GET https://myapp.com/api/setoperations
+Accept: application/json;raw=true
 Body:
 {
     "union": [
@@ -75,8 +75,8 @@ The request above will find all `Superhero` entities where the `Gender` property
 Set operations calls can be nested in input JSON object trees. Also note that the order of elements in operation argument arrays is important for the non-symmetric functions `Except` and `Map`.
 
 ```
-GET https://RESTablehelp.mopedo-drtb.com:8282/api/setoperations
-Headers: 'Authorization: apikey RESTable'
+GET https://myapp.com/api/setoperations
+Accept: application/json;raw=true
 Body: {
     "except": [
         {
@@ -102,8 +102,8 @@ What we want to do now is to take all superhero names that begin with the letter
 4. Now, to exclude properties that are not `Name`, and apply ordering, we can actually use regular URI meta-conditions in the call the `SetOperations`. This is the final request:
 
 ```
-GET https://RESTablehelp.mopedo-drtb.com:8282/api/setoperations//select=Name&order_asc=Name
-Headers: 'Authorization: apikey RESTable'
+GET GET https://myapp.com/api/setoperations/_/select=Name&order_asc=Name
+Accept: application/json;raw=true
 Body: {
     "map": [
         "/superhero/name>D&name<E/select=yearintroduced&distinct=true",

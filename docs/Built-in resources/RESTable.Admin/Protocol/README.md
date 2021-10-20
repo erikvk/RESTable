@@ -12,7 +12,7 @@ permalink: /Built-in%20resources/RESTable.Admin/Protocol/
 }
 ```
 
-The `Protocol` resource lists all [protocol providers](../../../Developing%20a%20RESTable%20API/Protocol%20providers) that have been added to the current RESTable application, as well as their respective available input and output [content types](../../../Developing%20a%20RESTable%20API/Content%20type%20providers). The RESTable protocol is always enabled, but others – such as [OData](https://github.com/Mopedo/RESTable.OData) – can be added by the developer. See [this section of the documentation](../../../Developing%20a%20RESTable%20API/Protocol%20providers) for more information on how to add custom protocol providers.
+The `Protocol` resource lists all [protocol providers](../../../Developing%20a%20RESTable%20API/Protocol%20providers) that have been added to the current RESTable application, as well as their respective available input and output [content types](../../../Developing%20a%20RESTable%20API/Content%20type%20providers). The RESTable protocol is always enabled, but others can be added by the developer. See [this section of the documentation](../../../Developing%20a%20RESTable%20API/Protocol%20providers) for more information on how to add custom protocol providers.
 
 ## Format
 
@@ -40,48 +40,51 @@ Bindings      | array of `string` | The available header values that can be used
 ## Example
 
 ```
-GET /protocol
+GET https://myapp.com/api/protocol
+Accept: application/json;raw=true
 
 Response body:
-[
-    {
-        "Name": "RESTable",
-        "Identifier": "RESTable",
-        "IsDefault": true,
-        "ContentTypes": [{
-            "Name": "JSON",
-            "MimeType": "application/json",
-            "CanRead": true,
-            "CanWrite": true,
-            "Bindings": [
-                "application/json",
-                "application/RESTable-json",
-                "json",
-                "text/plain"
-            ]
-        },
-        {
-            "Name": "Microsoft Excel",
-            "MimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "CanRead": true,
-            "CanWrite": true,
-            "Bindings": [
-                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  "application/RESTable-excel",
-                  "excel"
-            ]
-        },
-        {
-            "Name": "XML",
-            "MimeType": "application/xml",
-            "CanRead": false,
-            "CanWrite": true,
-            "Bindings": [
-                "application/xml",
-                "application/RESTable-xml",
-                "xml"
-            ]
-        }]
-    }
-]
+
+[{
+    "Name": "RESTable",
+    "Identifier": "restable",
+    "IsDefault": true,
+    "ContentTypes": [
+      {
+        "Name": "JSON",
+        "MimeType": "application/json",
+        "CanRead": true,
+        "CanWrite": true,
+        "Bindings": [
+          "application/json",
+          "application/restable-json",
+          "json",
+          "text/plain"
+        ]
+      },
+      {
+        "Name": "Microsoft Excel",
+        "MimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "CanRead": true,
+        "CanWrite": true,
+        "Bindings": [
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/restable-excel",
+          "excel"
+        ]
+      },
+      {
+        "Name": "JSON Lines",
+        "MimeType": "application/jsonlines",
+        "CanRead": false,
+        "CanWrite": true,
+        "Bindings": [
+          "application/jsonlines",
+          "application/x-ndjson",
+          "application/x-jsonlines",
+          "jl"
+        ]
+      }
+    ]
+}]
 ```

@@ -17,8 +17,8 @@ RESTable.Echo is a test and utility resource that simply returns the request URI
 ## Example:
 
 ```
-GET https://my-server.com/rest/echo/Name=Erik&Job=Developer&Other%20thing!=null
-Headers: 'Authorization: apikey mykey'
+GET https://myapp.com/api/echo/Name=Erik&Job=Developer&Other%20thing!=null
+Accept: application/json;raw=true
 Response body:
 [{
     "Name": "Erik",

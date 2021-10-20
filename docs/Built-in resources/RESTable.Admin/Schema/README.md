@@ -17,19 +17,21 @@ The `Schema` resource lets you print the schema for another resource. The schema
 ## Example
 
 ```
-GET https://my-server.com/rest/schema/resource=RESTable.Admin.Resource
-Headers: 'Authorization: apikey mykey'
+GET https://myapp.com/api/schema/resource=RESTable.Admin.Resource
+Accept: application/json;raw=true
 Response body: [{
     "Name": "System.String",
-    "Alias": "System.String",
     "Description": "System.String",
-    "EnabledMethods": "RESTable.Methods[]",
-    "Editable": "System.Boolean",
+    "EnabledMethods": "RESTable.Method[]",
+    "IsDeclared": "System.Boolean",
+    "IsProcedural": "System.Boolean",
     "IsInternal": "System.Boolean",
-    "Type": "System.String",
+    "Type": "System.Type",
     "Views": "RESTable.ViewInfo[]",
+    "IResource": "RESTable.Meta.IResource",
     "Provider": "System.String",
-    "Kind": "RESTable.ResourceKind",
-    "InnerResources": "RESTable.Admin.Resource[]"
+    "Kind": "RESTable.Meta.ResourceKind",
+    "InnerResources": "System.Collections.Generic.IEnumerable`1[[RESTable.Admin.Resource, RESTable, Ve
+rsion=1.0.25.0, Culture=neutral, PublicKeyToken=null]]"
 }]
 ```

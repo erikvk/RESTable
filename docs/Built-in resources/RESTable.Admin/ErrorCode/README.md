@@ -17,8 +17,7 @@ The error codes used by RESTable have their own resource, which is useful for ad
 ## Example
 
 ```
-GET https://my-server.com/rest/errorcode/code<5
-Headers: "Authorization: apikey mykey"
+GET https://myapp.com/api/errorcode/code<5
 Response body:
 [
     {

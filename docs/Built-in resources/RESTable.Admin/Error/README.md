@@ -34,43 +34,51 @@ Body          | `string`                     | The body of the request
 Request:
 
 ```
-GET https://my-server.com/rest/thisisnotaresource
-Headers: "Authorization: apikey mykey"
+GET https://myapp.com/api/thisisnotaresource
 ```
 
 Response:
 
-```
-Status code: 404 Not found
-Headers:    "RESTable-info: RESTable could not locate any resource by 'thisisnotaresource'."
-            "ErrorInfo: /RESTable.Admin.Error/id=EL5wa"
+```json
+{
+  "Status": "fail",
+  "ErrorType": "RESTable.Results.UnknownResource",
+  "ErrorCode": "UnknownResource",
+  "Message": "RESTable could not locate any resource by 'thisisnotaresource'.",
+  "MoreInfoAt": "/restable.admin.error/id=1",
+  "TimeStamp": "2021-10-20T13:01:23.8870186Z",
+  "Uri": "/thisisnotaresource",
+  "TimeElapsedMs": 0
+}
 ```
 
 Error lookup request:
 
 ```
-GET https://my-server.com/rest/RESTable.Admin.Error/id=EL5wa
-Headers: "Authorization: apikey mykey"
+GET https://myapp.com/api/restable.admin.error/id=1
 ```
 
 Error lookup response body:
 
 ```
-[
-  {
-    "Id": "EL5wa",
-    "Time": "2018-02-09T13:11:14.2784921Z",
-    "ResourceName": "<unknown>",
-    "Action": "GET",
-    "ErrorCode": "UnknownResource",
-    "StackTrace": "   at RESTable.Resource.Find(String searchString)\r\n   at RESTable.Requests.Arguments.get_IResource()\r\n   at RESTable.Requests.RequestEvaluator.Evaluate(Action action, String& query, Byte[] body, Headers headers, TCPConnection tcpConnection) §§§ INNER: ",
-    "Message": "RESTable could not locate any resource by 'thisisnotaresource'.",
-    "Uri": "/thisisnotaresource/_/_",
-    "Headers": "Connection: Keep-Alive | Accept: */* | Authorization: apikey ******* | Host: demo-dsp.mopedo-drtb.com:8282 ... ",
-    "Body": null,
-    "ObjectNo": 70229018
-  }
-]
+{
+  "Status": "success",
+  "Data": [
+    {
+      "Id": 1,
+      "Uri": "/thisisnotaresource",
+      "Method": "GET",
+      "Headers": "Accept: */* | Host: localhost:5001 | User-Agent: curl/7.55.1",
+      "Body": "",
+      "ResourceName": "<unknown>",
+      "Time": "2021-10-20T13:03:49.3631383Z",
+      "ErrorCode": "UnknownResource",
+      "StackTrace": "at RESTable.Meta.ResourceCollection.FindResource(String searchStri... etc."
+    }
+  ],
+  "DataCount": 1,
+  "TimeElapsedMs": 10.851
+}
 ```
 
-The `StackTrace` is useful to include in bug reports to developers. Also, note that the API key is hidden in the `Headers` property.
+The `StackTrace` is useful to include in bug reports to developers.
