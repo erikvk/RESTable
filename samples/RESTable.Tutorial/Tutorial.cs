@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,6 +10,7 @@ using System.Threading.Tasks.Dataflow;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
 using RESTable.Linq;
@@ -56,6 +56,10 @@ namespace RESTable.Tutorial
             .UseStartup<Tutorial>()
             .Build()
             .RunAsync();
+
+        private IConfiguration Configuration { get; }
+
+        public Tutorial(IConfiguration configuration) => Configuration = configuration;
 
         public void ConfigureServices(IServiceCollection services) => services
             .AddRESTable()
@@ -211,25 +215,18 @@ namespace RESTable.Tutorial
         }
     }
 
+    public class SomeDict : Dictionary<string, string> { }
+
     [RESTable(GET)]
-    public class R : ISelector<R>
+    public class MyBinary : IBinary<MyBinary>
     {
-        public string X => "Foo";
-
-        public Dictionary<string, object?> Dict { get; set; }
-
-        public IEnumerable<R> Select(IRequest<R> request)
+        public BinaryResult Select(IRequest<MyBinary> request)
         {
-            var builder = ImmutableDictionary.CreateBuilder<string, object?>();
-            builder.Add("Foo", "123");
-            yield return new R
-            {
-                Dict = builder.ToImmutable().ToDictionary(p => p.Key, p => p.Value)
-            };
+            var bytes = Encoding.UTF8.GetBytes("FOobar boaoskdkasd okasd pokasdp okasdpo kapdokwdpaokwdpo kadpoakwdp okawdp okawd pokawdp okawdpo kpaowkd ");
+
+            return new BinaryResult((str, ct) => str.WriteAsync(bytes, ct).AsTask(), "text/plain", bytes.LongLength);
         }
     }
-
-    public class SomeDict : Dictionary<string, string> { }
 
     [RESTable, InMemory]
     public class MyDict : Dictionary<string, object?>
@@ -340,29 +337,14 @@ namespace RESTable.Tutorial
     [RESTable]
     public class MyTerminal : Terminal
     {
-        public MyTerminal()
-        {
-            throw new Exception("Oooops!");
-        }
-
-        private Task? RunTask { get; set; }
-
         protected override Task Open(CancellationToken cancellationToken)
         {
-            var observable = Services.GetRequiredService<ITerminalObservable<Shell>>();
-            RunTask = Task.Run(async () =>
-            {
-                await foreach (var terminal in observable.ToAsyncEnumerable().WithCancellation(cancellationToken))
-                {
-                    await WebSocket.SendText(terminal.TerminalResource.Name, cancellationToken);
-                }
-            }, cancellationToken);
             return WebSocket.SendText("Now open!", cancellationToken);
         }
 
         public override Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
-            return WebSocket.SendText(input, cancellationToken);
+            return Task.CompletedTask;
         }
     }
 
