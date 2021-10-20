@@ -307,20 +307,13 @@ namespace RESTable
                         {
                             var (valid, resource) = await ValidateQuery().ConfigureAwait(false);
                             if (!valid) break;
-                            var termFactory = Services.GetRequiredService<TermFactory>();
-                            var term = termFactory.MakeConditionTerm(resource!, "resource");
-                            var resourceCondition = new Condition<Schema>
-                            (
-                                term: term,
-                                op: Operators.EQUALS,
-                                value: resource!.Name
-                            );
-                            var schemaRequest = WebSocket.Context.CreateRequest<Schema>().WithAddedConditions(resourceCondition);
+                            var schemaRequest = WebSocket.Context
+                                .CreateRequest<Schema>()
+                                .WithAddedCondition("$resource", Operators.EQUALS, resource!.Name);
                             await using var schemaResult = await schemaRequest.GetResultOrThrow<IEntities>(cancellationToken: cancellationToken).ConfigureAwait(false);
                             await SerializeAndSendResult(schemaResult, cancellationToken: cancellationToken).ConfigureAwait(false);
                             break;
                         }
-
                         case "HEADERS":
                         case "HEADER":
                             tail = tail?.Trim();
