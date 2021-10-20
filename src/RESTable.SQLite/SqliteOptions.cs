@@ -4,6 +4,6 @@
     {
         public const string ConfigSection = "RESTable.Sqlite";
 
-        public string? SqliteDatabasePath { get; set; }
+        public string? SqliteDatabasePath { get; set; } = "./Database";
     }
 }

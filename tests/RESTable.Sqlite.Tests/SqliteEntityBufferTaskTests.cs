@@ -49,7 +49,6 @@ namespace RESTable.Sqlite.Tests
         public SqliteEntityBufferTaskTests(RESTableFixture fixture) : base(fixture)
         {
             fixture.AddSqliteProvider();
-            fixture.Configure<SqliteOptions>(o => o.SqliteDatabasePath = "./Database");
             fixture.Configure();
             var all = Sqlite<Table>.Select();
             Sqlite<Table>.Delete(all).AsTask().Wait();

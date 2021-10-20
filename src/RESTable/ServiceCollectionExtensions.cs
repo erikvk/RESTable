@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using RESTable;
@@ -19,21 +20,32 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection, Action<OptionsBuilder<ApiKeys>>? builderAction = null)
+        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection, IConfiguration configuration)
         {
-            var builder = serviceCollection.AddOptions<ApiKeys>();
-            if (builderAction is not null)
-                builderAction.Invoke(builder);
-            else builder.BindConfiguration(ApiKeys.ConfigSection);
+            serviceCollection
+                .AddOptions<ApiKeys>()
+                .Bind(configuration.GetSection(ApiKeys.ConfigSection));
             serviceCollection.TryAddSingleton<IApiKeyAuthenticator, ApiKeyAuthenticator>();
             serviceCollection.AddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
             serviceCollection.AddStartupActivator<IApiKeyAuthenticator>();
             return serviceCollection;
         }
 
-        public static IServiceCollection AddAllowedCorsOriginsFilter(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection, Action<OptionsBuilder<ApiKeys>>? builderAction = null)
         {
-            serviceCollection.AddOptions<AllowAccess>().BindConfiguration(AllowAccess.ConfigSection);
+            var builder = serviceCollection.AddOptions<ApiKeys>();
+            builderAction?.Invoke(builder);
+            serviceCollection.TryAddSingleton<IApiKeyAuthenticator, ApiKeyAuthenticator>();
+            serviceCollection.AddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
+            serviceCollection.AddStartupActivator<IApiKeyAuthenticator>();
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddAllowedCorsOriginsFilter(this IServiceCollection serviceCollection, IConfiguration configuration)
+        {
+            serviceCollection
+                .AddOptions<AllowAccess>()
+                .Bind(configuration.GetSection(AllowAccess.ConfigSection));
             serviceCollection.AddSingleton<IAllowedCorsOriginsFilter, AllowedCorsOriginsFilter>();
             serviceCollection.AddStartupActivator<IAllowedCorsOriginsFilter>();
             return serviceCollection;
@@ -78,7 +90,7 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.AddJson();
 
             serviceCollection.AddOptions<RESTableConfiguration>().BindConfiguration(RESTableConfiguration.ConfigSection, o => o.BindNonPublicProperties = true);
-            serviceCollection.AddSingleton<RESTableInitializer>();
+            serviceCollection.AddHostedService<RESTableInitializer>();
 
             var terminalSubject = new Subject<Terminal>();
             serviceCollection.AddSingleton(new TerminalSubjectAccessor(terminalSubject));

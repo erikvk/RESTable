@@ -51,7 +51,7 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
                 .AddJsonStream(configJsonStream)
                 .Build();
             fixture.AddSingleton<IConfiguration>(configuration);
-            fixture.AddApiKeys();
+            fixture.AddApiKeys(configuration);
 
             fixture.Configure();
 

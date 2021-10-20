@@ -9,10 +9,9 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddSqliteProvider(this IServiceCollection serviceCollection, Action<OptionsBuilder<SqliteOptions>>? builderAction = null)
         {
-            var builder = serviceCollection.AddOptions<SqliteOptions>();
-            if (builderAction is not null)
-                builderAction.Invoke(builder);
-            else builder.BindConfiguration(SqliteOptions.ConfigSection);
+            var builder = serviceCollection
+                .AddOptions<SqliteOptions>();
+            builderAction?.Invoke(builder);
             serviceCollection.AddSingleton<IEntityResourceProvider, SqliteEntityResourceProvider>();
             return serviceCollection;
         }
