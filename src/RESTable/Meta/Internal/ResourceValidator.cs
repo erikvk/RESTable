@@ -219,7 +219,7 @@ namespace RESTable.Meta.Internal
 
                 #region Check for properties with duplicate case insensitive names
 
-                if (TypeCache.FindAndParseDeclaredProperties(type).ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
+                if (TypeCache.GetDeclaredProperties(type).Values.ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
                 {
                     throw new InvalidResourceMemberException(
                         $"Invalid properties for resource '{type.GetRESTableTypeName()}'. Names of public instance properties must " +

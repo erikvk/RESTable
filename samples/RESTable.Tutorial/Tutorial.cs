@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -181,12 +182,24 @@ namespace RESTable.Tutorial
 
     #region A bunch of test things to try
 
+    public class Statics
+    {
+        public string? N { get; set; }
+    }
+
     [RESTable, InMemory]
     public class TestResource
     {
         public string S { get; }
         public int I { get; }
 
+        [RESTableMember(mergeOntoOwner: true)]
+        public Dictionary<string, object?> InnerDynamics { get; } = new();
+
+        [RESTableMember(mergeOntoOwner: true)]
+        public Statics? InnerStatics { get; set; }
+
+        [JsonConstructor]
         public TestResource(string s, int i)
         {
             S = s;

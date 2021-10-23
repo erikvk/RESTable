@@ -28,9 +28,8 @@ namespace RESTable.Xunit
         public void Configure()
         {
             this.TryAddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
-            ServiceProvider = this
-                .BuildServiceProvider()
-                .GetRequiredService<RootContext>();
+            ServiceProvider = this.BuildServiceProvider();
+            RESTableInitializer.InitializeRESTable(ServiceProvider);
         }
 
         public object? GetService(Type serviceType) => ServiceProvider.GetService(serviceType);

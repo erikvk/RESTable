@@ -178,11 +178,13 @@ namespace RESTable.Meta.Internal
                         throw new InvalidResourceViewDeclarationException(viewType,
                             $"Expected view type to implement ISelector<{resource.GetRESTableTypeName()}>");
                     var resourceProperties = TypeCache.GetDeclaredProperties(resource);
-                    foreach (var property in TypeCache.FindAndParseDeclaredProperties(viewType).Where(prop => resourceProperties.ContainsKey(prop.Name)))
+                    foreach (var property in viewType.GetProperties(Public | Instance).Where(prop => resourceProperties.ContainsKey(prop.Name)))
+                    {
                         throw new InvalidResourceViewDeclarationException(viewType,
                             $"Invalid property '{property.Name}'. Resource view types must not contain any public instance " +
                             "properties with the same name (case insensitive) as a property of the corresponding resource. " +
                             "All properties in the resource are automatically inherited for use in conditions with the view.");
+                    }
                 }
             }
 
