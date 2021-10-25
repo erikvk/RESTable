@@ -18,6 +18,7 @@ using RESTable.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
+using RESTable.Resources.Templates;
 using RESTable.Sqlite;
 using RESTable.WebSockets;
 using static System.StringComparison;
@@ -344,6 +345,14 @@ namespace RESTable.Tutorial
         }
     }
 
+    [RESTable]
+    public class MyOptionsTest : OptionsTerminal
+    {
+        protected override IEnumerable<Option> GetOptions()
+        {
+            yield return new Option("g", "", action: _ => { });
+        }
+    }
 
     // ReSharper disable UnusedParameter.Local
 

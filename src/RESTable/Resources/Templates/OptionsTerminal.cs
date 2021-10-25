@@ -18,7 +18,7 @@ namespace RESTable.Resources.Templates
     {
         private IDictionary<string, Option> Options { get; }
 
-        protected bool RunSilent { get; set; }
+        public bool RunSilent { get; set; }
 
         public OptionsTerminal()
         {
@@ -30,11 +30,23 @@ namespace RESTable.Resources.Templates
             Options.Clear();
             foreach (var option in GetOptions())
                 Options[option.Command] = option;
-            await PrintOptions().ConfigureAwait(false);
+            if (!RunSilent)
+                await PrintOptions().ConfigureAwait(false);
         }
 
         public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
+            if (input.EqualsNoCase("help"))
+            {
+                await PrintOptions().ConfigureAwait(false);
+                return;
+            }
+            if (input.EqualsNoCase("runsilent"))
+            {
+                RunSilent = !RunSilent;
+                return;
+            }
+
             var (command, args) = input.TupleSplit(" ");
             switch (command.Trim())
             {
@@ -44,18 +56,21 @@ namespace RESTable.Resources.Templates
                 case var _ when Options.TryGetValue(command, out var option):
                     var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
                     if (!RunSilent)
+                    {
                         await WebSocket.SendText($"> {option!.Command}", cancellationToken).ConfigureAwait(false);
+                    }
                     try
                     {
-                        await option!.Action(argsArray).ConfigureAwait(false);
+                        await option!.Action(argsArray, cancellationToken).ConfigureAwait(false);
                         if (!RunSilent)
+                        {
                             await WebSocket.SendText($"> Done!{Environment.NewLine}", cancellationToken).ConfigureAwait(false);
+                        }
                     }
                     catch (Exception e)
                     {
                         await WebSocket.SendException(e, cancellationToken).ConfigureAwait(false);
                     }
-                    await PrintOptions().ConfigureAwait(false);
                     break;
                 case var unknown:
                     await WebSocket.SendText($"Unknown option '{unknown}'.", cancellationToken).ConfigureAwait(false);
@@ -79,7 +94,7 @@ namespace RESTable.Resources.Templates
                 stringBuilder.Append($"  Option:  {option.Command}{Environment.NewLine}  About:   {option.Description}{Environment.NewLine}");
                 first = false;
             }
-            stringBuilder.Append($"{Environment.NewLine}> Type an option to continue, or 'cancel' to return to the shell{Environment.NewLine}");
+            stringBuilder.Append($"{Environment.NewLine}> Type an option to continue, 'help' to print options or 'cancel' to return to the shell{Environment.NewLine}");
             await WebSocket.SendText(stringBuilder.ToString()).ConfigureAwait(false);
         }
 

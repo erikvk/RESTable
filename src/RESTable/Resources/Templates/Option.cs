@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTable.Resources.Templates
@@ -22,7 +23,7 @@ namespace RESTable.Resources.Templates
         /// <summary>
         /// The action to perform on the arguments (can be empty) when the command is called
         /// </summary>
-        public Func<string[], ValueTask> Action { get; }
+        public Func<string[], CancellationToken, ValueTask> Action { get; }
 
         /// <summary>
         /// Creates a new instance of the <see cref="Option"/> class.
@@ -30,7 +31,7 @@ namespace RESTable.Resources.Templates
         /// <param name="command">The command (case insensitive) to register the action for</param>
         /// <param name="description">The command (case insensitive) to register the action for</param>
         /// <param name="task">The action to perform on the arguments (can be empty) when the command is called</param>
-        public Option(string command, string description, Func<string[], ValueTask> task)
+        public Option(string command, string description, Func<string[], CancellationToken, ValueTask> task)
         {
             if (command.Any(char.IsWhiteSpace))
                 throw new ArgumentException($"Invalid option command '{command}'. Commands cannot contain whitespace.");
@@ -49,7 +50,7 @@ namespace RESTable.Resources.Templates
         /// <param name="command">The command (case insensitive) to register the action for</param>
         /// <param name="description">The command (case insensitive) to register the action for</param>
         /// <param name="action">The action to perform on the arguments (can be empty) when the command is called</param>
-        public Option(string command, string description, Action<string[]> action) : this(command, description, strings =>
+        public Option(string command, string description, Action<string[]> action) : this(command, description, (strings, _) =>
         {
             action(strings);
             return default;

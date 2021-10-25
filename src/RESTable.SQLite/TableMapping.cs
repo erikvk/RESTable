@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -115,7 +116,7 @@ namespace RESTable.Sqlite
             /// <inheritdoc />
             protected override IEnumerable<Option> GetOptions()
             {
-                static async ValueTask action(string[] _)
+                static async ValueTask action(string[] args, CancellationToken ct)
                 {
                     foreach (var mapping in TableMappingByType.Values)
                         await mapping.Update().ConfigureAwait(false);
