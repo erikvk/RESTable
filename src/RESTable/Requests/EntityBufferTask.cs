@@ -252,6 +252,11 @@ namespace RESTable.Requests
 
         #region Conditions
 
+        public EntityBufferTask<T> WithParameter(string key, object? value)
+        {
+            return Where(key, Operators.EQUALS, value);
+        }
+
         /// <summary>
         /// Clears all conditions from this buffer task
         /// </summary>
@@ -263,7 +268,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Adds a range of new conditions to this buffer task
         /// </summary>
-        public EntityBufferTask<T> Where(params (string key, Operators op, object value)[] conditions)
+        public EntityBufferTask<T> Where(params (string key, Operators op, object? value)[] conditions)
         {
             var termFactory = Request.GetRequiredService<TermFactory>();
             var target = Request.Target;
@@ -294,7 +299,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Adds a new condition to this buffer task
         /// </summary>
-        public EntityBufferTask<T> Where(string key, Operators op, object value)
+        public EntityBufferTask<T> Where(string key, Operators op, object? value)
         {
             return Where((key, op, value));
         }
