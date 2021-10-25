@@ -2,7 +2,7 @@
 
 namespace RESTable.WebSockets
 {
-    internal class AppProfile
+    internal sealed class AppProfile
     {
         public string? Host { get; }
         public string WebSocketId { get; }

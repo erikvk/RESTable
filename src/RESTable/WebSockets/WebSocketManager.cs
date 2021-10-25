@@ -75,7 +75,7 @@ namespace RESTable.WebSockets
                     {
                         try
                         {
-                            await JsonProvider.PopulateAsync(terminal, json).ConfigureAwait(false);
+                            await JsonProvider.PopulateAsync(terminal, terminal.GetType(), json).ConfigureAwait(false);
                             await webSocket.SendText("Terminal updated", cancellationToken).ConfigureAwait(false);
                             await sendJson(terminal).ConfigureAwait(false);
                         }
