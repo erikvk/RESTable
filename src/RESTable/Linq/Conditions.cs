@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RESTable.Requests;
 
@@ -57,10 +58,27 @@ namespace RESTable.Linq
         public static bool HasParameter<TResource, TValue>(this IEnumerable<Condition<TResource>> conds, string key, out TValue? value) where TResource : class
         {
             var parameter = conds.FirstOrDefault(c => c.Operator == Operators.EQUALS && c.Key.EqualsNoCase(key));
-            if (parameter is {Value: TValue _value})
+            if (parameter is not null)
             {
-                value = _value;
-                return true;
+                if (parameter.Value is null)
+                {
+                    value = default;
+                    return true;
+                }
+                if (parameter.Value is TValue _value)
+                {
+                    value = _value;
+                    return true;
+                }
+                try
+                {
+                    value = (TValue) Convert.ChangeType(parameter.Value, typeof(TValue));
+                    return true;
+                }
+                catch
+                {
+                    // Fall through
+                }
             }
             value = default;
             return false;
