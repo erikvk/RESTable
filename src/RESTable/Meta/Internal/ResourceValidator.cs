@@ -178,21 +178,6 @@ namespace RESTable.Meta.Internal
 
                 #endregion
 
-                #region Check for invalid IDictionary implementation
-
-                var validTypes = new[] {typeof(string), typeof(object)};
-                if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out var typeParams) && !typeParams!.SequenceEqual(validTypes))
-                {
-                    throw new InvalidResourceDeclarationException(
-                        $"Invalid resource declaration for type '{type.GetRESTableTypeName()}'. All resource types implementing " +
-                        "the generic 'System.Collections.Generic.IDictionary`2' interface must either be subclasses of " +
-                        "Newtonsoft.Json.Linq.JObject or have System.String as first type parameter and System.Object as " +
-                        $"second type parameter. Found {typeParams![0].GetRESTableTypeName()} and {typeParams[1].GetRESTableTypeName()}"
-                    );
-                }
-
-                #endregion
-
                 #region Check for invalid IEnumerable implementation
 
                 if ((type.ImplementsGenericInterface(typeof(IEnumerable<>)) || typeof(IEnumerable).IsAssignableFrom(type)) &&

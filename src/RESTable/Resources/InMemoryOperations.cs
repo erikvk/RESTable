@@ -2,14 +2,15 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
 
 namespace RESTable.Resources
 {
     public static class InMemoryOperations<T> where T : class
     {
-        private static IDictionary<T, byte> Store { get; }
+        private static IDictionary<T, Unit> Store { get; }
 
-        static InMemoryOperations() => Store = new ConcurrentDictionary<T, byte>();
+        static InMemoryOperations() => Store = new ConcurrentDictionary<T, Unit>();
 
         public static IEnumerable<T> Select() => Store.Keys;
 
@@ -22,7 +23,7 @@ namespace RESTable.Resources
             foreach (var toAdd in entities)
             {
                 if (!Store.ContainsKey(toAdd))
-                    Store.Add(toAdd, 0);
+                    Store.Add(toAdd, default);
                 yield return toAdd;
             }
         }

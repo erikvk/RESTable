@@ -12,7 +12,6 @@ using static RESTable.Method;
 namespace RESTable
 {
     /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
-    /// <inheritdoc cref="JObject" />
     /// <summary>
     /// The Echo resource is a test and utility resource that returns the 
     /// request conditions as an object.

@@ -402,7 +402,7 @@ namespace RESTable
         }
 
         /// <summary>
-        /// Converts a Dictionary object to a JSON.net JObject
+        /// Converts a Dictionary object to a JsonProperty
         /// </summary>
         public static JsonProperty? GetProperty(this JsonElement obj, string name, StringComparison stringComparison = OrdinalIgnoreCase)
         {

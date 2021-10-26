@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
-using RESTable.Requests;
 
 namespace RESTable.AspNetCore
 {
@@ -21,11 +20,13 @@ namespace RESTable.AspNetCore
             var template = rootUri + "/{resource?}/{conditions?}/{metaconditions?}";
             builder.UseRouter(router =>
             {
-                // Make sure RESTable is initialized
-                var _ = builder.ApplicationServices.GetRequiredService<RootContext>();
-                var handler = ActivatorUtilities.CreateInstance<HttpRequestHandler>(builder.ApplicationServices);
+                HttpRequestHandler? handler = null;
 
-                router.MapVerb("OPTIONS", template, context => handler.HandleOptionsRequest(rootUri, context));
+                router.MapVerb("OPTIONS", template, context =>
+                {
+                    handler ??= ActivatorUtilities.CreateInstance<HttpRequestHandler>(builder.ApplicationServices);
+                    return handler.HandleOptionsRequest(rootUri, context);
+                });
 
                 foreach (var method in EnumMember<Method>.Values)
                 {
@@ -33,6 +34,7 @@ namespace RESTable.AspNetCore
                     {
                         try
                         {
+                            handler ??= ActivatorUtilities.CreateInstance<HttpRequestHandler>(builder.ApplicationServices);
                             return handler.HandleRequest(rootUri, method, hc);
                         }
                         catch (OperationCanceledException)

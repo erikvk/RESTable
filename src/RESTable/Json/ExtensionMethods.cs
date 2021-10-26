@@ -159,7 +159,7 @@ namespace RESTable.Json
         }
 
         /// <summary>
-        /// Converts a Dictionary object to a JSON.net JObject
+        /// Converts a Dictionary object to a JsonElement
         /// </summary>
         internal static JsonElement ToJsonElement<T>(this T obj, JsonSerializerOptions options)
         {
@@ -167,7 +167,7 @@ namespace RESTable.Json
         }
 
         /// <summary>
-        /// Converts a Dictionary object to a JSON.net JObject
+        /// Converts a Dictionary object to a JsonElement
         /// </summary>
         internal static JsonElement ToJsonElement(this object obj, Type targetType, JsonSerializerOptions options)
         {

@@ -32,13 +32,13 @@ namespace RESTable.Requests.Filters
         private async IAsyncEnumerable<TSource> DistinctIterator<TSource>(IAsyncEnumerable<TSource> source) where TSource : notnull
         {
             var set = new HashSet<JsonElement>(EqualityComparer);
-            await foreach (var element in source.ConfigureAwait(false))
+            await foreach (var item in source.ConfigureAwait(false))
             {
-                if (element is null) throw new ArgumentNullException(nameof(source));
-                var jobject = JsonProvider.ToJsonElement(element);
-                if (set.Add(jobject))
+                if (item is null) throw new ArgumentNullException(nameof(source));
+                var jsonElement = JsonProvider.ToJsonElement(item);
+                if (set.Add(jsonElement))
                 {
-                    yield return element;
+                    yield return item;
                 }
             }
         }

@@ -29,7 +29,8 @@ namespace RESTable.Xunit
         {
             this.TryAddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
             ServiceProvider = this.BuildServiceProvider();
-            RESTableInitializer.InitializeRESTable(ServiceProvider);
+            // Manually initialize RESTable since there's no host
+            ActivatorUtilities.CreateInstance<RESTableInitializer>(ServiceProvider);
         }
 
         public object? GetService(Type serviceType) => ServiceProvider.GetService(serviceType);

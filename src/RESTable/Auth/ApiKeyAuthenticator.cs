@@ -95,7 +95,7 @@ namespace RESTable.Auth
             {
                 if (ApiKeys.TryGetValue(key, out var accessRights))
                 {
-                    WebSocketManager.RevokeAllWithKey(key).Wait();
+                    WebSocketManager.RevokeAllWithToken(key).Wait();
                     accessRights!.Clear();
                 }
                 ApiKeys.Remove(key);
@@ -111,9 +111,9 @@ namespace RESTable.Auth
         private string ReadApiKey(ApiKeyItem apiKeyItem)
         {
             var apiKey = apiKeyItem.ApiKey;
-            if (apiKey is null || Regex.IsMatch(apiKey, @"[\(\)]") || !Regex.IsMatch(apiKey, RegEx.ApiKey))
+            if (apiKey is null || !Regex.IsMatch(apiKey, RegEx.ApiKey))
                 throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
-                                    "whitespace or parentheses, and only containing ASCII characters 33 through 126");
+                                    "whitespace, and only containing ASCII characters 33 through 126");
             var keyHash = ComputeHash(apiKey);
             var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess ?? Array.Empty<AllowAccess>(), ResourceCollection);
             var accessRights = new AccessRights(this, keyHash, assignments);

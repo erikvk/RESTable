@@ -23,10 +23,10 @@ namespace RESTable.WebSockets
 
         internal void Add(WebSocket webSocket) => ConnectedWebSockets[webSocket.Id] = webSocket;
 
-        internal async Task RevokeAllWithKey(string key)
+        internal async Task RevokeAllWithToken(string token)
         {
             var tasks = ConnectedWebSockets.Values
-                .Where(webSocket => webSocket.Client.AccessRights.Token == key)
+                .Where(webSocket => webSocket.Client.AccessRights.Token == token)
                 .Select(webSocket => webSocket.DisposeAsync().AsTask());
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }

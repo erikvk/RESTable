@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RESTable.Auth;
 using RESTable.Internal;
@@ -34,11 +32,6 @@ namespace RESTable
             resourceFactory.FinalCheck();
             var startupTasks = startupActivators.Select(activator => activator.Activate());
             Task.WhenAll(startupTasks).Wait();
-        }
-
-        public static void InitializeRESTable(IServiceProvider serviceProvider)
-        {
-            ActivatorUtilities.CreateInstance<RESTableInitializer>(serviceProvider);
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;

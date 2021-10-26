@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
+using System.Reactive;
 using RESTable.Auth;
 using RESTable.Meta;
 
@@ -54,7 +55,7 @@ namespace RESTable.Requests
         /// </summary>
         public AccessRights AccessRights { get; }
 
-        internal IDictionary<IResource, byte> ResourceAuthMappings { get; }
+        internal IDictionary<IResource, Unit> ResourceAuthMappings { get; }
         internal IDictionary<IResource, IDictionary<string, object?>> ResourceClientDataMappings { get; }
         internal bool IsInWebSocket { get; set; }
         internal string? ShellConfig { get; set; }
@@ -80,7 +81,7 @@ namespace RESTable.Requests
             ProxyIp = proxyIp?.ToString();
             UserAgent = userAgent;
             Https = https;
-            ResourceAuthMappings = new ConcurrentDictionary<IResource, byte>();
+            ResourceAuthMappings = new ConcurrentDictionary<IResource, Unit>();
             ResourceClientDataMappings = new ConcurrentDictionary<IResource, IDictionary<string, object?>>();
             Cookies = cookies;
             AccessRights = accessRights;

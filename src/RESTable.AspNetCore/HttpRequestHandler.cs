@@ -152,13 +152,14 @@ namespace RESTable.AspNetCore
                 clientIp = IPAddress.Parse(ip.First().Split(':')[0]);
                 proxyIp = clientIp;
             }
+            var isForwardedHttps = context.Request.Headers.TryGetValue("X-Forwarded-Proto", out var forwardedProto) && forwardedProto == "https";
             return Client.External
             (
                 clientIp: clientIp,
                 proxyIp: proxyIp,
                 userAgent: context.Request.Headers["User-Agent"],
                 host: context.Request.Host.Value,
-                https: context.Request.IsHttps,
+                https: context.Request.IsHttps || isForwardedHttps,
                 cookies: new Cookies(context.Request.Cookies),
                 accessRights: accessRights
             );

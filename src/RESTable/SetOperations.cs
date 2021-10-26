@@ -20,7 +20,6 @@ using static RESTable.Method;
 
 namespace RESTable
 {
-    /// <inheritdoc cref="JObject" />
     /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
     /// <summary>
     /// The SetOperations resource can perform advanced operations on entities in one
@@ -248,8 +247,8 @@ namespace RESTable
                 {
                     await foreach (var entity in entities)
                     {
-                        var jobject = jsonProvider.ToJsonElement(entity);
-                        mapped.Add(jobject);
+                        var element = jsonProvider.ToJsonElement(entity);
+                        mapped.Add(element);
                     }
                 }
                 else throw new Exception($"Could not get source data from '{localMapper}'. {await result.GetLogMessage().ConfigureAwait(false)}");
