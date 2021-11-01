@@ -346,11 +346,14 @@ namespace RESTable.Tutorial
     }
 
     [RESTable]
-    public class MyOptionsTest : OptionsTerminal
+    public class MyOptionsTest : CommandTerminal
     {
-        protected override IEnumerable<Option> GetOptions()
+        protected override IEnumerable<Command> GetCommands()
         {
-            yield return new Option("g", "", action: _ => { });
+            yield return new Command("g", "", 0, action: _ => { });
+            yield return new Command("Simple", "Does a thing", 0, action: _ => { });
+            yield return new Command("PrettyLongActually", "Does a thing too", 0, action: _ => { });
+            yield return new Command("PrettyLongA4", "Has a pretty long and winding description of what it does. Usage: first this then that also foo", 0, action: _ => { });
         }
     }
 

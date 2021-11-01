@@ -111,10 +111,10 @@ namespace RESTable.Sqlite
         /// Options for table mappings
         /// </summary>
         [RESTable]
-        public class Options : OptionsTerminal
+        public class Options : CommandTerminal
         {
             /// <inheritdoc />
-            protected override IEnumerable<Option> GetOptions()
+            protected override IEnumerable<Command> GetCommands()
             {
                 static async ValueTask action(string[] args, CancellationToken ct)
                 {
@@ -122,7 +122,7 @@ namespace RESTable.Sqlite
                         await mapping.Update().ConfigureAwait(false);
                 }
 
-                yield return new Option("Update", "Updates all table mappings", action);
+                yield return new Command("Update", "Updates all table mappings", 0, action);
             }
         }
 
