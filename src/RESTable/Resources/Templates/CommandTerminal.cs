@@ -87,6 +87,7 @@ namespace RESTable.Resources.Templates
             {
                 stringBuilder.AppendLine($"  {command.Name.PadRight(tabWidth)}{command.Description}");
             }
+            stringBuilder.AppendLine();
             stringBuilder.Append("Type a command to continue, 'help' to print commands or 'cancel' to return to the shell");
             await WebSocket.SendText(stringBuilder.ToString(), cancellationToken).ConfigureAwait(false);
         }
