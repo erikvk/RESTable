@@ -82,7 +82,7 @@ namespace RESTable.Resources.Templates
                 stringBuilder.AppendLine("Type 'cancel' to return to the shell");
             }
             var commandNameMaxLength = Commands.Values.Select(command => command.Name.Length).Max();
-            var tabWidth = commandNameMaxLength + 5;
+            var tabWidth = commandNameMaxLength + 3;
             foreach (var command in Commands.Values)
             {
                 stringBuilder.AppendLine($"  {command.Name.PadRight(tabWidth)}{command.Description}");
