@@ -178,11 +178,13 @@ namespace RESTable.Meta.Internal
                         throw new InvalidResourceViewDeclarationException(viewType,
                             $"Expected view type to implement ISelector<{resource.GetRESTableTypeName()}>");
                     var resourceProperties = TypeCache.GetDeclaredProperties(resource);
-                    foreach (var property in TypeCache.FindAndParseDeclaredProperties(viewType).Where(prop => resourceProperties.ContainsKey(prop.Name)))
+                    foreach (var property in viewType.GetProperties(Public | Instance).Where(prop => resourceProperties.ContainsKey(prop.Name)))
+                    {
                         throw new InvalidResourceViewDeclarationException(viewType,
                             $"Invalid property '{property.Name}'. Resource view types must not contain any public instance " +
                             "properties with the same name (case insensitive) as a property of the corresponding resource. " +
                             "All properties in the resource are automatically inherited for use in conditions with the view.");
+                    }
                 }
             }
 
@@ -197,7 +199,7 @@ namespace RESTable.Meta.Internal
                 .Where(group => group.Key is not null);
             foreach (var group in resourceGroups)
             {
-                var parentResource = (IResourceInternal?)ResourceCollection.SafeGetResource(group.Key!);
+                var parentResource = (IResourceInternal?) ResourceCollection.SafeGetResource(group.Key!);
                 if (parentResource is null)
                     throw new InvalidResourceDeclarationException(
                         $"Resource type(s) {string.Join(", ", group.Select(item => $"'{item.Name}'"))} is/are declared " +
@@ -230,9 +232,9 @@ namespace RESTable.Meta.Internal
                     .Where(_provider => _provider is IProceduralEntityResourceProvider)
                     .FirstOrDefault(_provider => _provider.GetType() == provider);
                 if (resourceProvider is null)
-                    throw new InvalidResourceControllerException($"Invalid resource controller '{controller}'. A binding was made to " +
-                                                                 $"an EntityResourceProvider of type '{provider}'. No such provider has " +
-                                                                 "been included in the call to RESTableConfig.Init().");
+                {
+                    continue;
+                }
                 var providerProperty = baseType.GetProperty("ResourceProvider", Static | NonPublic)
                                        ?? throw new Exception($"Unable to locate property 'ResourceProvider' in type '{controller}'");
                 var baseNamespaceProperty = baseType.GetProperty("BaseNamespace", Static | NonPublic)

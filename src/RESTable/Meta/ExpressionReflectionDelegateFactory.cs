@@ -37,7 +37,7 @@ namespace RESTable.Meta
 
             LambdaExpression lambdaExpression = Expression.Lambda(typeof(Func<T, object>), resultExpression, parameterExpression);
 
-            Func<T, object?> compiled = (Func<T, object?>)lambdaExpression.Compile();
+            Func<T, object?> compiled = (Func<T, object?>) lambdaExpression.Compile();
             return compiled;
         }
 
@@ -78,7 +78,7 @@ namespace RESTable.Meta
 
             LambdaExpression lambdaExpression = Expression.Lambda(typeof(Action<T, object?>), setExpression, instanceParameter, valueParameter);
 
-            Action<T, object?> compiled = (Action<T, object?>)lambdaExpression.Compile();
+            Action<T, object?> compiled = (Action<T, object?>) lambdaExpression.Compile();
             return compiled;
         }
 
@@ -98,7 +98,7 @@ namespace RESTable.Meta
 
                 if (allowWidening && targetType.IsPrimitive)
                 {
-                    var toTargetTypeMethod = typeof(Convert).GetMethod("To" + targetType.Name, new[] { typeof(object) });
+                    var toTargetTypeMethod = typeof(Convert).GetMethod("To" + targetType.Name, new[] {typeof(object)});
 
                     if (toTargetTypeMethod != null)
                     {

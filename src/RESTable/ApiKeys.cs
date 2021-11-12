@@ -4,7 +4,10 @@ namespace RESTable
 {
     public class AllowedCorsOrigins : List<string> { }
 
-    public class ApiKeys : List<ApiKeyItem> { }
+    public class ApiKeys : List<ApiKeyItem>
+    {
+        public const string ConfigSection = "RESTable.ApiKeys";
+    }
 
     public class ApiKeyItem
     {
@@ -14,6 +17,8 @@ namespace RESTable
 
     public class AllowAccess
     {
+        public const string ConfigSection = "RESTable.AllowedCorsOrigins";
+
         public string[]? Resources { get; set; }
         public string[]? Methods { get; set; }
     }

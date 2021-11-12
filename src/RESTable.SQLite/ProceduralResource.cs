@@ -1,15 +1,15 @@
 ﻿using System;
 using RESTable.Resources;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
-    /// <inheritdoc cref="SQLiteTable" />
+    /// <inheritdoc cref="SqliteTable" />
     /// <inheritdoc cref="IProceduralEntityResource" />
     /// <summary>
     /// Creates and structures all the dynamic resources for this RESTable instance
     /// </summary>
-    [SQLite]
-    public class ProceduralResource : SQLiteTable, IProceduralEntityResource
+    [Sqlite]
+    public class ProceduralResource : SqliteTable, IProceduralEntityResource
     {
         /// <inheritdoc />
         /// <summary>

@@ -19,7 +19,7 @@ namespace RESTable
         /// The message to log
         /// </summary>
         ValueTask<string> GetLogMessage();
-        
+
         /// <summary>
         /// The content to log
         /// </summary>

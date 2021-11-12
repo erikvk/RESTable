@@ -63,7 +63,7 @@ namespace RESTable.Meta.Internal
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.SelectAsync(request, cancellationToken);
         public IAsyncEnumerable<T> InsertAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.InsertAsync(request, cancellationToken);
         public IAsyncEnumerable<T> UpdateAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.UpdateAsync(request, cancellationToken);
-        public ValueTask<int> DeleteAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.DeleteAsync(request, cancellationToken);
+        public ValueTask<long> DeleteAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.DeleteAsync(request, cancellationToken);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.AuthenticateAsync(request, cancellationToken);
         public ValueTask<long> CountAsync(IRequest<T> request, CancellationToken cancellationToken) => Delegates.CountAsync(request, cancellationToken);
 
@@ -107,12 +107,10 @@ namespace RESTable.Meta.Internal
             IsInternal = attribute is RESTableInternalAttribute;
             InterfaceType = typeof(T).GetRESTableInterfaceType();
             (DynamicConditionsAllowed, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
-            DeclaredPropertiesFlagged = typeof(T).IsDictionary(out _) || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T));
+            DeclaredPropertiesFlagged = typeof(T).IsDictionary(out _, out _) || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T));
             GETAvailableToAll = attribute.GETAvailableToAll;
             ResourceKind = ResourceKind.EntityResource;
-            if (DeclaredPropertiesFlagged)
-                OutputBindingRule = TermBindingRule.DeclaredWithDynamicFallback;
-            else OutputBindingRule = TermBindingRule.OnlyDeclared;
+            OutputBindingRule = typeof(T).GetOutputBindingRule();
             RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));
             IsDDictionary = false;
             IsDynamic = IsDDictionary || typeof(IDictionary).IsAssignableFrom(typeof(T));

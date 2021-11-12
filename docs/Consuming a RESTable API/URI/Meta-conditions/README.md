@@ -14,7 +14,6 @@ With meta-conditions, we can include meta-information about the request in the U
 - [**search**](#search)
 - [**search_regex**](#search)
 - [**safepost**](#safepost)
-- [**format**](#format)
 
 The subsections below go through each of these in more detail:
 
@@ -24,13 +23,9 @@ Type: `boolean`
 
 By default, the REST API protects against unsafe requests that could result in performance issues or serious accidental data loss or corruption if triggered by mistake. Example of such requests could be:
 
-1. ~~`GET` requests that return all entities in very large resources...~~
+1. `PATCH` requests that modify multiple entities. If the wrong [conditions](../Conditions) are used when trying to update a single entity, and the server instead changes many entities, unwanted data loss or corruption could occur.
 
-  > This was previously considered an unsafe operation, but is no longer since the [WebSocket shell](../../../Built-in%20resources/RESTable/Shell), which has its own [streaming mechanism](../../Consuming%20terminal%20resources#streaming) to guard against this, is the new preferred way to debug and test RESTable applications.
-
-2. `PATCH` requests that modify multiple entities. If the wrong [conditions](../Conditions) are used when trying to update a single entity, and the server instead changes many entities, unwanted data loss or corruption could occur.
-
-3. `DELETE` requests that delete many entities, when just one entity was supposed to be deleted.
+2. `DELETE` requests that delete many entities, when just one entity was supposed to be deleted.
 
 To prevent this, the API uses a meta-condition `unsafe` to let the consumer confirm all such potentially dangerous requests. For update and delete requests, RESTable will send a `400: Bad request` response whenever multiple entities would be affected by a request and unsafe was not set to `true`.
 
@@ -41,21 +36,21 @@ Type: `integer`
 `limit` puts an upper limit on the number of entities selected by a request.
 
 ```
-GET https://my-server.com/rest/user                        // lists all users
-GET https://my-server.com/rest/user//limit=15              // lists first 15 users
-GET https://my-server.com/rest/user//limit=2000            // lists first 2000 users
-GET https://my-server.com/rest/user//limit=15&unsafe=true  // lists first 15 users
+GET https://myapp.com/api/user                        // lists all users
+GET https://myapp.com/api/user/_/limit=15              // lists first 15 users
+GET https://myapp.com/api/user/_/limit=2000            // lists first 2000 users
+GET https://myapp.com/api/user/_/limit=15&unsafe=true  // lists first 15 users
 ```
 
 ## `offset`
 
 Type: `integer`
 
-Offsets are used to offset the enumeration of the output entities from a `GET` request. [RESTable pagination](../../#pagination) is defined in terms of `limit` and `offset`.
+Offsets are used to offset the enumeration of the output entities from a `GET` request. RESTable pagination is defined in terms of `limit` and `offset`.
 
 ```
-GET https://my-server.com/rest/user               // lists all users
-GET https://my-server.com/rest/user//offset=10    // lists all users except the first 10
+GET https://myapp.com/api/user               // lists all users
+GET https://myapp.com/api/user/_/offset=10    // lists all users except the first 10
 ```
 
 ## `order_asc`
@@ -65,7 +60,7 @@ Type: `string`
 `order_asc` orders the output entities in ascending order based on the value of some given property. The value is a property locator that selects the property to order by.
 
 ```
-GET https://my-server.com/rest/customer/segment=A1/order_asc=name // lists first 1000 customers in segment A1, ordered by name in ascending order
+GET https://myapp.com/api/customer/segment=A1/order_asc=name // lists first 1000 customers in segment A1, ordered by name in ascending order
 ```
 
 ## `order_desc`
@@ -75,7 +70,7 @@ Type: `string`
 `order_desc` works like `order_asc` but applies a descending ordering.
 
 ```
-GET https://my-server.com/rest/user//order_desc=name    // lists first 1000 users, ordered by name in descending order
+GET https://myapp.com/api/user/_/order_desc=name    // lists first 1000 users, ordered by name in descending order
 ```
 
 ## `select`
@@ -85,7 +80,7 @@ Type: `string`
 `select` takes a comma-separated list of property locators as arguments, and filters the output so that only the specified properties are included.
 
 ```
-GET https://my-server.com/rest/customer/cuid=a123
+GET https://myapp.com/api/customer/cuid=a123
 Response body:
 [{
     "Cuid": "a123",
@@ -94,7 +89,7 @@ Response body:
     "Segment": "A1"
 }]
 
-GET https://my-server.com/rest/customer/cuid=a123/select=name,cuid
+GET https://myapp.com/api/customer/cuid=a123/select=name,cuid
 Response body:
 [{
     "Cuid": "a123",
@@ -109,7 +104,7 @@ Type: `string`
 The `add` meta-condition takes a list of property locators as argument, and adds the denoted properties to the output.
 
 ```
-GET https://my-server.com/rest/customer/cuid=a123
+GET https://myapp.com/api/customer/cuid=a123
 Response body:
 [{
     "Cuid": "a123",
@@ -118,7 +113,7 @@ Response body:
     "Segment": "A1"
 }]
 
-GET https://my-server.com/rest/customer/cuid=a123/add=name.length
+GET https://myapp.com/api/customer/cuid=a123/add=name.length
 Response body:
 [{
     "Cuid": "a123",
@@ -144,7 +139,7 @@ rename = property-locator, "->", new-name ;
 `property-locator` refers to the property in the resource that should be renamed. `new-name` is simply a case sensitive string – the new name for the property. `select` and `rename` can be used in the same request, in which case `rename` is always evaluated before `select`. See the request [evaluation order](../#evaluation-order) for more information.
 
 ```
-GET https://my-server.com/rest/customer/cuid=a123
+GET https://myapp.com/api/customer/cuid=a123
 Headers: 'Authorization: apikey mykey'
 Response body:
 [{
@@ -154,7 +149,7 @@ Response body:
     "Segment": "A1"
 }]
 
-GET https://my-server.com/rest/customer/cuid=a123/rename=cuid->customerId,segment->s
+GET https://myapp.com/api/customer/cuid=a123/rename=cuid->customerId,segment->s
 Headers: 'Authorization: apikey mykey'
 Response body:
 [{
@@ -178,7 +173,7 @@ Type: `string`
 `search` applies a search filter on a representation of the output, and returns only entities that included the search pattern.
 
 ```
-GET https://my-server.com/rest/customer//search=sitw
+GET https://myapp.com/api/customer/_/search=sitw
 Headers: 'Authorization: apikey mykey'
 Response body:
 {
@@ -216,7 +211,7 @@ Type: `string`
 `search_regex` applies a [regular expression](https://en.wikipedia.org/wiki/Regular_expression) string search filter on a representation of the output, and returns only entities that matched the search pattern. In the example below, we match only against customers with a name beginning with `s` and ending with `l` (case insensitive). Before URI encoding, the regex pattern looked like this: `^s.*l$`. See [this section](#search-settings) for how to include search settings.
 
 ```
-GET https://my-server.com/rest/customer//search_regex=%5Es.%2Al%24,name,CI
+GET https://myapp.com/api/customer/_/search_regex=%5Es.%2Al%24,name,CI
 Headers: 'Authorization: apikey mykey'
 Response body:
 {
@@ -234,7 +229,7 @@ Type: `string`
 `safepost` is used to trigger a special type of `POST` request, where the input is matched against existing entities to avoid duplicates. Think of a `safepost` request as a series of repeated `PUT` requests, where all entities in the data source are matched against existing entities, and inserted only if there is no existing entity to update. As parameter, `safepost` takes a comma-separated list of property locators, and returns an aggregated response containing the number of inserted and updated entities. The data source can, just as in regular `POST` requests, be contained in the request body or specified as an external source using the [`Source` header](../../Headers#source). `safepost` is also an important feature when using the [`Destination` header](../../Headers#destination).
 
 ```
-POST https://my-server.com/rest/customer//safepost=cuid
+POST https://myapp.com/api/customer/_/safepost=cuid
 Headers: 'Authorization: apikey mykey'
 Body: [{
     "Cuid": "a123",
@@ -252,7 +247,7 @@ Body: [{
 The above request is equivalent to running both of the two requests below:
 
 ```
-PUT https://my-server.com/rest/customer/cuid=a123
+PUT https://myapp.com/api/customer/cuid=a123
 Headers: 'Authorization: apikey mykey'
 Body: {
     "Cuid": "a123",
@@ -261,7 +256,7 @@ Body: {
     "Segment": "A1"
 }
 
-PUT https://my-server.com/rest/customer/cuid=a234
+PUT https://myapp.com/api/customer/cuid=a234
 Headers: 'Authorization: apikey mykey'
 Body: {
     "Cuid": "a234",
@@ -269,14 +264,4 @@ Body: {
     "Name": "Stan Sitwell",
     "Segment": "A1"
 }
-```
-
-## `format`
-
-Type: `string`
-
-The administrator will enable a set of [output formats](../../../Built-in%20resources/RESTable.Admin/OutputFormat) that should be enabled when serializing JSON output. The `format` meta-condition is used to set the output format for JSON serialization of `GET` response bodies on a per-request basis. The value should be a name of an output format (case insensitive).
-
-```
-GET https://my-server.com/rest/customer//format=simple
 ```

@@ -8,7 +8,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\RESTable.AspNetCore\RESTable.AspNetCore.csproj"/>
-        <ProjectReference Include="..\..\src\RESTable.Json\RESTable.Json.csproj"/>
     </ItemGroup>
 
 </Project>

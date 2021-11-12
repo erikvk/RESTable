@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using RESTable.Meta;
+using IDictionary = System.Collections.IDictionary;
 
 namespace RESTable
 {
@@ -46,7 +46,7 @@ namespace RESTable
             {
                 await populateDeclaredPropertiesAction(target).ConfigureAwait(false);
 
-                if (target is not IDictionary<string, object?> dict)
+                if (target is not IDictionary dict)
                     return target;
 
                 dynamicCache ??= new DynamicMemberPopulatorCache();
@@ -59,7 +59,7 @@ namespace RESTable
                         // This property has been handled by the populateDeclaredPropertiesAction
                         continue;
                     }
-                    if (dict.TryGetValue(name, out var existingValue) && existingValue is not null)
+                    if (dict.Contains(name) && dict[name] is { } existingValue)
                     {
                         dict[name] = await GetDynamicValue(name, existingValue, value, dynamicCache, typeCache).ConfigureAwait(false);
                     }

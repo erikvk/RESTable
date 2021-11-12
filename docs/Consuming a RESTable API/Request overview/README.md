@@ -24,9 +24,7 @@ Requests to the REST API of a RESTable application are standard HTTP requests. E
 
 ## Examples
 
-The easiest way to familiarize oneself with how to consume a RESTable API, is to make real requests to an actual RESTable API. For this purpose, feel free to use our test API. The URI examples below are written as relative URIs for the sake of brevity, but you can generate an absolute URI from them by pasting them directly after the root URI of the remote test service. The relative uri `/superhero` would generate the absolute URI `https://RESTablehelp.mopedo-drtb.com:8282/api/superhero`. Note that the test service only supports `GET`, `REPORT` and `HEAD` requests.
-
-For all requests, the `Authorization` header has the value `apikey RESTable`.
+The easiest way to familiarize oneself with how to consume a RESTable API, is to make real requests to an actual RESTable API. The URI examples below are written as relative URIs for the sake of brevity. The relative uri `/superhero` would generate the absolute URI `https://myapp.com/api/superhero`.
 
 Some example URIs:
 

@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RESTable.SQLite.Meta
+namespace RESTable.Sqlite.Meta
 {
     /// <summary>
     /// A static class for accessing table mappings
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public static class TableMapping<T> where T : SQLiteTable
+    public static class TableMapping<T> where T : SqliteTable
     {
         private static TableMapping? mapping;
 
@@ -35,6 +35,6 @@ namespace RESTable.SQLite.Meta
         /// <summary>
         /// Gets the column names from the table mapping for the given type
         /// </summary>
-        internal static HashSet<string> SQLColumnNames => Get.SQLColumnNames;
+        internal static HashSet<string> SqlColumnNames => Get.SqlColumnNames;
     }
 }

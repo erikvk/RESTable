@@ -10,7 +10,7 @@ namespace RESTable.Auth
     {
         private ResourceCollection ResourceCollection { get; }
 
-        public RootAccess(ResourceCollection resourceCollection) : base(null, new Dictionary<IResource, Method[]>())
+        public RootAccess(ResourceCollection resourceCollection) : base(null, null, new Dictionary<IResource, Method[]>())
         {
             ResourceCollection = resourceCollection;
             Load();

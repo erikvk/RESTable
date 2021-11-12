@@ -7,21 +7,21 @@ permalink: /Consuming%20a%20RESTable%20API/URI/
 Request URIs contain **three parts** that specify three important components of the request. These components are:
 
 1. The **[resource](Resource)** that the request is aimed at, and – optionally – a view registered for that resource. All requests have one and only one resource.
-2. The **[conditions](Conditions)**, if any, that are used to filter the entities in the selected resource.
-3. The **[meta-conditions](Meta-conditions)**, if any, that provide meta-information about the request.
+2. The **[conditions](Conditions)**, in some contexts also referred to as **parameters**, if any, that are used to filter the entities in the selected resource or provide data in `GET` requests.
+3. The **[meta-conditions](Meta-conditions)**, if any, that provide meta-settings for how to evaluate the request.
 
 The [grammar](#grammar) section below gives a formal description of the format of request URIs. Before we dive into that, let's look at an informal one.
 
-URIs begin with a **URL to the API**. For our [demo service](../Demo%20service), this is:
+URIs begin with a **URL to the API**:
 
 ```
-https://RESTablehelp.mopedo-drtb.com:8282/api
+https://myapp.com/api
 ```
 
 Now, in order – for each of the three URI parts mentioned above – we add a forward slash `/`, and either an underscore `_` (if the part should be left blank) or the part to include. If we want to include `superhero` as the resource, and `limit=2` as meta-conditions, for example, we can produce the following URI:
 
 ```
-https://RESTablehelp.mopedo-drtb.com:8282/api/superhero/_/limit=2
+https://myapp.com/api/superhero/_/limit=2
 ```
 
 See the links in the URI part list above for how they are written in URIs.
@@ -32,12 +32,10 @@ RESTable request URIs have the following grammar (EBNF):
 
 ```
 URI = <scheme>, "://", <authority>, api-root, ["?"], "/", [resource], "/", [conditions], "/", [meta-conditions] ;
-api-root = ? Configurable, default is "/rest" ? ;
-resource = (resource-name | alias | ("$", macro-name)), ["-", view-name] ;
+api-root = ? Configurable, default is "/api" ? ;
+resource = resource-name, ["-", view-name] ;
 resource = "_" ;
 resource-name = ? Name or partial name of a resource ?
-alias = ? An alias assigned to some resource ?
-macro-name = ? The name of a RESTable macro ?
 view-name = ? The name of a resource view ?
 conditions = condition, ["&", conditions] ;
 conditions = "_" ;
@@ -58,7 +56,6 @@ meta-condition =
     | "Rename=", rename-scheme, {",", rename-scheme}
     | "Distinct=", ("true" | "false")
     | "Safepost=", property-locator, {",", property-locator}
-    | "Format=", ? Name of output format ? ;
 integer = ? Any integer ?
 rename-scheme = property-locator, "->", ? A new name for the property (string) ? ;
 ```
@@ -95,7 +92,7 @@ All components in URIs are case-insensitive, except for value literals. When com
 
 Each request can contain instructions for several operations, triggered by conditions and meta-conditions, that are carried out in a pre-defined order.
 
-1. <conditions> – Entities are first filtered according to the conditions.</conditions>
+1. [Conditions](Conditions) – Entities are first filtered according to the conditions.
 
 2. [`search`](Meta-conditions#search) – Search filters are applied.
 

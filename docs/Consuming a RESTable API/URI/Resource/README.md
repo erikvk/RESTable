@@ -1,11 +1,11 @@
 # Resource
 
-Resources can be specified in the URI either by the fully qualified name, a part of the full name or by an assignable [alias](../../../Built-in%20resources/RESTable.Admin/ResourceAlias). The full name is always unique for each resource. The resource `Mopedo.Bidding.Campaign` can be referenced with only `"Campaign"` as long as no other resource name ends with `".Campaign"` or an alias `"Campaign"` is assigned to some other resource.
+Resources can be specified in the URI either by the fully qualified name or a part of the full name. The full name is always unique for each resource. The resource `MyApp.Admin.Log`, for example, can be referenced with only `"Log"` as long as no other resource name ends with `".Log"`.
 
 To find all available resources' names for a RESTable appplication, make the following `GET` request:
 
 ```
-https://my-server.com/rest/RESTable.AvailableResource//select=Name
+https://myapp.com/api/RESTable.AvailableResource/_/select=Name
 ```
 
 ## Views

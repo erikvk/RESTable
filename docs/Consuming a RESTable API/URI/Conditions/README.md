@@ -1,6 +1,6 @@
 # Conditions
 
-Conditions are made up of three parts: a **property locator**, an **operator** and a **value literal**. They encode predicates that are either true or false of entities in the selected resource.
+Conditions are made up of three parts: a **property locator**, an **operator** and a **value literal**. They encode predicates that are either true or false of entities in the selected resource. Conditions that have the EQUALS `=` operator are sometimes referred to as **parameters** in the context of GET requests.
 
 ## Property locators
 
@@ -11,6 +11,9 @@ Name
 id
 Account.accountnr
 ```
+
+For dynamic resources, all declared property names are prepended with the '$' character. So, for a resource that is a dictionary, all dictionary keys are displayed under their real names, but the `Count` property of the dictionary – which is declared and represents the number of dictionary entries, is displayed as `$Count`.
+
 
 ## Operators
 

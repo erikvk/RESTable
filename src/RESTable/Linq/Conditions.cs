@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RESTable.Requests;
 
@@ -49,6 +50,38 @@ namespace RESTable.Linq
         public static Condition<T>? Get<T>(this IEnumerable<Condition<T>> conds, string key, Operators op) where T : class
         {
             return conds.FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key));
+        }
+
+        /// <summary>
+        /// Access a condition by its key (case insensitive) and operator
+        /// </summary>
+        public static bool HasParameter<TResource, TValue>(this IEnumerable<Condition<TResource>> conds, string key, out TValue? value) where TResource : class
+        {
+            var parameter = conds.FirstOrDefault(c => c.Operator == Operators.EQUALS && c.Key.EqualsNoCase(key));
+            if (parameter is not null)
+            {
+                if (parameter.Value is null)
+                {
+                    value = default;
+                    return true;
+                }
+                if (parameter.Value is TValue _value)
+                {
+                    value = _value;
+                    return true;
+                }
+                try
+                {
+                    value = (TValue) Convert.ChangeType(parameter.Value, typeof(TValue));
+                    return true;
+                }
+                catch
+                {
+                    // Fall through
+                }
+            }
+            value = default;
+            return false;
         }
 
         /// <summary>

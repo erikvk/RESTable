@@ -3,19 +3,20 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Resources.Templates;
-using RESTable.SQLite.Meta;
+using RESTable.Sqlite.Meta;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     /// <inheritdoc />
     /// <summary>
-    /// Represents a mapping between a CLR class and an SQLite table
+    /// Represents a mapping between a CLR class and an Sqlite table
     /// </summary>
     [RESTable(Method.GET)]
     public class TableMapping : ISelector<TableMapping>
@@ -45,15 +46,15 @@ namespace RESTable.SQLite
         /// The CLR class of the mapping
         /// </summary>
         [RESTableMember(ignore: true)]
-        public Type CLRClass { get; }
+        public Type ClrClass { get; }
 
         /// <summary>
         /// The name of the CLR class of the mapping
         /// </summary>
-        public string? ClassName => CLRClass.FullName?.Replace('+', '.');
+        public string? ClassName => ClrClass.FullName?.Replace('+', '.');
 
         /// <summary>
-        /// The name of the mapped SQLite table
+        /// The name of the mapped Sqlite table
         /// </summary>
         public string TableName { get; }
 
@@ -73,7 +74,7 @@ namespace RESTable.SQLite
         public ColumnMappings ColumnMappings { get; private set; }
 
         /// <summary>
-        /// Does this table mapping have a corresponding SQL table?
+        /// Does this table mapping have a corresponding Sqlite table?
         /// </summary>
         public async Task<bool> Exists() => await TableInfoQuery
             .GetRows()
@@ -92,7 +93,7 @@ namespace RESTable.SQLite
         /// <summary>
         /// The names of the mapped columns of this table mapping
         /// </summary>
-        internal HashSet<string> SQLColumnNames { get; private set; }
+        internal HashSet<string> SqlColumnNames { get; private set; }
 
         internal (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec { get; private set; }
         internal (string name, string set, string[] param, ColumnMapping[] mappings) UpdateSpec { get; private set; }
@@ -110,38 +111,38 @@ namespace RESTable.SQLite
         /// Options for table mappings
         /// </summary>
         [RESTable]
-        public class Options : OptionsTerminal
+        public class Options : CommandTerminal
         {
             /// <inheritdoc />
-            protected override IEnumerable<Option> GetOptions()
+            protected override IEnumerable<Command> GetCommands()
             {
-                static async ValueTask action(string[] _)
+                static async ValueTask action(string[] args, CancellationToken ct)
                 {
                     foreach (var mapping in TableMappingByType.Values)
                         await mapping.Update().ConfigureAwait(false);
                 }
 
-                yield return new Option("Update", "Updates all table mappings", action);
+                yield return new Command("Update", "Updates all table mappings", 0, action);
             }
         }
 
         #endregion
 
         /// <summary>
-        /// Creates a new table mapping, mapping a CLR class to an SQL table
+        /// Creates a new table mapping, mapping a CLR class to an Sqlite table
         /// </summary>
         private TableMapping(Type clrClass)
         {
             Validate(clrClass);
-            TableMappingKind = clrClass.IsSubclassOf(typeof(ElasticSQLiteTable)) ? TableMappingKind.Elastic : TableMappingKind.Static;
+            TableMappingKind = clrClass.IsSubclassOf(typeof(ElasticSqliteTable)) ? TableMappingKind.Elastic : TableMappingKind.Static;
             IsDeclared = !clrClass.Assembly.Equals(TypeBuilder.Assembly);
-            CLRClass = clrClass;
-            TableName = clrClass.GetCustomAttribute<SQLiteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('+', '.').Replace('.', '$')
-                ?? throw new SQLiteException("RESTable.SQLite encountered an unknown CLR class when creating table mappings");
+            ClrClass = clrClass;
+            TableName = clrClass.GetCustomAttribute<SqliteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('+', '.').Replace('.', '$')
+                ?? throw new SqliteException("RESTable.SQLite encountered an unknown CLR class when creating table mappings");
             Resource = null!;
             TransactMappings = null!;
-            SQLColumnNames = null!;
-            TableMappingByType[CLRClass] = this;
+            SqlColumnNames = null!;
+            TableMappingByType[ClrClass] = this;
             ColumnMappings = null!;
             TableInfoQuery = new Query($"PRAGMA table_info({TableName})");
             DropTableQuery = new Query($"DROP TABLE IF EXISTS {TableName}");
@@ -152,30 +153,30 @@ namespace RESTable.SQLite
         private static void Validate(Type type)
         {
             if (type.FullName is null)
-                throw new SQLiteException($"RESTable.SQLite encountered an unknown type: '{type.GUID}'");
+                throw new SqliteException($"RESTable.SQLite encountered an unknown type: '{type.GUID}'");
             if (type.Namespace is null)
-                throw new SQLiteException($"RESTable.SQLite encountered a type '{type}' with no specified namespace.");
+                throw new SqliteException($"RESTable.SQLite encountered a type '{type}' with no specified namespace.");
             if (type.IsGenericType)
-                throw new SQLiteException($"Invalid SQLite table mapping for CLR class '{type}'. Cannot map a " +
+                throw new SqliteException($"Invalid SQLite table mapping for CLR class '{type}'. Cannot map a " +
                                           "generic CLR class.");
 
             if (type.GetConstructor(Type.EmptyTypes) is null)
-                throw new SQLiteException($"Expected parameterless constructor for SQLite type '{type}'.");
+                throw new SqliteException($"Expected parameterless constructor for SQLite type '{type}'.");
             var columnProperties = type.GetDeclaredColumnProperties();
             if (columnProperties.Values.All(p => p.Name == "RowId"))
-                throw new SQLiteException(
+                throw new SqliteException(
                     $"No public auto-implemented instance properties found in type '{type}'. SQLite does not support empty tables, " +
                     "so each SQLiteTable must define at least one public auto-implemented instance property.");
         }
 
         private HashSet<string> MakeColumnNames(ColumnMappings columnMappings)
         {
-            var allColumns = new HashSet<string>(columnMappings.Values.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
+            var allColumns = new HashSet<string>(columnMappings.Values.Select(c => c.SqlColumn.Name), StringComparer.OrdinalIgnoreCase);
             var notRowId = columnMappings.Values.Where(m => !m.IsRowId).ToArray();
-            var columns = string.Join(", ", notRowId.Select(c => c.SQLColumn.Name));
+            var columns = string.Join(", ", notRowId.Select(c => c.SqlColumn.Name));
             var mappings = notRowId;
-            var param = notRowId.Select(c => $"@{c.SQLColumn.Name}").ToArray();
-            var set = string.Join(", ", notRowId.Select(c => $"{c.SQLColumn.Name} = @{c.SQLColumn.Name}"));
+            var param = notRowId.Select(c => $"@{c.SqlColumn.Name}").ToArray();
+            var set = string.Join(", ", notRowId.Select(c => $"{c.SqlColumn.Name} = @{c.SqlColumn.Name}"));
             InsertSpec = (TableName, columns, param, mappings);
             UpdateSpec = (TableName, set, param, mappings);
             return allColumns;
@@ -184,38 +185,38 @@ namespace RESTable.SQLite
         internal async Task DropColumns(List<ColumnMapping> mappings)
         {
             foreach (var mapping in mappings)
-                ColumnMappings.Remove(mapping.CLRProperty.Name);
+                ColumnMappings.Remove(mapping.ClrProperty.Name);
             ReloadColumnNames(ColumnMappings);
-            var tempColumnNames = new HashSet<string>(SQLColumnNames);
+            var tempColumnNames = new HashSet<string>(SqlColumnNames);
             tempColumnNames.Remove("rowid");
-            var columnsSQL = string.Join(", ", tempColumnNames);
+            var columnsSql = string.Join(", ", tempColumnNames);
             var tempName = $"__{TableName}__RESTABLE_TEMP";
             var querySql = "PRAGMA foreign_keys=off;BEGIN TRANSACTION;" +
                            $"ALTER TABLE {TableName} RENAME TO {tempName};" +
                            $"{GetCreateTableSql()}" +
-                           $"INSERT INTO {TableName} ({columnsSQL})" +
-                           $"  SELECT {columnsSQL} FROM {tempName};" +
+                           $"INSERT INTO {TableName} ({columnsSql})" +
+                           $"  SELECT {columnsSql} FROM {tempName};" +
                            $"DROP TABLE {tempName};" +
                            "COMMIT;PRAGMA foreign_keys=on;";
             var query = new Query(querySql);
-            await query.Execute().ConfigureAwait(false);
+            await query.ExecuteAsync().ConfigureAwait(false);
         }
 
         /// <summary>
         /// Gets the SQL columns of the mapped SQL table
         /// </summary>
         /// <returns></returns>
-        public async IAsyncEnumerable<SQLColumn> GetSqlColumns()
+        public async IAsyncEnumerable<SqlColumn> GetSqlColumns()
         {
             await foreach (var row in TableInfoQuery.GetRows().ConfigureAwait(false))
             {
                 var name = await row.GetFieldValueAsync<string>(1).ConfigureAwait(false);
                 var type = await row.GetFieldValueAsync<string>(2).ConfigureAwait(false);
-                yield return new SQLColumn(name: name, type: type.ParseSQLDataType());
+                yield return new SqlColumn(name: name, type: type.ParseSqlDataType());
             }
         }
 
-        private void ReloadColumnNames(ColumnMappings columnMappings) => SQLColumnNames = MakeColumnNames(columnMappings);
+        private void ReloadColumnNames(ColumnMappings columnMappings) => SqlColumnNames = MakeColumnNames(columnMappings);
 
         internal async Task Update()
         {
@@ -227,30 +228,30 @@ namespace RESTable.SQLite
                 columnMappings[column.Name] = new ColumnMapping
                 (
                     tableMapping: this,
-                    clrProperty: new CLRProperty(column.Name, column.Type.ToCLRTypeCode()),
+                    clrProperty: new ClrProperty(column.Name, column.Type.ToClrTypeCode()),
                     sqlColumn: column
                 );
             }
             ReloadColumnNames(columnMappings);
-            TransactMappings = columnMappings.Values.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
+            TransactMappings = columnMappings.Values.Where(mapping => !mapping.ClrProperty.IsIgnored).ToArray();
             ColumnMappings = columnMappings;
         }
 
-        private async Task Drop() => await DropTableQuery.Execute().ConfigureAwait(false);
+        private async Task Drop() => await DropTableQuery.ExecuteAsync().ConfigureAwait(false);
 
         // ReSharper disable once ConstantNullCoalescingCondition
-        private string GetCreateTableSql() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
+        private string GetCreateTableSql() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSql()});";
 
         private ColumnMappings GetDeclaredColumnMappings()
         {
-            var columnMappings = CLRClass
+            var columnMappings = ClrClass
                 .GetDeclaredColumnProperties()
                 .Values
                 .Select(property => new ColumnMapping
                 (
                     tableMapping: this,
                     clrProperty: property,
-                    sqlColumn: new SQLColumn(property.MemberAttribute?.ColumnName ?? property.Name, property.Type.ToSQLDataType())
+                    sqlColumn: new SqlColumn(property.MemberAttribute?.ColumnName ?? property.Name, property.Type.ToSqlDataType())
                 ));
             return new ColumnMappings(columnMappings);
         }
@@ -261,7 +262,7 @@ namespace RESTable.SQLite
             if (!await mapping.Exists())
             {
                 var createTableQuery = new Query(mapping.GetCreateTableSql());
-                await createTableQuery.Execute().ConfigureAwait(false);
+                await createTableQuery.ExecuteAsync().ConfigureAwait(false);
             }
             await mapping.Update().ConfigureAwait(false);
         }

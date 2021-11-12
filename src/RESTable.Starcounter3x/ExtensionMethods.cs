@@ -57,7 +57,7 @@ namespace RESTable.Starcounter3x
             var hasOtherIndex = true;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
-                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.ParsedOperator.SQL, c.Value);
+                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.ParsedOperator.Sql, c.Value);
                 if (value is null)
                 {
                     op = c.Operator switch
@@ -71,7 +71,7 @@ namespace RESTable.Starcounter3x
                 literals.Add(c.Value);
                 hasOtherIndex = false;
                 _valuesAssignments[index] = literals.Count - 1;
-                return $"t.{key} {c.ParsedOperator.SQL} ? ";
+                return $"t.{key} {c.ParsedOperator.Sql} ? ";
             }));
             useOrderBy = !hasOtherIndex;
             if (clause.Length == 0)
@@ -90,7 +90,7 @@ namespace RESTable.Starcounter3x
             var hasOtherIndex = false;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
-                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.ParsedOperator.SQL, c.Value);
+                var (key, op, value) = (c.Term.ActualNamesKey.Fnuttify(), c.ParsedOperator.Sql, c.Value);
                 if (value is null)
                 {
                     op = c.Operator switch
@@ -103,7 +103,7 @@ namespace RESTable.Starcounter3x
                 }
                 literals.Add(c.Value);
                 hasOtherIndex = false;
-                return $"t.{key} {c.ParsedOperator.SQL} ? ";
+                return $"t.{key} {c.ParsedOperator.Sql} ? ";
             }));
             useOrderBy = !hasOtherIndex;
             return (clause.Length > 0 ? ($"WHERE {clause} ", literals.ToArray()) : (null, null))!;
@@ -119,14 +119,14 @@ namespace RESTable.Starcounter3x
             return condition.Term.HasFlag(Constants.StarcounterQueryableFlag);
         }
 
-        internal static bool HasSQL<T>(this IEnumerable<Condition<T>> conds, out IEnumerable<Condition<T>> sql)
+        internal static bool HasSql<T>(this IEnumerable<Condition<T>> conds, out IEnumerable<Condition<T>> sql)
             where T : class
         {
             sql = conds.Where(IsStarcounterQueryable).ToList();
             return sql.Any();
         }
 
-        public static IEnumerable<Condition<T>> GetSQL<T>(this IEnumerable<Condition<T>> conds) where T : class
+        public static IEnumerable<Condition<T>> GetSql<T>(this IEnumerable<Condition<T>> conds) where T : class
         {
             return conds.Where(IsStarcounterQueryable);
         }

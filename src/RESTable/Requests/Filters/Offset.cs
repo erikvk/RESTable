@@ -12,7 +12,7 @@ namespace RESTable.Requests.Filters
     public readonly struct Offset : IFilter
     {
         public static Offset NoOffset => 0;
-        
+
         public readonly int Number;
 
         public static implicit operator Offset(int nr) => new(nr);

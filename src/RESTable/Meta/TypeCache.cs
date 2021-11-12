@@ -27,12 +27,7 @@ namespace RESTable.Meta
         internal TermFactory TermFactory { get; }
         private ResourceCollection ResourceCollection { get; }
 
-        public TypeCache
-        (
-            IEnumerable<IEntityTypeContractResolver> entityTypeContractResolvers,
-            ResourceCollection resourceCollection,
-            TermCache termCache
-        )
+        public TypeCache(IEnumerable<IEntityTypeContractResolver> entityTypeContractResolvers, ResourceCollection resourceCollection, TermCache termCache)
         {
             EntityTypeContractResolvers = entityTypeContractResolvers;
             ResourceCollection = resourceCollection;
@@ -49,7 +44,7 @@ namespace RESTable.Meta
         {
             bool getValue() => !type.IsValueType &&
                                Type.GetTypeCode(type) == TypeCode.Object &&
-                               (type.IsDictionary(out var writeAble) && writeAble || !type.ImplementsEnumerableInterface(out _));
+                               (type.IsDictionary(out var writeAble, out _) && writeAble || !type.ImplementsEnumerableInterface(out _));
 
             if (!CanBePopulatedCache.TryGetValue(type, out var value))
             {
@@ -70,18 +65,77 @@ namespace RESTable.Meta
 
         #region Declared properties
 
-        internal IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(Type type, bool flag = false)
+        private IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(Type type, bool flag = false)
         {
             if (type.HasAttribute<RESTableMemberAttribute>(out var memberAttribute) && memberAttribute!.Ignored)
                 return Array.Empty<DeclaredProperty>();
             return ParseDeclaredProperties(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), flag);
         }
 
-        internal IEnumerable<DeclaredProperty> ParseDeclaredProperties(IEnumerable<PropertyInfo> props, bool flag) => props
-            .Where(p => !p.RESTableIgnored())
-            .Where(p => !p.GetIndexParameters().Any())
-            .Select(p => new DeclaredProperty(p, flag))
-            .OrderBy(p => p.Order);
+        private IEnumerable<DeclaredProperty> ParseDeclaredProperties(IEnumerable<PropertyInfo> props, bool flag)
+        {
+            var baseEnumeration = props
+                .Where(p => !p.RESTableIgnored())
+                .Where(p => !p.GetIndexParameters().Any())
+                .Where(p => !p.PropertyType.HasAttribute<RESTableIgnoreMembersWithTypeAttribute>())
+                .Select(p => new DeclaredProperty(p, flag))
+                .OrderBy(p => p.Order);
+            foreach (var property in baseEnumeration)
+            {
+                // Each thing we yield in this loop is a member of the owner
+                if (property.MergeOntoOwner)
+                {
+                    // Each property of this property should be merged on the owner. We refer to the
+                    var propertyType = property.Type;
+                    if (property.Getter is not { } propertyGetter)
+                    {
+                        // No point in setting up merging if we can't access the merged object
+                        continue;
+                    }
+                    foreach (var propertyProperty in GetDeclaredProperties(property.Type).Values)
+                    {
+                        if (propertyProperty.Getter is { } propertyPropertyGetter)
+                        {
+                            propertyProperty.Getter = async ownerTarget =>
+                            {
+                                var propertyValue = await propertyGetter.Invoke(ownerTarget).ConfigureAwait(false);
+                                if (propertyValue is null)
+                                    return null;
+                                return await propertyPropertyGetter(propertyValue).ConfigureAwait(false);
+                            };
+                        }
+                        if (propertyProperty.Setter is { } propertyPropertySetter)
+                        {
+                            propertyProperty.Setter = async (owner, propertyPropertyValue) =>
+                            {
+                                var propertyValue = await propertyGetter.Invoke(owner).ConfigureAwait(false);
+                                if (propertyValue is null)
+                                {
+                                    if (property.Setter is null)
+                                    {
+                                        // Not much we can do if we can't set the property value to the owner, even if we 
+                                        // can set the property property value.
+                                        return;
+                                    }
+                                    // If the property's value is null, we need to create it to be able 
+                                    // to set one of its properties. If this fails, we have a design error.
+                                    propertyValue = Activator.CreateInstance(propertyType);
+                                    if (propertyValue is null)
+                                    {
+                                        // Activation yielded null, not much we can do then.
+                                        return;
+                                    }
+                                    await property.Setter(owner, propertyValue).ConfigureAwait(false);
+                                }
+                                await propertyPropertySetter(propertyValue, propertyPropertyValue).ConfigureAwait(false);
+                            };
+                        }
+                        yield return propertyProperty;
+                    }
+                }
+                else yield return property;
+            }
+        }
 
         /// <summary>
         /// Gets the declared properties for a given type
@@ -92,26 +146,27 @@ namespace RESTable.Meta
             {
                 switch (_type)
                 {
-                    case null: return Array.Empty<DeclaredProperty>();
-                    case var _ when _type.IsDictionary(out _):
+                    case null:
+                    case { } when _type.HasAttribute<RESTableIgnoreMembersWithTypeAttribute>(): return Array.Empty<DeclaredProperty>();
+                    case { } when _type.IsDictionary(out _, out _):
                     {
                         return FindAndParseDeclaredProperties(_type, flag: true).Select(p =>
                         {
-                            p.Hidden = true;
+                            p.Hidden = !p.HasAttribute<RESTableMemberAttribute>(out var attr) || attr!.Hidden != false;
                             return p;
                         });
                     }
-                    case var _ when _type.IsInterface:
+                    case {IsInterface: true}:
                     {
                         return ParseDeclaredProperties
                         (
-                            props: new[] { _type }
+                            props: new[] {_type}
                                 .Concat(_type.GetInterfaces())
                                 .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public)),
                             flag: false
                         );
                     }
-                    case var _ when _type.GetRESTableInterfaceType() is Type t:
+                    case { } when _type.GetRESTableInterfaceType() is Type t:
                     {
                         var interfaceName = t.GetRESTableTypeName();
                         var targetsByProp = _type
@@ -160,22 +215,19 @@ namespace RESTable.Meta
                             return p;
                         });
                     }
-                    case var _ when _type.IsSubclassOf(typeof(Terminal)):
+                    case { } when _type.IsSubclassOf(typeof(Terminal)):
                     {
                         return FindAndParseDeclaredProperties(_type).Except(GetDeclaredProperties(typeof(Terminal)).Values, DeclaredProperty.NameComparer);
                     }
-                    case var _ when _type.IsNullable(out var underlying):
+                    case { } when _type.IsNullable(out var underlying):
                     {
                         return GetDeclaredProperties(underlying).Values;
                     }
-                    case var _ when _type.HasAttribute<RESTableViewAttribute>():
+                    case { } when _type.HasAttribute<RESTableViewAttribute>():
                     {
                         return FindAndParseDeclaredProperties(_type).Union(Make(_type.DeclaringType));
                     }
-                    default:
-                    {
-                        return FindAndParseDeclaredProperties(_type);
-                    }
+                    case { }: return FindAndParseDeclaredProperties(_type);
                 }
             }
 
@@ -186,16 +238,24 @@ namespace RESTable.Meta
             {
                 if (!DeclaredPropertyCache.TryGetValue(type, out var propsByName))
                 {
-                    var propertyList = new List<DeclaredProperty>();
-                    foreach (var property in Make(type))
-                    {
-                        EstablishPropertyDependancies(property);
-                        propertyList.Add(property);
-                    }
+                    var propertyList = Make(type).ToList();
                     var contract = EntityTypeContracts[type] = new EntityTypeContract(type, propertyList);
                     foreach (var resolver in EntityTypeContractResolvers)
                         resolver.ResolveContract(contract);
-                    propsByName = DeclaredPropertyCache[type] = propertyList.SafeToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+                    var propertyDictionary = new Dictionary<string, DeclaredProperty>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var property in propertyList)
+                    {
+                        var counter = 0;
+                        var key = property.Name;
+                        if (propertyDictionary.ContainsKey(key))
+                        {
+                            while (propertyDictionary.ContainsKey($"{key}\\{counter}"))
+                                counter += 1;
+                            key = $"{key}\\{counter}";
+                        }
+                        propertyDictionary[key] = property;
+                    }
+                    propsByName = DeclaredPropertyCache[type] = propertyDictionary;
                 }
                 return propsByName!;
             }
@@ -204,7 +264,7 @@ namespace RESTable.Meta
             {
                 propsByActualName = DeclaredPropertyCacheByActualName[type] = GetDeclaredProperties(type)
                     .Values
-                    .SafeToDictionary(p => p.ActualName, StringComparer.OrdinalIgnoreCase);
+                    .ToDictionary(p => p.ActualName, StringComparer.OrdinalIgnoreCase);
             }
             return propsByActualName!;
         }
@@ -223,7 +283,7 @@ namespace RESTable.Meta
 
         public bool TryFindDeclaredProperty(Type type, string key, out DeclaredProperty? declaredProperty)
         {
-            if (!type.IsDictionary(out _) && type.ImplementsEnumerableInterface(out var parameter))
+            if (!type.IsDictionary(out _, out _) && type.ImplementsEnumerableInterface(out var parameter))
             {
                 var collectionReadonly = typeof(IList).IsAssignableFrom(type) || type.ImplementsGenericInterface(typeof(IList<>));
                 switch (key)
@@ -248,16 +308,6 @@ namespace RESTable.Meta
             }
             declaredProperty = null;
             return false;
-        }
-
-        internal void EstablishPropertyDependancies(DeclaredProperty property)
-        {
-            if (property.HasAttribute<DefinesAttribute>(out var dAttribute) && dAttribute!.Terms is string[] dArgs && dArgs.Any())
-            {
-                foreach (var term in dArgs.Select(name => TermFactory.MakeOrGetCachedTerm(property.Owner!, name, ".", TermBindingRule.OnlyDeclared)))
-                    property.DefinesPropertyTerms.Add(term);
-                property.DefinesOtherProperties = true;
-            }
         }
 
         #endregion

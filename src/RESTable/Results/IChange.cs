@@ -14,6 +14,11 @@ namespace RESTable.Results
         /// The changed entities
         /// </summary>
         public IEnumerable<object> GetEntities();
+
+        /// <summary>
+        /// The number of changed entities
+        /// </summary>
+        long Count { get; }
     }
 
     public interface IChange<out T> : IChange, IResult where T : class

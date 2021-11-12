@@ -86,6 +86,9 @@ namespace RESTable.Internal
                         cProvider.OutputMimeBindings.Add(pair);
                     break;
             }
+            cProvider.DefaultInputProvider = provider.GetDefaultInputContentTypeProvider(cProvider.InputMimeBindings.Values);
+            cProvider.DefaultOutputProvider = provider.GetDefaultOutputContentTypeProvider(cProvider.OutputMimeBindings.Values);
+
             return cProvider;
         }
 

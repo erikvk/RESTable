@@ -84,6 +84,12 @@ namespace RESTable.Meta
         public bool IsValueType { get; }
 
         /// <summary>
+        /// The index at which this property occurs as a parameter in a JsonConstructorAttribute decorated constructor,
+        /// if any. Else null.
+        /// </summary>
+        public ParameterInfo? CustomConstructorParameterInfo { get; }
+
+        /// <summary>
         /// Does the value of this property define the values of other properties?
         /// </summary>
         public bool DefinesOtherProperties { get; internal set; }
@@ -188,6 +194,7 @@ namespace RESTable.Meta
             Setter = setter;
             MergeOntoOwner = mergeOntoOwner;
             ReadOnly = readOnly;
+            CustomConstructorParameterInfo = this.GetCustomConstructorParameterInfo();
         }
 
         /// <summary>
@@ -219,6 +226,7 @@ namespace RESTable.Meta
             Getter = p.CanRead ? p.MakeDynamicGetter() : null;
             Setter = p.CanWrite ? p.MakeDynamicSetter() : null;
             ReplaceOnUpdate = memberAttribute?.ReplaceOnUpdate == true;
+            CustomConstructorParameterInfo = this.GetCustomConstructorParameterInfo();
         }
 
         private static object MakeExcelReducer(string methodName, PropertyInfo p)

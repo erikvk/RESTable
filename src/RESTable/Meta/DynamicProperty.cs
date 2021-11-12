@@ -78,7 +78,7 @@ namespace RESTable.Meta
                         }
                         return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
                     }
-                    case JsonElement { ValueKind: JsonValueKind.Object } element:
+                    case JsonElement {ValueKind: JsonValueKind.Object} element:
                     {
                         foreach (var jsonProperty in element.EnumerateObject())
                         {
@@ -96,6 +96,22 @@ namespace RESTable.Meta
                         string capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
                         {
+                            Name = capitalized;
+                            return value;
+                        }
+                        if (dict.TryFindInDictionary(Name, out actualKey, out value))
+                        {
+                            Name = actualKey!;
+                            return value;
+                        }
+                        return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
+                    }
+                    case IDictionary dict:
+                    {
+                        string capitalized = Name.Capitalize();
+                        if (dict.Contains(capitalized))
+                        {
+                            value = dict[capitalized];
                             Name = capitalized;
                             return value;
                         }

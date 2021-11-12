@@ -47,6 +47,18 @@ namespace RESTable.Meta
         }
 
         /// <summary>
+        /// Sets the value of this property, expecting it to be a synchronous operation, and
+        /// blocking the thread until done if it isn't.
+        /// </summary>
+        public void SetValueOrBlock(object target, object? value)
+        {
+            var setValueTask = SetValue(target, value);
+            if (setValueTask.IsCompleted)
+                setValueTask.GetAwaiter().GetResult();
+            else setValueTask.AsTask().Wait();
+        }
+
+        /// <summary>
         /// </summary>
         internal Setter? Setter { get; set; }
 

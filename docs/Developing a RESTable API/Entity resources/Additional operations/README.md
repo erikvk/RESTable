@@ -2,30 +2,25 @@
 
 RESTable has built in mechanisms to handle validation of resource entities and resource-specific authorization, available to the developer by having the resource type implement the `IValidatable` and `IAuthenticatable<T>` interfaces respectively.
 
-## Entity resource validation using `IValidatable`
+## Entity resource validation using `IValidator<T>`
 
-The `IValidatable` interface has one method, `IsValid()`, that RESTable calls for all resources implementing `IValidatable` before running operations `Insert` and `Update`. If the entity resource has some validation logic that needs to be run on all entities before insertion or updating – `IValidatable` provides a simple way to handle invalid entities and show proper error messages to the client.
-
-Unlike the [operations interfaces](../#operations-and-operations-interfaces) and `IAuthenticatable<T>` below, `IsValid()` is not run from a static context, so references can be made to instance members.
+The `IValidator<T>` interface has one method, `GetInvalidMembers(T entity, RESTableContext context)`, that RESTable calls for all resource entities before running operations `Insert` and `Update`. If the entity resource has some validation logic that needs to be run on all entities before insertion or updating – `IValidator<T>` provides a simple way to handle invalid entities and show proper error messages to the client. `RESTable.Resources.Operations.ValidatorExtensions` provides useful extension methods for signaling invalid members in entities.
 
 ### Example
 
 ```csharp
 [RESTable, Database]
-public class Person : IValidatable
+public class Person : IValidator<Person>
 {
     public string Name;
     public DateTime DateOfBirth;
 
-    public bool IsValid(out string invalidReason)
+    public IEnumerable<InvalidMember> GetInvalidMembers(Person entity, RESTableContext context)
     {
-        if (DateOfBirth > DateTime.Now)
+        if (entity.DateOfBirth > DateTime.Now)
         {
-            invalidReason = "Date of birth must be in the past";
-            return false;
+            yield return this.MemberInvalid(p => p.DateOfBirth, "Date of birth must be in the past");
         }
-        invalidReason = null;
-        return true;
     }
 }
 ```

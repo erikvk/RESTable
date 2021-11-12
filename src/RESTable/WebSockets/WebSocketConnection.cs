@@ -28,6 +28,8 @@ namespace RESTable.WebSockets
         public RESTableContext Context { get; private set; }
         private TaskCompletionSource<byte> SuspendTaskSource { get; set; }
 
+        public CancellationToken WebSocketAborted => WebSocket.WebSocketAborted;
+
         private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
 
         internal WebSocketConnection(WebSocket webSocket, Terminal terminal)
@@ -86,60 +88,21 @@ namespace RESTable.WebSockets
         }
 
         /// <inheritdoc />
-        public Task SendText(ArraySegment<byte> buffer, CancellationToken cancellationToken = new())
+        public Task Send(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken = new())
         {
-            return WebSocket.SendText(buffer, cancellationToken);
+            return WebSocket.Send(data, asText, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task SendText(Stream stream, CancellationToken cancellationToken = new())
-        {
-            return WebSocket.SendText(stream, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task SendBinary(ArraySegment<byte> buffer, CancellationToken cancellationToken = new())
-        {
-            return WebSocket.SendBinary(buffer, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task SendBinary(Stream stream, CancellationToken cancellationToken = new())
-        {
-            return WebSocket.SendBinary(stream, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
+        public ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
         {
             return WebSocket.GetMessageStream(asText, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task SendJson(object dataObject, bool at = false, bool? p = null, bool ig = false, CancellationToken cancellationToken = new())
-        {
-            return WebSocket.SendJson(dataObject, at, p, ig, cancellationToken);
         }
 
         /// <inheritdoc />
         public Task SendResult(IResult r, TimeSpan? t = null, bool w = false, CancellationToken cancellationToken = new())
         {
             return WebSocket.SendResult(r, t, w, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task SendSerializedResult(ISerializedResult serializedResult, TimeSpan? t = null, bool w = false,
-            bool d = true, CancellationToken cancellationToken = new())
-        {
-            return WebSocket.SendSerializedResult(serializedResult, t, w, d, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task StreamSerializedResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null,
-            bool writeHeaders = false,
-            bool disposeResult = true, CancellationToken cancellationToken = new())
-        {
-            return WebSocket.StreamSerializedResult(result, messageSize, timeElapsed, writeHeaders, disposeResult, cancellationToken);
         }
 
         /// <inheritdoc />

@@ -45,7 +45,7 @@ namespace RESTable.Meta
                     .Select(t => new EnumMember
                     (
                         name: t.Name,
-                        numericValue: (int)(Convert.ChangeType(t.GetValue(null), TypeCode.Int32) ?? -1),
+                        numericValue: (int) (Convert.ChangeType(t.GetValue(null), TypeCode.Int32) ?? -1),
                         attributes: t.GetCustomAttributes<Attribute>()
                     ))
                     .ToArray()
@@ -108,7 +108,7 @@ namespace RESTable.Meta
         /// <summary>
         /// Gets the members of an enumeration
         /// </summary>
-        public static EnumMember<T>[] GetMembers(T except) => GetMembers(new[] { except });
+        public static EnumMember<T>[] GetMembers(T except) => GetMembers(new[] {except});
 
         /// <summary>
         /// Gets the members of an enumeration
@@ -122,7 +122,7 @@ namespace RESTable.Meta
                     .Where(field => exceptionStrings.Contains(field.Name) != true)
                     .Select(field => new EnumMember<T>
                     (
-                        value: (T)(field.GetValue(null) ?? -1),
+                        value: (T) (field.GetValue(null) ?? -1),
                         attributes: field.GetCustomAttributes<Attribute>()
                     ))
                     .ToArray()
@@ -135,7 +135,7 @@ namespace RESTable.Meta
         public static readonly T[] Values = typeof(T).IsEnum
             ? typeof(T).GetFields()
                 .Where(field => field.FieldType.IsEnum)
-                .Select(field => (T)(field.GetValue(null) ?? -1))
+                .Select(field => (T) (field.GetValue(null) ?? -1))
                 .ToArray()
             : throw new ArgumentException($"Type must be enum, found '{typeof(T).GetRESTableTypeName()}'");
 

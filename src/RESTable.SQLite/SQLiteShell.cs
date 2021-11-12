@@ -5,10 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Resources;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     [RESTable]
-    public class SQLiteShell : Terminal
+    public class SqliteShell : Terminal
     {
         public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
@@ -42,7 +42,5 @@ namespace RESTable.SQLite
                 await responseWriter.WriteAsync(rowData, cancellationToken).ConfigureAwait(false);
             }
         }
-
-        protected override bool SupportsTextInput => true;
     }
 }

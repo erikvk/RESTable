@@ -44,13 +44,22 @@ namespace RESTable.Meta.Internal
 
         public IAsyncEnumerable<T> SelectAsync(IRequest<T> request, CancellationToken cancellationToken) => throw new InvalidOperationException();
 
-        public async Task<Terminal> CreateTerminal(RESTableContext context, IEnumerable<Condition<T>>? assignments = null)
+        public async Task<Terminal> CreateTerminal(RESTableContext context, CancellationToken webSocketCancellationToken, IEnumerable<Condition<T>>? assignments = null)
         {
             var assignmentList = assignments?.ToList() ?? new List<Condition<T>>();
 
-            var newTerminal = HasParameterizedConstructor
-                ? InvokeParameterizedConstructor(context, assignmentList)
-                : (Terminal) Constructor.Invoke(null);
+            Terminal newTerminal;
+            try
+            {
+                newTerminal = HasParameterizedConstructor
+                    ? InvokeParameterizedConstructor(context, webSocketCancellationToken, assignmentList)
+                    : (Terminal) Constructor.Invoke(null);
+            }
+            catch (TargetInvocationException tie)
+            {
+                // An exception occured in the constructor
+                throw tie.InnerException ?? tie;
+            }
 
             foreach (var assignment in assignmentList)
             {
@@ -76,7 +85,7 @@ namespace RESTable.Meta.Internal
             return newTerminal;
         }
 
-        private bool TryResolveNonConditionValue(RESTableContext context, Type parameterType, out object? value)
+        private bool TryResolveNonConditionValue(RESTableContext context, Type parameterType, CancellationToken webSocketCancellationToken, out object? value)
         {
             switch (parameterType)
             {
@@ -85,6 +94,9 @@ namespace RESTable.Meta.Internal
                     return true;
                 case var _ when parameterType.IsAssignableFrom(typeof(Headers)):
                     value = context.WebSocket!.Headers;
+                    return true;
+                case var _ when parameterType == typeof(CancellationToken):
+                    value = webSocketCancellationToken;
                     return true;
                 case var _ when context.GetService(parameterType) is { } resolvedService:
                     value = resolvedService;
@@ -95,7 +107,7 @@ namespace RESTable.Meta.Internal
             }
         }
 
-        private Terminal InvokeParameterizedConstructor(RESTableContext context, List<Condition<T>> assignmentList)
+        private Terminal InvokeParameterizedConstructor(RESTableContext context, CancellationToken webSocketCancellationToken, List<Condition<T>> assignmentList)
         {
             var constructorParameterList = new object[ConstructorParameterInfos.Length];
             var parameterAssignments = new Dictionary<int, object?>();
@@ -121,7 +133,7 @@ namespace RESTable.Meta.Internal
                 else
                 {
                     var parameterInfo = ConstructorParameterInfos[i];
-                    if (TryResolveNonConditionValue(context, parameterInfo.ParameterType, out value))
+                    if (TryResolveNonConditionValue(context, parameterInfo.ParameterType, webSocketCancellationToken, out value))
                         constructorParameterList[i] = value!;
                     else if (parameterInfo.IsOptional)
                         constructorParameterList[i] = Missing.Value;
@@ -135,13 +147,7 @@ namespace RESTable.Meta.Internal
 
             if (missingParameterAssignments?.Count > 0)
             {
-                var invalidMembers = missingParameterAssignments
-                    .Select(parameter => new InvalidMember(
-                        entityType: Type,
-                        memberName: parameter.Name!,
-                        memberType: parameter.ParameterType,
-                        message: $"Missing parameter of type '{parameter.ParameterType}'")
-                    ).ToList();
+                var invalidMembers = missingParameterAssignments.ToInvalidMembers(Type);
                 throw new MissingTerminalParameter(Type, invalidMembers);
             }
 
@@ -169,7 +175,8 @@ namespace RESTable.Meta.Internal
             {
                 HasParameterizedConstructor = true;
                 var parameter = ConstructorParameterInfos[i];
-                ConstructorParameterIndexes[parameter.Name!] = i;
+                var parameterName = parameter.RESTableParameterName(typeof(T).IsDictionary(out _, out _));
+                ConstructorParameterIndexes[parameterName] = i;
             }
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
             IsDynamicTerminal = typeof(IDictionary<string, object?>).IsAssignableFrom(typeof(T));

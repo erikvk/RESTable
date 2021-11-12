@@ -1,12 +1,12 @@
 ﻿using System.Threading.Tasks;
 using RESTable.Resources;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     /// <summary>
     /// The base class for all SQLite table resource types
     /// </summary>
-    public abstract class SQLiteTable
+    public abstract class SqliteTable
     {
         /// <summary>
         /// The unique SQLite row ID for this row

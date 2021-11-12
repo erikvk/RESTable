@@ -5,96 +5,96 @@ using System.Linq;
 using RESTable.Requests;
 using static RESTable.Requests.Operators;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
-    internal static class SQLMethods
+    internal static class SqlMethods
     {
         internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey}\"";
 
-        internal static bool IsSQLiteCompatibleValueType(this Type type) => type.ResolveCLRTypeCode() != CLRDataType.Unsupported;
+        internal static bool IsSqliteCompatibleValueType(this Type type) => type.ResolveClrTypeCode() != ClrDataType.Unsupported;
 
-        internal static CLRDataType ResolveCLRTypeCode(this Type type)
+        internal static ClrDataType ResolveClrTypeCode(this Type type)
         {
             if (type.IsNullable(out var baseType))
                 type = baseType!;
             return Type.GetTypeCode(type) switch
             {
-                TypeCode.Int16 => CLRDataType.Int16,
-                TypeCode.Int32 => CLRDataType.Int32,
-                TypeCode.Int64 => CLRDataType.Int64,
-                TypeCode.Single => CLRDataType.Single,
-                TypeCode.Double => CLRDataType.Double,
-                TypeCode.Decimal => CLRDataType.Decimal,
-                TypeCode.Byte => CLRDataType.Byte,
-                TypeCode.String => CLRDataType.String,
-                TypeCode.Boolean => CLRDataType.Boolean,
-                TypeCode.DateTime => CLRDataType.DateTime,
-                _ => CLRDataType.Unsupported
+                TypeCode.Int16 => ClrDataType.Int16,
+                TypeCode.Int32 => ClrDataType.Int32,
+                TypeCode.Int64 => ClrDataType.Int64,
+                TypeCode.Single => ClrDataType.Single,
+                TypeCode.Double => ClrDataType.Double,
+                TypeCode.Decimal => ClrDataType.Decimal,
+                TypeCode.Byte => ClrDataType.Byte,
+                TypeCode.String => ClrDataType.String,
+                TypeCode.Boolean => ClrDataType.Boolean,
+                TypeCode.DateTime => ClrDataType.DateTime,
+                _ => ClrDataType.Unsupported
             };
         }
 
-        internal static SQLDataType ParseSQLDataType(this string typeString) => typeString.ToUpperInvariant() switch
+        internal static SqlDataType ParseSqlDataType(this string typeString) => typeString.ToUpperInvariant() switch
         {
-            "SMALLINT" => SQLDataType.SMALLINT,
-            "INT" => SQLDataType.INT,
-            "BIGINT" => SQLDataType.BIGINT,
-            "SINGLE" => SQLDataType.SINGLE,
-            "DOUBLE" => SQLDataType.DOUBLE,
-            "DECIMAL" => SQLDataType.DECIMAL,
-            "TINYINT" => SQLDataType.TINYINT,
-            "TEXT" => SQLDataType.TEXT,
-            "BOOLEAN" => SQLDataType.BOOLEAN,
-            "DATETIME" => SQLDataType.DATETIME,
-            _ => SQLDataType.Unsupported
+            "SMALLINT" => SqlDataType.SMALLINT,
+            "INT" => SqlDataType.INT,
+            "BIGINT" => SqlDataType.BIGINT,
+            "SINGLE" => SqlDataType.SINGLE,
+            "DOUBLE" => SqlDataType.DOUBLE,
+            "DECIMAL" => SqlDataType.DECIMAL,
+            "TINYINT" => SqlDataType.TINYINT,
+            "TEXT" => SqlDataType.TEXT,
+            "BOOLEAN" => SqlDataType.BOOLEAN,
+            "DATETIME" => SqlDataType.DATETIME,
+            _ => SqlDataType.Unsupported
         };
 
-        internal static SQLDataType ToSQLDataType(this CLRDataType clrDataType) => clrDataType switch
+        internal static SqlDataType ToSqlDataType(this ClrDataType clrDataType) => clrDataType switch
         {
-            CLRDataType.Int16 => SQLDataType.SMALLINT,
-            CLRDataType.Int32 => SQLDataType.INT,
-            CLRDataType.Int64 => SQLDataType.BIGINT,
-            CLRDataType.Single => SQLDataType.SINGLE,
-            CLRDataType.Double => SQLDataType.DOUBLE,
-            CLRDataType.Decimal => SQLDataType.DECIMAL,
-            CLRDataType.Byte => SQLDataType.TINYINT,
-            CLRDataType.String => SQLDataType.TEXT,
-            CLRDataType.Boolean => SQLDataType.BOOLEAN,
-            CLRDataType.DateTime => SQLDataType.DATETIME,
-            _ => SQLDataType.Unsupported
+            ClrDataType.Int16 => SqlDataType.SMALLINT,
+            ClrDataType.Int32 => SqlDataType.INT,
+            ClrDataType.Int64 => SqlDataType.BIGINT,
+            ClrDataType.Single => SqlDataType.SINGLE,
+            ClrDataType.Double => SqlDataType.DOUBLE,
+            ClrDataType.Decimal => SqlDataType.DECIMAL,
+            ClrDataType.Byte => SqlDataType.TINYINT,
+            ClrDataType.String => SqlDataType.TEXT,
+            ClrDataType.Boolean => SqlDataType.BOOLEAN,
+            ClrDataType.DateTime => SqlDataType.DATETIME,
+            _ => SqlDataType.Unsupported
         };
 
-        internal static DbType? ToDbTypeCode(this SQLDataType sqlDataType) => sqlDataType switch
+        internal static DbType? ToDbTypeCode(this SqlDataType sqlDataType) => sqlDataType switch
         {
-            SQLDataType.SMALLINT => DbType.Int16,
-            SQLDataType.INT => DbType.Int32,
-            SQLDataType.BIGINT => DbType.Int64,
-            SQLDataType.SINGLE => DbType.Single,
-            SQLDataType.DOUBLE => DbType.Double,
-            SQLDataType.DECIMAL => DbType.Decimal,
-            SQLDataType.TINYINT => DbType.Byte,
-            SQLDataType.TEXT => DbType.String,
-            SQLDataType.BOOLEAN => DbType.Boolean,
-            SQLDataType.DATETIME => DbType.DateTime,
+            SqlDataType.SMALLINT => DbType.Int16,
+            SqlDataType.INT => DbType.Int32,
+            SqlDataType.BIGINT => DbType.Int64,
+            SqlDataType.SINGLE => DbType.Single,
+            SqlDataType.DOUBLE => DbType.Double,
+            SqlDataType.DECIMAL => DbType.Decimal,
+            SqlDataType.TINYINT => DbType.Byte,
+            SqlDataType.TEXT => DbType.String,
+            SqlDataType.BOOLEAN => DbType.Boolean,
+            SqlDataType.DATETIME => DbType.DateTime,
             _ => null
         };
 
 
-        internal static CLRDataType ToCLRTypeCode(this SQLDataType sqlDataType) => sqlDataType switch
+        internal static ClrDataType ToClrTypeCode(this SqlDataType sqlDataType) => sqlDataType switch
         {
-            SQLDataType.SMALLINT => CLRDataType.Int16,
-            SQLDataType.INT => CLRDataType.Int32,
-            SQLDataType.BIGINT => CLRDataType.Int64,
-            SQLDataType.SINGLE => CLRDataType.Single,
-            SQLDataType.DOUBLE => CLRDataType.Double,
-            SQLDataType.DECIMAL => CLRDataType.Decimal,
-            SQLDataType.TINYINT => CLRDataType.Byte,
-            SQLDataType.TEXT => CLRDataType.String,
-            SQLDataType.BOOLEAN => CLRDataType.Boolean,
-            SQLDataType.DATETIME => CLRDataType.DateTime,
-            _ => CLRDataType.Unsupported
+            SqlDataType.SMALLINT => ClrDataType.Int16,
+            SqlDataType.INT => ClrDataType.Int32,
+            SqlDataType.BIGINT => ClrDataType.Int64,
+            SqlDataType.SINGLE => ClrDataType.Single,
+            SqlDataType.DOUBLE => ClrDataType.Double,
+            SqlDataType.DECIMAL => ClrDataType.Decimal,
+            SqlDataType.TINYINT => ClrDataType.Byte,
+            SqlDataType.TEXT => ClrDataType.String,
+            SqlDataType.BOOLEAN => ClrDataType.Boolean,
+            SqlDataType.DATETIME => ClrDataType.DateTime,
+            _ => ClrDataType.Unsupported
         };
 
-        private static string MakeSQLValueLiteral(this object? o)
+        private static string MakeSqlValueLiteral(this object? o)
         {
             switch (o)
             {
@@ -108,7 +108,7 @@ namespace RESTable.SQLite
             }
         }
 
-        private static string GetSQLOperator(Operators op) => op switch
+        private static string GetSqlOperator(Operators op) => op switch
         {
             EQUALS => "=",
             NOT_EQUALS => "<>",
@@ -119,20 +119,20 @@ namespace RESTable.SQLite
             _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
         };
 
-        internal static string? ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
+        internal static string? ToSqliteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
         {
             var values = string.Join(" AND ", conditions.Where(c => !c.Skip).Select(c =>
             {
-                var op = GetSQLOperator(c.Operator);
+                var op = GetSqlOperator(c.Operator);
                 var key = c.Term.First!.ActualName;
-                var valueLiteral = MakeSQLValueLiteral(c.Value);
+                var valueLiteral = MakeSqlValueLiteral(c.Value);
                 if (valueLiteral == "NULL")
                 {
                     op = c.Operator switch
                     {
                         EQUALS => "IS",
                         NOT_EQUALS => "IS NOT",
-                        _ => throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL")
+                        _ => throw new SqliteException($"Operator '{op}' is not valid for comparison with NULL")
                     };
                 }
                 return $"{key.Fnuttify()} {op} {valueLiteral}";

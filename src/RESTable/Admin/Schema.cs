@@ -8,7 +8,6 @@ using RESTable.Resources;
 using RESTable.Resources.Operations;
 using RESTable.Linq;
 using static RESTable.Method;
-using static RESTable.Requests.Operators;
 
 namespace RESTable.Admin
 {
@@ -17,7 +16,7 @@ namespace RESTable.Admin
     /// The Schema resource provides schemas for non-dynamic RESTable resources
     /// </summary>
     [RESTable(GET, Description = description)]
-    internal class Schema : Dictionary<string, object?>, ISelector<Schema>
+    public class Schema : Dictionary<string, object?>, ISelector<Schema>
     {
         private const string description = "The Schema resource provides schemas for " +
                                            "non-dynamic RESTable resources.";
@@ -26,7 +25,7 @@ namespace RESTable.Admin
         /// The name of the resource to get the schema for. Private get, so only for matching conditions,
         /// not visible in the resource entities.
         /// </summary>
-        public string? Resource { private get; set; }
+        [RESTableParameter] public string? Resource { get; set; }
 
         public Schema(IEnumerable<KeyValuePair<string, object?>> collection)
         {
@@ -40,10 +39,9 @@ namespace RESTable.Admin
         public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
             if (request is null) throw new ArgumentNullException(nameof(request));
-            var resourceCondition = request.Conditions.Pop(nameof(Resource), EQUALS);
-            if (resourceCondition?.Value is not string resourceName)
+            if (!request.Conditions.HasParameter("$" + nameof(Resource), out string? resourceName))
                 throw new Exception("Invalid syntax in request to RESTable.Schema. Format: " +
-                                    "/RESTable.Admin.Schema/resource=<insert_resource_name_here>");
+                                    "/RESTable.Admin.Schema/$resource=<insert_resource_name_here>");
             var resource = request.GetRequiredService<ResourceCollection>().FindResource(resourceName) as IEntityResource;
             if (resource?.IsDynamic != false)
                 yield break;

@@ -4,15 +4,11 @@ permalink: /Resource%20kinds/
 
 # RESTable resource kinds
 
-When using a RESTable API, for example our [demo service](../Consuming%20a%20RESTable%20API/Demo%20service), you may notice that there is are multiple **kinds** of resources that are available to you. Let's make a request to the demo API and list some available resources for the API key `RESTable`. For the sake of brevity, let's include only the `Name` and `Kind` properties:
+When using a RESTable API you may notice that there is are multiple **kinds** of resources that are available to you.
 
 ```
-curl "https://RESTablehelp.mopedo-drtb.com:8282/api/_/_/select=name,kind" -H "Authorization: apikey RESTable"
-```
-
-Response body (abbreviated):
-
-```json
+GET https://myapp.com/api/_/_/select=name,kind
+Accept: application/json;raw=true
 [
     {
         "Name": "RESTableTutorial.Superhero",
@@ -25,16 +21,12 @@ Response body (abbreviated):
     {
         "Name": "RESTable.Shell",
         "Kind": "TerminalResource"
-    },
-    {
-        "Name": "RESTableTutorial.SuperheroCreated",
-        "Kind": "EventResource"
-    },
+    }
     ...
 ]
 ```
 
-As we can see, there are four different values for the `Kind` properties of the listed resources. Let's go through them in order.
+As we can see, there are three different values for the `Kind` properties of the listed resources. Let's go through them in order.
 
 ## Entity resources
 
@@ -60,16 +52,3 @@ Terminal resources are useful when we want to provide high reactivity and intera
 
 - [Consuming terminal resources](../Consuming%20a%20RESTable%20API/Consuming%20terminal%20resources)
 - [Building terminal resources](../Developing%20a%20RESTable%20API/terminal%20resources)
-
-## Event resources
-
-Event resources define transient event objects that are raised (triggered) from within the RESTable application itself, and that can be listened for and used as triggers for various actions. To understand why event resources exist, imagine that we want to build an entity resource holding notifications, with entities inserted from within the RESTable application itself, as well as from other computers that send `POST` requests to our API. It stands to reason that clients would want to be notified once entities are added to the resource, but without event resources the best we can do is to tell the client to make frequent `GET` requests to check for new entities. We could also implement this using a terminal resource, but that would require the client to have an open websocket to the API in order to receive notifications. None of these solutions are favorable.
-
-With entity resources, we can let the application raise a notification event once a notification is created, carrying the notification entity as [payload](#event-payload), that can then trigger actions – for example a [webhook](../Administering%20a%20RESTable%20API/Webhooks) that sends the notification to a remote server. Unlike the other resource kinds, we do not consume event resources by sending requests for them. Instead we listen for them, and interact with their data once they're raised. See also:
-
-- [Webhooks](../Administering%20a%20RESTable%20API/Webhooks)
-- [Developing event resources](../Developing%20a%20RESTable%20API/Developing%20event%20resources)
-
-### Event payloads
-
-Each event carries a payload, the data that is associated with the event. The RESTable application developer defines what the payload is for a given event resource a description of the payload should be included in the resource documentation, so that consumers and administrators know what to expect when working with the event resource.

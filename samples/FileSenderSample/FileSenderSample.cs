@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
+using RESTable.ContentTypeProviders;
 using RESTable.Resources;
 using RESTable.WebSockets;
 
@@ -26,7 +27,6 @@ namespace FileSenderSample
 
         public void ConfigureServices(IServiceCollection services) => services
             .AddRESTable()
-            .AddJson()
             .AddHttpContextAccessor();
 
         public void Configure(IApplicationBuilder app) => app
@@ -81,7 +81,7 @@ namespace FileSenderSample
             await WebSocket.SendText($"Hi, I'm a connection named {WorkstationId}!", cancellationToken);
         }
 
-        public async Task FileSent(string fileName, long fileLength)
+        public async Task NotifyFileSent(string fileName, long fileLength)
         {
             SentFilesCount += 1;
             foreach (var manager in Services.GetRequiredService<ITerminalCollection<FileSenderManager>>())
@@ -117,8 +117,12 @@ namespace FileSenderSample
                 case "SEND ALL":
                     foreach (var file in MockelyMock.GetAllFilePaths().Select(File.OpenRead))
                     {
-                        await WebSocket.SendBinary(file, cancellationToken);
-                        await FileSent(file.Name, file.Length);
+                        var message = await WebSocket.GetMessageStream(asText: false, cancellationToken);
+                        await using (message)
+                        {
+                            await file.CopyToAsync(message, cancellationToken);
+                        }
+                        await NotifyFileSent(file.Name, file.Length);
                     }
                     await WebSocket.SendText("All files sent!", cancellationToken);
                     break;
@@ -130,8 +134,6 @@ namespace FileSenderSample
                     break;
             }
         }
-
-        protected override bool SupportsTextInput => true;
     }
 
     /// <summary>
@@ -140,6 +142,13 @@ namespace FileSenderSample
     [RESTable]
     public class FileSenderManager : Terminal
     {
+        private IJsonProvider JsonProvider { get; }
+
+        public FileSenderManager(IJsonProvider jsonProvider)
+        {
+            JsonProvider = jsonProvider;
+        }
+
         protected override async Task Open(CancellationToken cancellationToken)
         {
             await WebSocket.SendText("I'm a manager!", cancellationToken);
@@ -148,7 +157,8 @@ namespace FileSenderSample
         public async Task Notify(string fileName, long fileLength, FileSenderConnection connection)
         {
             await WebSocket.SendText($"{DateTime.Now:HH:mm:ss} A file with path {fileName} ({fileLength} bytes) was sent to the following connection:");
-            await WebSocket.SendJson(connection);
+            var connectionData = JsonProvider.SerializeToUtf8Bytes(connection);
+            await WebSocket.Send(connectionData, asText: true);
         }
 
         public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
@@ -162,7 +172,8 @@ namespace FileSenderSample
             switch (command)
             {
                 case "INFO":
-                    await WebSocket.SendJson(activeConnections, cancellationToken: cancellationToken);
+                    var activeConnectionsData = JsonProvider.SerializeToUtf8Bytes(activeConnections);
+                    await WebSocket.Send(activeConnectionsData, asText: true, cancellationToken);
                     break;
 
                 case "DEACTIVATE":
@@ -194,8 +205,6 @@ namespace FileSenderSample
                     break;
             }
         }
-
-        protected override bool SupportsTextInput => true;
     }
 
     /// <summary>
@@ -234,10 +243,17 @@ namespace FileSenderSample
                 return;
             }
 
-            await combinedTerminals.CombinedWebSocket.SendBinary(file, cancellationToken);
+            var messageStream = await combinedTerminals.CombinedWebSocket.GetMessageStream(asText: false, cancellationToken);
+
+            await using (file)
+            await using (messageStream)
+            {
+                await file.CopyToAsync(messageStream, cancellationToken);
+            }
+
             foreach (var terminal in combinedTerminals)
             {
-                await terminal.FileSent(file.Name, file.Length);
+                await terminal.NotifyFileSent(file.Name, file.Length);
             }
         }
 
@@ -247,7 +263,5 @@ namespace FileSenderSample
             "C:/SampleFiles/Sample2.txt",
             "C:/SampleFiles/Sample3.txt"
         };
-
-        protected override bool SupportsTextInput => true;
     }
 }

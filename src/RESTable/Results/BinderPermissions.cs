@@ -10,7 +10,7 @@ namespace RESTable.Results
     internal class BinderPermissions : Internal
     {
         /// <inheritdoc />
-        public BinderPermissions(Exception e) : base(ErrorCodes.FailedBinding, 
+        public BinderPermissions(Exception e) : base(ErrorCodes.FailedBinding,
             "RESTable failed to resolve a reference to a property or type.", e) { }
     }
 }

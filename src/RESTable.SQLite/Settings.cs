@@ -1,10 +1,10 @@
 ﻿using System;
 using RESTable.Resources;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     /// <summary>
-    /// Settings for the SQLite instance
+    /// Settings for the Sqlite instance
     /// </summary>
     public class Settings
     {
@@ -32,12 +32,11 @@ namespace RESTable.SQLite
         public static Settings? Instance { get; set; }
 
         /// <summary>
-        /// The SQLite database connection string to use for manual access to the SQLite
-        /// database
+        /// The Sqlite database connection string to use for manual access to the Sqlite database
         /// </summary>
         public static string ConnectionString => Instance?.DatabaseConnectionString ?? throw new InvalidOperationException
         (
-            "Cannot access the connection string, are RESTable.SQLite services not added or RESTable not configured?"
+            "Cannot access the connection string, are RESTable.Sqlite services not added or RESTable not configured?"
         );
     }
 }

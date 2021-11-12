@@ -6,12 +6,12 @@ namespace RESTable.Results
 {
     public abstract class Change : OK, IChange
     {
-        public const int MaxNumberOfEntitiesInChangeResults = 100;
-
         /// <summary>
         /// The number of changed entities
         /// </summary>
-        public int Count { get; }
+        public long Count { get; }
+
+        private int MaxNumberOfEntitiesInChangeResults { get; }
 
         /// <summary>
         /// True if the number of entities changed exceeded the maximum number of entities
@@ -26,8 +26,9 @@ namespace RESTable.Results
 
         public abstract Type EntityType { get; }
 
-        protected Change(IRequest request, int count) : base(request)
+        protected Change(IRequest request, long count) : base(request)
         {
+            MaxNumberOfEntitiesInChangeResults = request.Context.Configuration.MaxNumberOfEntitiesInChangeResults;
             Count = count;
         }
     }
@@ -47,7 +48,7 @@ namespace RESTable.Results
         public override Type EntityType => typeof(T);
 
         /// <inheritdoc />
-        protected Change(IRequest request, int count, IReadOnlyCollection<T> entities) : base(request, count)
+        protected Change(IRequest request, long count, IReadOnlyCollection<T> entities) : base(request, count)
         {
             Entities = entities;
         }

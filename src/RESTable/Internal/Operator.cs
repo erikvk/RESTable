@@ -30,9 +30,9 @@ namespace RESTable.Internal
         };
 
         /// <summary>
-        /// The SQL string representation of this operator
+        /// The Sql string representation of this operator
         /// </summary>
-        public string SQL => OpCode == Operators.NOT_EQUALS ? "<>" : Common;
+        public string Sql => OpCode == Operators.NOT_EQUALS ? "<>" : Common;
 
         internal bool Equality => OpCode is Operators.EQUALS or Operators.NOT_EQUALS;
         internal bool Compare => !Equality;

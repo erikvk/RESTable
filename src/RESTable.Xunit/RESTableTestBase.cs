@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace RESTable.Tests
+namespace RESTable.Xunit
 {
     /// <summary>
     /// A test class for tests that depend on RESTable, that injects a RESTableFixture using Xunit IClassFixture.

@@ -40,6 +40,10 @@ namespace RESTable
         /// <returns></returns>
         IEnumerable<IContentTypeProvider>? GetCustomContentTypeProviders();
 
+        IContentTypeProvider GetDefaultInputContentTypeProvider(ICollection<IContentTypeProvider> registeredProviders);
+
+        IContentTypeProvider GetDefaultOutputContentTypeProvider(ICollection<IContentTypeProvider> registeredProviders);
+
         /// <summary>
         /// Reads a uri string, which is everyting after the root URI in the full request URI, parses 
         /// its content according to some protocol and populates the URI object.
@@ -67,7 +71,7 @@ namespace RESTable
         Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken);
 
         void SetResultHeaders(IResult result);
-        
+
         /// <summary>
         /// This method is called when RESTableConfig.Init() is done initializing the RESTable instance.
         /// </summary>

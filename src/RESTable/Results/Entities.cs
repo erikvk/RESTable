@@ -27,7 +27,7 @@ namespace RESTable.Results
 
         IEntities<T> IEntities<T>.Result => this;
 
-        internal Entities(IRequest request, IAsyncEnumerable<T> enumerable) : base(request)
+        public Entities(IRequest request, IAsyncEnumerable<T> enumerable) : base(request)
         {
             Content = enumerable;
             Headers["Content-Disposition"] = $"attachment;filename={Request.Resource}_{DateTime.UtcNow:yyMMddHHmmssfff}" +

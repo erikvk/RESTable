@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
-    internal class EntityEnumerable<T> : IAsyncEnumerable<T> where T : SQLiteTable
+    internal class EntityEnumerable<T> : IAsyncEnumerable<T> where T : SqliteTable
     {
         internal string Sql { get; }
         internal bool OnlyRowId { get; }

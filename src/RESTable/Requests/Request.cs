@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +14,6 @@ using RESTable.Meta.Internal;
 using RESTable.Resources.Operations;
 using RESTable.Results;
 using RESTable.WebSockets;
-using Error = RESTable.Results.Error;
 
 namespace RESTable.Requests
 {
@@ -24,6 +22,7 @@ namespace RESTable.Requests
         public RequestParameters Parameters { get; }
         public IResource<T> Resource { get; }
         public ITarget<T> Target { get; }
+        public EntityOperations<T> EntityOperations { get; }
         ITarget IRequest.Target => Target;
         private Exception? Error { get; }
         private bool IsEvaluating { get; set; }
@@ -151,29 +150,7 @@ namespace RESTable.Requests
             data![key] = value;
         }
 
-        public async IAsyncEnumerable<T> GetResultEntities([EnumeratorCancellation] CancellationToken cancellationToken = new())
-        {
-            await using var result = await GetResult(cancellationToken).ConfigureAwait(false);
-            switch (result)
-            {
-                case Error error: throw error;
-                case Change<T> change:
-                {
-                    foreach (var entity in change.Entities)
-                        yield return entity;
-                    yield break;
-                }
-                case IEntities<T> entities:
-                {
-                    await foreach (var entity in entities)
-                        yield return entity;
-                    yield break;
-                }
-                case var other: throw new InvalidOperationException($"Cannot convert result of type '{other.GetType()}' to an enumeration of entities");
-            }
-        }
-
-        public async Task<IResult> GetResult(CancellationToken cancellationToken = new())
+        public async ValueTask<IResult> GetResult(CancellationToken cancellationToken = new())
         {
             cancellationToken.ThrowIfCancellationRequested();
             Stopwatch.Restart();
@@ -185,11 +162,15 @@ namespace RESTable.Requests
                 result = await Execute(cancellationToken).ConfigureAwait(false);
             }
 
-            if (Context.HasWaitingWebSocket(out var webSocket) && result is not WebSocketUpgradeSuccessful)
+            if
+            (
+                Context.HasWaitingWebSocket(out var webSocket) && webSocket is not null &&
+                result is not (WebSocketUpgradeSuccessful or WebSocketUpgradeFailed)
+            )
             {
                 if (result is Forbidden forbidden)
-                    return new WebSocketUpgradeFailed(forbidden);
-                await webSocket!.UseOnce(this, async ws =>
+                    return new WebSocketUpgradeFailed(forbidden, webSocket);
+                await webSocket.UseOnce(this, async ws =>
                 {
                     await ws.SendResult(result, cancellationToken: cancellationToken).ConfigureAwait(false);
                     var message = await ws.GetMessageStream(false, cancellationToken).ConfigureAwait(false);
@@ -202,7 +183,7 @@ namespace RESTable.Requests
                         await result.Serialize(message, cancellationToken: cancellationToken).ConfigureAwait(false);
                     }
                 }, cancellationToken).ConfigureAwait(false);
-                return new WebSocketTransferSuccess(this);
+                return new WebSocketTransferSuccess(result, this);
             }
 
             if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
@@ -230,18 +211,25 @@ namespace RESTable.Requests
                     {
                         if (!Context.HasWebSocket)
                             throw new UpgradeRequired(terminalResource.Name);
-                        if (Context.HasWaitingWebSocket(out var webSocket))
+                        if (Context.HasWaitingWebSocket(out var webSocket) && webSocket is not null)
                         {
-                            // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
-                            await webSocket!.OpenAndAttachServerSocketToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
-                            return new WebSocketUpgradeSuccessful(this, webSocket);
+                            try
+                            {
+                                // Perform WebSocket upgrade, moving from a request context to a WebSocket context.
+                                await webSocket.OpenAndAttachServerSocketToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
+                                return new WebSocketUpgradeSuccessful(this, webSocket);
+                            }
+                            catch (Exception exception)
+                            {
+                                return new WebSocketUpgradeFailed(exception.AsError().AsResultOf(this), webSocket);
+                            }
                         }
                         return await SwitchTerminal(Context.WebSocket!, terminalResource, cancellationToken).ConfigureAwait(false);
                     }
 
                     case IBinaryResource<T> binaryResource:
                     {
-                        var binaryResult = binaryResource.SelectBinary(this);
+                        var binaryResult = await binaryResource.SelectBinaryAsync(this, cancellationToken).ConfigureAwait(false);
                         if (!this.Accepts(binaryResult.ContentType, out var acceptHeader))
                             throw new NotAcceptable(acceptHeader!, binaryResult.ContentType.ToString());
                         var binaryContent = new Binary(this, binaryResult);
@@ -250,7 +238,7 @@ namespace RESTable.Requests
 
                     case IEntityResource<T> entityResource:
                     {
-                        if (entityResource.RequiresAuthentication)  
+                        if (entityResource.RequiresAuthentication)
                         {
                             var authenticator = this.GetRequiredService<ResourceAuthenticator>();
                             await authenticator.ResourceAuthenticate(this, entityResource, cancellationToken).ConfigureAwait(false);
@@ -260,7 +248,7 @@ namespace RESTable.Requests
                             if (!entityResource.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
                             if (!entityResource.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
                         }
-                        var evaluator = EntityOperations<T>.GetMethodEvaluator(Method);
+                        var evaluator = EntityOperations.GetMethodEvaluator(Method);
                         var result = await evaluator(this, cancellationToken).ConfigureAwait(false);
                         foreach (var (key, value) in ResponseHeaders)
                             result.Headers[key.StartsWith("X-") ? key : "X-" + key] = value;
@@ -315,7 +303,7 @@ namespace RESTable.Requests
         private async Task<IResult> SwitchTerminal(WebSocket webSocket, ITerminalResource<T> resource, CancellationToken cancellationToken)
         {
             var _resource = (TerminalResource<T>) resource;
-            var newTerminal = await _resource.CreateTerminal(Context, Conditions).ConfigureAwait(false);
+            var newTerminal = await _resource.CreateTerminal(Context, cancellationToken, Conditions).ConfigureAwait(false);
             await webSocket.ConnectTo(newTerminal).ConfigureAwait(false);
             await newTerminal.OpenTerminal(cancellationToken).ConfigureAwait(false);
             return new SwitchedTerminal(this);
@@ -330,6 +318,7 @@ namespace RESTable.Requests
             Stopwatch = new Stopwatch();
             var termFactory = this.GetRequiredService<TermFactory>();
             Configuration = this.GetRequiredService<RESTableConfiguration>();
+            EntityOperations = this.GetRequiredService<EntityOperations<T>>();
 
             try
             {
@@ -384,13 +373,14 @@ namespace RESTable.Requests
             CachedProtocolProvider = cachedProtocolProvider;
             Stopwatch = new Stopwatch();
             Configuration = this.GetRequiredService<RESTableConfiguration>();
+            EntityOperations = this.GetRequiredService<EntityOperations<T>>();
         }
 
         #region Source and destination
 
         #endregion
 
-        public async Task<IRequest> GetCopy(string? newProtocol = null)
+        public async ValueTask<IRequest> GetCopy(string? newProtocol = null)
         {
             var protocolController = this.GetRequiredService<ProtocolProviderManager>();
             return new Request<T>

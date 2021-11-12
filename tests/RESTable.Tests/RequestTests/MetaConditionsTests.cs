@@ -1,12 +1,16 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using RESTable.Requests;
 using RESTable.Results;
+using RESTable.Xunit;
 using Xunit;
 
 namespace RESTable.Tests.RequestTests
 {
-    public class MetaConditionsTests : RequestTestBase
+    public class MetaConditionsTests : RESTableTestBase
     {
+        private RESTableContext Context { get; }
+
         #region Unsafe
 
         #endregion
@@ -102,7 +106,7 @@ namespace RESTable.Tests.RequestTests
             await using var serialized = await result.Serialize();
             Assert.Equal(0, serialized.EntityCount);
         }
-        
+
         [Fact]
         public async Task NegativeOffsetAppliesNegativeSkip()
         {
@@ -156,7 +160,11 @@ namespace RESTable.Tests.RequestTests
         #region Safepost
 
         #endregion
-        
-        public MetaConditionsTests(RESTableFixture fixture) : base(fixture) { }
+
+        public MetaConditionsTests(RESTableFixture fixture) : base(fixture)
+        {
+            fixture.Configure();
+            Context = fixture.Context;
+        }
     }
 }

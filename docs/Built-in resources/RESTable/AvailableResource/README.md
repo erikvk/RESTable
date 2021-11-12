@@ -27,7 +27,8 @@ Views         | `array of ViewInfo` | The [views](../../../Consuming%20a%20RESTa
 ## Example
 
 ```
-GET https://my-server.com/rest
+GET https://myapp.com/api
+Accept: application/json;raw=true
 Response body:
 [
     {

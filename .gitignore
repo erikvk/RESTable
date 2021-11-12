@@ -340,7 +340,7 @@ ASALocalRun/
 healthchecksdb
 
 *.sqlite
-!RESTable.SQLite
+!RESTable.Sqlite
 *.bat
 *.sqlite
 *.xlsx

@@ -5,7 +5,7 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
 using RESTable.Meta;
-using RESTable.Tests;
+using RESTable.Xunit;
 using Xunit;
 
 namespace RESTable.Json.Tests
@@ -208,7 +208,6 @@ namespace RESTable.Json.Tests
 
         public DynamicJsonReaderTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             fixture.Configure();
             JsonProvider = fixture.GetRequiredService<IJsonProvider>();
         }

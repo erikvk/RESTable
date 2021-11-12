@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace RESTable.SQLite.Meta
+namespace RESTable.Sqlite.Meta
 {
     internal class NoCaseComparer : IEqualityComparer<string>
     {
         public bool Equals(string? x, string? y) => string.Equals(x, y, StringComparison.CurrentCultureIgnoreCase);
         public int GetHashCode(string obj) => obj.ToLower().GetHashCode();
     }
-    
+
     /// <inheritdoc />
     /// <summary>
     /// A collection of ColumnMapping instances, indexed on CLR property name
@@ -20,11 +20,11 @@ namespace RESTable.SQLite.Meta
         /// <inheritdoc />
         public ColumnMappings(IEnumerable<ColumnMapping> collection) : base(new NoCaseComparer())
         {
-            foreach (var item in collection) 
-                this[item.CLRProperty.Name] = item;
+            foreach (var item in collection)
+                this[item.ClrProperty.Name] = item;
         }
 
-        internal string ToSQL() => string.Join(", ", Values.Where(m => !m.IsRowId).Select(c => c.SQLColumn.ToSql()));
+        internal string ToSql() => string.Join(", ", Values.Where(m => !m.IsRowId).Select(c => c.SqlColumn.ToSql()));
 
         internal async Task Push()
         {

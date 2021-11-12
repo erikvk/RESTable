@@ -17,7 +17,7 @@ namespace RESTable.Resources.Operations
         IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request, CancellationToken cancellationToken);
         IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request, CancellationToken cancellationToken);
         IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request, CancellationToken cancellationToken);
-        ValueTask<int> DeleteAsync(IRequest<TResource> request, CancellationToken cancellationToken);
+        ValueTask<long> DeleteAsync(IRequest<TResource> request, CancellationToken cancellationToken);
         ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request, CancellationToken cancellationToken);
         ValueTask<long> CountAsync(IRequest<TResource> request, CancellationToken cancellationToken);
         IAsyncEnumerable<TResource> Validate(IAsyncEnumerable<TResource> entities, RESTableContext context, CancellationToken cancellationToken);

@@ -2,7 +2,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
-using RESTable.Tests;
+using RESTable.Xunit;
 using Xunit;
 
 namespace RESTable.Json.Tests
@@ -14,7 +14,7 @@ namespace RESTable.Json.Tests
         [Fact]
         public void GenericConvertersAreAddedAndUsed()
         {
-            var obj = new ConvertMePlease1();
+            var obj = new ToConvert1();
 
             var serialized = JsonProvider.Serialize(obj);
             var element = JsonProvider.Deserialize<JsonElement>(serialized);
@@ -22,7 +22,7 @@ namespace RESTable.Json.Tests
             var genericConverterAddedProperty = element.EnumerateObject().FirstOrDefault(p => p.NameEquals("GenericConverter"));
             Assert.NotNull(genericConverterAddedProperty.Name);
 
-            Assert.Equal(genericConverterAddedProperty.Value.GetString(), typeof(ConvertMePlease1).FullName);
+            Assert.Equal(nameof(ToConvert1), genericConverterAddedProperty.Value.GetString());
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace RESTable.Json.Tests
             // Make sure that multiple types that can be converted by a generic converter, are given their own generic instances 
             // of the generic converter.
             {
-                var obj = new ConvertMePlease1();
+                var obj = new ToConvert1();
 
                 var serialized = JsonProvider.Serialize(obj);
                 var element = JsonProvider.Deserialize<JsonElement>(serialized);
@@ -39,10 +39,10 @@ namespace RESTable.Json.Tests
                 var genericConverterAddedProperty = element.EnumerateObject().FirstOrDefault(p => p.NameEquals("GenericConverter"));
                 Assert.NotNull(genericConverterAddedProperty.Name);
 
-                Assert.Equal(genericConverterAddedProperty.Value.GetString(), typeof(ConvertMePlease1).FullName);
+                Assert.Equal(nameof(ToConvert1), genericConverterAddedProperty.Value.GetString());
             }
             {
-                var obj = new ConvertMePlease2();
+                var obj = new ToConvert2();
 
                 var serialized = JsonProvider.Serialize(obj);
                 var element = JsonProvider.Deserialize<JsonElement>(serialized);
@@ -50,13 +50,28 @@ namespace RESTable.Json.Tests
                 var genericConverterAddedProperty = element.EnumerateObject().FirstOrDefault(p => p.NameEquals("GenericConverter"));
                 Assert.NotNull(genericConverterAddedProperty.Name);
 
-                Assert.Equal(genericConverterAddedProperty.Value.GetString(), typeof(ConvertMePlease2).FullName);
+                Assert.Equal(nameof(ToConvert2), genericConverterAddedProperty.Value.GetString());
             }
+        }
+
+        [Fact]
+        public void GenericTypesCanBeConverted()
+        {
+            // Make sure that multiple types that can be converted by a generic converter, are given their own generic instances 
+            // of the generic converter.
+            var obj = new ToConvertGeneric<string>();
+
+            var serialized = JsonProvider.Serialize(obj);
+            var element = JsonProvider.Deserialize<JsonElement>(serialized);
+
+            var genericConverterAddedProperty = element.EnumerateObject().FirstOrDefault(p => p.NameEquals("GenericConverter"));
+            Assert.NotNull(genericConverterAddedProperty.Name);
+
+            var str = genericConverterAddedProperty.Value.GetString();
         }
 
         public ConverterTests(RESTableFixture fixture) : base(fixture)
         {
-            fixture.AddJson();
             fixture.AddGenericJsonConverter(typeof(GenericConverter<>));
             fixture.Configure();
             JsonProvider = fixture.GetRequiredService<IJsonProvider>();

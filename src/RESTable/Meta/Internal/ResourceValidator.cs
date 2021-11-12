@@ -53,7 +53,7 @@ namespace RESTable.Meta.Internal
             var entityTypes = types
                 .Where(t => !typeof(Terminal).IsAssignableFrom(t) &&
                             !typeof(IEvent).IsAssignableFrom(t) &&
-                            !t.ImplementsGenericInterface(typeof(IBinary<>)))
+                            !t.ImplementsGenericInterface(typeof(IBinaryInternal)))
                 .ToList();
             var regularTypes = entityTypes
                 .Where(t => !typeof(IResourceWrapper).IsAssignableFrom(t))
@@ -65,7 +65,7 @@ namespace RESTable.Meta.Internal
                 .Where(t => typeof(Terminal).IsAssignableFrom(t))
                 .ToList();
             var binaryTypes = types
-                .Where(t => t.ImplementsGenericInterface(typeof(IBinary<>)))
+                .Where(t => typeof(IBinaryInternal).IsAssignableFrom(t))
                 .ToList();
             var eventTypes = types
                 .Where(t => !t.IsAbstract && typeof(IEvent).IsAssignableFrom(t))
@@ -96,7 +96,7 @@ namespace RESTable.Meta.Internal
                     throw new InvalidResourceDeclarationException($"Invalid type '{type.GetRESTableTypeName()}'. Unknown namespace");
 
                 if (Configuration.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
-                    type.Assembly != typeof(RESTableConfigurator).Assembly)
+                    type.Assembly != typeof(RESTableConfiguration).Assembly)
                     throw new InvalidResourceDeclarationException(
                         $"Invalid namespace for resource type '{type.GetRESTableTypeName()}'. Namespace '{type.Namespace}' is reserved by RESTable");
 
@@ -178,21 +178,6 @@ namespace RESTable.Meta.Internal
 
                 #endregion
 
-                #region Check for invalid IDictionary implementation
-
-                var validTypes = new[] { typeof(string), typeof(object) };
-                if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out var typeParams) && !typeParams!.SequenceEqual(validTypes))
-                {
-                    throw new InvalidResourceDeclarationException(
-                        $"Invalid resource declaration for type '{type.GetRESTableTypeName()}'. All resource types implementing " +
-                        "the generic 'System.Collections.Generic.IDictionary`2' interface must either be subclasses of " +
-                        "Newtonsoft.Json.Linq.JObject or have System.String as first type parameter and System.Object as " +
-                        $"second type parameter. Found {typeParams![0].GetRESTableTypeName()} and {typeParams[1].GetRESTableTypeName()}"
-                    );
-                }
-
-                #endregion
-
                 #region Check for invalid IEnumerable implementation
 
                 if ((type.ImplementsGenericInterface(typeof(IEnumerable<>)) || typeof(IEnumerable).IsAssignableFrom(type)) &&
@@ -219,7 +204,7 @@ namespace RESTable.Meta.Internal
 
                 #region Check for properties with duplicate case insensitive names
 
-                if (TypeCache.FindAndParseDeclaredProperties(type).ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
+                if (TypeCache.GetDeclaredProperties(type).Values.ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
                 {
                     throw new InvalidResourceMemberException(
                         $"Invalid properties for resource '{type.GetRESTableTypeName()}'. Names of public instance properties must " +
@@ -274,14 +259,15 @@ namespace RESTable.Meta.Internal
                     var properties = TypeCache.GetDeclaredProperties(terminal);
                     foreach (var parameter in constructors[0].GetParameters())
                     {
-                        if (!constructorParameterNames.Add(parameter.Name!))
+                        var parameterName = parameter.RESTableParameterName(terminal.IsDictionary(out _, out _));
+                        if (!constructorParameterNames.Add(parameterName))
                             throw new InvalidTerminalDeclarationException(terminal, "must not define multiple constructor parameters with the same case " +
-                                                                                    $"insensitive parameter name. Found duplicate of '{parameter.Name!.ToLowerInvariant()}'");
-                        if (parameter.ParameterType.IsOfValueLiteralType() && !properties.ContainsKey(parameter.Name!))
+                                                                                    $"insensitive parameter name. Found duplicate of '{parameterName.ToLowerInvariant()}'");
+                        if (parameter.ParameterType.IsOfValueLiteralType() && !properties.ContainsKey(parameterName))
                         {
                             throw new InvalidTerminalDeclarationException(terminal, "must not define a condition-resolved constructor parameter with a name that does not " +
                                                                                     "equal the name of a public instance property on the same type (case insensitive). Found " +
-                                                                                    $"parameter '{parameter.Name!.ToLowerInvariant()}' with no matching public instance property.");
+                                                                                    $"parameter '{parameterName.ToLowerInvariant()}' with no matching public instance property.");
                         }
                     }
                     if (terminal.ImplementsGenericInterface(typeof(IEnumerable<>)))

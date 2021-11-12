@@ -162,7 +162,7 @@ namespace RESTable.Requests
                 }
                 if (name is null || !nameAndValueParsed)
                     throw new ArgumentException("Invalid cookie syntax", nameof(cookieString));
-                
+
                 return new Cookie(name, value, expires, maxAge, domain, httpOnly, secure, path);
             }
             catch (Exception e)

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using RESTable.Auth;
 using RESTable.Requests;
+using RESTable.Xunit;
 using Xunit;
 
 namespace RESTable.Tests.ApiKeyAuthenticatorTests
@@ -50,8 +51,7 @@ namespace RESTable.Tests.ApiKeyAuthenticatorTests
                 .AddJsonStream(configJsonStream)
                 .Build();
             fixture.AddSingleton<IConfiguration>(configuration);
-            fixture.AddApiKeys();
-            fixture.AddJson();
+            fixture.AddApiKeys(configuration);
 
             fixture.Configure();
 

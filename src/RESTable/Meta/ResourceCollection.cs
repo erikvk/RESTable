@@ -15,7 +15,6 @@ namespace RESTable.Meta
         private IDictionary<string, IResource?> ResourceFinder { get; }
         private IDictionary<string, IResource> ResourceByName { get; }
         private IDictionary<Type, IResource> ResourceByType { get; }
-        private RESTableConfigurator Configurator { get; set; }
         private TypeCache TypeCache { get; set; }
         private RootAccess RootAccess { get; set; }
 
@@ -25,20 +24,13 @@ namespace RESTable.Meta
             ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             ResourceByType = new Dictionary<Type, IResource>();
 
-            // Resolved in SetDependencies to avoid circular dependencies
-            Configurator = null!;
+            // Resolved in SetDependencies to avoid circular dependencies in DI
             TypeCache = null!;
             RootAccess = null!;
         }
 
-        internal void SetDependencies
-        (
-            RESTableConfigurator configurator,
-            TypeCache typeCache,
-            RootAccess rootAccess
-        )
+        internal void SetDependencies(TypeCache typeCache, RootAccess rootAccess)
         {
-            Configurator = configurator;
             TypeCache = typeCache;
             RootAccess = rootAccess;
         }
@@ -71,8 +63,6 @@ namespace RESTable.Meta
             ResourceByType[toAdd.Type] = toAdd;
             AddToResourceFinder(toAdd);
             TypeCache.GetDeclaredProperties(toAdd.Type);
-            if (Configurator.IsConfigured)
-                RootAccess.Load();
         }
 
         internal bool RemoveResource(IResource toRemove)
@@ -97,10 +87,10 @@ namespace RESTable.Meta
             {
                 switch (resource)
                 {
-                    case var _ when resource.IsInternal: return new[] { resource.Name };
+                    case var _ when resource.IsInternal: return new[] {resource.Name};
                     case var _ when resource.IsInnerResource:
                         var dots = resource.Name.Count('.');
-                        return resource.Name.Split(new[] { '.' }, dots);
+                        return resource.Name.Split(new[] {'.'}, dots);
                     default: return resource.Name.Split('.');
                 }
             }
@@ -180,7 +170,7 @@ namespace RESTable.Meta
                 resource = default;
                 return false;
             }
-            resource = (T)_resource!;
+            resource = (T) _resource!;
             return true;
         }
 
@@ -198,7 +188,7 @@ namespace RESTable.Meta
             {
                 case 0:
                     if (TryFindResource(searchString, out var resource, out _))
-                        return new[] { resource! };
+                        return new[] {resource!};
                     return Array.Empty<IResource>();
                 case 1 when searchString.Last() != '*':
                     throw new Exception("Invalid resource string syntax. The asterisk must be the last character");

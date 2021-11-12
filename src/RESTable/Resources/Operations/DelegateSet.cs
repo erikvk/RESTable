@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Results;
 
@@ -39,7 +40,7 @@ namespace RESTable.Resources.Operations
         public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncSelector!(request, cancellationToken);
         public IAsyncEnumerable<TResource> InsertAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncInserter!(request, cancellationToken);
         public IAsyncEnumerable<TResource> UpdateAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncUpdater!(request, cancellationToken);
-        public ValueTask<int> DeleteAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncDeleter!(request, cancellationToken);
+        public ValueTask<long> DeleteAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncDeleter!(request, cancellationToken);
         public ValueTask<AuthResults> AuthenticateAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncAuthenticator!(request, cancellationToken);
         public ValueTask<long> CountAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncCounter!(request, cancellationToken);
 
@@ -91,7 +92,7 @@ namespace RESTable.Resources.Operations
             if (AsyncUpdater is null && SyncUpdater is Updater<TResource> updater)
                 AsyncUpdater = (request, _) => updater(request).ToAsyncEnumerable();
             if (AsyncDeleter is null && SyncDeleter is Deleter<TResource> deleter)
-                AsyncDeleter = (request, _) => new ValueTask<int>(deleter(request));
+                AsyncDeleter = (request, _) => new ValueTask<long>(deleter(request));
             if (AsyncAuthenticator is null && SyncAuthenticator is Authenticator<TResource> authenticator)
                 AsyncAuthenticator = (request, _) => new ValueTask<AuthResults>(authenticator(request));
             if (AsyncCounter is null && SyncCounter is Counter<TResource> counter)
@@ -168,10 +169,6 @@ namespace RESTable.Resources.Operations
             return this;
         }
 
-        private static T? AsImplemented<T>(T? @delegate) where T : Delegate => @delegate?
-            .Method
-            .HasAttribute<MethodNotImplementedAttribute>() == false
-            ? @delegate
-            : null;
+        private static T? AsImplemented<T>(T? @delegate) where T : Delegate => @delegate?.Method.IsImplemented() == true ? @delegate : null;
     }
 }

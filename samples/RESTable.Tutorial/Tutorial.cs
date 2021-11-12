@@ -1,21 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.AspNetCore;
 using RESTable.Linq;
-using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
-using RESTable.SQLite;
+using RESTable.Resources.Templates;
+using RESTable.Sqlite;
 using RESTable.WebSockets;
 using static System.StringComparison;
 using static RESTable.Method;
@@ -49,18 +53,21 @@ namespace RESTable.Tutorial
     /// </summary>
     public class Tutorial
     {
-        public static void Main(string[] args) => WebHost
+        public static Task Main(string[] args) => WebHost
             .CreateDefaultBuilder(args)
             .UseStartup<Tutorial>()
             .Build()
-            .Run();
+            .RunAsync();
+
+        private IConfiguration Configuration { get; }
+
+        public Tutorial(IConfiguration configuration) => Configuration = configuration;
 
         public void ConfigureServices(IServiceCollection services) => services
-            .AddODataProvider()
-            .AddSqliteProvider(dbPath: "./database")
-            .AddExcelProvider()
-            .AddJson()
             .AddRESTable()
+            .AddODataProvider()
+            .AddSqliteProvider()
+            .AddExcelProvider()
             .AddHttpContextAccessor();
 
         public void Configure(IApplicationBuilder app) => app
@@ -68,12 +75,23 @@ namespace RESTable.Tutorial
             .UseRESTableAspNetCore();
     }
 
+    [RESTable(GET)]
+    public record MyRecord(string Name, int Number) : ISelector<MyRecord>
+    {
+        public IEnumerable<MyRecord> Select(IRequest<MyRecord> request)
+        {
+            yield return new MyRecord("Foo", 123);
+            yield return new MyRecord("Bar", 456);
+            yield return new MyRecord("Boo", 789);
+        }
+    }
+
     /// <summary>
     /// Database is a subset of https://github.com/fivethirtyeight/data/tree/master/comic-characters
     /// - which is, in turn, taken from Marvel and DC Comics respective sites.
     /// </summary>
-    [SQLite(customTableName: "Heroes"), RESTable]
-    public class Superhero : SQLiteTable
+    [Sqlite(customTableName: "Heroes"), RESTable]
+    public class Superhero : SqliteTable
     {
         public string? Name { get; set; }
 
@@ -123,15 +141,116 @@ namespace RESTable.Tutorial
         Other
     }
 
+    [RESTable(GET)]
+    public class SuperheroReport : IAsyncSelector<SuperheroReport>
+    {
+        public int NumberOfSuperheroes { get; set; }
+        public int NumberOfFemaleHeroes { get; set; }
+        public int NumberOfMaleHeroes { get; set; }
+        public int NumberOfOtherGenderHeroes { get; set; }
+        public Superhero? NewestSuperhero { get; set; }
+
+        /// <summary>
+        /// This method returns an IEnumerable of the resource type. RESTable will call this
+        /// on GET requests and send the results back to the client as e.g. JSON.
+        /// </summary>
+        public async IAsyncEnumerable<SuperheroReport> SelectAsync(IRequest<SuperheroReport> request, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var count = 0;
+            var newest = default(Superhero);
+            var genderCount = new int[3];
+
+            await foreach (var superhero in request.Context.CreateRequest<Superhero>().GetResultEntities(cancellationToken))
+            {
+                if (count == 0)
+                    newest = superhero;
+                count += 1;
+                genderCount[(int) superhero.Gender] += 1;
+                if (superhero.Year > newest?.Year)
+                    newest = superhero;
+            }
+
+            yield return new SuperheroReport
+            {
+                NumberOfSuperheroes = count,
+                NumberOfFemaleHeroes = genderCount[(int) Female],
+                NumberOfMaleHeroes = genderCount[(int) Male],
+                NumberOfOtherGenderHeroes = genderCount[(int) Other],
+                NewestSuperhero = newest
+            };
+        }
+    }
+
+    #region A bunch of test things to try
+
+    public class Statics
+    {
+        public string? N { get; set; }
+    }
+
+    [RESTable, InMemory]
+    public class TestResource
+    {
+        public string S { get; }
+        public int I { get; }
+
+        [RESTableMember(mergeOntoOwner: true)]
+        public Dictionary<string, object?> InnerDynamics { get; } = new();
+
+        [RESTableMember(mergeOntoOwner: true)]
+        public Statics? InnerStatics { get; set; }
+
+        [JsonConstructor]
+        public TestResource(string s, int i)
+        {
+            S = s;
+            I = i;
+        }
+    }
+
     public interface IMyTest
     {
         string? Name { get; }
     }
 
+    [RESTable(GET, PATCH)]
+    public class MySomDict : ResourceWrapper<SomeDict>, IAsyncSelector<SomeDict>, IAsyncUpdater<SomeDict>
+    {
+        private static HashSet<SomeDict> Things { get; } = new() {new SomeDict {["Foo"] = "Bar"}};
+
+        public IAsyncEnumerable<SomeDict> SelectAsync(IRequest<SomeDict> request, CancellationToken cancellationToken)
+        {
+            return Things.ToAsyncEnumerable();
+        }
+
+        public IAsyncEnumerable<SomeDict> UpdateAsync(IRequest<SomeDict> request, CancellationToken cancellationToken)
+        {
+            return request.GetInputEntitiesAsync();
+        }
+    }
+
+    public class SomeDict : Dictionary<string, string> { }
+
+    [RESTable(GET)]
+    public class MyBinary : IBinary<MyBinary>
+    {
+        public BinaryResult Select(IRequest<MyBinary> request)
+        {
+            var bytes = Encoding.UTF8.GetBytes("FOobar boaoskdkasd okasd pokasdp okasdpo kapdokwdpaokwdpo kadpoakwdp okawdp okawd pokawdp okawdpo kpaowkd ");
+
+            return new BinaryResult((str, ct) => str.WriteAsync(bytes, ct).AsTask(), "text/plain", bytes.LongLength);
+        }
+    }
+
     [RESTable, InMemory]
     public class MyDict : Dictionary<string, object?>
     {
+        [RESTableMember(hide: false)]
         public string? Name { get; set; }
+
+        [RESTableMember(hide: false)]
+        public new int Count => base.Count;
+
         public MyDict? Inner { get; set; }
         public int? InnerId => Inner?.GetHashCode();
         public List<MyDict> Inners { get; set; } = new();
@@ -150,6 +269,7 @@ namespace RESTable.Tutorial
 
         public MyTest? Testy { get; set; }
 
+        [RESTableConstructor]
         public MyTest()
         {
             dict = new Dictionary<string, object>();
@@ -162,32 +282,95 @@ namespace RESTable.Tutorial
         }
     }
 
+    [RESTable]
+    public class TerminalTester : Terminal, IAsyncDisposable
+    {
+        private IWebSocket Connection { get; set; } = null!;
+
+        protected override async Task Open(CancellationToken cancellationToken)
+        {
+            Connection = await new ClientWebSocketBuilder(WebSocket.Context)
+                .WithUri("wss://localhost:5001/restable/myterminaltest")
+                .Connect(cancellationToken);
+        }
+
+        public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
+        {
+            var tasks = new Task[10];
+            var text = "Text";
+            var binary = Encoding.UTF8.GetBytes("Binary bananas are the best!");
+
+            Task fragmentedTask;
+
+            // Should lead to frame fragmentation if RESTable does not limit writing threads
+            await using (var binaryMessage = await Connection.GetMessageStream(false, cancellationToken))
+            {
+                await binaryMessage.WriteAsync(binary, cancellationToken);
+
+                // This should not completed until the binary message is sent and the semaphore is released
+                // If MaxNumberOfConcurrentWriters > 1, this will lead to frame fragmentation where the text 
+                // frame will appear in the binary message (and, being a final frame) close the message.
+                fragmentedTask = Task.Run(async () => await Connection.SendText(text, cancellationToken), cancellationToken);
+
+                await Task.Delay(1000, cancellationToken);
+
+                if (fragmentedTask.IsCompleted)
+                    throw new Exception("Fragmented task completed!");
+
+                await binaryMessage.WriteAsync(binary, cancellationToken);
+            }
+
+            await Task.Delay(1000, cancellationToken);
+
+            if (!fragmentedTask.IsCompleted)
+                throw new Exception("Fragmented task not completed!");
+        }
+
+        public ValueTask DisposeAsync() => Connection.DisposeAsync();
+    }
+
+    [RESTable]
+    public class MyTerminalTest : Terminal
+    {
+        public override Task HandleTextInput(string input, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public override async Task HandleBinaryInput(Stream input, CancellationToken cancellationToken)
+        {
+            using var streamReader = new StreamReader(input);
+
+            var str = await streamReader.ReadToEndAsync();
+        }
+    }
+
+    [RESTable]
+    public class MyOptionsTest : CommandTerminal
+    {
+        protected override IEnumerable<Command> GetCommands()
+        {
+            yield return new Command("g", "", 0, action: _ => { });
+            yield return new Command("Simple", "Does a thing", 0, action: _ => { });
+            yield return new Command("PrettyLongActually", "Does a thing too", 0, action: _ => { });
+            yield return new Command("PrettyLongA4", "Has a pretty long and winding description of what it does. Usage: first this then that also foo", 0, action: _ => { });
+        }
+    }
+
     // ReSharper disable UnusedParameter.Local
 
     [RESTable]
     public class MyTerminal : Terminal
     {
-        public Version Version { get; }
-
-        public MyTerminal
-        (
-            string version,
-            ITraceable trace,
-            IHeaders headers,
-            ResourceCollection r,
-            ITerminalCollection<MyTerminal> tc,
-            ICombinedTerminal<MyTerminal> comb
-        )
+        protected override Task Open(CancellationToken cancellationToken)
         {
-            Version = Version.Parse(version);
+            return WebSocket.SendText("Now open!", cancellationToken);
         }
 
         public override Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
-            return WebSocket.SendText(input, cancellationToken);
+            return Task.CompletedTask;
         }
-
-        protected override bool SupportsTextInput => true;
     }
 
     // ReSharper restore UnusedParameter.Local
@@ -217,8 +400,6 @@ namespace RESTable.Tutorial
         {
             return Task.CompletedTask;
         }
-
-        protected override bool SupportsTextInput => true;
     }
 
     [RESTable(GET)]
@@ -232,6 +413,9 @@ namespace RESTable.Tutorial
 
         public async IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
+            var val = request.Conditions.HasParameter(nameof(Count), out int v);
+
+
             var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
             for (var i = 0; i < number; i += 1)
             {
@@ -275,48 +459,8 @@ namespace RESTable.Tutorial
         }
     }
 
-    [RESTable(GET)]
-    public class SuperheroReport : IAsyncSelector<SuperheroReport>
-    {
-        public int NumberOfSuperheroes { get; set; }
-        public int NumberOfFemaleHeroes { get; set; }
-        public int NumberOfMaleHeroes { get; set; }
-        public int NumberOfOtherGenderHeroes { get; set; }
-        public Superhero? NewestSuperhero { get; set; }
-
-        /// <summary>
-        /// This method returns an IEnumerable of the resource type. RESTable will call this
-        /// on GET requests and send the results back to the client as e.g. JSON.
-        /// </summary>
-        public async IAsyncEnumerable<SuperheroReport> SelectAsync(IRequest<SuperheroReport> request, [EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            var count = 0;
-            var newest = default(Superhero);
-            var genderCount = new int[3];
-
-            await foreach (var superhero in request.Context.CreateRequest<Superhero>().GetResultEntities(cancellationToken))
-            {
-                if (count == 0)
-                    newest = superhero;
-                count += 1;
-                genderCount[(int) superhero.Gender] += 1;
-                if (superhero.Year > newest?.Year)
-                    newest = superhero;
-            }
-
-            yield return new SuperheroReport
-            {
-                NumberOfSuperheroes = count,
-                NumberOfFemaleHeroes = genderCount[(int) Female],
-                NumberOfMaleHeroes = genderCount[(int) Male],
-                NumberOfOtherGenderHeroes = genderCount[(int) Other],
-                NewestSuperhero = newest
-            };
-        }
-    }
-
-    [RESTable, SQLite]
-    public class Person : ElasticSQLiteTable, IValidator<Person>
+    [RESTable, Sqlite]
+    public class Person : ElasticSqliteTable, IValidator<Person>
     {
         public string? Name { get; set; }
 
@@ -328,7 +472,7 @@ namespace RESTable.Tutorial
     }
 
     [RESTable]
-    public class PersonController : SQLiteResourceController<PersonController, Person> { }
+    public class PersonController : SqliteResourceController<PersonController, Person> { }
 
     #endregion
 
@@ -422,9 +566,9 @@ namespace RESTable.Tutorial
             .Combine()
             .CombinedWebSocket
             .SendText(message, cancellationToken);
-
-        protected override bool SupportsTextInput => true;
     }
+
+    #endregion
 }
 
 #endregion

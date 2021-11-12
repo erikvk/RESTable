@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTable.Meta;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     /// <inheritdoc cref="IDictionary{TKey,TValue}" />
     /// <inheritdoc cref="IDynamicMemberValueProvider" />
     /// <summary>
-    /// Defines the dynamic members of an elastic SQLite table
+    /// Defines the dynamic members of an elastic Sqlite table
     /// </summary>
     public class DynamicMemberCollection : IDictionary<string, object?>, IDynamicMemberValueProvider
     {
@@ -109,7 +109,7 @@ namespace RESTable.SQLite
             if (TryGetValue(memberName, out _, out var actualMemberName))
                 memberName = actualMemberName!;
             else if (TableMapping.ColumnMappings.TryGetValue(memberName, out var match))
-                memberName = match!.CLRProperty.Name;
+                memberName = match!.ClrProperty.Name;
             ValueDictionary[memberName!] = new KeyValuePair<string, object?>(memberName, value);
             return true;
         }

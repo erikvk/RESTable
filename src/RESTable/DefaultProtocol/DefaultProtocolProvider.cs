@@ -42,7 +42,7 @@ namespace RESTable.DefaultProtocol
 
             switch (conditions)
             {
-                case string { Length: 0 }:
+                case string {Length: 0}:
                 case "_": break;
                 default:
                 {
@@ -54,7 +54,7 @@ namespace RESTable.DefaultProtocol
 
             switch (metaConditions)
             {
-                case string { Length: 0 }:
+                case string {Length: 0}:
                 case "_": break;
                 default:
                 {
@@ -125,6 +125,22 @@ namespace RESTable.DefaultProtocol
 
         public IEnumerable<IContentTypeProvider>? GetCustomContentTypeProviders() => null;
 
+        public IContentTypeProvider GetDefaultInputContentTypeProvider(ICollection<IContentTypeProvider> registeredProviders)
+        {
+            var json = registeredProviders.FirstOrDefault(p => p.ContentType == ContentType.JSON);
+            if (json is not null)
+                return json;
+            return registeredProviders.First();
+        }
+
+        public IContentTypeProvider GetDefaultOutputContentTypeProvider(ICollection<IContentTypeProvider> registeredProviders)
+        {
+            var json = registeredProviders.FirstOrDefault(p => p.ContentType == ContentType.JSON);
+            if (json is not null)
+                return json;
+            return registeredProviders.First();
+        }
+
         /// <inheritdoc />
         public string MakeRelativeUri(IUriComponents components) => ToUriString(components);
 
@@ -193,32 +209,18 @@ namespace RESTable.DefaultProtocol
         public void SetResultHeaders(IResult result) { }
 
         /// <inheritdoc />
-        public async Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
+        public Task SerializeResult(ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
             switch (toSerialize.Result)
             {
-                case Options options:
-                    await SerializeOptions(options, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    break;
-                case Head head:
-                    head.Headers["EntityCount"] = head.EntityCount.ToString();
-                    return;
-                case Change change:
-                    await SerializeChange((dynamic) change, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    return;
-                case Binary binary:
-                    await binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken).ConfigureAwait(false);
-                    return;
-                case IEntities<object> entities:
-                    await SerializeEntities((dynamic) entities, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    break;
-                case Report report:
-                    await SerializeReport(report, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    break;
-                case Error error:
-                    await SerializeError(error, toSerialize, contentTypeProvider, cancellationToken).ConfigureAwait(false);
-                    break;
-                default: return;
+                case Options options: return SerializeOptions(options, toSerialize, contentTypeProvider, cancellationToken);
+                case Head: return Task.CompletedTask;
+                case Change change: return SerializeChange((dynamic) change, toSerialize, contentTypeProvider, cancellationToken);
+                case Binary binary: return binary.BinaryResult.WriteToStream(toSerialize.Body, cancellationToken);
+                case IEntities<object> entities: return SerializeEntities((dynamic) entities, toSerialize, contentTypeProvider, cancellationToken);
+                case Report report: return SerializeReport(report, toSerialize, contentTypeProvider, cancellationToken);
+                case Error error: return SerializeError(error, toSerialize, contentTypeProvider, cancellationToken);
+                default: return Task.CompletedTask;
             }
         }
 
@@ -272,6 +274,22 @@ namespace RESTable.DefaultProtocol
                 toSerialize.EntityCount = count;
                 return;
             }
+
+            if (RequestsRawJson(entities, out var single))
+            {
+                if (single)
+                {
+                    var singleItem = await entities.SingleAsync(cancellationToken).ConfigureAwait(false);
+                    toSerialize.EntityCount = 1;
+                    await jsonProvider.SerializeAsync(toSerialize.Body, singleItem, cancellationToken: cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await SerializeRaw(entities, toSerialize, jsonProvider, cancellationToken).ConfigureAwait(false);
+                }
+                return;
+            }
+
 #if NET6_0_OR_GREATER
             var serializedContent = new SerializedEntitiesAsyncEnumerable<T>(entities, toSerialize);
 #else
@@ -288,16 +306,34 @@ namespace RESTable.DefaultProtocol
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return Task.CompletedTask;
 
+            if (RequestsRawJson(change, out var single))
+            {
+                if (single)
+                {
+                    var singleItem = change.Entities.Single();
+                    toSerialize.EntityCount = 1;
+                    return jsonProvider.SerializeAsync(toSerialize.Body, singleItem, cancellationToken: cancellationToken);
+                }
+                toSerialize.EntityCount = change.Count;
+                return jsonProvider.SerializeAsync(toSerialize.Body, change.Entities, cancellationToken: cancellationToken);
+            }
+
             var serializedChange = new SerializedChange<T>(change);
             return jsonProvider.SerializeAsync(toSerialize.Body, serializedChange, cancellationToken: cancellationToken);
         }
-
 
         private static Task SerializeReport(Report report, ISerializedResult toSerialize, IContentTypeProvider contentTypeProvider, CancellationToken cancellationToken)
         {
             toSerialize.EntityCount = 1;
             if (contentTypeProvider is not IJsonProvider jsonProvider)
                 return Task.CompletedTask;
+
+            if (RequestsRawJson(report, out _))
+            {
+                toSerialize.EntityCount = 1;
+                return jsonProvider.SerializeAsync(toSerialize.Body, report.Count, cancellationToken: cancellationToken);
+            }
+
             var serializedReport = new SerializedReport(report);
             return jsonProvider.SerializeAsync(toSerialize.Body, serializedReport, cancellationToken: cancellationToken);
         }
@@ -310,5 +346,50 @@ namespace RESTable.DefaultProtocol
         }
 
         public void OnInit() { }
+
+        private static bool RequestsRawJson(IResult result, out bool single)
+        {
+            var data = result.Request.Headers.Accept?.FirstOrDefault().Data;
+            if (data is null)
+            {
+                single = false;
+                return false;
+            }
+            single = data.TryGetValue("single", out var singleValue) && singleValue == "true";
+            return data.TryGetValue("raw", out var rawValue) && rawValue == "true";
+        }
+
+        private static async Task SerializeRaw<T>
+        (
+            IAsyncEnumerable<T> entities,
+            ISerializedResult toSerialize,
+            IJsonProvider jsonProvider,
+            CancellationToken cancellationToken
+        )
+            where T : class
+        {
+            var counter = 0L;
+#if NET6_0_OR_GREATER
+            async IAsyncEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
+            {
+                await foreach (var entity in _entities.ConfigureAwait(false))
+                {
+                    counter += 1;
+                    yield return entity;
+                }
+            }
+#else
+            IEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
+            {
+                foreach (var entity in _entities.ToEnumerable())
+                {
+                    counter += 1;
+                    yield return entity;
+                }
+            }
+#endif
+            await jsonProvider.SerializeAsync(toSerialize.Body, enumerateAndCount(entities), cancellationToken: cancellationToken).ConfigureAwait(false);
+            toSerialize.EntityCount = counter;
+        }
     }
 }

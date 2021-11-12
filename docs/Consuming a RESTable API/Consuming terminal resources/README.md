@@ -8,16 +8,10 @@ Terminal resources are small single-purpose console applications that can be lau
 
 The easiest way to initiate a WebSocket connection with a RESTable API while testing, is to use a command line tool like [`wscat`](https://www.npmjs.com/package/wscat), but something like [this Chrome extension](https://chrome.google.com/webstore/detail/simple-websocket-client/pfdhoblngboilpfeibdedpjgfnlcodoo?hl=en) works fine too if you prefer to work with a web browser.
 
-To test things out, let's make a request to the [`RESTable.Shell`](../../Built-in%20resources/RESTable/Shell) terminal resource on our demo service. For this we can use this `wscat` command:
+To test things out, let's make a request to the [`RESTable.Shell`](../../Built-in%20resources/RESTable/Shell) terminal resource on RESTable service. For this we can use this `wscat` command:
 
 ```
-wscat -c "wss://RESTablehelp.mopedo-drtb.com:8282/api/shell" -H "Authorization: apikey RESTable"
-```
-
-For clients that do not support sending headers with WebSocket requests, which includes the Chrome extension mentioned above, use this URI instead:
-
-```
-wss://RESTablehelp.mopedo-drtb.com:8282/api(RESTable)/shell
+wscat -c "wss://myapp.com/api/shell"
 ```
 
 This will launch the `RESTable.Shell` terminal resource, which will let you navigate around the available resources of the server. For more information about the `RESTable.Shell` resource, see [this documentation](../../Built-in%20resources/RESTable/Shell).
@@ -52,7 +46,6 @@ Unsafe           | `boolean` | Is the shell currently in unsafe mode? (see the [
 WriteHeaders     | `boolean` | Should the shell include headers when writing output?
 AutoOptions      | `boolean` | Should the shell automatically send an `OPTIONS` command after each successful navigation?
 AutoGet          | `boolean` | Should the shell automatically send an `GET` command after each successful navigation?
-StreamBufferSize | `integer` | The buffer size (message size) to use with [WebSocket streaming](#streaming)
 
 Each instance of this terminal resource will contain its own set of values for these properties. They act as the settings of the `Shell` instance.
 
@@ -107,18 +100,13 @@ The content of `CustomHeaders` can be changed. To add a header `X-MyHeader` with
 > #INFO {"CustomHeaders": {"X-MyHeader": "MyValue"}}
 < Profile updated
 < {
-  "Host": "RESTablehelp.mopedo-drtb.com:8282",
-  "WebSocketId": "ARAABgAAARJ",
-  "IsSSLEncrypted": true,
-  "ClientIP": "46.59.24.69",
-  "ConnectedAt": "2018-06-18 11:35:40",
+  "Host": "localhost:5001",
+  "WebSocketId": "Aw",
+  "IsEncrypted": true,
+  "ClientIP": "127.0.0.1",
+  "ConnectedAt": "2021-10-20 15:44:31",
   "CurrentTerminal": "RESTable.Shell",
   "CustomHeaders": {
-    "Max-Forwards": "10",
-    "X-Original-URL": "/api/",
-    "X-Forwarded-For": "46.59.24.69:60602",
-    "X-ARR-SSL": "2048|256|C=US, O=DigiCert Inc, OU=www.digicert.com, CN=RapidSSL RSA CA 2018|CN=*.mopedo-drtb.com",
-    "X-ARR-LOG-ID": "a0345b81-bff4-4992-a389-e943ecd7557d",
     "X-MyHeader": "MyValue"
   }
 }
@@ -131,170 +119,3 @@ Running this command redirects the WebSocket to the [`RESTable.Shell`](../../Bui
 ### `#DISCONNECT`
 
 Running this command closes the WebSocket connection and disposes all attached resources.
-
-## Streaming
-
-WebSocket streaming is a useful feature in RESTable, that allows any terminal resource to send an arbitrarily large dataset over a WebSocket connection. The dataset is split into multiple WebSocket messages, which are made available to the client for download. The [`RESTable.Shell`](../../Built-in%20resources/RESTable/Shell) resource, for example, uses streaming whenever the response body is larger than 16 megabytes.
-
-The streaming consists of three steps:
-
-1. A [stream manifest](#stream-manifest) is generated for the response body, and is sent back to the client.
-2. The client triggers the download of one or more messages, which are sent from the server to the client as binary data messages.
-3. When the last message has been sent, or the process is cancelled by the client, the dataset is disposed and streaming is concluded.
-
-While a response is streaming to a WebSocket client, all other activity is suspended to and from the terminal resource. When the streaming is concluded, messages from the terminal that was sent during the streaming are sent to the client.
-
-### Stream manifest
-
-The stream manifest is represented as a JSON object that describes the process of streaming a response from the server to the client, and the current state within that process. It has the following format:
-
-Property name     | Type               | Description
------------------ | ------------------ | ----------------------------------------------------------------------------------
-TotalLength       | `integer`          | The total length of the streaming response body in bytes
-BytesRemaining    | `integer`          | The number of bytes remaining to stream
-BytesStreamed     | `integer`          | The number of bytes already streamed
-NrOfMessages      | `integer`          | The number of messages in the streaming job
-MessagesRemaining | `integer`          | The number of messages left to stream
-MessagesStreamed  | `integer`          | The number of messages already streamed
-ContentType       | `string`           | The MIME type string of the content type that the response body is encoded in
-EntityType        | `string`           | The name of the type of the entities contained in the response body
-EntityCount       | `integer`          | The number of entities contained in the response body
-Messages          | array of `Message` | The messages of the streaming job
-Commands          | array of `Command` | The available commands that can be used by the client to control the streaming job
-
-When streaming is initiated, the stream manifest is automatically sent back to the client. The client can then control the streaming process using the commands contained in the `Commands` array of the stream manifest.
-
-#### `Message`
-
-Property name | Type      | Description
-------------- | --------- | -----------------------------------------------------------------------------
-StartIndex    | `integer` | The start index of this message, as a location within the total response body
-Length        | `integer` | The length of the message
-IsSent        | `boolean` | Has this message been sent?
-
-#### `Command`
-
-Property name | Type     | Description
-------------- | -------- | ---------------------------------
-Command       | `string` | The text command
-Description   | `string` | A description of the text command
-
-#### Example
-
-For this example, let's stream the content of the `Superhero` resource available the [demo service](../Demo%20service). For the purpose of the demo, let's use a small buffer size of 8 KB. First, we connect, set the `StreamBufferSize` property of `Shell` and use the `STREAM` text command to create a stream manifest.
-
-> For more information on how to use the `RESTable.Shell` resource, see [this documentation](../Built-in%20resources/RESTable/Shell)
-
-```
-erik$ wscat -H "Authorization: apikey RESTable" -c "https://RESTablehelp.mopedo-drtb.com:8282/api/"
-connected (press CTRL+C to quit)
-< ### Entering the RESTable WebSocket shell... ###
-< ### Type a command to continue (e.g. HELP) ###
-> var StreamBufferSize = 8000
-< {
-  "Query": "",
-  "Unsafe": false,
-  "WriteHeaders": false,
-  "AutoOptions": false,
-  "AutoGet": false,
-  "StreamBufferSize": 8000
-}
-> /superhero
-< ? /superhero
-> STREAM
-< {
-  "TotalLength": 35116,
-  "BytesRemaining": 35116,
-  "BytesStreamed": 0,
-  "NrOfMessages": 5,
-  "MessagesRemaining": 5,
-  "MessagesStreamed": 0,
-  "ContentType": "application/json; charset=utf-8",
-  "EntityType": "RESTableTutorial.Superhero",
-  "EntityCount": 167,
-  "Messages": [
-    {
-      "StartIndex": 0,
-      "Length": 8000,
-      "IsSent": false
-    },
-    {
-      "StartIndex": 8000,
-      "Length": 8000,
-      "IsSent": false
-    },
-    {
-      "StartIndex": 16000,
-      "Length": 8000,
-      "IsSent": false
-    },
-    {
-      "StartIndex": 24000,
-      "Length": 8000,
-      "IsSent": false
-    },
-    {
-      "StartIndex": 32000,
-      "Length": 3116,
-      "IsSent": false
-    }
-  ],
-  "Commands": [
-    {
-      "Command": "GET",
-      "Description": "Streams all messages"
-    },
-    {
-      "Command": "NEXT",
-      "Description": "Streams the next message"
-    },
-    {
-      "Command": "NEXT <integer>",
-      "Description": "Streams the next <n> messages where <n> is an integer"
-    },
-    {
-      "Command": "MANIFEST",
-      "Description": "Prints the manifest"
-    },
-    {
-      "Command": "CLOSE",
-      "Description": "Closes the stream and returns to the previous terminal resource"
-    }
-  ]
-}
-```
-
-As we can see, the current stream job has five messages, and a total length of 35116 bytes. We can also see that five commands – `GET`, `NEXT`, `NEXT <integer>`, `MANIFEST` and `CLOSE` – are available from here. Let's get the first message.
-
-```
-> NEXT
-< [
-  {
-    "Name": "Kana (Earth-One)",
-    "HasSecretIdentity": true,
-    "Gender": "Male",
-    "YearIntroduced": 1981,
-    "InsertedAt": "2018-02-18T15:16:26.6335445Z",
-    "ObjectNo": 227
-  },
-  {
-    "Name": "Talon (Earth-3)",
-    "HasSecretIdentity": true,
-    "Gender": "Male",
-    "YearIntroduced": 2006,
-    "InsertedAt": "2018-02-18T15:16:26.6335445Z",
-    "ObjectNo": 225
-  },
-  {
-    "Name": "Bandage People",
-    "HasSecretIdentity": true,
-    "Gender": "Other",
-    "YearIntroduced": 1993,
-    "InsertedAt": "2018-02-18T15:16:26.6335445Z",
-    "ObjectNo": 204
-  }, ...
-```
-
-> The response above is abbreviated.
-
-When we request a message to be streamed, the stream manifest is updated accordingly. We can always get the current state of the streaming job by reprinting the manifest using the `MANIFEST` command.

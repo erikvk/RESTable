@@ -191,7 +191,7 @@ namespace RESTable.Requests
             headers.ToList().CopyTo(array, arrayIndex);
         }
 
-        internal static ICollection<string> _Keys(this IHeadersInternal headers) => headers.Select(kvp => kvp.Key).ToList();
-        internal static ICollection<string?> _Values(this IHeadersInternal headers) => headers.Select(kvp => kvp.Value).ToList();
+        internal static List<string> _Keys(this IHeadersInternal headers) => headers.Select(kvp => kvp.Key).ToList();
+        internal static List<string?> _Values(this IHeadersInternal headers) => headers.Select(kvp => kvp.Value).ToList();
     }
 }

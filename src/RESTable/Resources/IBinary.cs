@@ -6,7 +6,7 @@ namespace RESTable.Resources
     /// Defines the operations of a binary resource
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IBinary<T> where T : class, IBinary<T>
+    public interface IBinary<T> : IBinaryInternal where T : class, IBinary<T>
     {
         /// <summary>
         /// Generates a binary stream and content type for a request

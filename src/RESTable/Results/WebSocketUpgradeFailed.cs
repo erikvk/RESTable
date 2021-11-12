@@ -1,4 +1,6 @@
-﻿namespace RESTable.Results
+﻿using RESTable.WebSockets;
+
+namespace RESTable.Results
 {
     /// <inheritdoc />
     /// <summary>
@@ -6,6 +8,13 @@
     /// </summary>
     public class WebSocketUpgradeFailed : ResultWrapper
     {
-        internal WebSocketUpgradeFailed(Error error) : base(error) { }
+        public WebSocket WebSocket { get; }
+        public Error Error { get; }
+
+        internal WebSocketUpgradeFailed(Error error, WebSocket webSocket) : base(error)
+        {
+            WebSocket = webSocket;
+            Error = error;
+        }
     }
 }

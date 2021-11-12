@@ -1,30 +1,51 @@
 ﻿using System;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using RESTable;
 using RESTable.Auth;
 using RESTable.DefaultProtocol;
 using RESTable.Internal;
+using RESTable.Json;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
 using RESTable.Requests;
 using RESTable.Resources;
+using RESTable.Resources.Operations;
 using RESTable.WebSockets;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection, IConfiguration configuration)
         {
+            serviceCollection
+                .AddOptions<ApiKeys>()
+                .Bind(configuration.GetSection(ApiKeys.ConfigSection));
             serviceCollection.TryAddSingleton<IApiKeyAuthenticator, ApiKeyAuthenticator>();
-            serviceCollection.TryAddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
-            serviceCollection.AddStartupActivator<IRequestAuthenticator>();
+            serviceCollection.AddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
+            serviceCollection.AddStartupActivator<IApiKeyAuthenticator>();
             return serviceCollection;
         }
 
-        public static IServiceCollection AddAllowedCorsOriginsFilter(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddApiKeys(this IServiceCollection serviceCollection, Action<OptionsBuilder<ApiKeys>>? builderAction = null)
         {
+            var builder = serviceCollection.AddOptions<ApiKeys>();
+            builderAction?.Invoke(builder);
+            serviceCollection.TryAddSingleton<IApiKeyAuthenticator, ApiKeyAuthenticator>();
+            serviceCollection.AddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IApiKeyAuthenticator>());
+            serviceCollection.AddStartupActivator<IApiKeyAuthenticator>();
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddAllowedCorsOriginsFilter(this IServiceCollection serviceCollection, IConfiguration configuration)
+        {
+            serviceCollection
+                .AddOptions<AllowAccess>()
+                .Bind(configuration.GetSection(AllowAccess.ConfigSection));
             serviceCollection.AddSingleton<IAllowedCorsOriginsFilter, AllowedCorsOriginsFilter>();
             serviceCollection.AddStartupActivator<IAllowedCorsOriginsFilter>();
             return serviceCollection;
@@ -66,10 +87,19 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddRESTable(this IServiceCollection serviceCollection)
         {
+            serviceCollection.AddJson();
+
+            serviceCollection.AddOptions<RESTableConfiguration>().BindConfiguration(RESTableConfiguration.ConfigSection, o => o.BindNonPublicProperties = true);
+            serviceCollection.AddHostedService<RESTableInitializer>();
+
+            var terminalSubject = new Subject<Terminal>();
+            serviceCollection.AddSingleton(new TerminalSubjectAccessor(terminalSubject));
+            serviceCollection.AddSingleton(typeof(ITerminalObservable<>), typeof(TerminalObservable<>));
+            serviceCollection.AddSingleton(typeof(ITerminalObservable), typeof(TerminalObservable));
+
             serviceCollection.AddSingleton<IApplicationServiceProvider>(sp => new ApplicationServiceProvider(sp));
             serviceCollection.TryAddSingleton<WebSocketManager>();
             serviceCollection.TryAddSingleton<RESTableConfiguration>();
-            serviceCollection.TryAddSingleton<RESTableConfigurator>();
             serviceCollection.TryAddSingleton<TermFactory>(pr => pr.GetRequiredService<TypeCache>().TermFactory);
             serviceCollection.TryAddSingleton<ConditionRedirector>();
             serviceCollection.TryAddSingleton<ResourceCollection>();
@@ -84,7 +114,8 @@ namespace Microsoft.Extensions.DependencyInjection
             serviceCollection.TryAddSingleton<ResourceValidator>();
             serviceCollection.TryAddSingleton(typeof(ConditionCache<>), typeof(ConditionCache<>));
             serviceCollection.TryAddSingleton<ResourceAuthenticator>();
-            serviceCollection.TryAddSingleton<IAllowAllAuthenticator, AllowAllAuthenticator>();
+            serviceCollection.AddSingleton<IAllowAllAuthenticator, AllowAllAuthenticator>();
+            serviceCollection.TryAddSingleton<IRequestAuthenticator>(pr => pr.GetRequiredService<IAllowAllAuthenticator>());
             serviceCollection.TryAddSingleton<IAllowedCorsOriginsFilter, AllCorsOriginsAllowed>();
             serviceCollection.TryAddSingleton<RootAccess>();
             serviceCollection.TryAddSingleton<RootClient>();
@@ -95,6 +126,7 @@ namespace Microsoft.Extensions.DependencyInjection
             });
             serviceCollection.AddSingleton<IEntityResourceProvider, InMemoryEntityResourceProvider>();
             serviceCollection.AddSingleton<IProtocolProvider, DefaultProtocolProvider>();
+            serviceCollection.AddSingleton(typeof(EntityOperations<>));
             serviceCollection.AddTransient(typeof(ICombinedTerminal<>), typeof(CombinedTerminal<>));
             serviceCollection.AddTransient(typeof(ITerminalCollection<>), typeof(TerminalCollection<>));
             serviceCollection.AddSingleton(typeof(ISerializationMetadata<>), typeof(SerializationMetadata<>));

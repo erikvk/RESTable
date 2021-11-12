@@ -36,7 +36,7 @@ namespace RESTable.Requests
         /// <summary>
         /// Did the request contain a body?
         /// </summary>
-        public bool HasBody => Body is { CanRead: true };
+        public bool HasBody => Body is {CanRead: true};
 
         private Body _body;
 
@@ -73,7 +73,7 @@ namespace RESTable.Requests
         internal IResource IResource => iresource ??= Context.GetRequiredService<ResourceCollection>().FindResource(Uri.ResourceSpecifier);
         internal Exception? Error { get; }
         private static bool PercentCharsEscaped(Headers? headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
-        bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource { RequiresAuthentication: true };
+        bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true};
         public MessageType MessageType { get; } = MessageType.HttpInput;
 
         public CachedProtocolProvider CachedProtocolProvider { get; set; }

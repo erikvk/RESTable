@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using RESTable.Resources;
 
 namespace RESTable.Meta
 {
@@ -33,16 +35,16 @@ namespace RESTable.Meta
         }
 
         /// <summary>
-        /// Makes a fast delegate for creating an instance of a given type
+        /// Makes a fast delegate for setting the value for a given property.
         /// </summary>
-        public static Constructor? MakeDynamicConstructor(this Type type)
+        public static ParameterlessConstructor<T>? MakeParameterlessConstructor<T>(this Type type)
         {
             try
             {
                 return type switch
                 {
                     _ when type.GetConstructor(Type.EmptyTypes) is null => null,
-                    _ => Expression.Lambda<Constructor>(Expression.New(type)).Compile()
+                    _ => Expression.Lambda<ParameterlessConstructor<T>>(Expression.New(type)).Compile()
                 };
             }
             catch
@@ -54,20 +56,14 @@ namespace RESTable.Meta
         /// <summary>
         /// Makes a fast delegate for setting the value for a given property.
         /// </summary>
-        public static Constructor<T>? MakeStaticConstructor<T>(this Type type)
+        public static ParameterizedConstructor<T> MakeParameterizedConstructor<T>(this ConstructorInfo jsonConstructor)
         {
-            try
-            {
-                return type switch
-                {
-                    _ when type.GetConstructor(Type.EmptyTypes) is null => null,
-                    _ => Expression.Lambda<Constructor<T>>(Expression.New(type)).Compile()
-                };
-            }
-            catch
-            {
-                return null;
-            }
+            return parameters => (T) jsonConstructor.Invoke(parameters);
         }
+
+        internal static bool IsImplemented(this MethodInfo method) => !method
+            .GetCustomAttributes(false)
+            .OfType<MethodNotImplementedAttribute>()
+            .Any();
     }
 }

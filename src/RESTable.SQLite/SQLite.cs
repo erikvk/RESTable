@@ -6,21 +6,20 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Admin;
-using RESTable.Requests;
-using RESTable.SQLite.Meta;
+using RESTable.Sqlite.Meta;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
     /// <summary>
     /// Helper class for accessing RESTable.SQLite tables
     /// </summary>
-    /// <typeparam name="T">The SQLiteTable class to bind SQL operations to</typeparam>
-    public static class SQLite<T> where T : SQLiteTable
+    /// <typeparam name="T">The SqliteTable class to bind SQL operations to</typeparam>
+    public static class Sqlite<T> where T : SqliteTable
     {
         private const string RowIdParameter = "@rowId";
 
         /// <summary>
-        /// Selects entities in the SQLite database using the RESTable.SQLite O/RM mapping 
+        /// Selects entities in the Sqlite database using the RESTable.Sqlite O/RM mapping 
         /// facilities. Returns an IAsyncEnumerable of the provided resource type.
         /// </summary>
         /// <param name="where">The WHERE clause of the SQL squery to execute. Will be preceded 
@@ -40,41 +39,15 @@ namespace RESTable.SQLite
         }
 
         /// <summary>
-        /// Selects entities in the SQLite database using the RESTable.SQLite O/RM mapping 
-        /// facilities. Returns an IEnumerable of the provided resource type.
+        /// Inserts a range of SqliteTable entities into the given Sqlite database table and returns the number of inserted entities
         /// </summary>
-        /// <param name="context">The context in which this call is made</param>
-        /// <param name="where">The WHERE clause of the SQL squery to execute. Will be preceded 
-        /// by "SELECT * FROM {type} " in the actual query</param>
-        /// <param name="onlyRowId">Populates only RowIds for the resulting entities</param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public static async IAsyncEnumerable<T> Select
-        (
-            RESTableContext? context,
-            string? where = null,
-            bool onlyRowId = false,
-            [EnumeratorCancellation] CancellationToken cancellationToken = new()
-        )
-        {
-            var enumerable = (EntityEnumerable<T>) Select(where, onlyRowId);
-            if (context is not null)
-                await QueryConsole.Publish(context, enumerable.Sql, cancellationToken).ConfigureAwait(false);
-            await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
-                yield return item;
-        }
+        public static ValueTask<long> Insert(params T[] entities) => Insert(entities.ToAsyncEnumerable()).LongCountAsync();
 
         /// <summary>
-        /// Inserts a range of SQLiteTable entities into the appropriate SQLite database
-        /// table and returns the number of rows affected.
-        /// </summary>
-        public static IAsyncEnumerable<T> Insert(params T[] entities) => Insert(null, entities.ToAsyncEnumerable());
-
-        /// <summary>
-        /// Inserts an IEnumerable of SQLiteTable entities into the appropriate SQLite database
+        /// Inserts an IEnumerable of SqliteTable entities into the appropriate SQLite database
         /// table and returns the inserted rows.
         /// </summary>
-        public static async IAsyncEnumerable<T> Insert(RESTableContext? context, IAsyncEnumerable<T> entities, [EnumeratorCancellation] CancellationToken cancellationToken = new())
+        public static async IAsyncEnumerable<T> Insert(IAsyncEnumerable<T> entities, [EnumeratorCancellation] CancellationToken cancellationToken = new())
         {
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
             var command = connection.CreateCommand();
@@ -85,7 +58,7 @@ namespace RESTable.SQLite
             {
                 var (name, columns, param, mappings) = TableMapping<T>.InsertSpec;
                 for (var i = 0; i < mappings.Length; i++)
-                    command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
+                    command.Parameters.Add(param[i], mappings[i].SqlColumn.DbType.GetValueOrDefault());
                 command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
 
                 await foreach (var entity in entities.ConfigureAwait(false))
@@ -93,14 +66,13 @@ namespace RESTable.SQLite
                     await entity._OnInsert().ConfigureAwait(false);
                     for (var i = 0; i < mappings.Length; i++)
                     {
-                        var getter = mappings[i].CLRProperty.Getter;
+                        var getter = mappings[i].ClrProperty.Getter;
                         object? propertyValue = null;
                         if (getter is not null)
                             propertyValue = await getter(entity).ConfigureAwait(false);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
-                    if (context is not null)
-                        await QueryConsole.Publish(context, command.CommandText, cancellationToken).ConfigureAwait(false);
+                    await QueryConsole.Publish(command.CommandText, cancellationToken).ConfigureAwait(false);
                     var insertedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     entity.RowId = connection.LastInsertRowId;
                     if (insertedCount == 1)
@@ -112,15 +84,14 @@ namespace RESTable.SQLite
         }
 
         /// <summary>
-        /// Updates the corresponding SQLite database table rows for a given IEnumerable 
-        /// of updated entities and returns the number of rows affected.
+        /// Updates a range of SqliteTable entities in the given Sqlite database table and returns the number of updated entities
         /// </summary>
-        public static async IAsyncEnumerable<T> Update
-        (
-            RESTableContext? context,
-            IAsyncEnumerable<T> updatedEntities,
-            [EnumeratorCancellation] CancellationToken cancellationToken = new()
-        )
+        public static ValueTask<long> Update(params T[] updatedEntities) => Update(updatedEntities.ToAsyncEnumerable()).LongCountAsync();
+
+        /// <summary>
+        /// Updates a range of SqliteTable entities in the given Sqlite database table and returns an enumeration of updated entities
+        /// </summary>
+        public static async IAsyncEnumerable<T> Update(IAsyncEnumerable<T> updatedEntities, [EnumeratorCancellation] CancellationToken cancellationToken = new())
         {
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
             var command = connection.CreateCommand();
@@ -132,7 +103,7 @@ namespace RESTable.SQLite
             {
                 var (name, set, param, mappings) = TableMapping<T>.UpdateSpec;
                 for (var i = 0; i < mappings.Length; i++)
-                    command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
+                    command.Parameters.Add(param[i], mappings[i].SqlColumn.DbType.GetValueOrDefault());
                 command.Parameters.Add(RowIdParameter, DbType.Int64);
                 command.CommandText = $"UPDATE {name} SET {set} WHERE RowId = {RowIdParameter}";
 
@@ -142,14 +113,13 @@ namespace RESTable.SQLite
                     command.Parameters[RowIdParameter].Value = entity.RowId;
                     for (var i = 0; i < mappings.Length; i++)
                     {
-                        var getter = mappings[i].CLRProperty.Getter;
+                        var getter = mappings[i].ClrProperty.Getter;
                         object? propertyValue = null;
                         if (getter is not null)
                             propertyValue = await getter(entity).ConfigureAwait(false);
                         command.Parameters[param[i]].Value = propertyValue;
                     }
-                    if (context is not null)
-                        await QueryConsole.Publish(context, command.CommandText, cancellationToken).ConfigureAwait(false);
+                    await QueryConsole.Publish(command.CommandText, cancellationToken).ConfigureAwait(false);
                     var updatedCount = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     if (updatedCount == 1)
                         yield return entity;
@@ -160,14 +130,17 @@ namespace RESTable.SQLite
         }
 
         /// <summary>
-        /// Deletes the corresponding SQLite database table rows for a given IEnumerable 
-        /// of entities, and returns the number of database rows affected.
+        /// Deletes a range of SqliteTable entities in the given Sqlite database table and returns the number of deleted entities
         /// </summary>
-        /// <param name="context">The context in which this call is made</param>
+        public static ValueTask<long> Delete(params T[] toDelete) => Delete(toDelete.ToAsyncEnumerable());
+
+        /// <summary>
+        /// Deletes the corresponding Sqlite database table rows for a given enumeration of entities, and returns the number of database rows affected.
+        /// </summary>
         /// <param name="entities"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public static async Task<int> Delete(RESTableContext? context, IAsyncEnumerable<T> entities, CancellationToken cancellationToken = new())
+        public static async ValueTask<long> Delete(IAsyncEnumerable<T> entities, CancellationToken cancellationToken = new())
         {
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
             var command = connection.CreateCommand();
@@ -185,8 +158,7 @@ namespace RESTable.SQLite
                 {
                     await entity._OnDelete().ConfigureAwait(false);
                     command.Parameters[RowIdParameter].Value = entity.RowId;
-                    if (context is not null)
-                        await QueryConsole.Publish(context, command.CommandText, cancellationToken).ConfigureAwait(false);
+                    await QueryConsole.Publish(command.CommandText, cancellationToken).ConfigureAwait(false);
                     count += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
 
@@ -196,13 +168,12 @@ namespace RESTable.SQLite
         }
 
         /// <summary>
-        /// Counts all rows in the SQLite database where a certain where clause is true.
+        /// Counts all rows in the Sqlite database where a certain where clause is true.
         /// </summary>
-        /// <param name="context">The context in which this call is made</param>
         /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 
         /// by "SELECT COUNT(*) FROM {type} " in the actual query</param>
         /// <returns></returns>
-        public static async Task<long> Count(RESTableContext? context, string? where = null, CancellationToken cancellationToken = new())
+        public static async ValueTask<long> Count(string? where = null, CancellationToken cancellationToken = new())
         {
             var sql = $"SELECT COUNT(RowId) FROM {TableMapping<T>.TableName} {where}";
             var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn();
@@ -211,8 +182,7 @@ namespace RESTable.SQLite
             await using (connection.ConfigureAwait(false))
             await using (command.ConfigureAwait(false))
             {
-                if (context is not null)
-                    await QueryConsole.Publish(context, command.CommandText, cancellationToken).ConfigureAwait(false);
+                await QueryConsole.Publish(command.CommandText, cancellationToken).ConfigureAwait(false);
                 var result = (long?) await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
                 return result.GetValueOrDefault();
             }

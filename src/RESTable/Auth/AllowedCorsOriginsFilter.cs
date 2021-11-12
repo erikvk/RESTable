@@ -1,30 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Options;
 
 namespace RESTable.Auth
 {
-    public class AllowedCorsOriginsFilter : IAllowedCorsOriginsFilter, IDisposable
+    public class AllowedCorsOriginsFilter : IAllowedCorsOriginsFilter
     {
-        private const string AllowedCorsOriginsConfigSection = "RESTable.AllowedCorsOrigins";
-        
         private HashSet<Uri> Store { get; }
-        private IConfiguration Configuration { get; }
-        private IDisposable ReloadToken { get; }
+        private IOptionsMonitor<AllowedCorsOrigins> Config { get; }
 
-        public AllowedCorsOriginsFilter(IConfiguration configuration)
+        public AllowedCorsOriginsFilter(IOptionsMonitor<AllowedCorsOrigins> config)
         {
-            Configuration = configuration;
+            Config = config;
             Store = new HashSet<Uri>();
-            Reload();
-            ReloadToken = ChangeToken.OnChange(Configuration.GetReloadToken, Reload);
+            Reload(config.CurrentValue);
+            config.OnChange(Reload);
         }
 
-        private void Reload()
+        private void Reload(AllowedCorsOrigins allowedOrigins)
         {
-            var allowedOrigins = Configuration.GetSection(AllowedCorsOriginsConfigSection).Get<AllowedCorsOrigins>();
-            if (allowedOrigins?.Count is not > 0)
+            if (allowedOrigins.Count <= 0)
                 throw new InvalidOperationException($"When using {nameof(AllowedCorsOriginsFilter)}, the application configuration file is used " +
                                                     "to read allowed cors origins. The config file is missing an 'AllowedCorsOrigins' array " +
                                                     "with at least one string item.");
@@ -37,7 +32,5 @@ namespace RESTable.Auth
         }
 
         public bool IsAllowed(Uri uri) => Store.Contains(uri);
-
-        public void Dispose() => ReloadToken.Dispose();
     }
 }

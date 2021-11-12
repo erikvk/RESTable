@@ -53,7 +53,7 @@ namespace RESTable.Resources
                 if (name.StartsWith($"{BaseNamespace}.", StringComparison.OrdinalIgnoreCase))
                 {
                     var nrOfDots = name.Count(c => c == '.') + 2;
-                    name = $"{BaseNamespace}.{name.Split(new[] { '.' }, nrOfDots).Last()}";
+                    name = $"{BaseNamespace}.{name.Split(new[] {'.'}, nrOfDots).Last()}";
                 }
                 else name = $"{BaseNamespace}.{name}";
             }
@@ -144,7 +144,7 @@ namespace RESTable.Resources
             }
         }
 
-        public virtual async ValueTask<int> DeleteAsync(IRequest<TController> request, CancellationToken cancellationToken)
+        public virtual async ValueTask<long> DeleteAsync(IRequest<TController> request, CancellationToken cancellationToken)
         {
             var i = 0;
             await foreach (var resource in request.GetInputEntitiesAsync().WithCancellation(cancellationToken).ConfigureAwait(false))

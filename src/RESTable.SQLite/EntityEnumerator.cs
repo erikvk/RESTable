@@ -6,17 +6,18 @@ using System.Data.SQLite;
 using System.Threading;
 using System.Threading.Tasks;
 using RESTable.Meta;
-using RESTable.SQLite.Meta;
+using RESTable.Sqlite.Meta;
 
-namespace RESTable.SQLite
+namespace RESTable.Sqlite
 {
-    internal class EntityEnumerator<T> : IAsyncEnumerator<T> where T : SQLiteTable
+    internal class EntityEnumerator<T> : IAsyncEnumerator<T> where T : SqliteTable
     {
-        private static readonly Constructor<T> Constructor;
+        private static readonly ParameterlessConstructor<T> ParameterlessConstructor;
 
         static EntityEnumerator()
         {
-            Constructor = typeof(T).MakeStaticConstructor<T>() ?? throw new InvalidOperationException($"Could not create constructor for type '{typeof(T).GetRESTableTypeName()}'");
+            ParameterlessConstructor = typeof(T).MakeParameterlessConstructor<T>() ??
+                                       throw new InvalidOperationException($"Could not create constructor for type '{typeof(T).GetRESTableTypeName()}'");
         }
 
         private SQLiteConnection? Connection { get; set; }
@@ -70,21 +71,21 @@ namespace RESTable.SQLite
 
         private async ValueTask<T> MakeEntity(IDataRecord record)
         {
-            var entity = Constructor();
+            var entity = ParameterlessConstructor();
             entity.RowId = CurrentRowId;
             if (!OnlyRowId)
             {
                 for (var index = 0; index < TransactMappings.Length; index++)
                 {
                     var column = TransactMappings[index];
-                    if (column.CLRProperty.Set is not Setter setter)
+                    if (column.ClrProperty.Set is not Setter setter)
                         continue;
-                    var value = record[column.SQLColumn.Name];
+                    var value = record[column.SqlColumn.Name];
                     if (value is not DBNull)
                     {
                         await setter.Invoke(entity, value).ConfigureAwait(false);
                     }
-                    else if (!column.CLRProperty.IsDeclared)
+                    else if (!column.ClrProperty.IsDeclared)
                     {
                         await setter.Invoke(entity, null).ConfigureAwait(false);
                     }

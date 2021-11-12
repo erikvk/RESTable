@@ -9,5 +9,5 @@ namespace RESTable.Resources.Operations
     /// the resource, and returns the number of entities successfully deleted.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    internal delegate ValueTask<int> AsyncDeleter<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class;
+    internal delegate ValueTask<long> AsyncDeleter<T>(IRequest<T> request, CancellationToken cancellationToken) where T : class;
 }

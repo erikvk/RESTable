@@ -15,10 +15,12 @@ namespace RESTable.Auth
     /// </summary>
     public class AccessRights : ReadOnlyDictionary<IResource, Method[]>
     {
+        public IRequestAuthenticator? Authenticator { get; }
         public string? Token { get; }
 
-        public AccessRights(string? token, IDictionary<IResource, Method[]> assignments) : base(assignments)
+        public AccessRights(IRequestAuthenticator? authenticator, string? token, IDictionary<IResource, Method[]> assignments) : base(assignments)
         {
+            Authenticator = authenticator;
             Token = token;
         }
 

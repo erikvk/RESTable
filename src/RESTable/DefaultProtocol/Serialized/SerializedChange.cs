@@ -18,13 +18,13 @@ namespace RESTable.DefaultProtocol.Serialized
         public bool TooManyEntitiesToIncludeInBody => Change.TooManyEntities;
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public int? UpdatedCount { get; }
+        public long? UpdatedCount { get; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public int? InsertedCount { get; }
+        public long? InsertedCount { get; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public int? DeletedCount { get; }
+        public long? DeletedCount { get; }
 
         public double TimeElapsedMs => Change.TimeElapsed.GetRESTableElapsedMs();
 

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using RESTable.Linq;
 using RESTable.Meta;
 using RESTable.Requests;
@@ -23,7 +21,6 @@ namespace RESTable.Admin
 
         private const int MaxStringLength = 10000;
         private const int DeleteBatch = 100;
-        public const int DefaultNumberOfErrorsToKeep = 2000;
 
         private static long Counter { get; set; }
 
@@ -111,9 +108,7 @@ namespace RESTable.Admin
             var nl = Environment.NewLine;
             var stackTrace = string.Join($"{nl}§§§ INNER: §§§{nl}", errorStackTrace, innerStackTrace);
             var totalMessage = errorResult.ToString();
-            var errorsToKeep = request
-                .GetService<IConfiguration>()?
-                .GetValue<int>("NrOfErrorsToKeep") ?? DefaultNumberOfErrorsToKeep;
+            var errorsToKeep = request.Context.Configuration.NumberOfErrorsToKeep;
             if (Counter > errorsToKeep && Counter % DeleteBatch == 0)
             {
                 var cutoffId = Counter - errorsToKeep;
@@ -128,7 +123,7 @@ namespace RESTable.Admin
             (
                 uri: uri,
                 method: request.Method,
-                headers: resource is IEntityResource { RequiresAuthentication: true }
+                headers: resource is IEntityResource {RequiresAuthentication: true}
                     ? null
                     : request.Headers.StringJoin(" | ", dict => dict.Select(header => header.Key.ToLower() switch
                     {
@@ -145,7 +140,7 @@ namespace RESTable.Admin
                 stackTrace: stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 message: totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage
             );
-            InMemoryOperations<Error>.Insert(error);
+            var _ = InMemoryOperations<Error>.Insert(error).ToList();
             return error;
         }
     }

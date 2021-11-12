@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ using RESTable.Requests;
 using RESTable.Requests.Filters;
 using RESTable.Requests.Processors;
 using RESTable.Resources;
+using RESTable.Resources.Operations;
 using RESTable.Results;
 using static System.Globalization.DateTimeStyles;
 using static System.StringComparison;
@@ -45,26 +47,49 @@ namespace RESTable
             return flagged ? $"${name}" : name;
         }
 
+        public static string RESTableParameterName(this ParameterInfo p, bool flagged = false) => (flagged ? $"${p.Name}" : p.Name)!;
+
         public static bool RESTableIgnored(this MemberInfo m) => m.GetCustomAttribute<RESTableMemberAttribute>()?.Ignored == true ||
                                                                  m.HasAttribute<IgnoreDataMemberAttribute>();
+
+        public static ParameterInfo? GetCustomConstructorParameterInfo(this DeclaredProperty declaredProperty)
+        {
+            if (declaredProperty.Owner?.GetCustomConstructor() is not { } constructor)
+                return default;
+            var parameters = constructor.GetParameters();
+            for (var i = 0; i < parameters.Length; i += 1)
+            {
+                var parameter = parameters[i];
+                var parameterName = parameter.RESTableParameterName(declaredProperty.Owner.IsDictionary(out _, out _));
+                if (parameterName.EqualsNoCase(declaredProperty.Name))
+                {
+                    return parameter;
+                }
+            }
+            return default;
+        }
 
         #endregion
 
         #region Type reflection
+
+        public static ConstructorInfo? GetCustomConstructor(this Type type) => type
+            .GetConstructors()
+            .FirstOrDefault(c => c.HasAttribute<RESTableConstructorAttribute>() || c.HasAttribute<JsonConstructorAttribute>());
 
         public static string GetRESTableTypeName(this Type type) => type.FullName?.Replace('+', '.') ?? throw new Exception("Could not establish the name of a type");
 
         /// <summary>
         /// Does this type implement the IDictionary{string, object} interface?
         /// </summary>
-        public static bool IsDictionary(this Type type, out bool isWritable)
+        public static bool IsDictionary(this Type type, out bool isWritable, out Type[]? parameters)
         {
-            if (type.ImplementsGenericInterface(typeof(IDictionary<,>)))
+            if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out parameters))
             {
                 isWritable = true;
                 return true;
             }
-            if (type.ImplementsGenericInterface(typeof(IReadOnlyDictionary<,>)))
+            if (type.ImplementsGenericInterface(typeof(IReadOnlyDictionary<,>), out parameters))
             {
                 isWritable = false;
                 return true;
@@ -119,7 +144,6 @@ namespace RESTable
             return false;
         }
 
-
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
             .ToList();
@@ -138,6 +162,21 @@ namespace RESTable
                 }
             })
             .Where(type => type.IsSubclassOf(baseType));
+
+        internal static IEnumerable<Type> GetSubtypes(this Type baseType) => AppDomain.CurrentDomain
+            .GetAssemblies()
+            .SelectMany(assembly =>
+            {
+                try
+                {
+                    return assembly.GetTypes();
+                }
+                catch
+                {
+                    return Array.Empty<Type>();
+                }
+            })
+            .Where(baseType.IsAssignableFrom);
 
         internal static bool HasAttribute(this MemberInfo type, Type attributeType)
         {
@@ -266,7 +305,7 @@ namespace RESTable
         /// </summary>
         public static (string, string?) TupleSplit(this string str, char separator, bool trim = false)
         {
-            var split = str.Split(new[] { separator }, 2, StringSplitOptions.RemoveEmptyEntries);
+            var split = str.Split(new[] {separator}, 2, StringSplitOptions.RemoveEmptyEntries);
             return trim switch
             {
                 false => split.Length switch
@@ -290,7 +329,7 @@ namespace RESTable
         /// </summary>
         public static (string, string?) TupleSplit(this string str, string separator, bool trim = false)
         {
-            var split = str.Split(new[] { separator }, 2, StringSplitOptions.None);
+            var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
             return trim switch
             {
                 false => split.Length switch
@@ -312,6 +351,8 @@ namespace RESTable
 
         #region Resource helpers
 
+        internal static bool IsDynamic(this Type type) => typeof(IDynamicMemberValueProvider).IsAssignableFrom(type) || type.IsDictionary(out _, out _);
+
         internal static ResourceKind GetResourceKind(this Type metatype) => metatype switch
         {
             _ when typeof(IEntityResource).IsAssignableFrom(metatype) => ResourceKind.EntityResource,
@@ -321,9 +362,24 @@ namespace RESTable
             _ => ResourceKind.All
         };
 
+        internal static TermBindingRule GetBindingRule(this Type type, bool input) => input ? type.GetInputBindingRule() : type.GetOutputBindingRule();
+
+        internal static TermBindingRule GetInputBindingRule(this Type type)
+        {
+            var attribute = type.GetCustomAttribute<RESTableAttribute>();
+            return type.IsDynamic() || attribute?.AllowDynamicConditions == true
+                ? TermBindingRule.DeclaredWithDynamicFallback
+                : TermBindingRule.OnlyDeclared;
+        }
+
+        internal static TermBindingRule GetOutputBindingRule(this Type type) => type.IsDynamic()
+            ? TermBindingRule.DeclaredWithDynamicFallback
+            : TermBindingRule.OnlyDeclared;
+
         internal static (bool allowDynamic, TermBindingRule bindingRule) GetDynamicConditionHandling(this Type type, RESTableAttribute? attribute)
         {
             var dynamicConditionsAllowed = typeof(IDynamicMemberValueProvider).IsAssignableFrom(type) ||
+                                           type.IsDictionary(out _, out _) ||
                                            attribute?.AllowDynamicConditions == true;
             var conditionBindingRule = dynamicConditionsAllowed ? TermBindingRule.DeclaredWithDynamicFallback : TermBindingRule.OnlyDeclared;
             return (dynamicConditionsAllowed, conditionBindingRule);
@@ -346,7 +402,7 @@ namespace RESTable
         }
 
         /// <summary>
-        /// Converts a Dictionary object to a JSON.net JObject
+        /// Converts a Dictionary object to a JsonProperty
         /// </summary>
         public static JsonProperty? GetProperty(this JsonElement obj, string name, StringComparison stringComparison = OrdinalIgnoreCase)
         {
@@ -377,39 +433,24 @@ namespace RESTable
             return false;
         }
 
-        public static async ValueTask<ProcessedEntity> MakeProcessedEntity<T>(this T entity, TypeCache typeCache) where T : notnull
+        public static async ValueTask<ProcessedEntity> MakeProcessedEntity<T>(this T entity, ISerializationMetadata metadata) where T : notnull
         {
-            switch (entity)
+            if (entity is ProcessedEntity processedEntity)
+                return processedEntity;
+
+            var toPopulate = entity switch
             {
-                case ProcessedEntity processedEntity:
-                {
-                    return processedEntity;
-                }
-                case Dictionary<string, object?> dictionary:
-                {
-                    return new ProcessedEntity(dictionary);
-                }
-                case IDictionary idict:
-                {
-                    var processedEntity = new ProcessedEntity(idict.Count);
-                    foreach (var entry in idict.Cast<DictionaryEntry>())
-                    {
-                        processedEntity.Add(entry.Key.ToString()!, entry.Value);
-                    }
-                    return processedEntity;
-                }
-                default:
-                {
-                    var processedEntity = new ProcessedEntity();
-                    var properties = typeCache
-                        .GetDeclaredProperties(entity.GetType())
-                        .Values
-                        .Where(p => !p.Hidden);
-                    foreach (var property in properties)
-                        processedEntity[property.Name] = await property.GetValue(entity).ConfigureAwait(false);
-                    return processedEntity;
-                }
+                IDictionary<string, object?> dictionary => new ProcessedEntity(dictionary),
+                IEnumerable<KeyValuePair<string, object?>> keyValuePairs => new ProcessedEntity(keyValuePairs),
+                IDictionary dictionary => new ProcessedEntity(dictionary),
+                _ => new ProcessedEntity()
+            };
+
+            foreach (var property in metadata.PropertiesToSerialize)
+            {
+                toPopulate[property.Name] = await property.GetValue(entity).ConfigureAwait(false);
             }
+            return toPopulate;
         }
 
         internal static string GetEntityResourceProviderId(this Type providerType)
@@ -438,12 +479,13 @@ namespace RESTable
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IAsyncEnumerable<ProcessedEntity> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors) where T : notnull
+        internal static IAsyncEnumerable<ProcessedEntity> Process<T>(this IAsyncEnumerable<T> entities, IReadOnlyList<IProcessor> processors, ISerializationMetadata metadata)
+            where T : notnull
         {
-            var target = processors[0].Apply(entities);
+            var target = processors[0].Apply(entities, metadata);
             for (var i = 1; i < processors.Count; i += 1)
             {
-                target = processors[i].Apply(target);
+                target = processors[i].Apply(target, metadata);
             }
             return target;
         }
@@ -474,7 +516,7 @@ namespace RESTable
         /// </summary>
         public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return str.Split(new[] { separator }, options);
+            return str.Split(new[] {separator}, options);
         }
 #endif
 
@@ -519,30 +561,64 @@ namespace RESTable
         }
 
         /// <summary>
-        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// Gets the value of a key from an IDictionary_2, without case sensitivity, or null if the dictionary does 
         /// not contain the key. The actual key is returned in the actualKey out parameter.
         /// </summary>
         internal static bool TryFindInDictionary<T>(this IDictionary<string, T?> dict, string key, out string? actualKey, out T? result)
         {
-            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
+            var matches = dict
+                .Where(pair => pair.Key.EqualsNoCase(key))
+                .ToList();
             switch (matches.Count)
             {
                 case 0:
                     result = default;
                     actualKey = null;
                     return false;
-                case 1:
+                case >1 when dict.TryGetValue(key, out result):
+                {
+                    actualKey = key;
+                    return true;
+                }
+                default:
+                {
                     actualKey = matches[0].Key;
                     result = matches[0].Value;
                     return true;
-                default:
-                    if (!dict.TryGetValue(key, out result))
-                    {
-                        actualKey = null;
-                        return false;
-                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// not contain the key. The actual key is returned in the actualKey out parameter.
+        /// </summary>
+        internal static bool TryFindInDictionary(this IDictionary dict, string key, out string? actualKey, out object? result)
+        {
+            var matchKeys = dict.Keys
+                .Cast<string>()
+                .Where(key.EqualsNoCase)
+                .ToList();
+            switch (matchKeys.Count)
+            {
+                case 0:
+                {
+                    result = default;
+                    actualKey = null;
+                    return false;
+                }
+                case >1 when dict.Contains(key):
+                {
                     actualKey = key;
+                    result = dict[key];
                     return true;
+                }
+                default:
+                {
+                    actualKey = matchKeys[0];
+                    result = dict[actualKey];
+                    return true;
+                }
             }
         }
 
@@ -589,13 +665,13 @@ namespace RESTable
             _ => new Unknown(exception)
         };
 
-        public static Error AsResultOf(this Exception exception, IRequest? request)
+        public static Error AsResultOf(this Exception exception, IRequest? request, bool cancelled = false)
         {
             var error = exception.AsError();
             if (request is null) return error;
             error.SetContext(request.Context);
             error.Request = request;
-            if (error is not Forbidden && request.Method >= 0)
+            if (!cancelled && error is not Forbidden && request.Method >= 0)
             {
                 var errorId = Admin.Error.Create(error, request).Id;
                 error.Headers.Error = $"/restable.admin.error/id={errorId}";
@@ -731,9 +807,12 @@ namespace RESTable
                     if (protocolHolder.CachedProtocolProvider.OutputMimeBindings.TryGetValue(contentType.MediaType, out _))
                         return true;
                 }
+                acceptHeader = null;
+                return false;
             }
+            // No accept header means accept anything
             acceptHeader = null;
-            return false;
+            return true;
         }
 
         public static IContentTypeProvider GetOutputContentTypeProvider(this IProtocolHolder protocolHolder, ContentType? contentTypeOverride = null)
@@ -811,7 +890,7 @@ namespace RESTable
                 case "": return "";
             }
 
-            if (property is DeclaredProperty { IsEnum: true } prop)
+            if (property is DeclaredProperty {IsEnum: true} prop)
             {
                 try
                 {
@@ -890,6 +969,62 @@ namespace RESTable
         #endregion
 
         #region Conversion
+
+#if !NETSTANDARD2_0
+        internal static (int offset, int limit) ToOffsetAndLimit(this Range range)
+        {
+            var offset = range.Start switch
+            {
+                {IsFromEnd: true, Value: 0} when range.End.Equals(^0) => int.MaxValue,
+                {IsFromEnd: true, Value: 0} => throw new ArgumentOutOfRangeException(nameof(range)),
+                {IsFromEnd: true} => -range.Start.Value,
+                _ => range.Start.Value
+            };
+            return range.End switch
+            {
+                {IsFromEnd: true} when range.End.Value != 0 => throw new ArgumentOutOfRangeException
+                (
+                    nameof(range), "Ranges where End.FromEnd == true and End.Value > 0 are not supported by RESTable"
+                ),
+                {IsFromEnd: true} => (offset, -1),
+                _ => range.Start switch
+                {
+                    {IsFromEnd: true} => throw new ArgumentOutOfRangeException
+                    (
+                        nameof(range), "Ranges where Start.FromEnd == true and End.FromEnd == false are not supported by RESTable"
+                    ),
+                    _ when range.End.Value - range.Start.Value is var limit => limit < 0
+                        ? throw new ArgumentOutOfRangeException(nameof(range), "Negative ranges are not supported by RESTable")
+                        : (offset, limit),
+                    _ => throw new Exception($"Unknown error while parsing start of range '{range}'")
+                }
+            };
+        }
+
+        internal static (int offset, int limit) ToSlicedOffsetAndLimit(this Range range, int currentOffset, int currentLimit)
+        {
+            switch (currentLimit)
+            {
+                case <0:
+                {
+                    var (rangeOffset, rangeLimit) = range.ToOffsetAndLimit();
+                    switch (currentOffset)
+                    {
+                        case <0: return (currentLimit + rangeOffset, rangeLimit);
+                        case 0:
+                        case >0 when rangeOffset < 0: return (rangeOffset, rangeLimit);
+                        case >0: return (rangeOffset + currentOffset, rangeLimit);
+                    }
+                }
+                case 0: return (currentOffset, currentLimit);
+                case >0:
+                {
+                    var (offset, length) = range.GetOffsetAndLength(currentLimit);
+                    return (offset + currentOffset, length);
+                }
+            }
+        }
+#endif
 
         internal static double GetRESTableElapsedMs(this TimeSpan timeSpan)
         {
@@ -990,6 +1125,15 @@ namespace RESTable
             replaced = true;
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
+
+        internal static List<InvalidMember> ToInvalidMembers(this IEnumerable<ParameterInfo> missingParameters, Type owner) => missingParameters
+            .Select(parameter => new InvalidMember
+            (
+                entityType: owner,
+                memberName: parameter.RESTableParameterName(owner.IsDictionary(out _, out _)),
+                memberType: parameter.ParameterType,
+                message: $"Missing parameter of type '{parameter.ParameterType}'"
+            )).ToList();
 
         #endregion
     }

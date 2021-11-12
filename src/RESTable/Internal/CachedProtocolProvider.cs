@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using RESTable.ContentTypeProviders;
 
 namespace RESTable.Internal
@@ -10,9 +9,9 @@ namespace RESTable.Internal
         public IProtocolProvider ProtocolProvider { get; }
         internal IDictionary<string, IContentTypeProvider> InputMimeBindings { get; }
         internal IDictionary<string, IContentTypeProvider> OutputMimeBindings { get; }
-        internal IContentTypeProvider DefaultInputProvider => InputMimeBindings.FirstOrDefault().Value;
-        internal IContentTypeProvider DefaultOutputProvider => OutputMimeBindings.FirstOrDefault().Value;
-        
+        internal IContentTypeProvider DefaultInputProvider { get; set; } = null!;
+        internal IContentTypeProvider DefaultOutputProvider { get; set; } = null!;
+
         public CachedProtocolProvider(IProtocolProvider protocolProvider)
         {
             ProtocolProvider = protocolProvider;
