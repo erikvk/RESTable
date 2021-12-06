@@ -3,86 +3,106 @@ using System.Net;
 using System.Threading.Tasks;
 using RESTable.Requests;
 
-namespace RESTable.Results
+namespace RESTable.Results;
+
+/// <inheritdoc />
+/// <summary>
+///     Wraps a result and maps operations to its members
+/// </summary>
+public abstract class ResultWrapper : IResult
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// Wraps a result and maps operations to its members
-    /// </summary>
-    public abstract class ResultWrapper : IResult
+    protected ResultWrapper(IResult result)
     {
-        /// <inheritdoc />
-        public RESTableContext Context => Result.Context;
+        Result = result;
+    }
 
-        /// <inheritdoc />
-        public MessageType MessageType => Result.MessageType;
+    /// <summary>
+    ///     The wrapped result
+    /// </summary>
+    private IResult Result { get; }
 
-        /// <inheritdoc />
-        public ValueTask<string> GetLogMessage() => Result.GetLogMessage();
+    /// <inheritdoc />
+    public RESTableContext Context => Result.Context;
 
-        /// <inheritdoc />
-        public ValueTask<string?> GetLogContent() => Result.GetLogContent();
+    /// <inheritdoc />
+    public MessageType MessageType => Result.MessageType;
 
-        /// <inheritdoc />
-        public Headers Headers => Result.Headers;
+    /// <inheritdoc />
+    public ValueTask<string> GetLogMessage()
+    {
+        return Result.GetLogMessage();
+    }
 
-        /// <inheritdoc />
-        public string? HeadersStringCache
-        {
-            get => Result.HeadersStringCache;
-            set => Result.HeadersStringCache = value;
-        }
+    /// <inheritdoc />
+    public ValueTask<string?> GetLogContent()
+    {
+        return Result.GetLogContent();
+    }
 
-        /// <inheritdoc />
-        public bool IsSuccess => Result.IsSuccess;
+    /// <inheritdoc />
+    public Headers Headers => Result.Headers;
 
-        /// <inheritdoc />
-        public bool IsError => Result.IsError;
+    /// <inheritdoc />
+    public string? HeadersStringCache
+    {
+        get => Result.HeadersStringCache;
+        set => Result.HeadersStringCache = value;
+    }
 
-        /// <inheritdoc />
-        public bool ExcludeHeaders => Result.ExcludeHeaders;
+    /// <inheritdoc />
+    public bool IsSuccess => Result.IsSuccess;
 
-        /// <inheritdoc />
-        public DateTime LogTime => Result.LogTime;
+    /// <inheritdoc />
+    public bool IsError => Result.IsError;
 
-        /// <inheritdoc />
-        public HttpStatusCode StatusCode => Result.StatusCode;
+    /// <inheritdoc />
+    public bool ExcludeHeaders => Result.ExcludeHeaders;
 
-        /// <inheritdoc />
-        public string StatusDescription => Result.StatusDescription;
+    /// <inheritdoc />
+    public DateTime LogTime => Result.LogTime;
 
-        /// <inheritdoc />
-        public Cookies Cookies => Result.Cookies;
+    /// <inheritdoc />
+    public HttpStatusCode StatusCode => Result.StatusCode;
 
-        /// <inheritdoc />
-        public void ThrowIfError() => Result.ThrowIfError();
+    /// <inheritdoc />
+    public string StatusDescription => Result.StatusDescription;
 
-        /// <inheritdoc />
-        public IEntities<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
+    /// <inheritdoc />
+    public Cookies Cookies => Result.Cookies;
 
-        /// <inheritdoc />
-        public TimeSpan TimeElapsed => Result.TimeElapsed;
+    /// <inheritdoc />
+    public void ThrowIfError()
+    {
+        Result.ThrowIfError();
+    }
 
-        /// <inheritdoc />
-        public IRequest Request => Result.Request;
+    /// <inheritdoc />
+    public IEntities<T> ToEntities<T>() where T : class
+    {
+        return Result.ToEntities<T>();
+    }
 
-        /// <inheritdoc />
-        public IProtocolHolder ProtocolHolder => Result.ProtocolHolder;
+    /// <inheritdoc />
+    public TimeSpan TimeElapsed => Result.TimeElapsed;
 
-        /// <inheritdoc />
-        public string Metadata => Result.Metadata;
+    /// <inheritdoc />
+    public IRequest Request => Result.Request;
 
-        /// <inheritdoc />
-        public void Dispose() => Result.Dispose();
+    /// <inheritdoc />
+    public IProtocolHolder ProtocolHolder => Result.ProtocolHolder;
 
-        /// <inheritdoc />
-        public ValueTask DisposeAsync() => Result.DisposeAsync();
+    /// <inheritdoc />
+    public string Metadata => Result.Metadata;
 
-        /// <summary>
-        /// The wrapped result
-        /// </summary>
-        private IResult Result { get; }
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        Result.Dispose();
+    }
 
-        protected ResultWrapper(IResult result) => Result = result;
+    /// <inheritdoc />
+    public ValueTask DisposeAsync()
+    {
+        return Result.DisposeAsync();
     }
 }

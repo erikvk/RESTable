@@ -2,28 +2,30 @@
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace RESTable.Json
+namespace RESTable.Json;
+
+internal class RegisteredJsonConverter : IRegisteredJsonConverter
 {
-    internal class RegisteredJsonConverter : IRegisteredJsonConverter
+    internal RegisteredJsonConverter(Type converterType)
     {
-        private Func<IServiceProvider, JsonConverter> GetInstanceDelegate { get; }
+        ConverterType = converterType;
+        if (converterType.IsGenericTypeDefinition)
+            GetInstanceDelegate = _ => throw new InvalidOperationException("Cannot instantiate a generic type definition");
+        else GetInstanceDelegate = provider => (JsonConverter) ActivatorUtilities.CreateInstance(provider, converterType);
+    }
 
-        public JsonConverter GetInstance(IServiceProvider serviceProvider) => GetInstanceDelegate(serviceProvider);
+    internal RegisteredJsonConverter(JsonConverter instance)
+    {
+        ConverterType = instance.GetType();
+        GetInstanceDelegate = _ => instance;
+    }
 
-        public Type ConverterType { get; }
+    private Func<IServiceProvider, JsonConverter> GetInstanceDelegate { get; }
 
-        internal RegisteredJsonConverter(Type converterType)
-        {
-            ConverterType = converterType;
-            if (converterType.IsGenericTypeDefinition)
-                GetInstanceDelegate = _ => throw new InvalidOperationException("Cannot instantiate a generic type definition");
-            else GetInstanceDelegate = provider => (JsonConverter) ActivatorUtilities.CreateInstance(provider, converterType);
-        }
+    public Type ConverterType { get; }
 
-        internal RegisteredJsonConverter(JsonConverter instance)
-        {
-            ConverterType = instance.GetType();
-            GetInstanceDelegate = _ => instance;
-        }
+    public JsonConverter GetInstance(IServiceProvider serviceProvider)
+    {
+        return GetInstanceDelegate(serviceProvider);
     }
 }

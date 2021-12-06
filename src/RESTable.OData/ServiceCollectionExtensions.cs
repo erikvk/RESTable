@@ -2,14 +2,13 @@
 using RESTable;
 using RESTable.OData;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection;
+
+public static class ServiceCollectionExtensions
 {
-    public static class ServiceCollectionExtensions
+    public static IServiceCollection AddODataProvider(this IServiceCollection serviceCollection)
     {
-        public static IServiceCollection AddODataProvider(this IServiceCollection serviceCollection)
-        {
-            serviceCollection.TryAddSingleton<IProtocolProvider, ODataProtocolProvider>();
-            return serviceCollection;
-        }
+        serviceCollection.TryAddSingleton<IProtocolProvider, ODataProtocolProvider>();
+        return serviceCollection;
     }
 }

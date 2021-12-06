@@ -1,9 +1,8 @@
-﻿namespace RESTable
+﻿namespace RESTable;
+
+public enum SourceKind
 {
-    public enum SourceKind
-    {
-        Null,
-        Object,
-        Value
-    }
+    Null,
+    Object,
+    Value
 }

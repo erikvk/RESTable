@@ -3,28 +3,28 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RESTable.AspNetCore
+namespace RESTable.AspNetCore;
+
+internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, IAsyncDisposable
 {
-    internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, IAsyncDisposable
+    public override bool CanRead => false;
+    public override bool CanWrite => true;
+
+    private SemaphoreSlim WriteSemaphore { get; }
+
+    private bool SemaphoreOpen { get; set; }
+
+    public override long Position
     {
-        public override bool CanRead => false;
-        public override bool CanWrite => true;
+        get => ByteCount;
+        set => throw new NotSupportedException();
+    }
 
-        private SemaphoreSlim WriteSemaphore { get; }
-
-        private bool SemaphoreOpen { get; set; }
-
-        public override long Position
-        {
-            get => ByteCount;
-            set => throw new NotSupportedException();
-        }
-
-        public AspNetCoreOutputMessageStream(WebSocket webSocket, WebSocketMessageType messageType, SemaphoreSlim writeSemaphore, CancellationToken webSocketCancelledToken)
-            : base(webSocket, messageType, webSocketCancelledToken)
-        {
-            WriteSemaphore = writeSemaphore;
-        }
+    public AspNetCoreOutputMessageStream(WebSocket webSocket, WebSocketMessageType messageType, SemaphoreSlim writeSemaphore, CancellationToken webSocketCancelledToken)
+        : base(webSocket, messageType, webSocketCancelledToken)
+    {
+        WriteSemaphore = writeSemaphore;
+    }
 
 #if NETSTANDARD2_0
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -75,50 +75,56 @@ namespace RESTable.AspNetCore
             }
         }
 #else
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
+    public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
+    {
+        if (IsDisposed)
+            throw new InvalidOperationException("Cannot write to a closed WebSocket message stream");
+        if (!SemaphoreOpen)
         {
-            if (IsDisposed)
-                throw new InvalidOperationException("Cannot write to a closed WebSocket message stream");
-            if (!SemaphoreOpen)
-            {
-                var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken).Token;
-                await WriteSemaphore.WaitAsync(combinedToken).ConfigureAwait(false);
-                SemaphoreOpen = true;
-            }
-            WebSocketCancelledToken.ThrowIfCancellationRequested();
+            var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken).Token;
+            await WriteSemaphore.WaitAsync(combinedToken).ConfigureAwait(false);
+            SemaphoreOpen = true;
+        }
+        WebSocketCancelledToken.ThrowIfCancellationRequested();
+        await WebSocket.SendAsync
+        (
+            buffer,
+            MessageType,
+            false,
+            cancellationToken
+        ).ConfigureAwait(false);
+        ByteCount += buffer.Length;
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        if (!SemaphoreOpen || IsDisposed) return;
+        try
+        {
             await WebSocket.SendAsync
             (
-                buffer: buffer,
-                messageType: MessageType,
-                endOfMessage: false,
-                cancellationToken: cancellationToken
+                ReadOnlyMemory<byte>.Empty,
+                MessageType,
+                true,
+                WebSocketCancelledToken
             ).ConfigureAwait(false);
-            ByteCount += buffer.Length;
+            IsDisposed = true;
         }
-
-        public override async ValueTask DisposeAsync()
+        finally
         {
-            if (!SemaphoreOpen || IsDisposed) return;
-            try
-            {
-                await WebSocket.SendAsync
-                (
-                    buffer: ReadOnlyMemory<byte>.Empty,
-                    messageType: MessageType,
-                    endOfMessage: true,
-                    cancellationToken: WebSocketCancelledToken
-                ).ConfigureAwait(false);
-                IsDisposed = true;
-            }
-            finally
-            {
-                WriteSemaphore.Release();
-                SemaphoreOpen = false;
-            }
+            WriteSemaphore.Release();
+            SemaphoreOpen = false;
         }
+    }
 #endif
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count)
+    {
+        throw new NotSupportedException();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        throw new NotSupportedException();
     }
 }

@@ -1,18 +1,17 @@
 ﻿using System.Net;
 
-namespace RESTable.Results
+namespace RESTable.Results;
+
+/// <inheritdoc />
+/// <summary>
+///     Thrown from the WebSocket shell when the shell is in an invalid state to handle incoming
+///     binary data.
+/// </summary>
+internal class InvalidShellStateForBinaryInput : Error
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// Thrown from the WebSocket shell when the shell is in an invalid state to handle incoming
-    /// binary data.
-    /// </summary>
-    internal class InvalidShellStateForBinaryInput : Error
+    internal InvalidShellStateForBinaryInput() : base(ErrorCodes.ShellError, "")
     {
-        internal InvalidShellStateForBinaryInput() : base(ErrorCodes.ShellError, "")
-        {
-            StatusCode = HttpStatusCode.ServiceUnavailable;
-            StatusDescription = "Invalid shell state for binary input";
-        }
+        StatusCode = HttpStatusCode.ServiceUnavailable;
+        StatusDescription = "Invalid shell state for binary input";
     }
 }

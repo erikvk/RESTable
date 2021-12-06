@@ -1,44 +1,43 @@
-﻿namespace RESTable.Requests
+﻿namespace RESTable.Requests;
+
+/// <summary>
+///     The meta-conditions available in RESTable
+/// </summary>
+public enum RESTableMetaCondition
 {
-    /// <summary>
-    /// The meta-conditions available in RESTable
-    /// </summary>
-    public enum RESTableMetaCondition
-    {
-        /// <summary />
-        Unsafe,
+    /// <summary />
+    Unsafe,
 
-        /// <summary />
-        Limit,
+    /// <summary />
+    Limit,
 
-        /// <summary />
-        Offset,
+    /// <summary />
+    Offset,
 
-        /// <summary />
-        Order_asc,
+    /// <summary />
+    Order_asc,
 
-        /// <summary />
-        Order_desc,
+    /// <summary />
+    Order_desc,
 
-        /// <summary />
-        Select,
+    /// <summary />
+    Select,
 
-        /// <summary />
-        Add,
+    /// <summary />
+    Add,
 
-        /// <summary />
-        Rename,
+    /// <summary />
+    Rename,
 
-        /// <summary />
-        Distinct,
+    /// <summary />
+    Distinct,
 
-        /// <summary />
-        Search,
+    /// <summary />
+    Search,
 
-        /// <summary />
-        Search_regex,
+    /// <summary />
+    Search_regex,
 
-        /// <summary />
-        Safepost
-    }
+    /// <summary />
+    Safepost
 }

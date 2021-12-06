@@ -1,12 +1,14 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace RESTable.Meta
-{
-    internal static class ApplicationServicesAccessor
-    {
-        internal static IServiceProvider ApplicationServiceProvider { get; set; } = null!;
+namespace RESTable.Meta;
 
-        internal static T GetRequiredService<T>() where T : notnull => ApplicationServiceProvider.GetRequiredService<T>();
+internal static class ApplicationServicesAccessor
+{
+    internal static IServiceProvider ApplicationServiceProvider { get; set; } = null!;
+
+    internal static T GetRequiredService<T>() where T : notnull
+    {
+        return ApplicationServiceProvider.GetRequiredService<T>();
     }
 }

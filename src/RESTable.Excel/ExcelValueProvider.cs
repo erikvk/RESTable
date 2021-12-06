@@ -1,25 +1,27 @@
 ﻿using System;
 
-namespace RESTable.Excel
+namespace RESTable.Excel;
+
+internal readonly struct ExcelValueProvider : IValueProvider
 {
-    internal readonly struct ExcelValueProvider : IValueProvider
+    private object? ExcelCell { get; }
+
+    public T? GetValue<T>()
     {
-        private object? ExcelCell { get; }
+        if (ExcelCell is null)
+            return default;
+        if (ExcelCell is T tValue)
+            return tValue;
+        throw new InvalidCastException($"Cannot convert object of type '{ExcelCell.GetType()}' to '{typeof(T).GetRESTableTypeName()}'");
+    }
 
-        public T? GetValue<T>()
-        {
-            if (ExcelCell is null)
-                return default;
-            if (ExcelCell is T tValue)
-                return tValue;
-            throw new InvalidCastException($"Cannot convert object of type '{ExcelCell.GetType()}' to '{typeof(T).GetRESTableTypeName()}'");
-        }
+    public object? GetValue(Type targetType)
+    {
+        return ExcelCell;
+    }
 
-        public object? GetValue(Type targetType) => ExcelCell;
-
-        public ExcelValueProvider(object? excelCell)
-        {
-            ExcelCell = excelCell;
-        }
+    public ExcelValueProvider(object? excelCell)
+    {
+        ExcelCell = excelCell;
     }
 }

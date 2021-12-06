@@ -1,41 +1,40 @@
-﻿namespace RESTable.Sqlite
+﻿namespace RESTable.Sqlite;
+
+/// <summary>
+///     The data types supported in Sqlite tables
+/// </summary>
+public enum SqlDataType
 {
-    /// <summary>
-    /// The data types supported in Sqlite tables
-    /// </summary>
-    public enum SqlDataType
-    {
-        /// <summary />
-        Unsupported = 0,
+    /// <summary />
+    Unsupported = 0,
 
-        /// <summary />
-        SMALLINT,
+    /// <summary />
+    SMALLINT,
 
-        /// <summary />
-        INT,
+    /// <summary />
+    INT,
 
-        /// <summary />
-        BIGINT,
+    /// <summary />
+    BIGINT,
 
-        /// <summary />
-        SINGLE,
+    /// <summary />
+    SINGLE,
 
-        /// <summary />
-        DOUBLE,
+    /// <summary />
+    DOUBLE,
 
-        /// <summary />
-        DECIMAL,
+    /// <summary />
+    DECIMAL,
 
-        /// <summary />
-        TINYINT,
+    /// <summary />
+    TINYINT,
 
-        /// <summary />
-        TEXT,
+    /// <summary />
+    TEXT,
 
-        /// <summary />
-        BOOLEAN,
+    /// <summary />
+    BOOLEAN,
 
-        /// <summary />
-        DATETIME
-    }
+    /// <summary />
+    DATETIME
 }

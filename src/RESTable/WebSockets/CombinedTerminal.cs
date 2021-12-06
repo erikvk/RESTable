@@ -2,53 +2,60 @@
 using System.Collections.Generic;
 using RESTable.Resources;
 
-namespace RESTable.WebSockets
+namespace RESTable.WebSockets;
+
+internal class CombinedTerminal<T> : ICombinedTerminal<T>, ITerminalCollection<T> where T : Terminal
 {
-    internal class CombinedTerminal<T> : ICombinedTerminal<T>, ITerminalCollection<T> where T : Terminal
+    private CombinedTerminal(List<T> terminals, IWebSocket combinedWebSocket)
     {
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        public IEnumerator<T> GetEnumerator() => Terminals.GetEnumerator();
-        public int Count => Terminals.Count;
-        public IWebSocket CombinedWebSocket { get; }
+        CombinedWebSocket = combinedWebSocket;
+        Terminals = terminals;
+    }
 
-        private List<T> Terminals { get; }
-
-        internal static CombinedTerminal<T> Create(IEnumerable<T> terminals)
+    /// <summary>
+    ///     Creates a new <see cref="CombinedTerminal{T}" /> with all terminals from a given terminal collection.
+    ///     This constructor is used by the activator for the generic service type.
+    /// </summary>
+    public CombinedTerminal(ITerminalCollection<T> terminals)
+    {
+        Terminals = new List<T>();
+        var webSockets = new List<IWebSocket>();
+        foreach (var terminal in terminals)
         {
-            var terminalList = new List<T>();
-            var webSockets = new List<IWebSocket>();
-            foreach (var terminal in terminals)
-            {
-                terminalList.Add(terminal);
-                webSockets.Add(terminal.GetWebSocket());
-            }
-            return new CombinedTerminal<T>
-            (
-                terminals: terminalList,
-                combinedWebSocket: new WebSocketCombination(webSockets.ToArray())
-            );
+            Terminals.Add(terminal);
+            webSockets.Add(terminal.GetWebSocket());
         }
+        CombinedWebSocket = new WebSocketCombination(webSockets.ToArray());
+    }
 
-        private CombinedTerminal(List<T> terminals, IWebSocket combinedWebSocket)
-        {
-            CombinedWebSocket = combinedWebSocket;
-            Terminals = terminals;
-        }
+    private List<T> Terminals { get; }
 
-        /// <summary>
-        /// Creates a new <see cref="CombinedTerminal{T}"/> with all terminals from a given terminal collection.
-        /// This constructor is used by the activator for the generic service type.
-        /// </summary>
-        public CombinedTerminal(ITerminalCollection<T> terminals)
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        return Terminals.GetEnumerator();
+    }
+
+    public int Count => Terminals.Count;
+    public IWebSocket CombinedWebSocket { get; }
+
+    internal static CombinedTerminal<T> Create(IEnumerable<T> terminals)
+    {
+        var terminalList = new List<T>();
+        var webSockets = new List<IWebSocket>();
+        foreach (var terminal in terminals)
         {
-            Terminals = new List<T>();
-            var webSockets = new List<IWebSocket>();
-            foreach (var terminal in terminals)
-            {
-                Terminals.Add(terminal);
-                webSockets.Add(terminal.GetWebSocket());
-            }
-            CombinedWebSocket = new WebSocketCombination(webSockets.ToArray());
+            terminalList.Add(terminal);
+            webSockets.Add(terminal.GetWebSocket());
         }
+        return new CombinedTerminal<T>
+        (
+            terminalList,
+            new WebSocketCombination(webSockets.ToArray())
+        );
     }
 }

@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 
-namespace RESTable.Json
+namespace RESTable.Json;
+
+public interface IRegisteredJsonConverter
 {
-    public interface IRegisteredJsonConverter
-    {
-        JsonConverter GetInstance(IServiceProvider serviceProvider);
-    }
+    JsonConverter GetInstance(IServiceProvider serviceProvider);
 }

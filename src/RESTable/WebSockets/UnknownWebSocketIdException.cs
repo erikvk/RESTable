@@ -1,7 +1,6 @@
-﻿namespace RESTable.WebSockets
+﻿namespace RESTable.WebSockets;
+
+internal class UnknownWebSocketIdException : RESTableException
 {
-    internal class UnknownWebSocketIdException : RESTableException
-    {
-        public UnknownWebSocketIdException(string info) : base(ErrorCodes.UnknownWebSocketId, info) { }
-    }
+    public UnknownWebSocketIdException(string info) : base(ErrorCodes.UnknownWebSocketId, info) { }
 }

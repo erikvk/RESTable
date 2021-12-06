@@ -1,7 +1,6 @@
-﻿namespace RESTable.Requests
+﻿namespace RESTable.Requests;
+
+internal interface IEntityRequest : IRequest
 {
-    internal interface IEntityRequest : IRequest
-    {
-        IMacro? Macro { get; }
-    }
+    IMacro? Macro { get; }
 }

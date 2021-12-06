@@ -1,247 +1,227 @@
 ﻿using System;
+using System.Collections;
 using System.Threading.Tasks;
 using RESTable.Meta;
-using IDictionary = System.Collections.IDictionary;
 
-namespace RESTable
+namespace RESTable;
+
+public readonly struct Populator
 {
-    public readonly struct Populator
+    private static PopulatorAction DoNothing => t => new ValueTask<object>(t);
+    private static PopulatorAction SetToNull => _ => default;
+
+    private PopulatorAction Action { get; }
+
+    public Populator(Type toPopulate, PopulateSource source, TypeCache typeCache)
     {
-        private static PopulatorAction DoNothing => t => new ValueTask<object>(t);
-        private static PopulatorAction SetToNull => _ => default;
+        if (!typeCache.CanBePopulated(toPopulate))
+            throw new InvalidOperationException($"Cannot populate onto type '{toPopulate.GetRESTableTypeName()}'");
 
-        private PopulatorAction Action { get; }
-
-        public Populator(Type toPopulate, PopulateSource source, TypeCache typeCache)
+        switch (source.SourceKind)
         {
-            if (!typeCache.CanBePopulated(toPopulate))
-                throw new InvalidOperationException($"Cannot populate onto type '{toPopulate.GetRESTableTypeName()}'");
-
-            switch (source.SourceKind)
+            case SourceKind.Null:
             {
-                case SourceKind.Null:
-                {
-                    Action = SetToNull;
-                    return;
-                }
-                case SourceKind.Value:
-                {
-                    // The type can be populated, but the PopulateSource is a value. There's nothing we can do 
-                    // to populate from it, but we can give the PopulateSource a chance to convert it to an
-                    // instance of the expected type. We know that the expected type is a reference type
-                    // (value types cannot be populated), so we have to create it in each invocation.
-                    Action = _ => new ValueTask<object>(source.GetValue(toPopulate)!);
-                    return;
-                }
-                case not SourceKind.Object:
-                {
-                    throw new InvalidOperationException($"Cannot populate from element of kind '{source.SourceKind}'. Expected Object");
-                }
+                Action = SetToNull;
+                return;
             }
-
-            var populateDeclaredPropertiesAction = GetPopulateDeclaredPropertiesAction(toPopulate, source, typeCache);
-            DynamicMemberPopulatorCache? dynamicCache = null;
-
-            async ValueTask<object> populate(object target)
+            case SourceKind.Value:
             {
-                await populateDeclaredPropertiesAction(target).ConfigureAwait(false);
-
-                if (target is not IDictionary dict)
-                    return target;
-
-                dynamicCache ??= new DynamicMemberPopulatorCache();
-
-                for (var index = 0; index < source.Properties.Length; index += 1)
-                {
-                    var (name, value) = source.Properties[index];
-                    if (name is null)
-                    {
-                        // This property has been handled by the populateDeclaredPropertiesAction
-                        continue;
-                    }
-                    if (dict.Contains(name) && dict[name] is { } existingValue)
-                    {
-                        dict[name] = await GetDynamicValue(name, existingValue, value, dynamicCache, typeCache).ConfigureAwait(false);
-                    }
-                    else dict[name] = value.GetValue<object>();
-                }
-                return target;
+                // The type can be populated, but the PopulateSource is a value. There's nothing we can do 
+                // to populate from it, but we can give the PopulateSource a chance to convert it to an
+                // instance of the expected type. We know that the expected type is a reference type
+                // (value types cannot be populated), so we have to create it in each invocation.
+                Action = _ => new ValueTask<object>(source.GetValue(toPopulate)!);
+                return;
             }
-
-            Action = populate;
+            case not SourceKind.Object:
+            {
+                throw new InvalidOperationException($"Cannot populate from element of kind '{source.SourceKind}'. Expected Object");
+            }
         }
 
-        private static PopulatorAction GetPopulateDeclaredPropertiesAction
-        (
-            Type toPopulate,
-            PopulateSource populateSource,
-            TypeCache typeCache
-        )
+        var populateDeclaredPropertiesAction = GetPopulateDeclaredPropertiesAction(toPopulate, source, typeCache);
+        DynamicMemberPopulatorCache? dynamicCache = null;
+
+        async ValueTask<object> populate(object target)
         {
-            if (populateSource.Properties.Length == 0)
+            await populateDeclaredPropertiesAction(target).ConfigureAwait(false);
+
+            if (target is not IDictionary dict)
+                return target;
+
+            dynamicCache ??= new DynamicMemberPopulatorCache();
+
+            for (var index = 0; index < source.Properties.Length; index += 1)
             {
-                // No properties to populate
-                return DoNothing;
-            }
-            var actions = new PopulatorAction[populateSource.Properties.Length];
-            var declaredProperties = typeCache.GetDeclaredProperties(toPopulate);
-            var actionCount = 0;
-            for (var index = 0; index < populateSource.Properties.Length; index += 1)
-            {
-                var (name, value) = populateSource.Properties[index];
-                if (name is null || !declaredProperties.TryGetValue(name, out var declaredProperty))
-                {
-                    // We have encountered an unknown member in the input JSON. Let's skip it.
+                var (name, value) = source.Properties[index];
+                if (name is null)
+                    // This property has been handled by the populateDeclaredPropertiesAction
                     continue;
-                }
-                // We set the index to default to signal that this property has been populated.
-                populateSource.Properties[index] = default;
-                actions[actionCount] = GetDeclaredPropertyAction(declaredProperty!, value, typeCache);
-                actionCount += 1;
+                if (dict.Contains(name) && dict[name] is { } existingValue)
+                    dict[name] = await GetDynamicValue(name, existingValue, value, dynamicCache, typeCache).ConfigureAwait(false);
+                else dict[name] = value.GetValue<object>();
             }
-            if (actionCount == 0)
-            {
+            return target;
+        }
+
+        Action = populate;
+    }
+
+    private static PopulatorAction GetPopulateDeclaredPropertiesAction
+    (
+        Type toPopulate,
+        PopulateSource populateSource,
+        TypeCache typeCache
+    )
+    {
+        if (populateSource.Properties.Length == 0)
+            // No properties to populate
+            return DoNothing;
+        var actions = new PopulatorAction[populateSource.Properties.Length];
+        var declaredProperties = typeCache.GetDeclaredProperties(toPopulate);
+        var actionCount = 0;
+        for (var index = 0; index < populateSource.Properties.Length; index += 1)
+        {
+            var (name, value) = populateSource.Properties[index];
+            if (name is null || !declaredProperties.TryGetValue(name, out var declaredProperty))
+                // We have encountered an unknown member in the input JSON. Let's skip it.
+                continue;
+            // We set the index to default to signal that this property has been populated.
+            populateSource.Properties[index] = default;
+            actions[actionCount] = GetDeclaredPropertyAction(declaredProperty, value, typeCache);
+            actionCount += 1;
+        }
+        if (actionCount == 0) return DoNothing;
+
+        async ValueTask<object> populateAction(object parent)
+        {
+            for (var actionIndex = 0; actionIndex < actionCount; actionIndex += 1) await actions[actionIndex].Invoke(parent).ConfigureAwait(false);
+            return parent;
+        }
+
+        return populateAction;
+    }
+
+    private static async ValueTask<object> GetDynamicValue
+    (
+        string propertyName,
+        object existingValue,
+        PopulateSource source,
+        DynamicMemberPopulatorCache dynamicMemberPopulatorCache,
+        TypeCache typeCache
+    )
+    {
+        var existingType = existingValue.GetType();
+        if (!typeCache.CanBePopulated(existingType))
+            // The existing value cannot be populated, but we know what type is expected.
+            return source.GetValue(existingType)!;
+        // There is an existing value, and it can be populated. Let's check if we have encountered this property before.
+        // if we have, we do not need to construct a new populator for it.
+        if (!dynamicMemberPopulatorCache.TryGetValue((propertyName, existingType), out var populator))
+            populator = dynamicMemberPopulatorCache[(propertyName, existingType)] = new Populator(existingType, source, typeCache);
+        var populatedValue = await populator.PopulateAsync(existingValue).ConfigureAwait(false);
+        return populatedValue;
+    }
+
+    private static PopulatorAction GetDeclaredPropertyAction(DeclaredProperty declaredProperty, PopulateSource source, TypeCache typeCache)
+    {
+        // If it can or should not be populated, make a set value action for it
+        if (!typeCache.CanBePopulated(declaredProperty.Type) || declaredProperty.ReplaceOnUpdate)
+        {
+            if (!declaredProperty.IsWritable)
+                // Not much we can do if this is the case
                 return DoNothing;
+
+            var hasPresetValue = false;
+            // If the value is null or a value type, we can assign the same (possibly boxed) value to all properties.
+            // That value can be established right now, and stored in presetValue.
+            object? presetValue = null;
+            if (source.SourceKind == SourceKind.Null)
+            {
+                hasPresetValue = true;
+            }
+            else if (declaredProperty.IsValueType)
+            {
+                presetValue = source.GetValue(declaredProperty.Type);
+                hasPresetValue = true;
             }
 
-            async ValueTask<object> populateAction(object parent)
+            // Return a set value action for this property
+            async ValueTask<object> setValueAction(object parent)
             {
-                for (var actionIndex = 0; actionIndex < actionCount; actionIndex += 1)
-                {
-                    await actions[actionIndex].Invoke(parent).ConfigureAwait(false);
-                }
+                var value = hasPresetValue ? presetValue : source.GetValue(declaredProperty.Type);
+                await declaredProperty.SetValue(parent, value).ConfigureAwait(false);
                 return parent;
             }
 
-            return populateAction;
+            return setValueAction;
         }
 
-        private static async ValueTask<object> GetDynamicValue
-        (
-            string propertyName,
-            object existingValue,
-            PopulateSource source,
-            DynamicMemberPopulatorCache dynamicMemberPopulatorCache,
-            TypeCache typeCache
-        )
+        if (declaredProperty.Type == typeof(object))
         {
-            var existingType = existingValue.GetType();
-            if (!typeCache.CanBePopulated(existingType))
-            {
-                // The existing value cannot be populated, but we know what type is expected.
-                return source.GetValue(existingType)!;
-            }
-            // There is an existing value, and it can be populated. Let's check if we have encountered this property before.
-            // if we have, we do not need to construct a new populator for it.
-            if (!dynamicMemberPopulatorCache.TryGetValue((propertyName, existingType), out var populator))
-                populator = dynamicMemberPopulatorCache[(propertyName, existingType)] = new Populator(existingType, source, typeCache);
-            var populatedValue = await populator.PopulateAsync(existingValue).ConfigureAwait(false);
-            return populatedValue;
-        }
+            // If the property is of type object, we expect a dynamically populated value based on the runtime 
+            // type of the property.
 
-        private static PopulatorAction GetDeclaredPropertyAction(DeclaredProperty declaredProperty, PopulateSource source, TypeCache typeCache)
-        {
-            // If it can or should not be populated, make a set value action for it
-            if (!typeCache.CanBePopulated(declaredProperty.Type) || declaredProperty.ReplaceOnUpdate)
-            {
-                if (!declaredProperty.IsWritable)
-                {
-                    // Not much we can do if this is the case
-                    return DoNothing;
-                }
+            DynamicMemberPopulatorCache? dynamicCache = null;
 
-                var hasPresetValue = false;
-                // If the value is null or a value type, we can assign the same (possibly boxed) value to all properties.
-                // That value can be established right now, and stored in presetValue.
-                object? presetValue = null;
-                if (source.SourceKind == SourceKind.Null)
-                {
-                    hasPresetValue = true;
-                }
-                else if (declaredProperty.IsValueType)
-                {
-                    presetValue = source.GetValue(declaredProperty.Type);
-                    hasPresetValue = true;
-                }
-
-                // Return a set value action for this property
-                async ValueTask<object> setValueAction(object parent)
-                {
-                    var value = hasPresetValue ? presetValue : source.GetValue(declaredProperty.Type);
-                    await declaredProperty.SetValue(parent, value).ConfigureAwait(false);
-                    return parent;
-                }
-
-                return setValueAction;
-            }
-
-            if (declaredProperty.Type == typeof(object))
-            {
-                // If the property is of type object, we expect a dynamically populated value based on the runtime 
-                // type of the property.
-
-                DynamicMemberPopulatorCache? dynamicCache = null;
-
-                async ValueTask<object> dynamicPopulateAction(object parent)
-                {
-                    var existingValue = await declaredProperty.GetValue(parent).ConfigureAwait(false);
-                    if (existingValue is null)
-                    {
-                        if (!declaredProperty.IsWritable)
-                        {
-                            // Not much we can do, the value was null and we can't change it.
-                            return parent;
-                        }
-                        // Nothing to populate, so we create a new value instead.
-                        var value = source.GetValue(declaredProperty.Type);
-                        await declaredProperty.SetValue(parent, value).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        dynamicCache ??= new DynamicMemberPopulatorCache();
-                        // There is an existing non-null value, and it can be populated. Let's do it.
-                        var value = await GetDynamicValue(declaredProperty.Name, existingValue, source, dynamicCache, typeCache).ConfigureAwait(false);
-                        if (declaredProperty.IsWritable) await declaredProperty.SetValue(parent, value).ConfigureAwait(false);
-                    }
-                    return parent;
-                }
-
-                return dynamicPopulateAction;
-            }
-
-            // It is a statically known type, and should be populated (we don't know if it's writable). Make a populator for it.
-            var populator = new Populator(declaredProperty.Type, source, typeCache);
-
-            async ValueTask<object> staticPopulateAction(object parent)
+            async ValueTask<object> dynamicPopulateAction(object parent)
             {
                 var existingValue = await declaredProperty.GetValue(parent).ConfigureAwait(false);
                 if (existingValue is null)
                 {
                     if (!declaredProperty.IsWritable)
-                    {
                         // Not much we can do, the value was null and we can't change it.
                         return parent;
-                    }
                     // Nothing to populate, so we create a new value instead.
                     var value = source.GetValue(declaredProperty.Type);
                     await declaredProperty.SetValue(parent, value).ConfigureAwait(false);
                 }
                 else
                 {
+                    dynamicCache ??= new DynamicMemberPopulatorCache();
                     // There is an existing non-null value, and it can be populated. Let's do it.
-                    var populatedValue = await populator.PopulateAsync(existingValue).ConfigureAwait(false);
-                    if (declaredProperty.IsWritable) await declaredProperty.SetValue(parent, populatedValue).ConfigureAwait(false);
+                    var value = await GetDynamicValue(declaredProperty.Name, existingValue, source, dynamicCache, typeCache).ConfigureAwait(false);
+                    if (declaredProperty.IsWritable) await declaredProperty.SetValue(parent, value).ConfigureAwait(false);
                 }
                 return parent;
             }
 
-            return staticPopulateAction;
+            return dynamicPopulateAction;
         }
 
+        // It is a statically known type, and should be populated (we don't know if it's writable). Make a populator for it.
+        var populator = new Populator(declaredProperty.Type, source, typeCache);
 
-        /// <summary>
-        /// Takes a target object and populate it, returning a populated version
-        /// </summary>
-        public ValueTask<object> PopulateAsync(object target) => Action(target);
+        async ValueTask<object> staticPopulateAction(object parent)
+        {
+            var existingValue = await declaredProperty.GetValue(parent).ConfigureAwait(false);
+            if (existingValue is null)
+            {
+                if (!declaredProperty.IsWritable)
+                    // Not much we can do, the value was null and we can't change it.
+                    return parent;
+                // Nothing to populate, so we create a new value instead.
+                var value = source.GetValue(declaredProperty.Type);
+                await declaredProperty.SetValue(parent, value).ConfigureAwait(false);
+            }
+            else
+            {
+                // There is an existing non-null value, and it can be populated. Let's do it.
+                var populatedValue = await populator.PopulateAsync(existingValue).ConfigureAwait(false);
+                if (declaredProperty.IsWritable) await declaredProperty.SetValue(parent, populatedValue).ConfigureAwait(false);
+            }
+            return parent;
+        }
+
+        return staticPopulateAction;
+    }
+
+
+    /// <summary>
+    ///     Takes a target object and populate it, returning a populated version
+    /// </summary>
+    public ValueTask<object> PopulateAsync(object target)
+    {
+        return Action(target);
     }
 }

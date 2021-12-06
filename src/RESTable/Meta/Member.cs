@@ -2,76 +2,78 @@ using System;
 using System.Collections.Generic;
 using RESTable.Resources;
 
-namespace RESTable.Meta
+namespace RESTable.Meta;
+
+/// <summary>
+///     Represents a member in a type
+/// </summary>
+public abstract class Member
 {
-    /// <summary>
-    /// Represents a member in a type
-    /// </summary>
-    public abstract class Member
+    protected Member(Type? owner)
     {
-        /// <summary>
-        /// The name of the property
-        /// </summary>
-        [RESTableMember(order: -5)]
-        public abstract string Name { get; internal set; }
+        Owner = owner;
+        Flags = new HashSet<string>();
+    }
 
-        /// <summary>
-        /// The type that owns this member
-        /// </summary>
-        public Type? Owner { get; }
+    /// <summary>
+    ///     The name of the property
+    /// </summary>
+    [RESTableMember(order: -5)]
+    public abstract string Name { get; internal set; }
 
-        /// <summary>
-        /// The name of the property, as defined in the type declaration
-        /// </summary>
-        public abstract string ActualName { get; internal set; }
+    /// <summary>
+    ///     The type that owns this member
+    /// </summary>
+    public Type? Owner { get; }
 
-        /// <summary>
-        /// The type of this member
-        /// </summary>
-        public abstract Type Type { get; protected set; }
+    /// <summary>
+    ///     The name of the property, as defined in the type declaration
+    /// </summary>
+    public abstract string ActualName { get; internal set; }
 
-        /// <summary>
-        /// Is this property nullable?
-        /// </summary>
-        public bool IsNullable { get; protected set; }
+    /// <summary>
+    ///     The type of this member
+    /// </summary>
+    public abstract Type Type { get; protected set; }
 
-        /// <summary>
-        /// Is the type an enum type?
-        /// </summary>
-        public bool IsEnum { get; protected set; }
+    /// <summary>
+    ///     Is this property nullable?
+    /// </summary>
+    public bool IsNullable { get; protected set; }
 
-        /// <summary>
-        /// Is this member readable?
-        /// </summary>
-        public abstract bool IsReadable { get; }
+    /// <summary>
+    ///     Is the type an enum type?
+    /// </summary>
+    public bool IsEnum { get; protected set; }
 
-        /// <summary>
-        /// Is this member writable?
-        /// </summary>
-        public abstract bool IsWritable { get; }
+    /// <summary>
+    ///     Is this member readable?
+    /// </summary>
+    public abstract bool IsReadable { get; }
 
-        /// <summary>
-        /// Is this member read-only?
-        /// </summary>
-        public bool IsReadOnly => IsReadable && !IsWritable;
+    /// <summary>
+    ///     Is this member writable?
+    /// </summary>
+    public abstract bool IsWritable { get; }
 
-        /// <summary>
-        /// Is this member write-only?
-        /// </summary>
-        public bool IsWriteOnly => IsWritable && !IsReadable;
+    /// <summary>
+    ///     Is this member read-only?
+    /// </summary>
+    public bool IsReadOnly => IsReadable && !IsWritable;
 
-        /// <summary>
-        ///  Custom flags added to this member
-        /// </summary>
-        public HashSet<string> Flags { get; }
+    /// <summary>
+    ///     Is this member write-only?
+    /// </summary>
+    public bool IsWriteOnly => IsWritable && !IsReadable;
 
-        /// <inheritdoc />
-        public override string ToString() => Name;
+    /// <summary>
+    ///     Custom flags added to this member
+    /// </summary>
+    public HashSet<string> Flags { get; }
 
-        protected Member(Type? owner)
-        {
-            Owner = owner;
-            Flags = new HashSet<string>();
-        }
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return Name;
     }
 }

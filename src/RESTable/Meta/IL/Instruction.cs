@@ -29,64 +29,63 @@
 using System.Reflection.Emit;
 using System.Text;
 
-namespace RESTable.Meta.IL
+namespace RESTable.Meta.IL;
+
+internal sealed class Instruction
 {
-    internal sealed class Instruction
+    internal Instruction(int offset, OpCode opcode)
     {
-        public int Offset { get; }
-        public OpCode OpCode { get; }
-        public object? Operand { get; internal set; } = null!;
-        public Instruction Previous { get; internal set; } = null!;
-        public Instruction Next { get; internal set; } = null!;
+        Offset = offset;
+        OpCode = opcode;
+    }
 
-        internal Instruction(int offset, OpCode opcode)
-        {
-            Offset = offset;
-            OpCode = opcode;
-        }
+    public int Offset { get; }
+    public OpCode OpCode { get; }
+    public object? Operand { get; internal set; } = null!;
+    public Instruction Previous { get; internal set; } = null!;
+    public Instruction Next { get; internal set; } = null!;
 
-        public override string ToString()
-        {
-            var instruction = new StringBuilder();
-            AppendLabel(instruction, this);
-            instruction.Append(':');
-            instruction.Append(' ');
-            instruction.Append(OpCode.Name);
-            if (Operand is null)
-                return instruction.ToString();
-            instruction.Append(' ');
-            switch (OpCode.OperandType)
-            {
-                case OperandType.ShortInlineBrTarget:
-                case OperandType.InlineBrTarget:
-                    AppendLabel(instruction, (Instruction) Operand);
-                    break;
-                case OperandType.InlineSwitch:
-                    var labels = (Instruction[]) Operand;
-                    for (var i = 0; i < labels.Length; i++)
-                    {
-                        if (i > 0)
-                            instruction.Append(',');
-
-                        AppendLabel(instruction, labels[i]);
-                    }
-                    break;
-                case OperandType.InlineString:
-                    instruction.Append('\"');
-                    instruction.Append(Operand);
-                    instruction.Append('\"');
-                    break;
-                default:
-                    instruction.Append(Operand);
-                    break;
-            }
+    public override string ToString()
+    {
+        var instruction = new StringBuilder();
+        AppendLabel(instruction, this);
+        instruction.Append(':');
+        instruction.Append(' ');
+        instruction.Append(OpCode.Name);
+        if (Operand is null)
             return instruction.ToString();
-        }
-
-        private static void AppendLabel(StringBuilder builder, Instruction instruction)
+        instruction.Append(' ');
+        switch (OpCode.OperandType)
         {
-            builder.Append("IL_");
-            builder.Append(instruction.Offset.ToString("x4"));
+            case OperandType.ShortInlineBrTarget:
+            case OperandType.InlineBrTarget:
+                AppendLabel(instruction, (Instruction) Operand);
+                break;
+            case OperandType.InlineSwitch:
+                var labels = (Instruction[]) Operand;
+                for (var i = 0; i < labels.Length; i++)
+                {
+                    if (i > 0)
+                        instruction.Append(',');
+
+                    AppendLabel(instruction, labels[i]);
+                }
+                break;
+            case OperandType.InlineString:
+                instruction.Append('\"');
+                instruction.Append(Operand);
+                instruction.Append('\"');
+                break;
+            default:
+                instruction.Append(Operand);
+                break;
         }
+        return instruction.ToString();
+    }
+
+    private static void AppendLabel(StringBuilder builder, Instruction instruction)
+    {
+        builder.Append("IL_");
+        builder.Append(instruction.Offset.ToString("x4"));
     }
 }

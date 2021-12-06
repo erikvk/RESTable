@@ -15,10 +15,13 @@ namespace RESTable.Requests
             ContinueOnCapturedContext = continueOnCapturedContext;
         }
 
-        public ConfiguredValueTaskAwaitable<ReadOnlyMemory<T>>.ConfiguredValueTaskAwaiter GetAwaiter() => BufferTask
-            .AsReadOnlyMemoryAsync()
-            .ConfigureAwait(ContinueOnCapturedContext)
-            .GetAwaiter();
+        public ConfiguredValueTaskAwaitable<ReadOnlyMemory<T>>.ConfiguredValueTaskAwaiter GetAwaiter()
+        {
+            return BufferTask
+                .AsReadOnlyMemoryAsync()
+                .ConfigureAwait(ContinueOnCapturedContext)
+                .GetAwaiter();
+        }
     }
 }
 #endif

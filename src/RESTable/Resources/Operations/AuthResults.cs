@@ -1,24 +1,30 @@
-﻿namespace RESTable.Resources.Operations
+﻿namespace RESTable.Resources.Operations;
+
+/// <summary>
+///     Contains the results of a call to IsAuthenticated()
+/// </summary>
+public readonly struct AuthResults
 {
+    public bool Success { get; }
+    public string? FailedReason { get; }
+
     /// <summary>
-    /// Contains the results of a call to IsAuthenticated()
+    ///     Creates a new AuthenticationResults with the given success status and failedReason.
+    ///     failedReason is only used when success is false.
     /// </summary>
-    public readonly struct AuthResults
+    public AuthResults(bool success = true, string? failedReason = null)
     {
-        public bool Success { get; }
-        public string? FailedReason { get; }
+        Success = success;
+        FailedReason = failedReason;
+    }
 
-        /// <summary>
-        /// Creates a new AuthenticationResults with the given success status and failedReason.
-        /// failedReason is only used when success is false.
-        /// </summary>
-        public AuthResults(bool success = true, string? failedReason = null)
-        {
-            Success = success;
-            FailedReason = failedReason;
-        }
+    public static implicit operator AuthResults(string failedReason)
+    {
+        return new(false, failedReason);
+    }
 
-        public static implicit operator AuthResults(string failedReason) => new(false, failedReason);
-        public static implicit operator AuthResults(bool success) => new(success);
+    public static implicit operator AuthResults(bool success)
+    {
+        return new(success);
     }
 }

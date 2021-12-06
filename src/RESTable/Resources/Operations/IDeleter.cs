@@ -1,17 +1,16 @@
 ﻿using RESTable.Requests;
 
-namespace RESTable.Resources.Operations
+namespace RESTable.Resources.Operations;
+
+/// <inheritdoc />
+/// <summary>
+///     Interface used to register a Deleter for a given resource type
+/// </summary>
+public interface IDeleter<T> : IOperationsInterface where T : class
 {
-    /// <inheritdoc />
     /// <summary>
-    /// Interface used to register a Deleter for a given resource type
+    ///     The delete method for this IDeleter instance. Defines the Delete
+    ///     operation for a given resource.
     /// </summary>
-    public interface IDeleter<T> : IOperationsInterface where T : class
-    {
-        /// <summary>
-        /// The delete method for this IDeleter instance. Defines the Delete
-        /// operation for a given resource.
-        /// </summary>
-        int Delete(IRequest<T> request);
-    }
+    int Delete(IRequest<T> request);
 }

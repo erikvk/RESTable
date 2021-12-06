@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace RESTable
+namespace RESTable;
+
+public interface IValueProvider
 {
-    public interface IValueProvider
-    {
-        T? GetValue<T>();
-        object? GetValue(Type targetType);
-    }
+    T? GetValue<T>();
+    object? GetValue(Type targetType);
 }

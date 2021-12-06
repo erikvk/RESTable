@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace RESTable.Auth
+namespace RESTable.Auth;
+
+public interface IAllowedCorsOriginsFilter
 {
-    public interface IAllowedCorsOriginsFilter
-    {
-        bool IsAllowed(Uri uri);
-    }
+    bool IsAllowed(Uri uri);
 }

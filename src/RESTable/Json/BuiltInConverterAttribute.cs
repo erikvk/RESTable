@@ -1,7 +1,6 @@
 ﻿using System;
 
-namespace RESTable.Json
-{
-    [AttributeUsage(validOn: AttributeTargets.Class)]
-    public class BuiltInConverterAttribute : Attribute { }
-}
+namespace RESTable.Json;
+
+[AttributeUsage(AttributeTargets.Class)]
+public class BuiltInConverterAttribute : Attribute { }

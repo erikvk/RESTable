@@ -1,11 +1,10 @@
 ﻿using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 
-namespace RESTable
+namespace RESTable;
+
+public interface IProtocolHolder : IContentTypeHolder, IHeaderHolder
 {
-    public interface IProtocolHolder : IContentTypeHolder, IHeaderHolder
-    {
-        string ProtocolIdentifier { get; }
-        CachedProtocolProvider CachedProtocolProvider { get; }
-    }
+    string ProtocolIdentifier { get; }
+    CachedProtocolProvider CachedProtocolProvider { get; }
 }

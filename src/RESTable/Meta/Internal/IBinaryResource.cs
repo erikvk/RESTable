@@ -1,4 +1,3 @@
-﻿namespace RESTable.Meta.Internal
-{
-    internal interface IBinaryResource : IResource { }
-}
+﻿namespace RESTable.Meta.Internal;
+
+internal interface IBinaryResource : IResource { }

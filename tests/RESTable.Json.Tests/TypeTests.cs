@@ -3,51 +3,50 @@ using RESTable.ContentTypeProviders;
 using RESTable.Xunit;
 using Xunit;
 
-namespace RESTable.Json.Tests
+namespace RESTable.Json.Tests;
+
+public class TypeTests : RESTableTestBase
 {
-    public class TypeTests : RESTableTestBase
+    public TypeTests(RESTableFixture fixture) : base(fixture)
     {
-        private IJsonProvider JsonProvider { get; }
+        fixture.Configure();
+        JsonProvider = fixture.GetRequiredService<IJsonProvider>();
+    }
 
-        [Fact]
-        public void AllTypesSerializeAndDeserialize()
+    private IJsonProvider JsonProvider { get; }
+
+    [Fact]
+    public void AllTypesSerializeAndDeserialize()
+    {
+        var testClass = TypeTestsClass.CreatePopulatedInstance(100);
+        Assert.Equal(100, testClass.Int);
+        var json = JsonProvider.Serialize(testClass);
+        Assert.NotEmpty(json);
+        var testClass2 = JsonProvider.Deserialize<TypeTestsClass>(json);
+        Assert.Equal(testClass, testClass2);
+    }
+
+    [Fact]
+    public void EnumsAreWrittenAsStrings()
+    {
+        var testObject = new
         {
-            var testClass = TypeTestsClass.CreatePopulatedInstance(100);
-            Assert.Equal(100, testClass.Int);
-            var json = JsonProvider.Serialize(testClass);
-            Assert.NotEmpty(json);
-            var testClass2 = JsonProvider.Deserialize<TypeTestsClass>(json);
-            Assert.Equal(testClass, testClass2);
-        }
+            Enum = EnumType.B
+        };
+        var serializedEnum = JsonProvider.Serialize(testObject, false);
 
-        [Fact]
-        public void EnumsAreWrittenAsStrings()
+        Assert.Equal("{\"Enum\":\"B\"}", serializedEnum);
+    }
+
+    [Fact]
+    public void TypesAreWrittenAsStrings()
+    {
+        var testObject = new
         {
-            var testObject = new
-            {
-                Enum = EnumType.B
-            };
-            var serializedEnum = JsonProvider.Serialize(testObject, prettyPrint: false);
+            Type = typeof(string)
+        };
+        var serializedEnum = JsonProvider.Serialize(testObject, false);
 
-            Assert.Equal("{\"Enum\":\"B\"}", serializedEnum);
-        }
-
-        [Fact]
-        public void TypesAreWrittenAsStrings()
-        {
-            var testObject = new
-            {
-                Type = typeof(string)
-            };
-            var serializedEnum = JsonProvider.Serialize(testObject, prettyPrint: false);
-
-            Assert.Equal("{\"Type\":\"System.String\"}", serializedEnum);
-        }
-
-        public TypeTests(RESTableFixture fixture) : base(fixture)
-        {
-            fixture.Configure();
-            JsonProvider = fixture.GetRequiredService<IJsonProvider>();
-        }
+        Assert.Equal("{\"Type\":\"System.String\"}", serializedEnum);
     }
 }

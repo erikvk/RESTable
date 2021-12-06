@@ -1,13 +1,18 @@
 ﻿using System;
 
-namespace RESTable
+namespace RESTable;
+
+internal class ApplicationServiceProvider : IApplicationServiceProvider, IServiceProvider
 {
-    internal class ApplicationServiceProvider : IApplicationServiceProvider, IServiceProvider
+    public ApplicationServiceProvider(IServiceProvider injectedProvider)
     {
-        private IServiceProvider InjectedProvider { get; }
+        InjectedProvider = injectedProvider;
+    }
 
-        public ApplicationServiceProvider(IServiceProvider injectedProvider) => InjectedProvider = injectedProvider;
+    private IServiceProvider InjectedProvider { get; }
 
-        public object? GetService(Type serviceType) => InjectedProvider.GetService(serviceType);
+    public object? GetService(Type serviceType)
+    {
+        return InjectedProvider.GetService(serviceType);
     }
 }

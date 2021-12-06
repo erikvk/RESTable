@@ -1,20 +1,25 @@
 ﻿using System;
 
-namespace RESTable.Json
+namespace RESTable.Json;
+
+internal class RegisteredGenericJsonConverterType : IRegisteredGenericJsonConverterType
 {
-    internal class RegisteredGenericJsonConverterType : IRegisteredGenericJsonConverterType
+    public RegisteredGenericJsonConverterType(Type genericConverterType, Predicate<Type> canConvertDelegate)
     {
-        private Predicate<Type> CanConvertDelegate { get; }
-        private Type GenericConverterType { get; }
+        GenericConverterType = genericConverterType;
+        CanConvertDelegate = canConvertDelegate;
+    }
 
-        public RegisteredGenericJsonConverterType(Type genericConverterType, Predicate<Type> canConvertDelegate)
-        {
-            GenericConverterType = genericConverterType;
-            CanConvertDelegate = canConvertDelegate;
-        }
+    private Predicate<Type> CanConvertDelegate { get; }
+    private Type GenericConverterType { get; }
 
-        public bool CanConvert(Type toConvert) => CanConvertDelegate(toConvert);
+    public bool CanConvert(Type toConvert)
+    {
+        return CanConvertDelegate(toConvert);
+    }
 
-        public Type GetConverterType(Type toConvert) => GenericConverterType.MakeGenericType(toConvert);
+    public Type GetConverterType(Type toConvert)
+    {
+        return GenericConverterType.MakeGenericType(toConvert);
     }
 }

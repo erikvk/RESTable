@@ -1,18 +1,17 @@
 ﻿using System.Collections.Generic;
 using RESTable.Requests;
 
-namespace RESTable.Resources.Operations
+namespace RESTable.Resources.Operations;
+
+/// <inheritdoc />
+/// <summary>
+///     Interface used to register an Inserter for a given resource type
+/// </summary>
+public interface IInserter<T> : IOperationsInterface where T : class
 {
-    /// <inheritdoc />
     /// <summary>
-    /// Interface used to register an Inserter for a given resource type
+    ///     The insert method for this IInserter instance. Defines the Insert
+    ///     operation for a given resource.
     /// </summary>
-    public interface IInserter<T> : IOperationsInterface where T : class
-    {
-        /// <summary>
-        /// The insert method for this IInserter instance. Defines the Insert
-        /// operation for a given resource.
-        /// </summary>
-        IEnumerable<T> Insert(IRequest<T> request);
-    }
+    IEnumerable<T> Insert(IRequest<T> request);
 }

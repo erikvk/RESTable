@@ -7,32 +7,31 @@ using RESTable.Resources;
 using RESTable.Resources.Operations;
 using static RESTable.Method;
 
-namespace RESTable.Admin
+namespace RESTable.Admin;
+
+/// <inheritdoc />
+/// <summary>
+///     Gets all error codes used by RESTable
+/// </summary>
+[RESTable(GET, Description = "The error codes used by RESTable.")]
+public class ErrorCode : ISelector<ErrorCode>
 {
-    /// <inheritdoc />
     /// <summary>
-    /// Gets all error codes used by RESTable
+    ///     The name of the error
     /// </summary>
-    [RESTable(GET, Description = "The error codes used by RESTable.")]
-    public class ErrorCode : ISelector<ErrorCode>
+    public ErrorCodes Name { get; private set; }
+
+    /// <summary>
+    ///     The numeric code of the error
+    /// </summary>
+    public int Code { get; private set; }
+
+    /// <inheritdoc />
+    public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request)
     {
-        /// <summary>
-        /// The name of the error
-        /// </summary>
-        public ErrorCodes Name { get; private set; }
-
-        /// <summary>
-        /// The numeric code of the error
-        /// </summary>
-        public int Code { get; private set; }
-
-        /// <inheritdoc />
-        public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request)
-        {
-            if (request is null) throw new ArgumentNullException(nameof(request));
-            return EnumMember<ErrorCodes>
-                .GetMembers()
-                .Select(m => new ErrorCode {Name = m.Value, Code = m.NumericValue});
-        }
+        if (request is null) throw new ArgumentNullException(nameof(request));
+        return EnumMember<ErrorCodes>
+            .GetMembers()
+            .Select(m => new ErrorCode {Name = m.Value, Code = m.NumericValue});
     }
 }

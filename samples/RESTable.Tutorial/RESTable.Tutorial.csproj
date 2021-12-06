@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
@@ -10,14 +10,11 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\RESTable.AspNetCore\RESTable.AspNetCore.csproj"/>
         <ProjectReference Include="..\..\src\RESTable.OData\RESTable.OData.csproj"/>
-        <ProjectReference Include="..\..\src\RESTable.Sqlite\RESTable.Sqlite.csproj"/>
         <ProjectReference Include="..\..\src\RESTable.Excel\RESTable.Excel.csproj"/>
         <ProjectReference Include="..\..\src\RESTable\RESTable.csproj"/>
-        <PackageReference Include="Starcounter.Database.Abstractions" Version="3.0.0"/>
-        <PackageReference Include="Starcounter.Database.Data" Version="3.0.0"/>
 
-        <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.1.4"/>
-        <PackageReference Include="System.Management.Automation" Version="7.1.4"/>
+        <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.0"/>
+        <PackageReference Include="System.Management.Automation" Version="7.2.0"/>
     </ItemGroup>
 
 </Project>

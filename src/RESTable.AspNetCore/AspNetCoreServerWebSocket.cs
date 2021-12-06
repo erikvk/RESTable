@@ -3,22 +3,21 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using RESTable.Requests;
 
-namespace RESTable.AspNetCore
+namespace RESTable.AspNetCore;
+
+internal sealed class AspNetCoreServerWebSocket : AspNetCoreWebSocket
 {
-    internal sealed class AspNetCoreServerWebSocket : AspNetCoreWebSocket
+    public AspNetCoreServerWebSocket(HttpContext httpContext, string webSocketId, RESTableContext context) : base(webSocketId, context)
     {
-        private HttpContext HttpContext { get; }
+        HttpContext = httpContext;
+        WebSocket = null!;
+    }
 
-        public AspNetCoreServerWebSocket(HttpContext httpContext, string webSocketId, RESTableContext context) : base(webSocketId, context)
-        {
-            HttpContext = httpContext;
-            WebSocket = null!;
-        }
+    private HttpContext HttpContext { get; }
 
-        protected override async Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
-        }
+    protected override async Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
     }
 }

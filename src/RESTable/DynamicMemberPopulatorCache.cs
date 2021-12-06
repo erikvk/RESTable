@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RESTable
+namespace RESTable;
+
+public class DynamicMemberPopulatorCache : Dictionary<(string key, Type type), Populator>
 {
-    public class DynamicMemberPopulatorCache : Dictionary<(string key, Type type), Populator>
-    {
-        public DynamicMemberPopulatorCache() : base(DynamicMemberPopulatorCacheEqualityComparer.Instance) { }
-    }
+    public DynamicMemberPopulatorCache() : base(DynamicMemberPopulatorCacheEqualityComparer.Instance) { }
 }

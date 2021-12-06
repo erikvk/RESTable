@@ -8,109 +8,111 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 
-namespace RESTable.Admin
+namespace RESTable.Admin;
+
+/// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+/// <inheritdoc cref="IAsyncUpdater{T}" />
+/// <summary>
+///     A meta-resource that provides representations of all resources in a RESTable instance
+/// </summary>
+[RESTable(Method.GET, Description = description)]
+public class Resource : ISelector<Resource>
 {
-    /// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
-    /// <inheritdoc cref="IAsyncUpdater{T}" />
+    private const string description = "A meta-resource that provides representations " +
+                                       "of all resources in a RESTable instance.";
+
     /// <summary>
-    /// A meta-resource that provides representations of all resources in a RESTable instance
+    ///     The name of the resource
     /// </summary>
-    [RESTable(Method.GET, Description = description)]
-    public class Resource : ISelector<Resource>
+    public string? Name { get; private set; }
+
+    /// <summary>
+    ///     Resource descriptions are visible in the AvailableMethods resource
+    /// </summary>
+    public string? Description { get; private set; }
+
+    /// <summary>
+    ///     The methods that have been enabled for this resource
+    /// </summary>
+    public Method[]? EnabledMethods { get; private set; }
+
+    /// <summary>
+    ///     Is this resource declared, as opposed to procedural?
+    /// </summary>
+    public bool IsDeclared { get; internal set; }
+
+    /// <summary>
+    ///     Is this resource procedural, as opposed to declared?
+    /// </summary>
+    [RESTableMember(name: "IsProcedural")]
+    public bool _IsProcedural => !IsDeclared;
+
+    /// <summary>
+    ///     Is this resource internal?
+    /// </summary>
+    public bool IsInternal { get; set; }
+
+    /// <summary>
+    ///     The type targeted by this resource.
+    /// </summary>
+    public Type? Type { get; private set; }
+
+    /// <summary>
+    ///     The views for this resource
+    /// </summary>
+    [RESTableMember(hideIfNull: true)]
+    public ViewInfo[]? Views { get; private set; }
+
+    /// <summary>
+    ///     The IResource of this resource
+    /// </summary>
+    [RESTableMember(hide: true)]
+    public IResource? IResource { get; private set; }
+
+    /// <summary>
+    ///     The resource provider that generated this resource
+    /// </summary>
+    public string? Provider { get; private set; }
+
+    /// <summary>
+    ///     The resource type, entity resource or terminal resource
+    /// </summary>
+    public ResourceKind Kind { get; set; }
+
+    /// <summary>
+    ///     Inner resources for this resource
+    /// </summary>
+    [RESTableMember(hideIfNull: true)]
+    public IEnumerable<Resource>? InnerResources { get; private set; }
+
+    /// <inheritdoc />
+    public IEnumerable<Resource> Select(IRequest<Resource> request)
     {
-        private const string description = "A meta-resource that provides representations " +
-                                           "of all resources in a RESTable instance.";
-
-        /// <summary>
-        /// The name of the resource
-        /// </summary>
-        public string? Name { get; private set; }
-
-        /// <summary>
-        /// Resource descriptions are visible in the AvailableMethods resource
-        /// </summary>
-        public string? Description { get; private set; }
-
-        /// <summary>
-        /// The methods that have been enabled for this resource
-        /// </summary>
-        public Method[]? EnabledMethods { get; private set; }
-
-        /// <summary>
-        /// Is this resource declared, as opposed to procedural?
-        /// </summary>
-        public bool IsDeclared { get; internal set; }
-
-        /// <summary>
-        /// Is this resource procedural, as opposed to declared?
-        /// </summary>
-        [RESTableMember(name: "IsProcedural")]
-        public bool _IsProcedural => !IsDeclared;
-
-        /// <summary>
-        /// Is this resource internal?
-        /// </summary>
-        public bool IsInternal { get; set; }
-
-        /// <summary>
-        /// The type targeted by this resource.
-        /// </summary>
-        public Type? Type { get; private set; }
-
-        /// <summary>
-        /// The views for this resource
-        /// </summary>
-        [RESTableMember(hideIfNull: true)]
-        public ViewInfo[]? Views { get; private set; }
-
-        /// <summary>
-        /// The IResource of this resource
-        /// </summary>
-        [RESTableMember(hide: true)]
-        public IResource? IResource { get; private set; }
-
-        /// <summary>
-        /// The resource provider that generated this resource
-        /// </summary>
-        public string? Provider { get; private set; }
-
-        /// <summary>
-        /// The resource type, entity resource or terminal resource
-        /// </summary>
-        public ResourceKind Kind { get; set; }
-
-        /// <summary>
-        /// Inner resources for this resource
-        /// </summary>
-        [RESTableMember(hideIfNull: true)]
-        public IEnumerable<Resource>? InnerResources { get; private set; }
-
-        internal static T Make<T>(IResource iresource) where T : Resource, new()
-        {
-            var entityResource = iresource as IEntityResource;
-            return new T
-            {
-                Name = iresource.Name,
-                Description = iresource.Description ?? "No description",
-                EnabledMethods = iresource.AvailableMethods.ToArray(),
-                IsInternal = iresource.IsInternal,
-                IsDeclared = entityResource?.IsDeclared ?? true,
-                Type = iresource.Type,
-                Views = entityResource is not null
-                    ? entityResource.Views.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
-                    : Array.Empty<ViewInfo>(),
-                IResource = iresource,
-                Provider = entityResource?.Provider ?? (iresource is IBinaryResource ? "Binary" : "Terminal"),
-                Kind = iresource.ResourceKind,
-                InnerResources = ((IResourceInternal) iresource).GetInnerResources().Select(Make<T>).ToArray()
-            };
-        }
-
-        /// <inheritdoc />
-        public IEnumerable<Resource> Select(IRequest<Resource> request) => request
+        return request
             .GetRequiredService<ResourceCollection>()
             .Where(r => r.IsGlobal)
             .OrderBy(r => r.Name)
             .Select(Make<Resource>);
+    }
+
+    internal static T Make<T>(IResource iresource) where T : Resource, new()
+    {
+        var entityResource = iresource as IEntityResource;
+        return new T
+        {
+            Name = iresource.Name,
+            Description = iresource.Description ?? "No description",
+            EnabledMethods = iresource.AvailableMethods.ToArray(),
+            IsInternal = iresource.IsInternal,
+            IsDeclared = entityResource?.IsDeclared ?? true,
+            Type = iresource.Type,
+            Views = entityResource is not null
+                ? entityResource.Views.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
+                : Array.Empty<ViewInfo>(),
+            IResource = iresource,
+            Provider = entityResource?.Provider ?? (iresource is IBinaryResource ? "Binary" : "Terminal"),
+            Kind = iresource.ResourceKind,
+            InnerResources = ((IResourceInternal) iresource).GetInnerResources().Select(Make<T>).ToArray()
+        };
     }
 }

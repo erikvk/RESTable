@@ -10,52 +10,55 @@ using RESTable.Requests;
 using RESTable.Requests.Processors;
 using RESTable.Resources;
 
-namespace RESTable.Json
+namespace RESTable.Json;
+
+/// <summary>
+///     Resolves a converter type for all types that RESTable defines operations for,
+///     and acts as a top-level resolver for these converters.
+/// </summary>
+internal class ConverterResolver : JsonConverterFactory
 {
-    /// <summary>
-    /// Resolves a converter type for all types that RESTable defines operations for,
-    /// and acts as a top-level resolver for these converters.
-    /// </summary>
-    internal class ConverterResolver : JsonConverterFactory
+    public ConverterResolver(TypeCache typeCache, IApplicationServiceProvider serviceProvider, IEnumerable<IRegisteredGenericJsonConverterType> genericConverterTypes)
     {
-        private TypeCache TypeCache { get; }
-        private IReadOnlyDictionary<Type, JsonConverter> InstantiatedConverters { get; }
-        private IApplicationServiceProvider ServiceProvider { get; }
-        private IRegisteredGenericJsonConverterType[] GenericJsonConverterTypes { get; }
-
-        public ConverterResolver(TypeCache typeCache, IApplicationServiceProvider serviceProvider, IEnumerable<IRegisteredGenericJsonConverterType> genericConverterTypes)
+        TypeCache = typeCache;
+        ServiceProvider = serviceProvider;
+        GenericJsonConverterTypes = genericConverterTypes.ToArray();
+        InstantiatedConverters = new Dictionary<Type, JsonConverter>
         {
-            TypeCache = typeCache;
-            ServiceProvider = serviceProvider;
-            GenericJsonConverterTypes = genericConverterTypes.ToArray();
-            InstantiatedConverters = new Dictionary<Type, JsonConverter>
-            {
-                [typeof(HeadersConverter)] = new HeadersConverter(),
-                [typeof(ContentTypeConverter)] = new ContentTypeConverter(),
-                [typeof(ContentTypesConverter)] = new ContentTypesConverter(),
-                [typeof(ToStringConverter)] = new ToStringConverter(),
-                [typeof(VersionConverter)] = new VersionConverter(),
-                [typeof(JsonStringEnumConverter)] = new JsonStringEnumConverter()
-            };
-        }
+            [typeof(HeadersConverter)] = new HeadersConverter(),
+            [typeof(ContentTypeConverter)] = new ContentTypeConverter(),
+            [typeof(ContentTypesConverter)] = new ContentTypesConverter(),
+            [typeof(ToStringConverter)] = new ToStringConverter(),
+            [typeof(VersionConverter)] = new VersionConverter(),
+            [typeof(JsonStringEnumConverter)] = new JsonStringEnumConverter()
+        };
+    }
 
-        public override bool CanConvert(Type typeToConvert) => GetConverterType(typeToConvert) is not null;
+    private TypeCache TypeCache { get; }
+    private IReadOnlyDictionary<Type, JsonConverter> InstantiatedConverters { get; }
+    private IApplicationServiceProvider ServiceProvider { get; }
+    private IRegisteredGenericJsonConverterType[] GenericJsonConverterTypes { get; }
 
-        private bool HasGenericConverterType(Type typeToConvert, out IRegisteredGenericJsonConverterType? genericJsonConverterType)
-        {
-            foreach (var registeredGenericJsonConverterType in GenericJsonConverterTypes)
+    public override bool CanConvert(Type typeToConvert)
+    {
+        return GetConverterType(typeToConvert) is not null;
+    }
+
+    private bool HasGenericConverterType(Type typeToConvert, out IRegisteredGenericJsonConverterType? genericJsonConverterType)
+    {
+        foreach (var registeredGenericJsonConverterType in GenericJsonConverterTypes)
+            if (registeredGenericJsonConverterType.CanConvert(typeToConvert))
             {
-                if (registeredGenericJsonConverterType.CanConvert(typeToConvert))
-                {
-                    genericJsonConverterType = registeredGenericJsonConverterType;
-                    return true;
-                }
+                genericJsonConverterType = registeredGenericJsonConverterType;
+                return true;
             }
-            genericJsonConverterType = null;
-            return false;
-        }
+        genericJsonConverterType = null;
+        return false;
+    }
 
-        private Type? GetConverterType(Type objectType) => objectType switch
+    private Type? GetConverterType(Type objectType)
+    {
+        return objectType switch
         {
             // Attributes are respected
             _ when objectType.HasAttribute(out JsonConverterAttribute? a) => a!.ConverterType,
@@ -97,35 +100,25 @@ namespace RESTable.Json
             // And for the remaining types, we use the default converter for declared properties only.
             _ => typeof(DefaultDeclaredConverter<>).MakeGenericType(objectType)
         };
+    }
 
-        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
-        {
-            var match = options.Converters
-                .Where(c => c is not ConverterResolver)
-                .FirstOrDefault(c => c.CanConvert(typeToConvert));
-            var resolvedConverterType = GetConverterType(typeToConvert);
-            if (match is null && resolvedConverterType is null)
-            {
-                // There is no custom converter for this type, and this resolver can not
-                // deal with it either. let's use the default converters
-                return null;
-            }
+    public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+    {
+        var match = options.Converters
+            .Where(c => c is not ConverterResolver)
+            .FirstOrDefault(c => c.CanConvert(typeToConvert));
+        var resolvedConverterType = GetConverterType(typeToConvert);
+        if (match is null && resolvedConverterType is null)
+            // There is no custom converter for this type, and this resolver can not
+            // deal with it either. let's use the default converters
+            return null;
 
-            if (match is null)
-            {
-                // We know that resolvedConverterType is not null.
-                // Let's see if we can use one of the built-in converters
-                InstantiatedConverters.TryGetValue(resolvedConverterType!, out match);
-            }
-            if (match is JsonConverterFactory factory)
-            {
-                match = factory.CreateConverter(typeToConvert, options);
-            }
-            if (match is null)
-            {
-                match = (JsonConverter?) ActivatorUtilities.CreateInstance(ServiceProvider, resolvedConverterType!);
-            }
-            return match;
-        }
+        if (match is null)
+            // We know that resolvedConverterType is not null.
+            // Let's see if we can use one of the built-in converters
+            InstantiatedConverters.TryGetValue(resolvedConverterType!, out match);
+        if (match is JsonConverterFactory factory) match = factory.CreateConverter(typeToConvert, options);
+        if (match is null) match = (JsonConverter?) ActivatorUtilities.CreateInstance(ServiceProvider, resolvedConverterType!);
+        return match;
     }
 }

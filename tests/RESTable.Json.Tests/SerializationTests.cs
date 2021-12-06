@@ -2,16 +2,15 @@
 using RESTable.ContentTypeProviders;
 using RESTable.Xunit;
 
-namespace RESTable.Json.Tests
-{
-    public class SerializationTests : RESTableTestBase
-    {
-        private IJsonProvider JsonProvider { get; }
+namespace RESTable.Json.Tests;
 
-        public SerializationTests(RESTableFixture fixture) : base(fixture)
-        {
-            fixture.Configure();
-            JsonProvider = fixture.GetRequiredService<IJsonProvider>();
-        }
+public class SerializationTests : RESTableTestBase
+{
+    public SerializationTests(RESTableFixture fixture) : base(fixture)
+    {
+        fixture.Configure();
+        JsonProvider = fixture.GetRequiredService<IJsonProvider>();
     }
+
+    private IJsonProvider JsonProvider { get; }
 }

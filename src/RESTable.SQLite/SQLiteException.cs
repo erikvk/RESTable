@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace RESTable.Sqlite
+namespace RESTable.Sqlite;
+
+/// <inheritdoc />
+public class SqliteException : Exception
 {
-    /// <inheritdoc />
-    public class SqliteException : Exception
-    {
-        internal SqliteException(string message) : base(message) { }
-    }
+    internal SqliteException(string message) : base(message) { }
 }
