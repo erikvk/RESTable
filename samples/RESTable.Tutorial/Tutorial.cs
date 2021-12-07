@@ -33,10 +33,10 @@ public static class ExtensionMethods
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
-        while (await source.OutputAvailableAsync(cancellationToken).ConfigureAwait(false))
+        while (await source.OutputAvailableAsync(cancellationToken))
         while (source.TryReceive(out var item))
             yield return item;
-        await source.Completion.ConfigureAwait(false); // Propagate possible exception
+        await source.Completion; // Propagate possible exception
     }
 }
 
@@ -297,7 +297,7 @@ public class ShellChatter : Terminal
     protected override async Task Open(CancellationToken cancellationToken)
     {
         var context = WebSocket.Context.GetRequiredService<RootContext>();
-        await WebSocket.SendText("Opening ShellChatter!", cancellationToken).ConfigureAwait(false);
+        await WebSocket.SendText("Opening ShellChatter!", cancellationToken);
         await new ClientWebSocketBuilder(context)
             .WithUri("wss://localhost:5001/restable/")
             .OnOpen(async (ws, ct) => await ws.SendText("Hi", ct))
@@ -333,7 +333,7 @@ public class Test2 : IAsyncSelector<Test2>
 
 
         var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
-        for (var i = 0; i < number; i += 1) await BufferBlock.SendAsync(Count += 1, cancellationToken).ConfigureAwait(false);
+        for (var i = 0; i < number; i += 1) await BufferBlock.SendAsync(Count += 1, cancellationToken);
         yield break;
     }
 }
@@ -345,7 +345,10 @@ public class Test : IAsyncSelector<Test>
 
     public async IAsyncEnumerable<Test> SelectAsync(IRequest<Test> request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await foreach (var value in Test2.BufferBlock.ToAsyncEnumerable(cancellationToken)) yield return new Test {Value = value};
+        await foreach (var value in Test2.BufferBlock.ToAsyncEnumerable(cancellationToken))
+        {
+            yield return new Test {Value = value};
+        }
     }
 }
 

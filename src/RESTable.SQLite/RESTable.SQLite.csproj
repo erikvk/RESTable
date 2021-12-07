@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\pack.props"/>
-    <Import Project="..\common.props"/>
+    <Import Project="../pack.props"/>
+    <Import Project="../common.props"/>
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RESTable\RESTable.csproj"/>
+        <ProjectReference Include="../RESTable/RESTable.csproj"/>
         <PackageReference Include="System.Data.SQLite.Core" Version="1.0.115.5"/>
     </ItemGroup>
 

@@ -2,39 +2,39 @@ _By Erik von Krusenstierna (erik.von.krusenstierna@mopedo.com)_
 
 # Tutorial
 
-RESTar is a powerful REST API framework for Starcounter applications, that is free to use and easy to set up in new or
-existing applications. Using RESTar in your projects will give your applications all sorts of REST super powers, with
-minimal effort. This tutorial will give a hands-on introduction to RESTar, and show how to use it in a simple
+RESTable is a powerful REST API framework for Starcounter applications, that is free to use and easy to set up in new or
+existing applications. Using RESTable in your projects will give your applications all sorts of REST super powers, with
+minimal effort. This tutorial will give a hands-on introduction to RESTable, and show how to use it in a simple
 Starcounter application. The resulting application is available in this repository as
-a [Visual Studio solution](RESTarTutorial), so you can download it and try things out for yourself. For more information
-about RESTar, see the [RESTar Specification](https://develop.mopedo.com/RESTar/).
+a [Visual Studio solution](RESTableTutorial), so you can download it and try things out for yourself. For more information
+about RESTable, see the [RESTable Specification](https://develop.mopedo.com/RESTable/).
 
 ## Getting started
 
-To get started, install RESTar from NuGet, either by browsing for `RESTar` in the **NuGet Package Manager** or by
+To get started, install RESTable from NuGet, either by browsing for `RESTable` in the **NuGet Package Manager** or by
 running the following command in the **Package Manager Console**:
 
 ```
-Install-Package RESTar
+Install-Package RESTable
 ```
 
-All we need to do then, to enable RESTar and set up a REST API for a given application, is to make a call
-to `RESTar.RESTarConfig.Init()` somewhere in the application code, preferably where it's called once every time the app
+All we need to do then, to enable RESTable and set up a REST API for a given application, is to make a call
+to `RESTable.RESTableConfig.Init()` somewhere in the application code, preferably where it's called once every time the app
 starts. `Init()` will register the necessary HTTP handlers, collect resources and make them available over a REST API.
-Here is a simple RESTar application:
+Here is a simple RESTable application:
 
 ```csharp
-namespace RESTarTutorial
+namespace RESTableTutorial
 {
-    using RESTar;
+    using RESTable;
     using Starcounter;
-    using static RESTar.Methods;
+    using static RESTable.Methods;
 
     public class TutorialApp
     {
         public static void Main()
         {
-            RESTarConfig.Init(port: 8282, uri: "/api");
+            RESTableConfig.Init(port: 8282, uri: "/api");
             // The 'port' argument sets the HTTP port on which to register the REST handlers
             // The 'uri' argument sets the root uri of the REST API
         }
@@ -43,27 +43,27 @@ namespace RESTarTutorial
 ```
 
 The application above is not very useful, however, since it doesn't expose any data through the REST API. Let's change
-that. RESTar can take any Starcounter database class and make its content available as a web resource in the REST API.
-To tell RESTar which classes to expose, we simply decorate their definitions with the `RESTarAttribute` attribute and
+that. RESTable can take any Starcounter database class and make its content available as a web resource in the REST API.
+To tell RESTable which classes to expose, we simply decorate their definitions with the `RESTableAttribute` attribute and
 provide the REST methods we would like to enable for the resource in its constructor. Let's add a web resource to our
 application:
 
 ```csharp
-namespace RESTarTutorial
+namespace RESTableTutorial
 {
-    using RESTar;
+    using RESTable;
     using Starcounter;
-    using static RESTar.Methods;
+    using static RESTable.Methods;
 
     public class TutorialApp
     {
         public static void Main()
         {
-            RESTarConfig.Init(port: 8282, uri: "/api");
+            RESTableConfig.Init(port: 8282, uri: "/api");
         }
     }
 
-    [Database, RESTar(GET, POST, PUT, PATCH, DELETE)]
+    [Database, RESTable(GET, POST, PUT, PATCH, DELETE)]
     public class Superhero
     {
         public string Name { get; set; }
@@ -76,13 +76,13 @@ namespace RESTarTutorial
 }
 ```
 
-When `RESTarConfig.Init()` is called, RESTar will find the `Superhero` database class and register it as available over
+When `RESTableConfig.Init()` is called, RESTable will find the `Superhero` database class and register it as available over
 the REST API. This means that REST clients can send `GET`, `POST`, `PUT`, `PATCH` and `DELETE` requests
 to `<host>:8282/api/superhero` and interact with its content. To make a different set of methods available for a
-resource, we simply include a different set of methods in the `RESTarAttribute` constructor. RESTar can read and
+resource, we simply include a different set of methods in the `RESTableAttribute` constructor. RESTable can read and
 write **JSON** and **Excel**, so the bodies contained within these requests can be of either of these formats. Now let's
 make a simple local `POST` request to this API with JSON data (using cURL syntax) (
-or [Postman](https://github.com/Mopedo/RESTar.Tutorial/blob/master/RESTarTutorial/Postman_data_post.jpg)):
+or [Postman](https://github.com/Mopedo/RESTable.Tutorial/blob/master/RESTableTutorial/Postman_data_post.jpg)):
 
 ```
 curl 'localhost:8282/api/superhero' -d '[{
@@ -99,10 +99,10 @@ curl 'localhost:8282/api/superhero' -d '[{
 }]'
 ```
 
-> RESTar will map properties from JSON to the .NET class automatically. We can configure this mapping by decorating properties with the `RESTarMemberAttribute` attribute, but for now – let's keep things simple.
+> RESTable will map properties from JSON to the .NET class automatically. We can configure this mapping by decorating properties with the `RESTableMemberAttribute` attribute, but for now – let's keep things simple.
 
 And now, let's retrieve this data using a `GET`
-request ([Postman](https://github.com/Mopedo/RESTar.Tutorial/blob/master/RESTarTutorial/Postman_data_get.jpg)):
+request ([Postman](https://github.com/Mopedo/RESTable.Tutorial/blob/master/RESTableTutorial/Postman_data_get.jpg)):
 
 ```
 curl 'localhost:8282/api/superhero//limit=2'
@@ -125,11 +125,11 @@ Output:
 }]
 ```
 
-> The `InsertedAt` property of `Superhero` is read-only. They are included in `GET` request output, but cannot be set by remote clients. RESTar automatically includes the read-only Starcounter `ObjectNo` property for database resources.
+> The `InsertedAt` property of `Superhero` is read-only. They are included in `GET` request output, but cannot be set by remote clients. RESTable automatically includes the read-only Starcounter `ObjectNo` property for database resources.
 
-## Exploring the parameters of `RESTarConfig.Init()`
+## Exploring the parameters of `RESTableConfig.Init()`
 
-The `RESTar.RESTarConfig.Init()` method has more parameters than the ones we used above. This is the complete signature:
+The `RESTable.RESTableConfig.Init()` method has more parameters than the ones we used above. This is the complete signature:
 
 ```csharp
 static void Init
@@ -155,7 +155,7 @@ API.
 
 In most use cases, we want to apply some form of role-based access control to the registered resources. Let's say only
 some clients should be allowed to insert and delete `Superhero` entities, while all should be able to read. To implement
-this, we create an XML file that will work as the configuration that RESTar reads API keys and access rights from. Let's
+this, we create an XML file that will work as the configuration that RESTable reads API keys and access rights from. Let's
 create a new XML file in the project directory and call it "Config.xml". Let's make its content look like this:
 
 ```xml
@@ -164,17 +164,17 @@ create a new XML file in the project directory and call it "Config.xml". Let's m
   <ApiKey>
     <Key>a-secure-admin-key</Key>
     <AllowAccess>
-      <Resource>RESTar.*</Resource>
-      <Resource>RESTar.Admin.*</Resource>
-      <Resource>RESTar.Dynamic.*</Resource>
-      <Resource>RESTarTutorial.*</Resource>
+      <Resource>RESTable.*</Resource>
+      <Resource>RESTable.Admin.*</Resource>
+      <Resource>RESTable.Dynamic.*</Resource>
+      <Resource>RESTableTutorial.*</Resource>
       <Methods>*</Methods>
     </AllowAccess>
   </ApiKey>
   <ApiKey>
     <Key>a-secure-user-key</Key>
     <AllowAccess>
-      <Resource>RESTarTutorial.*</Resource>
+      <Resource>RESTableTutorial.*</Resource>
       <Methods>GET</Methods>
     </AllowAccess>
   </ApiKey>
@@ -182,10 +182,10 @@ create a new XML file in the project directory and call it "Config.xml". Let's m
 ```
 
 This configuration file specifies two api keys: `a-secure-admin-key` and `a-secure-user-key`. The first can perform all
-methods on all resources in the `RESTar`, `RESTar.Admin`, `RESTar.Dynamic` and `RESTarTutorial` namespaces, the latter
+methods on all resources in the `RESTable`, `RESTable.Admin`, `RESTable.Dynamic` and `RESTableTutorial` namespaces, the latter
 which includes our `Superhero` resource. The second key, however, can only make `GET` requests to resources in
-the `RESTarTutorial` namespace. To enforce these access rights, we set the `requireApiKey` parameter to `true` in the
-call to `RESTarConfig.Init()` and provide the file path to the configuration file in the `configFilePath` parameter.
+the `RESTableTutorial` namespace. To enforce these access rights, we set the `requireApiKey` parameter to `true` in the
+call to `RESTableConfig.Init()` and provide the file path to the configuration file in the `configFilePath` parameter.
 Here is the same application code as above, but now with role-based access control:
 
 ```csharp
@@ -193,7 +193,7 @@ public class TutorialApp
 {
     public static void Main()
     {
-        RESTarConfig.Init
+        RESTableConfig.Init
         (
             port: 8282,
             uri: "/api",
@@ -206,14 +206,14 @@ public class TutorialApp
 
 ## Non-starcounter resources
 
-In the example above, we saw a Starcounter database class working as a REST resource through RESTar. Starcounter
-database classes make for good examples, since most Starcounter developers are familiar with them, but RESTar itself is
-not limited to these classes. Any public non-static class can work as a RESTar resource class – as long as the developer
+In the example above, we saw a Starcounter database class working as a REST resource through RESTable. Starcounter
+database classes make for good examples, since most Starcounter developers are familiar with them, but RESTable itself is
+not limited to these classes. Any public non-static class can work as a RESTable resource class – as long as the developer
 can define the logic that is needed to support operations like `Select`, `Insert` and `Delete` that are used in REST
 requests. Say, for example, that we want a REST resource that is simply a transient aggregation of database data, that
 is generated when requested. To go with the example above, let's say we want a `SuperheroReport` class that we can
 make `GET` requests like this
-to: ([Postman](https://github.com/Mopedo/RESTar.Tutorial/blob/master/RESTarTutorial/Postman_report_get.jpg))
+to: ([Postman](https://github.com/Mopedo/RESTable.Tutorial/blob/master/RESTableTutorial/Postman_report_get.jpg))
 
 ```
 curl "localhost:8282/api/superheroreport" -H "Authorization: apikey a-secure-user-key"
@@ -240,19 +240,19 @@ Output:
 ```
 
 To implement `SuperheroReport`, just like we would with a database resource, we create a new .NET class, and assign
-the `RESTarAttribute` attribute to it. This time we only need `GET` to be enabled for the resource. Note that the class
+the `RESTableAttribute` attribute to it. This time we only need `GET` to be enabled for the resource. Note that the class
 below is not a Starcounter database class.
 
 ```csharp
-namespace RESTarTutorial
+namespace RESTableTutorial
 {
-    using RESTar;
+    using RESTable;
     using Starcounter;
-    using static RESTar.Methods;
+    using static RESTable.Methods;
     using System.Linq;
     using System.Collections.Generic;
 
-    [RESTar(GET)]
+    [RESTable(GET)]
     public class SuperheroReport : ISelector<SuperheroReport>
     {
         public long NumberOfSuperheroes { get; private set; }
@@ -262,7 +262,7 @@ namespace RESTarTutorial
         public IEnumerable<SuperheroReport> Select(IRequest<SuperheroReport> request)
         {
             var superHeroesOrdered = Db
-                .SQL<Superhero>("SELECT t FROM RESTarTutorial.Superhero t")
+                .SQL<Superhero>("SELECT t FROM RESTableTutorial.Superhero t")
                 .OrderBy(h => h.InsertedAt)
                 .ToList();
             return new[]
@@ -279,29 +279,29 @@ namespace RESTarTutorial
 }
 ```
 
-To define or override the logic that is used when RESTar selects entities of a resource type, we implement
-the `RESTar.ISelector<T>` interface, and use the resource type as the type parameter `T`. Failure to provide the
-operations needed for the methods assigned in the `RESTarAttribute` constructor will result in a kind but firm runtime
+To define or override the logic that is used when RESTable selects entities of a resource type, we implement
+the `RESTable.ISelector<T>` interface, and use the resource type as the type parameter `T`. Failure to provide the
+operations needed for the methods assigned in the `RESTableAttribute` constructor will result in a kind but firm runtime
 exception. In the body of this `Select` method above, we provide logic for generating an `IEnumerable<SuperheroReport>`
-that is then returned to RESTar when evaluating `GET` requests.
+that is then returned to RESTable when evaluating `GET` requests.
 
 ## Making requests
 
-OK, now we've seen the basics of what RESTar can do – and how to make data sources from a Starcounter application
-available over the REST API in a secure way. One of the really cool things about RESTar, which we haven't really
-explored yet, is the flexibility and power it gives clients that consume the REST API. Included in RESTar is a wide
+OK, now we've seen the basics of what RESTable can do – and how to make data sources from a Starcounter application
+available over the REST API in a secure way. One of the really cool things about RESTable, which we haven't really
+explored yet, is the flexibility and power it gives clients that consume the REST API. Included in RESTable is a wide
 range of operations and utilities that make API consumption simple, powerful, fast and easy to debug. This tutorial
 cannot possibly cover it all, but we'll provide some examples below.
 
 We will use the same application as earlier, and imagine that the database is now populated with `Superhero` entities.
-To try things out yourself – clone this repository to your local machine and run the `RESTarTutorial` application. The
+To try things out yourself – clone this repository to your local machine and run the `RESTableTutorial` application. The
 application comes with an SQLite database that will automatically populate Starcounter with `Superhero` entities. If
-that sounded cool, _which it totally is_, you should check out [RESTar.SQLite](https://github.com/Mopedo/RESTar.SQLite)
+that sounded cool, _which it totally is_, you should check out [RESTable.SQLite](https://github.com/Mopedo/RESTable.SQLite)
 after this.
 
 ### URI crash course
 
-A RESTar URI consists of three parts after the service root, separated by forward slashes (`/`):
+A RESTable URI consists of three parts after the service root, separated by forward slashes (`/`):
 
 1. A resource locator, e.g. `superhero`. It points at a web resource.
 2. A list of entity conditions that are either `true` or `false` of entities in the selected resource. The list items
@@ -311,7 +311,7 @@ A RESTar URI consists of three parts after the service root, separated by forwar
    separated with `&` characters. We can, for example, include `limit=2` here to limit the output to only two entities.
 
 A complete description of all meta-conditions can be find in
-the [specification](https://develop.mopedo.com/RESTar/Consuming%20a%20RESTar%20API/URI/Meta-conditions/), but here are
+the [specification](https://develop.mopedo.com/RESTable/Consuming%20a%20RESTable%20API/URI/Meta-conditions/), but here are
 some that are used below:
 
 Name         | Function
@@ -325,7 +325,7 @@ Name         | Function
 `distinct`   | Returns only distinct entities (based on entity values)
 
 Here is the main request template used
-below: ([Postman](https://github.com/Mopedo/RESTar.Tutorial/blob/master/RESTarTutorial/Postman_template_get.jpg))
+below: ([Postman](https://github.com/Mopedo/RESTable.Tutorial/blob/master/RESTableTutorial/Postman_template_get.jpg))
 
 ```
 Method:   GET
@@ -365,18 +365,18 @@ Postman, set the `Accept` header and click the arrow to the right of the **Send*
 ## Conclusion
 
 This concludes the tutorial. Hopefully you found some of it interesting and will continue by reading
-the [specification](https://develop.mopedo.com/RESTar) and keep exploring what RESTar can do. If not, at least it's over
+the [specification](https://develop.mopedo.com/RESTable) and keep exploring what RESTable can do. If not, at least it's over
 now! [`¯\_(ツ)_/¯`](https://www.google.se/search?dcr=0&tbm=vid&ei=SvJ6Wt-KK4efsAG3rqjgCA&q=I+just+read+a+boring+tutorial%2C+can+I+have+some+cat+videos+or+something%3F&oq=I+just+read+a+boring+tutorial%2C+can+I+have+some+cat+videos+or+something%3F)
 
 ## Links
 
-[• The RESTar specification](https://develop.mopedo.com/RESTar)
+[• The RESTable specification](https://develop.mopedo.com/RESTable)
 
-[• RESTar on NuGet](https://www.nuget.org/packages/RESTar/)
+[• RESTable on NuGet](https://www.nuget.org/packages/RESTable/)
 
-[• RESTar.SQLite](https://github.com/Mopedo/RESTar.SQLite)
+[• RESTable.SQLite](https://github.com/Mopedo/RESTable.SQLite)
 
 [• Dynamit](https://github.com/Mopedo/Dynamit)
 
-For any questions or comments about this tutorial, or anything RESTar-related, please contact Erik at
+For any questions or comments about this tutorial, or anything RESTable-related, please contact Erik at
 erik.von.krusenstierna@mopedo.com
