@@ -94,7 +94,6 @@ public record MyRecord(string Name, int Number) : ISelector<MyRecord>
 public enum Gender
 {
     Male,
-
     Female,
     Other
 }

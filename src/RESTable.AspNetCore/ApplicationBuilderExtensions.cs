@@ -29,6 +29,7 @@ public static class ApplicationBuilderExtensions
             });
 
             foreach (var method in EnumMember<Method>.Values)
+            {
                 router.MapVerb(method.ToString(), template, hc =>
                 {
                     try
@@ -41,6 +42,7 @@ public static class ApplicationBuilderExtensions
                         return Task.FromCanceled(hc.RequestAborted);
                     }
                 });
+            }
         });
 
         return builder;

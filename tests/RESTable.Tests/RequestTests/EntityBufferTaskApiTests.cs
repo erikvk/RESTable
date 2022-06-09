@@ -16,7 +16,6 @@ public class EntityBufferTaskApiTests : RESTableTestBase
     public async Task EntitiesTests()
     {
         var context = Fixture.Context;
-
         var _ = await context.Entities<GetApiTestResource>();
         var entitiesRanged = await context.Entities<GetApiTestResource>().Within(..5);
         Assert.Equal(5, entitiesRanged.Length);

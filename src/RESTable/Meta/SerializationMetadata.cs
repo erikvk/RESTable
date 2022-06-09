@@ -8,6 +8,22 @@ namespace RESTable.Meta;
 
 internal class SerializationMetadata<T> : ISerializationMetadata<T>
 {
+    private ParameterlessConstructor<T>? ParameterLessConstructor { get; }
+    private ParameterizedConstructor<T>? CustomParameterizedConstructor { get; }
+    private ParameterInfo[] CustomParameterizedConstructorParameters { get; }
+    private IReadOnlyDictionary<string, DeclaredProperty> DeclaredProperties { get; }
+
+    public Type Type => typeof(T);
+    public DeclaredProperty[] PropertiesToSerialize { get; }
+    public int DeclaredPropertyCount => DeclaredProperties.Count;
+    public bool UsesParameterizedConstructor { get; }
+    public int ParameterizedConstructorParameterCount => CustomParameterizedConstructorParameters.Length;
+    public bool TypeIsDictionary { get; }
+    public bool TypeIsWritableDictionary { get; }
+    public bool TypeIsNonDictionaryEnumerable { get; }
+    public bool TypeIsAsyncEnumerable { get; }
+    public Type? DictionaryValueType { get; }
+
     public SerializationMetadata(TypeCache typeCache)
     {
         DeclaredProperties = typeCache.GetDeclaredProperties(typeof(T));
@@ -52,22 +68,6 @@ internal class SerializationMetadata<T> : ISerializationMetadata<T>
             CustomParameterizedConstructorParameters = Array.Empty<ParameterInfo>();
         }
     }
-
-    private ParameterlessConstructor<T>? ParameterLessConstructor { get; }
-    private ParameterizedConstructor<T>? CustomParameterizedConstructor { get; }
-    private ParameterInfo[] CustomParameterizedConstructorParameters { get; }
-    private IReadOnlyDictionary<string, DeclaredProperty> DeclaredProperties { get; }
-
-    public Type Type => typeof(T);
-    public DeclaredProperty[] PropertiesToSerialize { get; }
-    public int DeclaredPropertyCount => DeclaredProperties.Count;
-    public bool UsesParameterizedConstructor { get; }
-    public int ParameterizedConstructorParameterCount => CustomParameterizedConstructorParameters.Length;
-    public bool TypeIsDictionary { get; }
-    public bool TypeIsWritableDictionary { get; }
-    public bool TypeIsNonDictionaryEnumerable { get; }
-    public bool TypeIsAsyncEnumerable { get; }
-    public Type? DictionaryValueType { get; }
 
     public DeclaredProperty? GetProperty(string name)
     {

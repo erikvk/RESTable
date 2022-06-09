@@ -71,20 +71,17 @@ public class WebSocket : ISelector<WebSocket>, IAsyncDeleter<WebSocket>
     }
 
     /// <inheritdoc />
-    public IEnumerable<WebSocket> Select(IRequest<WebSocket> request)
-    {
-        var webSocketController = request.GetRequiredService<WebSocketManager>();
-        return webSocketController
-            .ConnectedWebSockets
-            .Values
-            .Select(socket => new WebSocket
-            (
-                socket.Context.TraceId,
-                isThis: socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
-                terminalType: socket.TerminalResource?.Name,
-                client: socket.GetAppProfile(),
-                terminal: socket.Terminal,
-                underlyingSocket: socket
-            ));
-    }
+    public IEnumerable<WebSocket> Select(IRequest<WebSocket> request) => request
+        .GetRequiredService<WebSocketManager>()
+        .ConnectedWebSockets
+        .Values
+        .Select(socket => new WebSocket
+        (
+            socket.Context.TraceId,
+            isThis: socket.Context.TraceId == request.Context.WebSocket?.Context.TraceId,
+            terminalType: socket.TerminalResource?.Name,
+            client: socket.GetAppProfile(),
+            terminal: socket.Terminal,
+            underlyingSocket: socket
+        ));
 }

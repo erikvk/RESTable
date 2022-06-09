@@ -42,11 +42,11 @@ internal class MethodBodyReader
     private readonly IList<LocalVariableInfo> locals;
 
     private readonly MethodBase method;
-    private readonly Type[] method_arguments = null!;
+    private readonly Type[]? method_arguments;
     private readonly Module module;
     private readonly ParameterInfo[] parameters;
-    private readonly ParameterInfo this_parameter = null!;
-    private readonly Type[] type_arguments = null!;
+    private readonly ParameterInfo? this_parameter;
+    private readonly Type[]? type_arguments;
 
     static MethodBodyReader()
     {
@@ -226,7 +226,7 @@ internal class MethodBodyReader
         return null;
     }
 
-    private object GetVariable(Instruction instruction, int index)
+    private object? GetVariable(Instruction instruction, int index)
     {
         return TargetsLocalVariable(instruction.OpCode)
             ? GetLocalVariable(index)
@@ -243,7 +243,7 @@ internal class MethodBodyReader
         return locals[index];
     }
 
-    private ParameterInfo GetParameter(int index)
+    private ParameterInfo? GetParameter(int index)
     {
         if (method.IsStatic)
             return parameters[index];

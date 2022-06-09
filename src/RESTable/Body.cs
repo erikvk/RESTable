@@ -18,11 +18,8 @@ namespace RESTable;
 public class Body : Stream, IDisposable, IAsyncDisposable
 {
     private SwappingStream Stream { get; set; }
-
     private IProtocolHolder ProtocolHolder { get; }
-
     private bool IsIngoing { get; }
-
     private IAsyncEnumerable<object>? UninitializedAsyncBodyObject { get; set; }
 
     public ContentType ContentType => IsIngoing
@@ -56,7 +53,10 @@ public class Body : Stream, IDisposable, IAsyncDisposable
         }
         finally
         {
-            if (CanSeek) Stream.Rewind();
+            if (CanSeek)
+            {
+                Stream.Rewind();
+            }
         }
     }
 
@@ -73,7 +73,10 @@ public class Body : Stream, IDisposable, IAsyncDisposable
         }
         finally
         {
-            if (CanSeek) Stream.Rewind();
+            if (CanSeek)
+            {
+                Stream.Rewind();
+            }
         }
     }
 
@@ -92,7 +95,9 @@ public class Body : Stream, IDisposable, IAsyncDisposable
         finally
         {
             if (CanSeek)
+            {
                 Stream.Rewind();
+            }
         }
     }
 
@@ -103,7 +108,6 @@ public class Body : Stream, IDisposable, IAsyncDisposable
 
     /// <summary>
     ///     The length of the body content in bytes
-    ///     ///
     /// </summary>
     public long ContentLength => Stream.Length;
 
@@ -234,7 +238,7 @@ public class Body : Stream, IDisposable, IAsyncDisposable
         return copy;
     }
 
-    internal bool TryRewind()
+    private bool TryRewind()
     {
         if (!Stream.CanSeek)
             return false;

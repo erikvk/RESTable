@@ -345,5 +345,6 @@ healthchecksdb
 *.sqlite
 *.xlsx
 *.DS_Store
+.vscode/
 pack.sh
 publish.sh

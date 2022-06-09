@@ -22,8 +22,8 @@ namespace RESTable;
 ///     A resource for creating arbitrary aggregated reports from multiple
 ///     internal requests.
 /// </summary>
-[RESTable(Method.GET, Description = description)]
-public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator>
+[RESTable(Method.GET, Method.POST, Description = description)]
+public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator>, IAsyncInserter<Aggregator>
 {
     private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
 
@@ -123,6 +123,8 @@ public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator
             var other => throw new InvalidOperationException($"An error occured when reading the request template, the root object was resolved to {other.GetType().FullName}")
         };
     }
+
+    public IAsyncEnumerable<Aggregator> InsertAsync(IRequest<Aggregator> request, CancellationToken cancellationToken) => SelectAsync(request, cancellationToken);
 
     private static Exception GetArithmeticException(string operation, string? message = null)
     {

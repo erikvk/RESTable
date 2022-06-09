@@ -6,7 +6,8 @@ RESTable is a powerful REST API framework for Starcounter applications, that is 
 existing applications. Using RESTable in your projects will give your applications all sorts of REST super powers, with
 minimal effort. This tutorial will give a hands-on introduction to RESTable, and show how to use it in a simple
 Starcounter application. The resulting application is available in this repository as
-a [Visual Studio solution](RESTableTutorial), so you can download it and try things out for yourself. For more information
+a [Visual Studio solution](RESTableTutorial), so you can download it and try things out for yourself. For more
+information
 about RESTable, see the [RESTable Specification](https://develop.mopedo.com/RESTable/).
 
 ## Getting started
@@ -19,7 +20,8 @@ Install-Package RESTable
 ```
 
 All we need to do then, to enable RESTable and set up a REST API for a given application, is to make a call
-to `RESTable.RESTableConfig.Init()` somewhere in the application code, preferably where it's called once every time the app
+to `RESTable.RESTableConfig.Init()` somewhere in the application code, preferably where it's called once every time the
+app
 starts. `Init()` will register the necessary HTTP handlers, collect resources and make them available over a REST API.
 Here is a simple RESTable application:
 
@@ -44,7 +46,8 @@ namespace RESTableTutorial
 
 The application above is not very useful, however, since it doesn't expose any data through the REST API. Let's change
 that. RESTable can take any Starcounter database class and make its content available as a web resource in the REST API.
-To tell RESTable which classes to expose, we simply decorate their definitions with the `RESTableAttribute` attribute and
+To tell RESTable which classes to expose, we simply decorate their definitions with the `RESTableAttribute` attribute
+and
 provide the REST methods we would like to enable for the resource in its constructor. Let's add a web resource to our
 application:
 
@@ -76,7 +79,8 @@ namespace RESTableTutorial
 }
 ```
 
-When `RESTableConfig.Init()` is called, RESTable will find the `Superhero` database class and register it as available over
+When `RESTableConfig.Init()` is called, RESTable will find the `Superhero` database class and register it as available
+over
 the REST API. This means that REST clients can send `GET`, `POST`, `PUT`, `PATCH` and `DELETE` requests
 to `<host>:8282/api/superhero` and interact with its content. To make a different set of methods available for a
 resource, we simply include a different set of methods in the `RESTableAttribute` constructor. RESTable can read and
@@ -99,7 +103,8 @@ curl 'localhost:8282/api/superhero' -d '[{
 }]'
 ```
 
-> RESTable will map properties from JSON to the .NET class automatically. We can configure this mapping by decorating properties with the `RESTableMemberAttribute` attribute, but for now – let's keep things simple.
+> RESTable will map properties from JSON to the .NET class automatically. We can configure this mapping by decorating
+> properties with the `RESTableMemberAttribute` attribute, but for now – let's keep things simple.
 
 And now, let's retrieve this data using a `GET`
 request ([Postman](https://github.com/Mopedo/RESTable.Tutorial/blob/master/RESTableTutorial/Postman_data_get.jpg)):
@@ -125,11 +130,13 @@ Output:
 }]
 ```
 
-> The `InsertedAt` property of `Superhero` is read-only. They are included in `GET` request output, but cannot be set by remote clients. RESTable automatically includes the read-only Starcounter `ObjectNo` property for database resources.
+> The `InsertedAt` property of `Superhero` is read-only. They are included in `GET` request output, but cannot be set by
+> remote clients. RESTable automatically includes the read-only Starcounter `ObjectNo` property for database resources.
 
 ## Exploring the parameters of `RESTableConfig.Init()`
 
-The `RESTable.RESTableConfig.Init()` method has more parameters than the ones we used above. This is the complete signature:
+The `RESTable.RESTableConfig.Init()` method has more parameters than the ones we used above. This is the complete
+signature:
 
 ```csharp
 static void Init
@@ -155,7 +162,8 @@ API.
 
 In most use cases, we want to apply some form of role-based access control to the registered resources. Let's say only
 some clients should be allowed to insert and delete `Superhero` entities, while all should be able to read. To implement
-this, we create an XML file that will work as the configuration that RESTable reads API keys and access rights from. Let's
+this, we create an XML file that will work as the configuration that RESTable reads API keys and access rights from.
+Let's
 create a new XML file in the project directory and call it "Config.xml". Let's make its content look like this:
 
 ```xml
@@ -182,7 +190,8 @@ create a new XML file in the project directory and call it "Config.xml". Let's m
 ```
 
 This configuration file specifies two api keys: `a-secure-admin-key` and `a-secure-user-key`. The first can perform all
-methods on all resources in the `RESTable`, `RESTable.Admin`, `RESTable.Dynamic` and `RESTableTutorial` namespaces, the latter
+methods on all resources in the `RESTable`, `RESTable.Admin`, `RESTable.Dynamic` and `RESTableTutorial` namespaces, the
+latter
 which includes our `Superhero` resource. The second key, however, can only make `GET` requests to resources in
 the `RESTableTutorial` namespace. To enforce these access rights, we set the `requireApiKey` parameter to `true` in the
 call to `RESTableConfig.Init()` and provide the file path to the configuration file in the `configFilePath` parameter.
@@ -207,8 +216,10 @@ public class TutorialApp
 ## Non-starcounter resources
 
 In the example above, we saw a Starcounter database class working as a REST resource through RESTable. Starcounter
-database classes make for good examples, since most Starcounter developers are familiar with them, but RESTable itself is
-not limited to these classes. Any public non-static class can work as a RESTable resource class – as long as the developer
+database classes make for good examples, since most Starcounter developers are familiar with them, but RESTable itself
+is
+not limited to these classes. Any public non-static class can work as a RESTable resource class – as long as the
+developer
 can define the logic that is needed to support operations like `Select`, `Insert` and `Delete` that are used in REST
 requests. Say, for example, that we want a REST resource that is simply a transient aggregation of database data, that
 is generated when requested. To go with the example above, let's say we want a `SuperheroReport` class that we can
@@ -240,7 +251,8 @@ Output:
 ```
 
 To implement `SuperheroReport`, just like we would with a database resource, we create a new .NET class, and assign
-the `RESTableAttribute` attribute to it. This time we only need `GET` to be enabled for the resource. Note that the class
+the `RESTableAttribute` attribute to it. This time we only need `GET` to be enabled for the resource. Note that the
+class
 below is not a Starcounter database class.
 
 ```csharp
@@ -296,7 +308,8 @@ cannot possibly cover it all, but we'll provide some examples below.
 We will use the same application as earlier, and imagine that the database is now populated with `Superhero` entities.
 To try things out yourself – clone this repository to your local machine and run the `RESTableTutorial` application. The
 application comes with an SQLite database that will automatically populate Starcounter with `Superhero` entities. If
-that sounded cool, _which it totally is_, you should check out [RESTable.SQLite](https://github.com/Mopedo/RESTable.SQLite)
+that sounded cool, _which it totally is_, you should check
+out [RESTable.SQLite](https://github.com/Mopedo/RESTable.SQLite)
 after this.
 
 ### URI crash course
@@ -311,7 +324,8 @@ A RESTable URI consists of three parts after the service root, separated by forw
    separated with `&` characters. We can, for example, include `limit=2` here to limit the output to only two entities.
 
 A complete description of all meta-conditions can be find in
-the [specification](https://develop.mopedo.com/RESTable/Consuming%20a%20RESTable%20API/URI/Meta-conditions/), but here are
+the [specification](https://develop.mopedo.com/RESTable/Consuming%20a%20RESTable%20API/URI/Meta-conditions/), but here
+are
 some that are used below:
 
 Name         | Function
@@ -365,7 +379,8 @@ Postman, set the `Accept` header and click the arrow to the right of the **Send*
 ## Conclusion
 
 This concludes the tutorial. Hopefully you found some of it interesting and will continue by reading
-the [specification](https://develop.mopedo.com/RESTable) and keep exploring what RESTable can do. If not, at least it's over
+the [specification](https://develop.mopedo.com/RESTable) and keep exploring what RESTable can do. If not, at least it's
+over
 now! [`¯\_(ツ)_/¯`](https://www.google.se/search?dcr=0&tbm=vid&ei=SvJ6Wt-KK4efsAG3rqjgCA&q=I+just+read+a+boring+tutorial%2C+can+I+have+some+cat+videos+or+something%3F&oq=I+just+read+a+boring+tutorial%2C+can+I+have+some+cat+videos+or+something%3F)
 
 ## Links
