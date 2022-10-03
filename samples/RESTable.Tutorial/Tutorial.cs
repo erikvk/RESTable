@@ -147,7 +147,7 @@ public class MySomDict : ResourceWrapper<SomeDict>, IAsyncSelector<SomeDict>, IA
 
 public class SomeDict : Dictionary<string, string> { }
 
-[RESTable(GET)]
+[RESTable(GET, HEAD)]
 public class MyBinary : IBinary<MyBinary>
 {
     public BinaryResult Select(IRequest<MyBinary> request)

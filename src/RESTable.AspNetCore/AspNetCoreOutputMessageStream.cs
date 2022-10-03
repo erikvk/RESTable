@@ -27,53 +27,53 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
     }
 
 #if NETSTANDARD2_0
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
+        if (IsDisposed)
+            throw new InvalidOperationException("Cannot write to a closed WebSocket message stream");
+        if (!SemaphoreOpen)
         {
-            if (IsDisposed)
-                throw new InvalidOperationException("Cannot write to a closed WebSocket message stream");
-            if (!SemaphoreOpen)
-            {
-                var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken).Token;
-                await WriteSemaphore.WaitAsync(combinedToken).ConfigureAwait(false);
-                SemaphoreOpen = true;
-            }
-            WebSocketCancelledToken.ThrowIfCancellationRequested();
+            var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken).Token;
+            await WriteSemaphore.WaitAsync(combinedToken).ConfigureAwait(false);
+            SemaphoreOpen = true;
+        }
+        WebSocketCancelledToken.ThrowIfCancellationRequested();
+        await WebSocket.SendAsync
+        (
+            buffer: new ArraySegment<byte>(buffer, offset, count),
+            messageType: MessageType,
+            endOfMessage: false,
+            cancellationToken: cancellationToken
+        ).ConfigureAwait(false);
+        ByteCount += count;
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        if (!SemaphoreOpen || IsDisposed) return;
+        if (WebSocketCancelledToken.IsCancellationRequested)
+        {
+            // Not much we can do in this case. The WebSocket is closed, so we can't send
+            // the final frame.
+            return;
+        }
+        try
+        {
             await WebSocket.SendAsync
             (
-                buffer: new ArraySegment<byte>(buffer, offset, count),
+                buffer: new ArraySegment<byte>(Array.Empty<byte>()),
                 messageType: MessageType,
-                endOfMessage: false,
-                cancellationToken: cancellationToken
+                endOfMessage: true,
+                cancellationToken: WebSocketCancelledToken
             ).ConfigureAwait(false);
-            ByteCount += count;
+            IsDisposed = true;
         }
-
-        public override async ValueTask DisposeAsync()
+        finally
         {
-            if (!SemaphoreOpen || IsDisposed) return;
-            if (WebSocketCancelledToken.IsCancellationRequested)
-            {
-                // Not much we can do in this case. The WebSocket is closed, so we can't send
-                // the final frame.
-                return;
-            }
-            try
-            {
-                await WebSocket.SendAsync
-                (
-                    buffer: new ArraySegment<byte>(Array.Empty<byte>()),
-                    messageType: MessageType,
-                    endOfMessage: true,
-                    cancellationToken: WebSocketCancelledToken
-                ).ConfigureAwait(false);
-                IsDisposed = true;
-            }
-            finally
-            {
-                WriteSemaphore.Release();
-                SemaphoreOpen = false;
-            }
+            WriteSemaphore.Release();
+            SemaphoreOpen = false;
         }
+    }
 #else
     public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
     {

@@ -14,11 +14,13 @@ public class Cookies : HashSet<Cookie>
 {
 #if NETSTANDARD2_0
     /// <summary>
-    /// Finds a cookie by name (case sensitive)
+    ///     Finds a cookie by name (case sensitive)
     /// </summary>
     /// <param name="cookieName">The name of the cookie to find</param>
-    /// <returns>The cookie with the given name, or throws an exception if
-    /// there is no cookie with the given name</returns>
+    /// <returns>
+    ///     The cookie with the given name, or throws an exception if
+    ///     there is no cookie with the given name
+    /// </returns>
     public Cookie this[string cookieName]
     {
         get
@@ -30,7 +32,7 @@ public class Cookies : HashSet<Cookie>
     }
 
     /// <summary>
-    /// Tries to find a cookie with the given name, and returns whether the operation was successful.
+    ///     Tries to find a cookie with the given name, and returns whether the operation was successful.
     /// </summary>
     /// <param name="cookieName">The name of the cookie to find</param>
     /// <param name="value">The found cookie</param>

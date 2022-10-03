@@ -30,10 +30,10 @@ internal abstract class AspNetCoreMessageStream : Stream, IAsyncDisposable
     }
 
 #if NETSTANDARD2_0
-        public virtual System.Threading.Tasks.ValueTask DisposeAsync()
-        {
-            return default;
-        }
+    public virtual System.Threading.Tasks.ValueTask DisposeAsync()
+    {
+        return default;
+    }
 #endif
 
     #region Unsupported

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,8 +24,10 @@ internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResou
     {
         Name = typeof(T).GetRESTableTypeName();
         Type = typeof(T);
-        AvailableMethods = new[] {Method.GET};
         var attribute = typeof(T).GetCustomAttribute<RESTableAttribute>();
+        AvailableMethods = attribute?.AvailableMethods
+            .Where(m => m is Method.GET or Method.HEAD)
+            .ToArray() ?? new[] {Method.GET};
         IsInternal = attribute is RESTableInternalAttribute;
         InterfaceType = typeof(T).GetRESTableInterfaceType();
         ResourceKind = ResourceKind.BinaryResource;

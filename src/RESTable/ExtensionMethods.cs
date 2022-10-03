@@ -550,7 +550,7 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Splits a string by a separator string
+    ///     Splits a string by a separator string
     /// </summary>
     public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
     {
