@@ -167,7 +167,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         }
         if (result is WebSocketUpgradeSuccessful) return false;
 
-        if (result is Content {IsLocked: true})
+        if (result is Content { IsLocked: true })
             throw new InvalidOperationException(
                 "Unable to send a result that is already assigned to a Websocket streaming " +
                 "job. Streaming results are locked, and can only be streamed once.");

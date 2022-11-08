@@ -155,7 +155,7 @@ internal class RequestParameters : ILogable, IHeaderHolder, IProtocolHolder, ITr
     /// <summary>
     ///     Did the request contain a body?
     /// </summary>
-    public bool HasBody => Body is {CanRead: true};
+    public bool HasBody => Body is { CanRead: true };
 
     /// <summary>
     ///     The object that should form the request body
@@ -200,7 +200,7 @@ internal class RequestParameters : ILogable, IHeaderHolder, IProtocolHolder, ITr
         return headers?.ContainsKey("X-ARR-LOG-ID") == true;
     }
 
-    bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource {RequiresAuthentication: true};
+    bool IHeaderHolder.ExcludeHeaders => IResource is IEntityResource { RequiresAuthentication: true };
     public MessageType MessageType { get; } = MessageType.HttpInput;
 
     public CachedProtocolProvider CachedProtocolProvider { get; set; }

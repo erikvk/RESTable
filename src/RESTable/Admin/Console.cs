@@ -75,8 +75,8 @@ internal sealed class Console : FeedTerminal
                         var item = new InputOutput
                         {
                             Type = "HTTPRequestResponse",
-                            In = new LogItem {Id = request.Context.TraceId, Message = await request.GetLogMessage().ConfigureAwait(false)},
-                            Out = new LogItem {Id = result.Context.TraceId, Message = await result.GetLogMessage().ConfigureAwait(false)},
+                            In = new LogItem { Id = request.Context.TraceId, Message = await request.GetLogMessage().ConfigureAwait(false) },
+                            Out = new LogItem { Id = result.Context.TraceId, Message = await result.GetLogMessage().ConfigureAwait(false) },
                             ElapsedMilliseconds = milliseconds
                         };
                         if (console.IncludeClient)
@@ -134,7 +134,7 @@ internal sealed class Console : FeedTerminal
                         };
                         if (console.IncludeClient)
                             item.Client = new ClientInfo(logable.Context.Client);
-                        if (console.IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
+                        if (console.IncludeHeaders && logable is IHeaderHolder { ExcludeHeaders: false } hh)
                             item.CustomHeaders = hh.Headers;
                         var outputStream = await console.ActualSocket.GetMessageStream(true).ConfigureAwait(false);
 #if NETSTANDARD2_0
@@ -163,7 +163,7 @@ internal sealed class Console : FeedTerminal
             builder.Append(connection);
             builder.Append(logable.Context.Client.ClientIp);
         }
-        if (IncludeHeaders && logable is IHeaderHolder {ExcludeHeaders: false} hh)
+        if (IncludeHeaders && logable is IHeaderHolder { ExcludeHeaders: false } hh)
         {
             builder.Append(headers);
             if (hh.HeadersStringCache is null)
@@ -189,14 +189,14 @@ internal sealed class Console : FeedTerminal
         }
         if (IncludeHeaders)
         {
-            if (logable1 is IHeaderHolder {ExcludeHeaders: false} hh1)
+            if (logable1 is IHeaderHolder { ExcludeHeaders: false } hh1)
             {
                 builder1.Append(headers);
                 if (hh1.HeadersStringCache is null)
                     hh1.HeadersStringCache = string.Join(", ", hh1.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
                 builder1.Append(hh1.HeadersStringCache);
             }
-            if (logable2 is IHeaderHolder {ExcludeHeaders: false} hh2)
+            if (logable2 is IHeaderHolder { ExcludeHeaders: false } hh2)
             {
                 builder2.Append(headers);
                 if (hh2.HeadersStringCache is null)

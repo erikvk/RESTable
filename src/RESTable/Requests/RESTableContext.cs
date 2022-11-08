@@ -1,7 +1,7 @@
-﻿using System;
-#if !NETSTANDARD2_0
+﻿#if !NETSTANDARD2_0
 using System.Collections.Immutable;
 #endif
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;

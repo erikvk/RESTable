@@ -589,7 +589,7 @@ public sealed class Shell : Terminal, IAsyncDisposable
 
     private Task SendHeaders(CancellationToken cancellationToken)
     {
-        return SendJson(new {WebSocket.Headers}, cancellationToken);
+        return SendJson(new { WebSocket.Headers }, cancellationToken);
     }
 
     private Task SendJson<T>(T obj, CancellationToken cancellationToken)

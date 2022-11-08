@@ -88,7 +88,7 @@ public class MetadataDocument : IBinary<MetadataDocument>
                     var key = declaredMembers.OfType<DeclaredProperty>().FirstOrDefault(p => p.HasAttribute<KeyAttribute>());
                     if (key is not null)
                         await swr.WriteAsync($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>").ConfigureAwait(false);
-                    await WriteMembers(swr, declaredMembers.Where(p => p is not DeclaredProperty {Hidden: true} d || d.Equals(key))).ConfigureAwait(false);
+                    await WriteMembers(swr, declaredMembers.Where(p => p is not DeclaredProperty { Hidden: true } d || d.Equals(key))).ConfigureAwait(false);
                     await swr.WriteAsync("</EntityType>").ConfigureAwait(false);
                 }
                 await swr.WriteAsync("<EntityType Name=\"RESTable.DynamicResource\" OpenType=\"true\"/>").ConfigureAwait(false);

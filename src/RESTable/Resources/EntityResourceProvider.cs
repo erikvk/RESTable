@@ -34,12 +34,12 @@ public abstract class EntityResourceProvider<TBase> : IEntityResourceProviderInt
 
     private void InsertProcedural(IProceduralEntityResource resource, ResourceValidator validator)
     {
-        var attribute = new RESTableProceduralAttribute(resource.Methods) {Description = resource.Description};
+        var attribute = new RESTableProceduralAttribute(resource.Methods) { Description = resource.Description };
         var type = resource.Type ?? throw new InvalidOperationException("Could not establish type for procedural resource");
         validator.ValidateRuntimeInsertion(type, resource.Name, attribute);
         validator.Validate(type);
         var inserted = _InsertResource(type, resource.Name, attribute);
-        ReceiveClaimed(new[] {inserted});
+        ReceiveClaimed(new[] { inserted });
     }
 
     private bool RemoveProceduralResource(Type resourceType)
@@ -471,14 +471,14 @@ public abstract class EntityResourceProvider<TBase> : IEntityResourceProviderInt
     private IEntityResource _InsertResource(Type type, string? fullName = null, RESTableAttribute? attribute = null)
     {
         var method = InsertResourceMethod.MakeGenericMethod(type);
-        var entityResource = (IEntityResource?) method.Invoke(this, new object?[] {fullName, attribute, null});
+        var entityResource = (IEntityResource?) method.Invoke(this, new object?[] { fullName, attribute, null });
         return entityResource!;
     }
 
     private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string? fullName = null, RESTableAttribute? attribute = null)
     {
         var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
-        var entityResource = (IEntityResource?) method.Invoke(this, new object?[] {fullName, attribute, null});
+        var entityResource = (IEntityResource?) method.Invoke(this, new object?[] { fullName, attribute, null });
         return entityResource!;
     }
 

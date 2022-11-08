@@ -59,7 +59,7 @@ public class ConditionCache : ISelector<ConditionCache>, IDeleter<ConditionCache
         foreach (var resource in resources)
         {
             var cacheType = typeof(ConditionCache<>).MakeGenericType(resource.Type);
-            if (request.GetService(cacheType) is IConditionCache {Count: > 0} cache)
+            if (request.GetService(cacheType) is IConditionCache { Count: > 0 } cache)
                 yield return new ConditionCache
                 (
                     resource.Type,

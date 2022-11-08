@@ -13,8 +13,8 @@ public class VersionConverter : JsonConverter<Version>
     {
         return JsonSerializer.Deserialize<JsonElement>(ref reader, options) switch
         {
-            {ValueKind: JsonValueKind.Null} => null,
-            {ValueKind: JsonValueKind.String} stringElement => Version.Parse(stringElement.GetString()!),
+            { ValueKind: JsonValueKind.Null } => null,
+            { ValueKind: JsonValueKind.String } stringElement => Version.Parse(stringElement.GetString()!),
             _ => throw new FormatException("Invalid Version syntax")
         };
     }

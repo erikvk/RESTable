@@ -132,7 +132,7 @@ public interface IMyTest
 [RESTable(GET, PATCH)]
 public class MySomDict : ResourceWrapper<SomeDict>, IAsyncSelector<SomeDict>, IAsyncUpdater<SomeDict>
 {
-    private static HashSet<SomeDict> Things { get; } = new() {new SomeDict {["Foo"] = "Bar"}};
+    private static HashSet<SomeDict> Things { get; } = new() { new SomeDict { ["Foo"] = "Bar" } };
 
     public IAsyncEnumerable<SomeDict> SelectAsync(IRequest<SomeDict> request, CancellationToken cancellationToken)
     {
@@ -346,7 +346,7 @@ public class Test : IAsyncSelector<Test>
     {
         await foreach (var value in Test2.BufferBlock.ToAsyncEnumerable(cancellationToken))
         {
-            yield return new Test {Value = value};
+            yield return new Test { Value = value };
         }
     }
 }
@@ -358,15 +358,15 @@ public class Test3 : IAsyncSelector<Test3>
 
     public async IAsyncEnumerable<Test3> SelectAsync(IRequest<Test3> request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        yield return new Test3 {Value = 0};
+        yield return new Test3 { Value = 0 };
         await Task.Delay(2000, cancellationToken);
-        yield return new Test3 {Value = 1};
+        yield return new Test3 { Value = 1 };
         await Task.Delay(2000, cancellationToken);
-        yield return new Test3 {Value = 2};
+        yield return new Test3 { Value = 2 };
         await Task.Delay(2000, cancellationToken);
-        yield return new Test3 {Value = 3};
+        yield return new Test3 { Value = 3 };
         await Task.Delay(2000, cancellationToken);
-        yield return new Test3 {Value = 4};
+        yield return new Test3 { Value = 4 };
         await Task.Delay(2000, cancellationToken);
     }
 }

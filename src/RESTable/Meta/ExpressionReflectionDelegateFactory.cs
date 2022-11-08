@@ -86,7 +86,7 @@ internal class ExpressionReflectionDelegateFactory
 
             if (allowWidening && targetType.IsPrimitive)
             {
-                var toTargetTypeMethod = typeof(Convert).GetMethod("To" + targetType.Name, new[] {typeof(object)});
+                var toTargetTypeMethod = typeof(Convert).GetMethod("To" + targetType.Name, new[] { typeof(object) });
 
                 if (toTargetTypeMethod != null)
                     convert = Expression.Condition(

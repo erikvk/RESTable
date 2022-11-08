@@ -26,7 +26,7 @@ public abstract class SqliteResourceController<TController, TBaseType> : Resourc
         if (!BaseType.IsSubclassOf(typeof(ElasticSqliteTable)))
             throw new SqliteException($"Cannot create procedural Sqlite resource from base type '{BaseType}'. Must be a " +
                                       "subclass of RESTable.Sqlite.ElasticSqliteTable with at least one defined column property.");
-        Data = new SqliteProceduralResourceData {BaseTypeName = BaseType.AssemblyQualifiedName};
+        Data = new SqliteProceduralResourceData { BaseTypeName = BaseType.AssemblyQualifiedName };
     }
 
     /// <inheritdoc />

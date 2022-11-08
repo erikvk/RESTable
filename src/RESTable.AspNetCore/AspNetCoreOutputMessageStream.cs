@@ -74,6 +74,8 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
             SemaphoreOpen = false;
         }
     }
+
+    public override void Write(byte[] buffer, int offset, int count) => WriteAsync(buffer, offset, count, CancellationToken.None).Wait();
 #else
     public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
     {
@@ -116,15 +118,12 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
             SemaphoreOpen = false;
         }
     }
+
+    public override void Write(ReadOnlySpan<byte> buffer) => WriteAsync(buffer.ToArray(), CancellationToken.None).AsTask().Wait();
+
+    public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
+
 #endif
 
-    public override void Write(byte[] buffer, int offset, int count)
-    {
-        throw new NotSupportedException();
-    }
-
-    public override int Read(byte[] buffer, int offset, int count)
-    {
-        throw new NotSupportedException();
-    }
+    public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }

@@ -20,7 +20,7 @@ public class JsonLinesProvider : IContentTypeProvider
     private IJsonProvider JsonProvider { get; }
     public string Name => "JSON Lines";
     public ContentType ContentType => "application/jsonlines; charset=utf-8";
-    public string[] MatchStrings => new[] {"application/jsonlines", "application/x-ndjson", "application/x-jsonlines", "jl"};
+    public string[] MatchStrings => new[] { "application/jsonlines", "application/x-ndjson", "application/x-jsonlines", "jl" };
     public bool CanRead => false;
     public bool CanWrite => true;
     public string ContentDispositionFileExtension => ".jsonl";

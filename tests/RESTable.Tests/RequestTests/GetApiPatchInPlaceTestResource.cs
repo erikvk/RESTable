@@ -12,11 +12,11 @@ public class GetApiPatchInPlaceTestResource : ISelector<GetApiPatchInPlaceTestRe
 
     private static List<GetApiPatchInPlaceTestResource> List { get; } = new()
     {
-        new GetApiPatchInPlaceTestResource {Number = 1},
-        new GetApiPatchInPlaceTestResource {Number = 2},
-        new GetApiPatchInPlaceTestResource {Number = 3},
-        new GetApiPatchInPlaceTestResource {Number = 4},
-        new GetApiPatchInPlaceTestResource {Number = 5}
+        new GetApiPatchInPlaceTestResource { Number = 1 },
+        new GetApiPatchInPlaceTestResource { Number = 2 },
+        new GetApiPatchInPlaceTestResource { Number = 3 },
+        new GetApiPatchInPlaceTestResource { Number = 4 },
+        new GetApiPatchInPlaceTestResource { Number = 5 }
     };
 
     public IEnumerable<GetApiPatchInPlaceTestResource> Select(IRequest<GetApiPatchInPlaceTestResource> request)

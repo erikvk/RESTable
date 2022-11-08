@@ -124,7 +124,7 @@ public class Error
         (
             uri,
             request.Method,
-            resource is IEntityResource {RequiresAuthentication: true}
+            resource is IEntityResource { RequiresAuthentication: true }
                 ? null
                 : request.Headers.StringJoin(" | ", dict => dict.Select(header => header.Key.ToLower() switch
                 {

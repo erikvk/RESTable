@@ -56,7 +56,7 @@ public class SetOperations : Dictionary<string, object?>, IAsyncSelector<SetOper
         {
             switch (jsonElement)
             {
-                case {ValueKind: JsonValueKind.String} stringValue:
+                case { ValueKind: JsonValueKind.String } stringValue:
                     var argument = stringValue.GetString();
                     if (argument?.StartsWith("GET ") == true)
                         argument = argument.Substring(4);
@@ -95,9 +95,9 @@ public class SetOperations : Dictionary<string, object?>, IAsyncSelector<SetOper
                                                         "beginning with '/<resource locator>' or a JSON array.");
                         }
                     }
-                case {ValueKind: JsonValueKind.Object} objectValue when
-                    objectValue.EnumerateObject().ToList() is {Count : 1} valueList &&
-                    valueList.First() is {Value: {ValueKind: JsonValueKind.Array} arrayValue} arrayProperty:
+                case { ValueKind: JsonValueKind.Object } objectValue when
+                    objectValue.EnumerateObject().ToList() is { Count : 1 } valueList &&
+                    valueList.First() is { Value: { ValueKind: JsonValueKind.Array } arrayValue } arrayProperty:
                 {
                     var arrayLength = arrayValue.GetArrayLength();
                     switch (arrayProperty.Name.ToLower())
@@ -163,8 +163,8 @@ public class SetOperations : Dictionary<string, object?>, IAsyncSelector<SetOper
         {
             var populated = element switch
             {
-                {ValueKind: JsonValueKind.Object} objectElement => jsonProvider.ToObject<SetOperations>(objectElement),
-                var value => new SetOperations {["Value"] = value}
+                { ValueKind: JsonValueKind.Object } objectElement => jsonProvider.ToObject<SetOperations>(objectElement),
+                var value => new SetOperations { ["Value"] = value }
             };
             yield return populated!;
         }
@@ -218,13 +218,13 @@ public class SetOperations : Dictionary<string, object?>, IAsyncSelector<SetOper
                 switch (item.GetProperty(keys[i], OrdinalIgnoreCase)?.Value)
                 {
                     case null:
-                    case {ValueKind: JsonValueKind.Null}:
+                    case { ValueKind: JsonValueKind.Null }:
                         value = "null";
                         break;
-                    case {ValueKind: JsonValueKind.String} dateValue when DateTime.TryParse(dateValue.GetString()!, out var dateTime):
+                    case { ValueKind: JsonValueKind.String } dateValue when DateTime.TryParse(dateValue.GetString()!, out var dateTime):
                         value = dateTime.ToString("O");
                         break;
-                    case {ValueKind: JsonValueKind.String} stringElement when stringElement.GetString() is string stringValue:
+                    case { ValueKind: JsonValueKind.String } stringElement when stringElement.GetString() is string stringValue:
                         value = stringValue == "" ? "\"\"" : stringValue;
                         break;
                     default:

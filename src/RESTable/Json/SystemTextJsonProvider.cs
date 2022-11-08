@@ -48,7 +48,7 @@ public class SystemTextJsonProvider : IJsonProvider, IContentTypeProvider
     public bool CanRead => true;
     public bool CanWrite => true;
     public string ContentDispositionFileExtension => ".json";
-    public string[] MatchStrings => new[] {JsonMimeType, RESTableSpecific, Brief, TextPlain};
+    public string[] MatchStrings => new[] { JsonMimeType, RESTableSpecific, Brief, TextPlain };
 
     byte[] IContentTypeProvider.SerializeToBytes<T>(T item)
     {
@@ -346,7 +346,7 @@ public class SystemTextJsonProvider : IJsonProvider, IContentTypeProvider
     internal void SetOptions(JsonSerializerOptions options)
     {
         Options = new JsonSerializerOptions(options);
-        OptionsIgnoreNulls = new JsonSerializerOptions(options) {DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull};
+        OptionsIgnoreNulls = new JsonSerializerOptions(options) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
         ArrayPool = ArrayPool<byte>.Create(Options.DefaultBufferSize, 50);
     }
 
@@ -354,7 +354,7 @@ public class SystemTextJsonProvider : IJsonProvider, IContentTypeProvider
     {
         var options = ignoreNulls ? OptionsIgnoreNulls : Options;
         if (prettyPrint.HasValue && prettyPrint.Value != options.WriteIndented)
-            options = new JsonSerializerOptions(options) {WriteIndented = prettyPrint.Value};
+            options = new JsonSerializerOptions(options) { WriteIndented = prettyPrint.Value };
         return options;
     }
 

@@ -46,7 +46,7 @@ public class ApiKeyAuthenticator : IApiKeyAuthenticator, IRequestAuthenticator
     private AccessRights GetAccessRights(ref string? uri, IHeaders? headers)
     {
         string authorizationHeader;
-        if (uri is not null && Regex.Match(uri, RegEx.UriKey) is {Success: true} keyMatch)
+        if (uri is not null && Regex.Match(uri, RegEx.UriKey) is { Success: true } keyMatch)
         {
             var keyGroup = keyMatch.Groups["key"];
             uri = uri.Remove(keyGroup.Index, keyGroup.Length);

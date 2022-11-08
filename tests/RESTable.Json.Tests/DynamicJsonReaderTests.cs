@@ -180,7 +180,7 @@ public class DynamicJsonReaderTests : RESTableTestBase
             Second = new Holder<DateTime, List<int>>
             {
                 First = DateTime.Now,
-                Second = new List<int> {1, 2, 3}
+                Second = new List<int> { 1, 2, 3 }
             }
         };
 

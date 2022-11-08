@@ -32,7 +32,7 @@ public class VersionConverterTests : RESTableTestBase
         var versionString = "12.1.2.3";
         var version = new Version(versionString);
         var jsonString = $"{{\"Item\":\"{versionString}\"}}";
-        var versionHolder = new Holder<Version> {Item = version};
+        var versionHolder = new Holder<Version> { Item = version };
         var str = jsonProvider.Serialize(versionHolder, false);
         Assert.Equal(jsonString, str);
     }

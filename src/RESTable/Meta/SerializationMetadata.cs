@@ -47,7 +47,7 @@ internal class SerializationMetadata<T> : ISerializationMetadata<T>
         TypeIsNonDictionaryEnumerable = !TypeIsDictionary && !TypeIsAsyncEnumerable && typeof(T).ImplementsEnumerableInterface(out _);
 
         ParameterLessConstructor = typeof(T).MakeParameterlessConstructor<T>();
-        if (typeof(T).GetCustomConstructor() is ConstructorInfo constructor && constructor.GetParameters() is {Length: > 0} parameters)
+        if (typeof(T).GetCustomConstructor() is ConstructorInfo constructor && constructor.GetParameters() is { Length: > 0 } parameters)
         {
             UsesParameterizedConstructor = true;
             CustomParameterizedConstructor = constructor.MakeParameterizedConstructor<T>();

@@ -119,7 +119,7 @@ public readonly struct EnumMember<T> where T : Enum
     /// </summary>
     public static EnumMember<T>[] GetMembers(T except)
     {
-        return GetMembers(new[] {except});
+        return GetMembers(new[] { except });
     }
 
     /// <summary>

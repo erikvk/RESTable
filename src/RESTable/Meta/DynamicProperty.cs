@@ -56,7 +56,7 @@ public class DynamicProperty : Property
                     }
                     return DeclaredFallback ? await getFromDeclared().ConfigureAwait(false) : null;
                 }
-                case JsonElement {ValueKind: JsonValueKind.Object} element:
+                case JsonElement { ValueKind: JsonValueKind.Object } element:
                 {
                     foreach (var jsonProperty in element.EnumerateObject())
                         if (string.Equals(jsonProperty.Name, Name, StringComparison.OrdinalIgnoreCase))

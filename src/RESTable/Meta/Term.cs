@@ -119,7 +119,7 @@ public class Term : IEnumerable<Property>
         foreach (var property in Store)
         {
             isDeclared = isDeclared && property is DeclaredProperty;
-            if (property is DeclaredProperty {SkipConditions: true})
+            if (property is DeclaredProperty { SkipConditions: true })
                 conditionSkip = true;
         }
         IsDeclared = isDeclared;

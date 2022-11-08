@@ -92,7 +92,7 @@ public static class JsonServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddGenericJsonConverter(this IServiceCollection serviceCollection, Type genericConverterType, Predicate<Type>? canConvert = null)
     {
-        if (!genericConverterType.IsGenericTypeDefinition || genericConverterType.GetGenericArguments() is not {Length: 1} argumentArray)
+        if (!genericConverterType.IsGenericTypeDefinition || genericConverterType.GetGenericArguments() is not { Length: 1 } argumentArray)
             throw new InvalidOperationException($"Cannot add type '{genericConverterType.GetRESTableTypeName()}' as a generic JsonConverter type. It must be a " +
                                                 "generic type definition with exactly one generic argument");
         if (!typeof(JsonConverter).IsAssignableFrom(genericConverterType))

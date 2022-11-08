@@ -27,7 +27,7 @@ internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResou
         var attribute = typeof(T).GetCustomAttribute<RESTableAttribute>();
         AvailableMethods = attribute?.AvailableMethods
             .Where(m => m is Method.GET or Method.HEAD)
-            .ToArray() ?? new[] {Method.GET};
+            .ToArray() ?? new[] { Method.GET };
         IsInternal = attribute is RESTableInternalAttribute;
         InterfaceType = typeof(T).GetRESTableInterfaceType();
         ResourceKind = ResourceKind.BinaryResource;

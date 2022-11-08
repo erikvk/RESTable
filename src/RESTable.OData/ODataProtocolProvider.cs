@@ -196,7 +196,7 @@ public class ODataProtocolProvider : IProtocolProvider
                     switch (option)
                     {
                         case filter:
-                            if (Regex.Match(decodedValue, @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )") is {Success: true} m)
+                            if (Regex.Match(decodedValue, @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )") is { Success: true } m)
                                 throw new FeatureNotImplemented($"Not implemented operator '{m.Value}' in $filter");
                             var toAdd = decodedValue
                                 .Replace("(", "")

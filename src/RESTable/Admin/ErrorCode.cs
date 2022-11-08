@@ -32,6 +32,6 @@ public class ErrorCode : ISelector<ErrorCode>
         if (request is null) throw new ArgumentNullException(nameof(request));
         return EnumMember<ErrorCodes>
             .GetMembers()
-            .Select(m => new ErrorCode {Name = m.Value, Code = m.NumericValue});
+            .Select(m => new ErrorCode { Name = m.Value, Code = m.NumericValue });
     }
 }

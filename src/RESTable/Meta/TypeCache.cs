@@ -148,11 +148,11 @@ public class TypeCache
                         return p;
                     });
                 }
-                case {IsInterface: true}:
+                case { IsInterface: true }:
                 {
                     return ParseDeclaredProperties
                     (
-                        new[] {_type}
+                        new[] { _type }
                             .Concat(_type.GetInterfaces())
                             .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public)),
                         false

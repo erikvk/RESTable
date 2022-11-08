@@ -64,10 +64,10 @@ public class AccessRights : ReadOnlyDictionary<IResource, Method[]>
 
         foreach (var resource in resourceCollection.Where(r => r.GETAvailableToAll))
             if (assignments.TryGetValue(resource, out var methods))
-                assignments[resource] = methods.Union(new[] {GET, REPORT, HEAD})
+                assignments[resource] = methods.Union(new[] { GET, REPORT, HEAD })
                     .OrderBy(i => i, MethodComparer.Instance)
                     .ToArray();
-            else assignments[resource] = new[] {GET, REPORT, HEAD};
+            else assignments[resource] = new[] { GET, REPORT, HEAD };
 
         return assignments;
     }

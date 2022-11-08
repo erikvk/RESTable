@@ -39,7 +39,7 @@ internal class ExcelContentTypeProvider : IContentTypeProvider
 
     public string Name => "Microsoft Excel";
     public ContentType ContentType => ExcelMimeType;
-    public string[] MatchStrings => new[] {ExcelMimeType, RESTableSpecific, Brief};
+    public string[] MatchStrings => new[] { ExcelMimeType, RESTableSpecific, Brief };
     public bool CanRead => true;
     public bool CanWrite => true;
     public string ContentDispositionFileExtension => ".xlsx";
@@ -206,7 +206,7 @@ internal class ExcelContentTypeProvider : IContentTypeProvider
         {
             // Read property names from the first row
             var propertyName = worksheet.Cells[rowNumber, columnIndex].GetValue<string>();
-            if (metadata.GetProperty(propertyName) is {IsWritable: true} writeable)
+            if (metadata.GetProperty(propertyName) is { IsWritable: true } writeable)
                 referencedPropertiesList.Add((writeable, columnIndex));
             else if (metadata.TypeIsDictionary)
                 referencedPropertiesList.Add((DynamicProperty.Parse(propertyName), columnIndex));
@@ -269,10 +269,10 @@ internal class ExcelContentTypeProvider : IContentTypeProvider
             case char @char:
                 target.Value = @char.ToString();
                 break;
-            case JsonElement {ValueKind: JsonValueKind.Array} jarr:
+            case JsonElement { ValueKind: JsonValueKind.Array } jarr:
                 target.Value = string.Join(", ", jarr.EnumerateArray().Select(o => JsonProvider.ToObject<object>(o)?.ToString()));
                 break;
-            case JsonElement {ValueKind: JsonValueKind.Object}:
+            case JsonElement { ValueKind: JsonValueKind.Object }:
                 target.Value = typeof(JsonElement).FullName;
                 break;
             case JsonElement element:

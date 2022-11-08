@@ -100,7 +100,7 @@ public sealed class MetaConditions
             return new MetaConditions();
         var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
         var others = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
-        MetaConditions metaConditions = new() {Empty = false};
+        MetaConditions metaConditions = new() { Empty = false };
         ICollection<string>? dynamicDomain = default;
 
         void make(IEnumerable<IUriCondition> conditions)

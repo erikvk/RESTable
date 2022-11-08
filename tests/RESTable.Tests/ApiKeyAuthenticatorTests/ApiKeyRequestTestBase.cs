@@ -31,8 +31,8 @@ public class ApiKeyRequestTestBase : IClassFixture<RESTableFixture>
                     {
                         new()
                         {
-                            Resources = new[] {"RESTable.Tests.*"},
-                            Methods = new[] {"*"}
+                            Resources = new[] { "RESTable.Tests.*" },
+                            Methods = new[] { "*" }
                         }
                     }
                 }

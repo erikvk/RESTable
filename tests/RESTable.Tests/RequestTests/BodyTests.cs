@@ -114,7 +114,7 @@ public class BodyTests : RESTableTestBase
             ["First"] = 1,
             ["Second"] = "Second",
             ["Third"] = 3,
-            ["Fourth"] = new[] {1, 2, 3, 4}
+            ["Fourth"] = new[] { 1, 2, 3, 4 }
         };
         await using var response = await request
             .WithMethod(Method.POST)
@@ -136,7 +136,7 @@ public class BodyTests : RESTableTestBase
             ["First"] = 1,
             ["Second"] = "Second",
             ["Third"] = 3,
-            ["Fourth"] = new[] {1, 2, 3, 4}
+            ["Fourth"] = new[] { 1, 2, 3, 4 }
         };
         var asyncEnum = AsyncEnumerable.Repeat(dict, 5);
         var response1 = await request

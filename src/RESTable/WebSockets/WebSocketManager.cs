@@ -94,7 +94,7 @@ public class WebSocketManager
                 }
                 case "#OPTIONS":
                 {
-                    await sendJson(new {terminal.SupportsTextInput, terminal.SupportsBinaryInput}).ConfigureAwait(false);
+                    await sendJson(new { terminal.SupportsTextInput, terminal.SupportsBinaryInput }).ConfigureAwait(false);
                     return true;
                 }
                 case "#INFO" when tail is string json:

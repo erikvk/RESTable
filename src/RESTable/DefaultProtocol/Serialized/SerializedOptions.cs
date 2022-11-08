@@ -6,7 +6,7 @@ public class SerializedOptions : ISerialized
 {
     public SerializedOptions(OptionsBody data)
     {
-        Data = new[] {data};
+        Data = new[] { data };
     }
 
     public OptionsBody[] Data { get; }

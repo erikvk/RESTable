@@ -334,7 +334,7 @@ public static class ExtensionMethods
     /// </summary>
     public static (string, string?) TupleSplit(this string str, char separator, bool trim = false)
     {
-        var split = str.Split(new[] {separator}, 2, StringSplitOptions.RemoveEmptyEntries);
+        var split = str.Split(new[] { separator }, 2, StringSplitOptions.RemoveEmptyEntries);
         return trim switch
         {
             false => split.Length switch
@@ -358,7 +358,7 @@ public static class ExtensionMethods
     /// </summary>
     public static (string, string?) TupleSplit(this string str, string separator, bool trim = false)
     {
-        var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
+        var split = str.Split(new[] { separator }, 2, StringSplitOptions.None);
         return trim switch
         {
             false => split.Length switch
@@ -554,7 +554,7 @@ public static class ExtensionMethods
     /// </summary>
     public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
     {
-        return str.Split(new[] {separator}, options);
+        return str.Split(new[] { separator }, options);
     }
 #endif
 
@@ -943,7 +943,7 @@ public static class ExtensionMethods
             case "": return "";
         }
 
-        if (property is {IsEnum: true} prop)
+        if (property is { IsEnum: true } prop)
             try
             {
                 if (prop.IsNullable)

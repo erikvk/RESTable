@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
@@ -40,6 +41,34 @@ public class PopulateTests : RESTableTestBase
     }
 
     [Fact]
+    public async Task PopulateWithArrayValue()
+    {
+        var instance = new Holder<string[]>
+        {
+            Item = new[] { "1", "2", "3" }
+        };
+        var json = JsonProvider.Serialize(new { Item = new[] { "2", "3", "4" } });
+        var populator = JsonProvider.GetPopulator<Holder<string[]>>(json);
+        var populated = await populator(instance) as Holder<string[]>;
+        Assert.NotNull(populated);
+        Assert.Equal(instance, populated);
+    }
+
+    [Fact]
+    public async Task PopulateArrayValuedDictionary()
+    {
+        var instance = new Dictionary<string, string[]>
+        {
+            ["Item"] = new[] { "1", "2", "3" }
+        };
+        var json = JsonProvider.Serialize(new { Item = new[] { "2", "3", "4" } });
+        var populator = JsonProvider.GetPopulator<Dictionary<string, string[]>>(json);
+        var populated = await populator(instance) as Dictionary<string, string[]>;
+        Assert.NotNull(populated);
+        Assert.Equal(instance, populated);
+    }
+
+    [Fact]
     public async Task PopulateInheritedProperties()
     {
         var instance = new MyHolder
@@ -47,7 +76,7 @@ public class PopulateTests : RESTableTestBase
             Item = "Goo",
             OtherItem = "Goo"
         };
-        var json = JsonProvider.Serialize(new {Item = "Foo", OtherItem = "Foo"});
+        var json = JsonProvider.Serialize(new { Item = "Foo", OtherItem = "Foo" });
         var populator = JsonProvider.GetPopulator<MyHolder>(json);
         var populated = await populator(instance) as MyHolder;
         Assert.NotNull(populated);

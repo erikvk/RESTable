@@ -12,7 +12,7 @@ public class RootClient : Client
     (
         OriginType.Internal,
         "localhost",
-        new IPAddress(new byte[] {127, 0, 0, 1}),
+        new IPAddress(new byte[] { 127, 0, 0, 1 }),
         null,
         null,
         false,
