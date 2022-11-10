@@ -78,7 +78,7 @@ public class ElasticSqliteTableController<TController, TTable> : IAsyncSelector<
                 TableMapping = mapping,
                 ClrTypeName = mapping.ClrClass.FullName!,
                 SqlTableName = mapping.TableName,
-                Columns = mapping.ColumnMappings.Values.ToDictionary(
+                Columns = mapping.ColumnMappings!.Values.ToDictionary(
                     columnMapping => columnMapping.ClrProperty.Name,
                     columnMapping => columnMapping.ClrProperty.Type),
                 DroppedColumns = Array.Empty<string>()
@@ -96,7 +96,7 @@ public class ElasticSqliteTableController<TController, TTable> : IAsyncSelector<
         {
             foreach (var columnName in columnNames)
             {
-                var mapping = TableMapping.ColumnMappings.Values.FirstOrDefault(cm => cm.ClrProperty.Name.EqualsNoCase(columnName));
+                var mapping = TableMapping.ColumnMappings!.Values.FirstOrDefault(cm => cm.ClrProperty.Name.EqualsNoCase(columnName));
                 if (mapping is null) continue;
                 if (mapping.IsRowId || mapping.ClrProperty.IsDeclared)
                     throw new SqliteException($"Cannot drop column '{mapping.SqlColumn.Name}' from table '{TableMapping.TableName}'. " +
@@ -124,7 +124,7 @@ public class ElasticSqliteTableController<TController, TTable> : IAsyncSelector<
         await DropColumns(DroppedColumns).ConfigureAwait(false);
         foreach (var (name, type) in columnsToAdd.Where(c => c.type != ClrDataType.Unsupported))
         {
-            TableMapping.ColumnMappings[name] = new ColumnMapping
+            TableMapping.ColumnMappings![name] = new ColumnMapping
             (
                 TableMapping,
                 new ClrProperty(name, type),
@@ -132,7 +132,7 @@ public class ElasticSqliteTableController<TController, TTable> : IAsyncSelector<
             );
             updated = true;
         }
-        await TableMapping.ColumnMappings.Push().ConfigureAwait(false);
+        await TableMapping.ColumnMappings!.Push().ConfigureAwait(false);
         await TableMapping.Update().ConfigureAwait(false);
         return updated;
     }

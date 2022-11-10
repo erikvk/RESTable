@@ -144,7 +144,7 @@ public class HttpRequestHandler
         var proxyIp = default(IPAddress);
         if (context.Request.Headers.TryGetValue("X-Forwarded-For", out var ip))
         {
-            clientIp = IPAddress.Parse(ip.First().Split(':')[0]);
+            clientIp = IPAddress.Parse(ip.First()?.Split(':')[0] ?? string.Empty);
             proxyIp = clientIp;
         }
         var isForwardedHttps = context.Request.Headers.TryGetValue("X-Forwarded-Proto", out var forwardedProto) && forwardedProto == "https";

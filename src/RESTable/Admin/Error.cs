@@ -132,8 +132,7 @@ public class Error
                     "x-original-url" when header.Value?.Contains("key=") == true => "*******",
                     _ => $"{header.Key}: {header.Value}"
                 })),
-            // ReSharper disable once ConstantConditionalAccessQualifier
-            // ReSharper disable once ConstantNullCoalescingCondition
+            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
             resourceName: resource?.Name ?? "<unknown>",
             body: request.Body.ToString(),
             time: DateTime.UtcNow,

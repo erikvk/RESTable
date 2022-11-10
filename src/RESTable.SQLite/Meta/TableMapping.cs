@@ -25,7 +25,7 @@ public static class TableMapping<T> where T : SqliteTable
     /// <summary>
     ///     Gets the column mappings from the table mapping for the given type
     /// </summary>
-    public static ColumnMappings ColumnMappings => Get.ColumnMappings;
+    public static ColumnMappings ColumnMappings => Get.ColumnMappings!;
 
     internal static (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec => Get.InsertSpec;
     internal static (string name, string set, string[] param, ColumnMapping[] mappings) UpdateSpec => Get.UpdateSpec;

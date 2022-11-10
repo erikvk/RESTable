@@ -113,7 +113,7 @@ public class TableMapping : ISelector<TableMapping>
     /// <summary>
     ///     The column mappings of this table mapping
     /// </summary>
-    public ColumnMappings ColumnMappings { get; private set; }
+    public ColumnMappings? ColumnMappings { get; private set; }
 
     /// <summary>
     ///     Does this table mapping have a corresponding Sqlite table?
@@ -195,8 +195,8 @@ public class TableMapping : ISelector<TableMapping>
     internal async Task DropColumns(List<ColumnMapping> mappings)
     {
         foreach (var mapping in mappings)
-            ColumnMappings.Remove(mapping.ClrProperty.Name);
-        ReloadColumnNames(ColumnMappings);
+            ColumnMappings!.Remove(mapping.ClrProperty.Name);
+        ReloadColumnNames(ColumnMappings!);
         var tempColumnNames = new HashSet<string>(SqlColumnNames);
         tempColumnNames.Remove("rowid");
         var columnsSql = string.Join(", ", tempColumnNames);

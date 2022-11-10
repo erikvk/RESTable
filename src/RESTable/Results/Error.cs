@@ -72,7 +72,7 @@ public abstract class Error : RESTableException, IResult, ITraceable
     /// <inheritdoc />
     public void Dispose()
     {
-        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (Request is not null)
             Request.Dispose();
     }
@@ -80,7 +80,7 @@ public abstract class Error : RESTableException, IResult, ITraceable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (Request is not null)
             await Request.DisposeAsync().ConfigureAwait(false);
     }
@@ -96,7 +96,7 @@ public abstract class Error : RESTableException, IResult, ITraceable
     {
         get
         {
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (Request is not null)
                 return Request.TimeElapsed;
             return default;

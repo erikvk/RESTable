@@ -68,7 +68,7 @@ internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IA
             while (!EndOfMessage)
             {
                 // Read the rest of the message
-                await ReadAsync(arrayBuffer, 0, BufferSize);
+                var _ = await ReadAsync(arrayBuffer, 0, BufferSize);
             }
         }
         finally
@@ -98,8 +98,10 @@ internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IA
         {
             var memory = arrayBuffer.AsMemory(..BufferSize);
             while (!EndOfMessage)
+            {
                 // Read the rest of the message
-                await ReadAsync(memory);
+                var _ = await ReadAsync(memory);
+            }
         }
         finally
         {

@@ -304,7 +304,7 @@ public class Term : IEnumerable<Property>
     {
         unchecked
         {
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             return ((Key is not null ? Key.GetHashCode() : 0) * 397) ^ IsDeclared.GetHashCode();
         }
     }

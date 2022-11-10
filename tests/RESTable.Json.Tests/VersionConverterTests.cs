@@ -22,7 +22,7 @@ public class VersionConverterTests : RESTableTestBase
         var jsonString = $"{{\"Item\":\"{versionString}\"}}";
         var versionHolder = jsonProvider.Deserialize<Holder<Version>>(jsonString);
         Assert.NotNull(versionHolder?.Item);
-        Assert.Equal(version, versionHolder.Item);
+        Assert.Equal(version, versionHolder?.Item);
     }
 
     [Fact]
