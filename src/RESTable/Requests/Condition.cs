@@ -28,6 +28,7 @@ public class Condition<T> : ICondition, IUriCondition where T : class
 
         Term = term;
         Operator = op;
+
         Value = value;
         Skip = term.ConditionSkip;
         Predicate = op switch
@@ -105,7 +106,12 @@ public class Condition<T> : ICondition, IUriCondition where T : class
     {
         try
         {
-            return Comparer.DefaultInvariant.Compare(other, value);
+            return other switch
+            {
+                Version otherVersion when value is string valueString => Compare(otherVersion.ToString(), valueString),
+                string otherString when value is Version valueVersion => Compare(otherString, valueVersion.ToString()),
+                _ => Comparer.DefaultInvariant.Compare(other, value)
+            };
         }
         catch (ArgumentException) when (Term.IsDynamic && value is not null)
         {
