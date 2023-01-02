@@ -69,7 +69,6 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         return new ValueTask<Stream>(GetOutgoingMessageStream(asText, cancellationToken));
     }
 
-
     /// <inheritdoc />
     public Task SendText(string data, CancellationToken cancellationToken = new())
     {

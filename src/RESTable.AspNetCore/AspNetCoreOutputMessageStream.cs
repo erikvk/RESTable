@@ -101,6 +101,14 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
     public override async ValueTask DisposeAsync()
     {
         if (!SemaphoreOpen || IsDisposed) return;
+        switch (WebSocket.State)
+        {
+            case WebSocketState.None:
+            case WebSocketState.Connecting:
+            case WebSocketState.CloseSent:
+            case WebSocketState.Closed:
+            case WebSocketState.Aborted: return;
+        }
         try
         {
             await WebSocket.SendAsync

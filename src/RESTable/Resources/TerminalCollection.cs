@@ -26,7 +26,11 @@ public class TerminalCollection<T> : ITerminalCollection<T> where T : Terminal
     private IEnumerable<T> GetEnumeration()
     {
         foreach (var connectedSocket in WebSocketManager.ConnectedWebSockets.Values)
+        {
             if (connectedSocket.Terminal is T terminal)
+            {
                 yield return terminal;
+            }
+        }
     }
 }

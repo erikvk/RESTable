@@ -51,7 +51,10 @@ internal class WebSocketCombination : IWebSocket, IAsyncDisposable
     public async ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
     {
         var streams = new Stream[WebSockets.Length];
-        for (var i = 0; i < WebSockets.Length; i += 1) streams[i] = await WebSockets[i].GetMessageStream(asText, cancellationToken).ConfigureAwait(false);
+        for (var i = 0; i < WebSockets.Length; i += 1)
+        {
+            streams[i] = await WebSockets[i].GetMessageStream(asText, cancellationToken).ConfigureAwait(false);
+        }
         return new CombinedWebSocketsMessageStream(streams, asText, cancellationToken);
     }
 

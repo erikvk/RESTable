@@ -109,7 +109,7 @@ public class Statics
 [InMemory]
 public class TestResource
 {
-    public Version Version { get; set; }
+    public Version? Version { get; set; }
 
     [JsonConstructor]
     public TestResource(string s, int i)

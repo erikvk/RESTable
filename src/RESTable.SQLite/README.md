@@ -58,12 +58,12 @@ public class Product : SQLiteTable
 
 Would create the following SQLite table, with table mappings from each property to the column with the same name:
 
-Name             | Type
----------------- | ----------
-ProductId        | `TEXT`
-InStock          | `INT`
-NetPriceUsd      | `DECIMAL`
-RegistrationDate | `DATETIME`
+ Name             | Type       
+------------------|------------
+ ProductId        | `TEXT`     
+ InStock          | `INT`      
+ NetPriceUsd      | `DECIMAL`  
+ RegistrationDate | `DATETIME` 
 
 #### Elastic table mappings
 
@@ -280,8 +280,8 @@ public class Product : SQLiteTable
 }
 ```
 
-Name             | Type
----------------- | ----------
-ProductId        | `TEXT`
-In_Stock         | `INT`
-RegistrationDate | `DATETIME`
+ Name             | Type       
+------------------|------------
+ ProductId        | `TEXT`     
+ In_Stock         | `INT`      
+ RegistrationDate | `DATETIME` 

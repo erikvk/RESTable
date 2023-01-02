@@ -328,15 +328,15 @@ the [specification](https://develop.mopedo.com/RESTable/Consuming%20a%20RESTable
 are
 some that are used below:
 
-Name         | Function
-:----------- | :-------------------------------------------------------------
-`limit`      | Limits the output to a given number of entities
-`offset`     | Skips a given number of entities
-`select`     | Include only a subset of the entity's properties in the output
-`add`        | Add a property to the output
-`order_asc`  | Orders the output in ascending order by a given property
-`order_desc` | Orders the output in descending order by a given property
-`distinct`   | Returns only distinct entities (based on entity values)
+ Name         | Function                                                       
+:-------------|:---------------------------------------------------------------
+ `limit`      | Limits the output to a given number of entities                
+ `offset`     | Skips a given number of entities                               
+ `select`     | Include only a subset of the entity's properties in the output 
+ `add`        | Add a property to the output                                   
+ `order_asc`  | Orders the output in ascending order by a given property       
+ `order_desc` | Orders the output in descending order by a given property      
+ `distinct`   | Returns only distinct entities (based on entity values)        
 
 Here is the main request template used
 below: ([Postman](https://github.com/Mopedo/RESTable.Tutorial/blob/master/RESTableTutorial/Postman_template_get.jpg))
