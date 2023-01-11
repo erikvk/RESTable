@@ -30,6 +30,8 @@ internal class ConverterResolver : JsonConverterFactory
             [typeof(ContentTypesConverter)] = new ContentTypesConverter(),
             [typeof(ToStringConverter)] = new ToStringConverter(),
             [typeof(VersionConverter)] = new VersionConverter(),
+            [typeof(DateTimeConverter)] = new DateTimeConverter(),
+            [typeof(DateTimeOffsetConverter)] = new DateTimeOffsetConverter(),
             [typeof(JsonStringEnumConverter)] = new JsonStringEnumConverter()
         };
     }
@@ -76,6 +78,8 @@ internal class ConverterResolver : JsonConverterFactory
             _ when objectType == typeof(ContentTypes) => typeof(ContentTypesConverter),
             _ when objectType == typeof(Term) => typeof(ToStringConverter),
             _ when objectType == typeof(Version) => typeof(VersionConverter),
+            _ when objectType == typeof(DateTime) => typeof(DateTimeConverter),
+            _ when objectType == typeof(DateTimeOffset) => typeof(DateTimeOffsetConverter),
             _ when objectType.IsEnum => typeof(JsonStringEnumConverter),
             _ when objectType == typeof(ProcessedEntity) => typeof(ProcessedEntityConverter),
 

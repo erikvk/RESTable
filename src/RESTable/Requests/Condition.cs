@@ -108,6 +108,13 @@ public class Condition<T> : ICondition, IUriCondition where T : class
         {
             return other switch
             {
+                DateTime otherDateTime when value is string valueString => Compare(otherDateTime, DateTime.Parse(valueString)),
+                string otherString when value is DateTime dateTime => Compare(DateTime.Parse(otherString), dateTime),
+                DateTime otherDateTime when value is DateTimeOffset dateTimeOffset => Compare(new DateTimeOffset(otherDateTime), dateTimeOffset),
+                DateTimeOffset otherDateTimeOffset when value is string valueString => Compare(otherDateTimeOffset, DateTimeOffset.Parse(valueString)),
+                string otherString when value is DateTimeOffset dateTime => Compare(DateTimeOffset.Parse(otherString), dateTime),
+                DateTimeOffset otherDateTimeOffset when value is DateTime dateTime => Compare(otherDateTimeOffset, new DateTimeOffset(dateTime)),
+
                 Version otherVersion when value is string valueString => Compare(otherVersion.ToString(), valueString),
                 string otherString when value is Version valueVersion => Compare(otherString, valueVersion.ToString()),
                 _ => Comparer.DefaultInvariant.Compare(other, value)

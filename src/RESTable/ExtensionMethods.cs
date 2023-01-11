@@ -975,6 +975,11 @@ public static class ExtensionMethods
             var targetType = property.Type.IsNullable(out var t) ? t! : property.Type;
             try
             {
+                if (property.Type == typeof(DateTimeOffset))
+                {
+                    if (DateTimeOffset.TryParse(valueLiteral, null, AssumeUniversal, out var dateTimeOffset))
+                        return dateTimeOffset.ToUniversalTime();
+                }
                 if (property.IsDateTime)
                 {
                     if (DateTime.TryParse(valueLiteral, null, AssumeUniversal, out var dateTime))

@@ -126,12 +126,14 @@ public class ClientWebSocketBuilder : IProtocolHolder
             Context,
             CertificateErrorsIgnored
         );
+
         await aspNetCoreWebSocket.OpenAndAttachClientSocketToTerminal
         (
             this,
             Terminal ?? new CustomTerminal(this),
             cancellationToken
         ).ConfigureAwait(false);
+
         return aspNetCoreWebSocket;
     }
 
