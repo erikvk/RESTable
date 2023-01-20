@@ -297,11 +297,6 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
     /// </summary>
     public Task LifetimeTask { get; private set; }
 
-    /// <summary>
-    ///     Is the WebSocket currently connected?
-    /// </summary>
-    protected abstract bool IsConnected { get; }
-
     /// <inheritdoc />
     public CancellationToken WebSocketAborted => WebSocketClosed.Token;
 
@@ -464,12 +459,12 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         Status = WebSocketStatus.PendingClose;
         var terminalName = TerminalConnection?.Resource?.Name;
         await ReleaseTerminal().ConfigureAwait(false);
-        if (IsConnected)
-            await Close(CloseDescription, CancellationToken.None).ConfigureAwait(false);
+        await TryClose(CloseDescription, CancellationToken.None).ConfigureAwait(false);
         WebSocketClosed.Cancel();
         Status = WebSocketStatus.Closed;
         ClosedAt = DateTime.Now;
-        if (terminalName != Console.TypeName) await Console.Log(Context, new WebSocketEvent(MessageType.WebSocketClose, this)).ConfigureAwait(false);
+        if (terminalName != Console.TypeName)
+            await Console.Log(Context, new WebSocketEvent(MessageType.WebSocketClose, this)).ConfigureAwait(false);
         _disposed = true;
     }
 
@@ -524,7 +519,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
     /// <summary>
     ///     Disconnects the actual underlying WebSocket connection
     /// </summary>
-    protected abstract Task Close(string description, CancellationToken cancellationToken);
+    protected abstract Task TryClose(string description, CancellationToken cancellationToken);
 
     #endregion
 

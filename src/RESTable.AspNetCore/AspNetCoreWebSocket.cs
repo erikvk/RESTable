@@ -80,8 +80,6 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         );
     }
 
-    protected override bool IsConnected => WebSocket?.State == WebSocketState.Open;
-
     protected abstract override Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken);
 
 #if NETSTANDARD2_0
@@ -166,8 +164,11 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         catch (OperationCanceledException) { }
     }
 
-    protected override async Task Close(string description, CancellationToken cancellationToken)
+    protected override async Task TryClose(string description, CancellationToken cancellationToken)
     {
-        await WebSocket!.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
+        if (WebSocket?.State is WebSocketState.Open or WebSocketState.CloseReceived or WebSocketState.CloseSent)
+        {
+            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
+        }
     }
 }
