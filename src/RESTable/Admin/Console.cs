@@ -94,11 +94,7 @@ internal sealed class Console : FeedTerminal
                             item.Out.Content = await serializedResult.GetLogContent().ConfigureAwait(false);
                         }
                         var outputStream = await console.ActualSocket.GetMessageStream(true).ConfigureAwait(false);
-#if NETSTANDARD2_0
-                        using (outputStream)
-#else
-                        await using (outputStream)
-#endif
+                        await using (outputStream.ConfigureAwait(false))
                         {
                             await JsonProvider.SerializeAsync(outputStream, item, true, true).ConfigureAwait(false);
                         }
@@ -137,11 +133,7 @@ internal sealed class Console : FeedTerminal
                         if (console.IncludeHeaders && logable is IHeaderHolder { ExcludeHeaders: false } hh)
                             item.CustomHeaders = hh.Headers;
                         var outputStream = await console.ActualSocket.GetMessageStream(true).ConfigureAwait(false);
-#if NETSTANDARD2_0
-                        using (outputStream)
-#else
-                        await using (outputStream)
-#endif
+                        await using (outputStream.ConfigureAwait(false))
                         {
                             await JsonProvider!.SerializeAsync(outputStream, item, true, true).ConfigureAwait(false);
                         }

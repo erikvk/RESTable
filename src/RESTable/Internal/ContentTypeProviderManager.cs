@@ -34,7 +34,7 @@ public class ContentTypeProviderManager
     {
         if (provider is null)
             throw new InvalidContentTypeProviderException("External content type provider cannot be null");
-        if (!provider.CanRead && !provider.CanWrite)
+        if (provider is { CanRead: false, CanWrite: false })
             throw new InvalidContentTypeProviderException($"Content type provider '{provider.GetType().GetRESTableTypeName()}' can't read nor write. A content type provider " +
                                                           "must be able to either read or write.");
     }

@@ -1,7 +1,5 @@
-﻿#if !NETSTANDARD2_0
+﻿using System;
 using System.Collections.Immutable;
-#endif
-using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -300,7 +298,6 @@ public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable, IServi
 
     #endregion
 
-#if !NETSTANDARD2_0
     #region Retreiving things
 
     public ValueTask<ReadOnlyMemory<T>> All<T>() where T : class
@@ -423,6 +420,4 @@ public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable, IServi
     }
 
     #endregion
-
-#endif
 }

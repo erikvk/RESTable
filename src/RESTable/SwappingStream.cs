@@ -73,11 +73,7 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
         Position = 0;
         var fileStream = MakeTempFile();
         var memoryStream = (MemoryStream) Stream;
-#if NETSTANDARD2_0
-        using (memoryStream)
-#else
         await using (memoryStream.ConfigureAwait(false))
-#endif
         {
             await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
             Stream = fileStream;
@@ -222,14 +218,6 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
 
     #endregion
 
-#if NETSTANDARD2_0
-    public ValueTask DisposeAsync()
-    {
-        Stream.Dispose();
-        base.Dispose();
-        return default;
-    }
-#else
     public override void CopyTo(Stream destination, int bufferSize)
     {
         Stream.CopyTo(destination, bufferSize);
@@ -264,7 +252,6 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
         await Stream.DisposeAsync().ConfigureAwait(false);
         await base.DisposeAsync().ConfigureAwait(false);
     }
-#endif
 
     /// <inheritdoc />
     protected override void Dispose(bool disposing)

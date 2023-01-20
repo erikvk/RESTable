@@ -3,10 +3,6 @@
     <Import Project="../pack.props"/>
     <Import Project="../common.props"/>
 
-    <PropertyGroup>
-        <TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
-    </PropertyGroup>
-
     <ItemGroup>
         <ProjectReference Include="../RESTable/RESTable.csproj"/>
         <PackageReference Include="System.Data.SQLite.Core" Version="1.0.117"/>

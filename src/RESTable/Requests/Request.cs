@@ -135,11 +135,7 @@ internal class Request<T> : IRequest, IRequest<T>, IEntityRequest<T>, ITraceable
             {
                 await ws.SendResult(result, cancellationToken: cancellationToken).ConfigureAwait(false);
                 var message = await ws.GetMessageStream(false, cancellationToken).ConfigureAwait(false);
-#if NETSTANDARD2_0
-                using (message)
-#else
                 await using (message.ConfigureAwait(false))
-#endif
                 {
                     await result.Serialize(message, cancellationToken).ConfigureAwait(false);
                 }

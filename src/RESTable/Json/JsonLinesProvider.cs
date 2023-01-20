@@ -47,11 +47,7 @@ public class JsonLinesProvider : IContentTypeProvider
         {
             if (count > 0)
             {
-#if !NETSTANDARD2_0
                 await stream.WriteAsync(NewLine, cancellationToken).ConfigureAwait(false);
-#else
-                await stream.WriteAsync(NewLine, 0, NewLine.Length, cancellationToken).ConfigureAwait(false);
-#endif
             }
             await JsonProvider.SerializeAsync(stream, item, false, cancellationToken: cancellationToken).ConfigureAwait(false);
             count += 1;

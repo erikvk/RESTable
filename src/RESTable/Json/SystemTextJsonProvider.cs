@@ -133,11 +133,7 @@ public class SystemTextJsonProvider : IJsonProvider, IContentTypeProvider
     /// <inheritdoc />
     public async IAsyncEnumerable<T> Populate<T>(IAsyncEnumerable<T> entities, Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken) where T : notnull
     {
-#if NETSTANDARD2_0
-        using (stream)
-#else
         await using (stream.ConfigureAwait(false))
-#endif
         {
             var jsonElement = await JsonSerializer.DeserializeAsync<JsonElement>(stream, Options, cancellationToken).ConfigureAwait(false);
             if (jsonElement.ValueKind == JsonValueKind.Array)
@@ -318,11 +314,7 @@ public class SystemTextJsonProvider : IJsonProvider, IContentTypeProvider
         {
             while (true)
             {
-#if NETSTANDARD2_0
-                var dataLength = await stream.ReadAsync(buffer, leftOver, buffer.Length - leftOver, cancellationToken).ConfigureAwait(false);
-#else
                 var dataLength = await stream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken).ConfigureAwait(false);
-#endif
                 var dataSize = dataLength + leftOver;
                 var isFinalBlock = dataSize == 0;
                 if (isFinalBlock)

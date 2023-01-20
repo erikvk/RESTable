@@ -530,36 +530,6 @@ public static class ExtensionMethods
 
     #endregion
 
-    #region NETSTANDARD2.0
-
-#if NETSTANDARD2_0
-    public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> kvp, out TKey key, out TValue value)
-    {
-        key = kvp.Key;
-        value = kvp.Value;
-    }
-
-    public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable)
-    {
-        return new(enumerable);
-    }
-
-    public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable, IEqualityComparer<T> equalityComparer)
-    {
-        return new(enumerable, equalityComparer);
-    }
-
-    /// <summary>
-    ///     Splits a string by a separator string
-    /// </summary>
-    public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
-    {
-        return str.Split(new[] { separator }, options);
-    }
-#endif
-
-    #endregion
-
     #region Dictionary helpers
 
     /// <summary>
@@ -1026,26 +996,25 @@ public static class ExtensionMethods
 
     #region Conversion
 
-#if !NETSTANDARD2_0
     internal static (int offset, int limit) ToOffsetAndLimit(this Range range)
     {
         var offset = range.Start switch
         {
-            {IsFromEnd: true, Value: 0} when range.End.Equals(^0) => int.MaxValue,
-            {IsFromEnd: true, Value: 0} => throw new ArgumentOutOfRangeException(nameof(range)),
-            {IsFromEnd: true} => -range.Start.Value,
+            { IsFromEnd: true, Value: 0 } when range.End.Equals(^0) => int.MaxValue,
+            { IsFromEnd: true, Value: 0 } => throw new ArgumentOutOfRangeException(nameof(range)),
+            { IsFromEnd: true } => -range.Start.Value,
             _ => range.Start.Value
         };
         return range.End switch
         {
-            {IsFromEnd: true} when range.End.Value != 0 => throw new ArgumentOutOfRangeException
+            { IsFromEnd: true } when range.End.Value != 0 => throw new ArgumentOutOfRangeException
             (
                 nameof(range), "Ranges where End.FromEnd == true and End.Value > 0 are not supported by RESTable"
             ),
-            {IsFromEnd: true} => (offset, -1),
+            { IsFromEnd: true } => (offset, -1),
             _ => range.Start switch
             {
-                {IsFromEnd: true} => throw new ArgumentOutOfRangeException
+                { IsFromEnd: true } => throw new ArgumentOutOfRangeException
                 (
                     nameof(range), "Ranges where Start.FromEnd == true and End.FromEnd == false are not supported by RESTable"
                 ),
@@ -1080,7 +1049,6 @@ public static class ExtensionMethods
             }
         }
     }
-#endif
 
     internal static double GetRESTableElapsedMs(this TimeSpan timeSpan)
     {
@@ -1122,11 +1090,7 @@ public static class ExtensionMethods
             default:
             {
                 var ms = new MemoryStream();
-#if NETSTANDARD2_0
-                using (ms)
-#else
-                await using (ms)
-#endif
+                await using (ms.ConfigureAwait(false))
                 {
                     await stream.CopyToAsync(ms).ConfigureAwait(false);
                     if (stream.CanSeek)

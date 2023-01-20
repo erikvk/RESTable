@@ -100,7 +100,7 @@ public class ResourceValidator
                 throw new InvalidResourceDeclarationException(
                     $"Invalid namespace for resource type '{type.GetRESTableTypeName()}'. Namespace '{type.Namespace}' is reserved by RESTable");
 
-            if ((!type.IsClass || !type.IsPublic && !type.IsNestedPublic) && type.Assembly != typeof(Resource).Assembly)
+            if ((!type.IsClass || type is { IsPublic: false, IsNestedPublic: false }) && type.Assembly != typeof(Resource).Assembly)
                 throw new InvalidResourceDeclarationException(
                     $"Invalid type '{type.GetRESTableTypeName()}'. Resource types must be public classes");
 

@@ -50,8 +50,6 @@ internal static class SqliteOperations<T> where T : SqliteTable
 
     private static bool IsSqliteQueryable(ICondition condition)
     {
-        return condition.Term.Count == 1 &&
-               condition.Term.First?.Name is string firstName &&
-               TableMapping<T>.SqlColumnNames.Contains(firstName);
+        return condition.Term is { Count: 1, First.Name: string firstName } && TableMapping<T>.SqlColumnNames.Contains(firstName);
     }
 }

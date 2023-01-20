@@ -23,9 +23,7 @@ internal sealed class AspNetCoreClientWebSocket : AspNetCoreWebSocket
 
     protected override Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken)
     {
-#if !NETSTANDARD2_0
         if (IgnoreCertificateErrors) ClientWebSocket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
-#endif
         return ClientWebSocket.ConnectAsync(RemoteUri, cancellationToken);
     }
 }

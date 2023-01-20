@@ -24,7 +24,7 @@ namespace RESTable.Sqlite;
 ///     mapping and query building is done by RESTable. Use the DatabaseIndex resource to register indexes
 ///     for SQLite resources (just like you would for Starcounter resources).
 /// </summary>
-public class SqliteEntityResourceProvider : EntityResourceProvider<SqliteTable>, IProceduralEntityResourceProvider
+public partial class SqliteEntityResourceProvider : EntityResourceProvider<SqliteTable>, IProceduralEntityResourceProvider
 {
     /// <summary>
     ///     Creates a new instance of the SQLiteProvider class, for use in calls to RESTableConfig.Init()
@@ -48,7 +48,7 @@ public class SqliteEntityResourceProvider : EntityResourceProvider<SqliteTable>,
         if (string.IsNullOrWhiteSpace(directory))
             throw new SqliteException(
                 $"The Sqlite database path '{databasePath}' was invalid. Must be an absolute file path, including file name.");
-        if (!Regex.IsMatch(fileName, @"^[a-zA-Z0-9_]+$"))
+        if (!InvalidFileNameRegex().IsMatch(fileName))
             throw new SqliteException($"Sqlite database file name '{fileName}' contains invalid characters: " +
                                       "Only letters, numbers and underscores are valid in Sqlite database file names.");
 
@@ -200,4 +200,7 @@ public class SqliteEntityResourceProvider : EntityResourceProvider<SqliteTable>,
         Sqlite<ProceduralResource>.Delete(_resource.ToAsyncSingleton()).AsTask().Wait();
         return true;
     }
+
+    [GeneratedRegex("^[a-zA-Z0-9_]+$")]
+    private static partial Regex InvalidFileNameRegex();
 }

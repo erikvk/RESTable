@@ -1,5 +1,4 @@
-﻿#if !NETSTANDARD2_0
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -519,4 +518,3 @@ namespace RESTable.Requests
         }
     }
 }
-#endif

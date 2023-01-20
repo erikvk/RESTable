@@ -252,19 +252,11 @@ public class Body : Stream, IDisposable, IAsyncDisposable
         base.Dispose(disposing);
     }
 
-#if NETSTANDARD2_0
-    public async ValueTask DisposeAsync()
-    {
-        base.Dispose(false);
-        await Stream.DisposeAsync().ConfigureAwait(false);
-    }
-#else
     public override async ValueTask DisposeAsync()
     {
         base.Dispose(false);
         await Stream.DisposeAsync().ConfigureAwait(false);
     }
-#endif
 
     internal byte[] GetBytes()
     {
@@ -373,7 +365,6 @@ public class Body : Stream, IDisposable, IAsyncDisposable
         return Stream.WriteAsync(buffer, offset, count, cancellationToken);
     }
 
-#if !NETSTANDARD2_0
     public override void CopyTo(Stream destination, int bufferSize)
     {
         Stream.CopyTo(destination, bufferSize);
@@ -398,7 +389,6 @@ public class Body : Stream, IDisposable, IAsyncDisposable
     {
         return Stream.WriteAsync(buffer, cancellationToken);
     }
-#endif
 
     #endregion
 }

@@ -574,13 +574,8 @@ public sealed class Shell : Terminal, IAsyncDisposable
     {
         if (result is SwitchedTerminal) return;
         await WebSocket.SendResult(result, elapsed, WriteHeaders, cancellationToken).ConfigureAwait(false);
-
         var message = await WebSocket.GetMessageStream(false, cancellationToken).ConfigureAwait(false);
-#if NETSTANDARD2_0
-        using (message)
-#else
         await using (message.ConfigureAwait(false))
-#endif
         {
             await using var serialized = await result.Serialize(message, cancellationToken).ConfigureAwait(false);
         }

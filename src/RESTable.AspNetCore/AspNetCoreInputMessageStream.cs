@@ -44,39 +44,6 @@ internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IA
         ByteCount = initialByteCount;
     }
 
-#if NETSTANDARD2_0
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-    {
-        WebSocketCancelledToken.ThrowIfCancellationRequested();
-        if (EndOfMessage) return 0;
-        var arraySegment = new ArraySegment<byte>(buffer, offset, count);
-        var result = await WebSocket.ReceiveAsync(arraySegment, cancellationToken).ConfigureAwait(false);
-        if (result.MessageType != MessageType)
-            throw new InvalidOperationException($"Received frame with type '{result.MessageType}' when expecting '{MessageType}'");
-        EndOfMessage = result.EndOfMessage;
-        ByteCount += result.Count;
-        return result.Count;
-    }
-
-    public override async ValueTask DisposeAsync()
-    {
-        if (EndOfMessage || WebSocket.State != WebSocketState.Open)
-            return;
-        var arrayBuffer = ArrayPool.Rent(BufferSize);
-        try
-        {
-            while (!EndOfMessage)
-            {
-                // Read the rest of the message
-                var _ = await ReadAsync(arrayBuffer, 0, BufferSize);
-            }
-        }
-        finally
-        {
-            ArrayPool.Return(arrayBuffer);
-        }
-    }
-#else
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
     {
         WebSocketCancelledToken.ThrowIfCancellationRequested();
@@ -108,7 +75,6 @@ internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IA
             ArrayPool.Return(arrayBuffer);
         }
     }
-#endif
 
     public override int Read(byte[] buffer, int offset, int count)
     {

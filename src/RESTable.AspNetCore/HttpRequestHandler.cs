@@ -32,13 +32,10 @@ public class HttpRequestHandler
         var result = context.GetOptions(uri, headers);
         WriteResponse(result, aspNetCoreContext);
         var remote = aspNetCoreContext.Response.Body;
-#if NETSTANDARD2_0
-        using (remote)
-#else
-        await using (remote)
-#endif
+        await using (remote.ConfigureAwait(false))
         {
-            await using var serializedResult = await result.Serialize(remote, aspNetCoreContext.RequestAborted);
+            var serializedResult = await result.Serialize(remote, aspNetCoreContext.RequestAborted).ConfigureAwait(false);
+            await using (serializedResult.ConfigureAwait(false)) { }
         }
     }
 
@@ -128,13 +125,10 @@ public class HttpRequestHandler
     private static async Task WriteResponseBody(IResult result, HttpContext aspNetCoreContext, CancellationToken cancellationToken)
     {
         var remote = aspNetCoreContext.Response.Body;
-#if NETSTANDARD2_0
-        using (remote)
-#else
-        await using (remote)
-#endif
+        await using (remote.ConfigureAwait(false))
         {
-            await using var serializedResult = await result.Serialize(remote, cancellationToken);
+            var serializedResult = await result.Serialize(remote, cancellationToken).ConfigureAwait(false);
+            await using (serializedResult.ConfigureAwait(false)) { }
         }
     }
 

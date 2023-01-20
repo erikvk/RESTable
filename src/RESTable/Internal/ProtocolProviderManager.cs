@@ -9,7 +9,7 @@ using RESTable.Results;
 
 namespace RESTable.Internal;
 
-public class ProtocolProviderManager
+public partial class ProtocolProviderManager
 {
     public ProtocolProviderManager(ContentTypeProviderManager contentTypeProviderManager, IEnumerable<IProtocolProvider> protocolProviders)
     {
@@ -94,7 +94,7 @@ public class ProtocolProviderManager
         if (string.IsNullOrWhiteSpace(provider.ProtocolIdentifier))
             throw new InvalidProtocolProviderException($"Invalid protocol provider '{provider.GetType().GetRESTableTypeName()}'. " +
                                                        "ProtocolIdentifier cannot be null or whitespace");
-        if (!Regex.IsMatch(provider.ProtocolIdentifier, "^[a-zA-Z]+$"))
+        if (!ProtocolIdentifierRegex().IsMatch(provider.ProtocolIdentifier))
             throw new InvalidProtocolProviderException($"Invalid protocol provider '{provider.GetType().GetRESTableTypeName()}'. " +
                                                        "ProtocolIdentifier can only contain letters a-z and A-Z");
         if (provider.ExternalContentTypeProviderSettings == ExternalContentTypeProviderSettings.DontAllow)
@@ -115,4 +115,7 @@ public class ProtocolProviderManager
     {
         foreach (var cachedProviders in CachedProtocolProviders.Values) cachedProviders.ProtocolProvider.OnInit();
     }
+
+    [GeneratedRegex("^[a-zA-Z]+$")]
+    private static partial Regex ProtocolIdentifierRegex();
 }

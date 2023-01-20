@@ -1,5 +1,4 @@
-﻿#if !NETSTANDARD2_0
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 
 namespace RESTable.Requests
@@ -24,4 +23,3 @@ namespace RESTable.Requests
         }
     }
 }
-#endif

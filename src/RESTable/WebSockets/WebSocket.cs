@@ -137,11 +137,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
                 TotalSentBytesCount += bytesCount;
                 if (TerminalConnection?.Resource?.Name != Console.TypeName)
                 {
-#if NETSTANDARD2_0
-                    var content = Encoding.UTF8.GetString(data.ToArray());
-#else
                     var content = Encoding.UTF8.GetString(data.Span);
-#endif
                     var logEvent = new WebSocketEvent
                     (
                         MessageType.WebSocketOutput,
@@ -433,18 +429,11 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         get => _closeDescription;
         set
         {
-#if NETSTANDARD2_0
-            var bytes = Encoding.UTF8.GetBytes(value);
-            if (bytes.Length > 123)
-                bytes = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Take(bytes, 123));
-            _closeDescription = Encoding.UTF8.GetString(bytes);
-#else
             var maxChars = Encoding.UTF8.GetMaxByteCount(value.Length);
             Span<byte> byteBuffer = stackalloc byte[maxChars];
             var length = Encoding.UTF8.GetBytes(value, byteBuffer);
             var take = Math.Min(length, 123);
             _closeDescription = Encoding.UTF8.GetString(byteBuffer[..take]);
-#endif
         }
     }
 
@@ -464,7 +453,16 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         Status = WebSocketStatus.Closed;
         ClosedAt = DateTime.Now;
         if (terminalName != Console.TypeName)
-            await Console.Log(Context, new WebSocketEvent(MessageType.WebSocketClose, this)).ConfigureAwait(false);
+        {
+            try
+            {
+                await Console.Log(Context, new WebSocketEvent(MessageType.WebSocketClose, this)).ConfigureAwait(false);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
         _disposed = true;
     }
 

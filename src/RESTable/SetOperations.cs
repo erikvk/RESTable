@@ -20,13 +20,13 @@ using static RESTable.Method;
 
 namespace RESTable;
 
-/// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+/// <inheritdoc cref="ISelector{T}" />
 /// <summary>
 ///     The SetOperations resource can perform advanced operations on entities in one
 ///     or more RESTable resources. See the RESTable Specification for details.
 /// </summary>
 [RESTable(GET, Description = description, AllowDynamicConditions = true)]
-public class SetOperations : Dictionary<string, object?>, IAsyncSelector<SetOperations>
+public partial class SetOperations : Dictionary<string, object?>, IAsyncSelector<SetOperations>
 {
     private const string description = "The SetOperations resource can perform advanced operations " +
                                        "on entities in one or more RESTable resources. See the RESTable " +
@@ -198,7 +198,7 @@ public class SetOperations : Dictionary<string, object?>, IAsyncSelector<SetOper
         var mapped = new HashSet<JsonElement>(EqualityComparer);
         var index = 0;
         var keys = new List<string>();
-        mapper = Regex.Replace(mapper, RegEx.MapMacro, match =>
+        mapper = MapperRegex().Replace(mapper, match =>
         {
             keys.Add(match.Groups["value"].Value);
             return $"{{{index++}}}";
@@ -257,4 +257,7 @@ public class SetOperations : Dictionary<string, object?>, IAsyncSelector<SetOper
             throw new ArgumentException(nameof(arrays));
         return arrays!;
     }
+
+    [GeneratedRegex("\\$\\((?<value>[^\\)]+)\\)")]
+    private static partial Regex MapperRegex();
 }

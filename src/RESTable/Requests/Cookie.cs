@@ -10,7 +10,7 @@ namespace RESTable.Requests;
 ///     Represents a cookie, as used in RESTable requests and results. Two cookies with the same name are
 ///     considered equal, and new values will always replace existing ones in hash collections.
 /// </summary>
-public readonly struct Cookie : IEquatable<Cookie>
+public readonly partial struct Cookie : IEquatable<Cookie>
 {
     /// <summary>
     ///     The name of the cookie
@@ -107,7 +107,7 @@ public readonly struct Cookie : IEquatable<Cookie>
         string? path = null
     )
     {
-        if (!Regex.IsMatch(name, RegEx.CookieName))
+        if (!CookieNameRegex().IsMatch(name))
             throw new ArgumentException($"Invalid cookie name: {name}");
         Name = name;
         Value = value;
@@ -262,4 +262,7 @@ public readonly struct Cookie : IEquatable<Cookie>
     {
         return !(left == right);
     }
+
+    [GeneratedRegex("^[a-zA-Z_]\\w*(\\.[a-zA-Z_]\\w*)*$")]
+    private static partial Regex CookieNameRegex();
 }

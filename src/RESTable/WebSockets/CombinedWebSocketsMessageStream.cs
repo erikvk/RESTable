@@ -31,39 +31,6 @@ internal sealed class CombinedWebSocketsMessageStream : Stream, IAsyncDisposable
         CancellationToken = cancellationToken;
     }
 
-#if NETSTANDARD2_0
-    private Task ForAll(Func<Stream, Task> action)
-    {
-        CancellationToken.ThrowIfCancellationRequested();
-        var taskArray = new Task[MessageStreams.Length];
-        for (var i = 0; i < MessageStreams.Length; i += 1)
-        {
-            var stream = MessageStreams[i];
-            taskArray[i] = action(stream);
-        }
-        return Task.WhenAll(taskArray);
-    }
-
-    public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-    {
-        if (IsDisposed)
-            throw new InvalidOperationException("Cannot write to a closed websocket message stream");
-        await ForAll(stream => stream.WriteAsync(buffer, offset, count, cancellationToken)).ConfigureAwait(false);
-        ByteCount += count;
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        if (IsDisposed)
-            return default;
-        foreach (var stream in MessageStreams)
-        {
-            stream.Dispose();
-        }
-        IsDisposed = true;
-        return default;
-    }
-#else
     private Task ForAll(Func<Stream, ValueTask> action)
     {
         CancellationToken.ThrowIfCancellationRequested();
@@ -91,7 +58,6 @@ internal sealed class CombinedWebSocketsMessageStream : Stream, IAsyncDisposable
         await ForAll(stream => stream.DisposeAsync()).ConfigureAwait(false);
         IsDisposed = true;
     }
-#endif
 
     public override void Flush() { }
 

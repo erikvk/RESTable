@@ -41,11 +41,7 @@ public class MetadataDocument : IBinary<MetadataDocument>
             var metadata = Metadata.GetMetadata(MetadataLevel.Full, rootAccess, typeCache);
 
             var swr = new StreamWriter(stream, Encoding.UTF8, 4096, true);
-#if NETSTANDARD2_0
-            using (swr)
-#else
             await using (swr.ConfigureAwait(false))
-#endif
             {
                 await swr.WriteAsync("<?xml version=\"1.0\" encoding=\"utf-8\"?>").ConfigureAwait(false);
                 await swr.WriteAsync("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>").ConfigureAwait(false);

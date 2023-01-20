@@ -20,7 +20,7 @@ namespace RESTable.DefaultProtocol;
 ///     Contains the logic for the default RESTable protocol. This protocol is used if no
 ///     protocol indicator is included in the request URI.
 /// </summary>
-internal sealed class DefaultProtocolProvider : IProtocolProvider
+internal sealed partial class DefaultProtocolProvider : IProtocolProvider
 {
     public DefaultProtocolProvider(IJsonProvider jsonProvider, ResourceCollection resourceCollection)
     {
@@ -41,7 +41,7 @@ internal sealed class DefaultProtocolProvider : IProtocolProvider
     public IUriComponents GetUriComponents(string uriString, RESTableContext context)
     {
         var uri = new DefaultProtocolUriComponents(this);
-        var match = Regex.Match(uriString, RegEx.RESTableRequestUri);
+        var match = RequestUriRegex().Match(uriString);
         if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
         var resourceOrMacro = match.Groups["res"].Value.TrimStart('/');
         var view = match.Groups["view"].Value.TrimStart('-');
@@ -166,7 +166,7 @@ internal sealed class DefaultProtocolProvider : IProtocolProvider
             if (!replaced) conditionString = conditionString.ReplaceFirst("%3E", ">", out replaced);
             if (!replaced) conditionString = conditionString.ReplaceFirst("%3C", "<", out replaced);
         }
-        var match = Regex.Match(conditionString, RegEx.UriCondition);
+        var match = UriConditionRegex().Match(conditionString);
         if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"Invalid condition syntax at '{conditionString}'");
         var (key, opString, valueLiteral) = (match.Groups["key"].Value, match.Groups["op"].Value, match.Groups["val"].Value);
         if (!Operator.TryParse(opString, out var @operator)) throw new InvalidOperator(conditionString);
@@ -309,11 +309,7 @@ internal sealed class DefaultProtocolProvider : IProtocolProvider
             return;
         }
 
-#if NET6_0_OR_GREATER
         var serializedContent = new SerializedEntitiesAsyncEnumerable<T>(entities, toSerialize);
-#else
-        var serializedContent = new SerializedEntitiesEnumerable<T>(entities, toSerialize);
-#endif
         await jsonProvider.SerializeAsync(toSerialize.Body, serializedContent, cancellationToken: cancellationToken).ConfigureAwait(false);
         toSerialize.EntityCount = serializedContent.DataCount;
     }
@@ -379,7 +375,7 @@ internal sealed class DefaultProtocolProvider : IProtocolProvider
         where T : class
     {
         var counter = 0L;
-#if NET6_0_OR_GREATER
+
         async IAsyncEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
         {
             await foreach (var entity in _entities.ConfigureAwait(false))
@@ -388,17 +384,14 @@ internal sealed class DefaultProtocolProvider : IProtocolProvider
                 yield return entity;
             }
         }
-#else
-        IEnumerable<T> enumerateAndCount(IAsyncEnumerable<T> _entities)
-        {
-            foreach (var entity in _entities.ToEnumerable())
-            {
-                counter += 1;
-                yield return entity;
-            }
-        }
-#endif
+
         await jsonProvider.SerializeAsync(toSerialize.Body, enumerateAndCount(entities), cancellationToken: cancellationToken).ConfigureAwait(false);
         toSerialize.EntityCount = counter;
     }
+
+    [GeneratedRegex("^(?<ignore>\\?[^/]*)?((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$")]
+    private static partial Regex RequestUriRegex();
+
+    [GeneratedRegex("^(?<key>[^\\!=<>]*)(?<op>(=|\\!=|<=|>=|<|>))(?<val>.*)$")]
+    private static partial Regex UriConditionRegex();
 }

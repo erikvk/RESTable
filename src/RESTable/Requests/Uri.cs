@@ -11,7 +11,7 @@ namespace RESTable.Requests;
 /// <summary>
 ///     Encodes a URI that is used in a request
 /// </summary>
-internal class URI : IUriComponents
+internal partial class URI : IUriComponents
 {
     private URI()
     {
@@ -57,7 +57,7 @@ internal class URI : IUriComponents
     {
         var uri = new URI();
         if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
-        var groups = Regex.Match(uriString, RegEx.Protocol).Groups;
+        var groups = ProtocolRegex().Match(uriString).Groups;
         var protocolString = groups["proto"].Value;
         if (protocolString.StartsWith("-"))
             protocolString = protocolString.Substring(1);
@@ -97,4 +97,7 @@ internal class URI : IUriComponents
     {
         return this.ToUriString();
     }
+
+    [GeneratedRegex("^(?<proto>-[^\\?/\\(]*)?(?<tail>.*)")]
+    private static partial Regex ProtocolRegex();
 }

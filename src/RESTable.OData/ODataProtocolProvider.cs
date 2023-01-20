@@ -23,7 +23,7 @@ namespace RESTable.OData;
 ///     The protocol provider for OData. Instantiate this class and include a reference in
 ///     the 'protocolProviders' parameter of RESTableConfig.Init().
 /// </summary>
-public class ODataProtocolProvider : IProtocolProvider
+public partial class ODataProtocolProvider : IProtocolProvider
 {
     public ODataProtocolProvider(IJsonProvider jsonProvider, RESTableConfiguration configuration)
     {
@@ -94,7 +94,7 @@ public class ODataProtocolProvider : IProtocolProvider
     /// <inheritdoc />
     public IUriComponents GetUriComponents(string uriString, RESTableContext context)
     {
-        var uriMatch = Regex.Match(uriString, @"(?<entityset>/[^/\?]*)?(?<options>\?[^/]*)?");
+        var uriMatch = OdataUriRegex().Match(uriString);
         if (!uriMatch.Success) throw new InvalidODataSyntax(InvalidUriSyntax, "Check URI syntax");
         var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
         var options = uriMatch.Groups["options"].Value.TrimStart('?');
@@ -196,7 +196,7 @@ public class ODataProtocolProvider : IProtocolProvider
                     switch (option)
                     {
                         case filter:
-                            if (Regex.Match(decodedValue, @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )") is { Success: true } m)
+                            if (FilterRegex().Match(decodedValue) is { Success: true } m)
                                 throw new FeatureNotImplemented($"Not implemented operator '{m.Value}' in $filter");
                             var toAdd = decodedValue
                                 .Replace("(", "")
@@ -291,11 +291,13 @@ public class ODataProtocolProvider : IProtocolProvider
     private Task SerializeEntities<T>(IEntities<T> entities, ISerializedResult toSerialize, string context, bool writeMetadata, CancellationToken cancellationToken)
         where T : class
     {
-#if NET6_0_OR_GREATER
         var serializedContent = new OdataResponseBodyAsyncEnumerable<T>(entities, toSerialize, context, writeMetadata);
-#else
-        var serializedContent = new OdataResponseBodyEnumerable<T>(entities, toSerialize, context, writeMetadata);
-#endif
         return JsonProvider.SerializeAsync(toSerialize.Body, serializedContent, cancellationToken: cancellationToken);
     }
+
+    [GeneratedRegex("(?<entityset>/[^/\\?]*)?(?<options>\\?[^/]*)?")]
+    private static partial Regex OdataUriRegex();
+
+    [GeneratedRegex("(/| has | not | cast\\(.*\\)| mul | div | mod | add | sub | isof | or )")]
+    private static partial Regex FilterRegex();
 }

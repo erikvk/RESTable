@@ -17,7 +17,7 @@ public interface IApiKeyAuthenticator : IRequestAuthenticator { }
 ///     Handles authorization and authentication of clients using Api keys in either uris or headers, and
 ///     reads these api kets from an app configuration.
 /// </summary>
-public class ApiKeyAuthenticator : IApiKeyAuthenticator, IRequestAuthenticator
+public partial class ApiKeyAuthenticator : IApiKeyAuthenticator, IRequestAuthenticator
 {
     private const string AuthHeaderMask = "ApiKey *******";
 
@@ -46,7 +46,7 @@ public class ApiKeyAuthenticator : IApiKeyAuthenticator, IRequestAuthenticator
     private AccessRights GetAccessRights(ref string? uri, IHeaders? headers)
     {
         string authorizationHeader;
-        if (uri is not null && Regex.Match(uri, RegEx.UriKey) is { Success: true } keyMatch)
+        if (uri is not null && UriRegex().Match(uri) is { Success: true } keyMatch)
         {
             var keyGroup = keyMatch.Groups["key"];
             uri = uri.Remove(keyGroup.Index, keyGroup.Length);
@@ -117,7 +117,7 @@ public class ApiKeyAuthenticator : IApiKeyAuthenticator, IRequestAuthenticator
     private string ReadApiKey(ApiKeyItem apiKeyItem)
     {
         var apiKey = apiKeyItem.ApiKey;
-        if (apiKey is null || !Regex.IsMatch(apiKey, RegEx.ApiKey))
+        if (apiKey is null || !ApiKeyRegex().IsMatch(apiKey))
             throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                 "whitespace, and only containing ASCII characters 33 through 126");
         var keyHash = ComputeHash(apiKey);
@@ -135,4 +135,10 @@ public class ApiKeyAuthenticator : IApiKeyAuthenticator, IRequestAuthenticator
         }
         return keyHash;
     }
+
+    [GeneratedRegex("^[^\\(]*(?<key>\\([^\\)]+\\))")]
+    private static partial Regex UriRegex();
+
+    [GeneratedRegex("^[!-~]+$")]
+    private static partial Regex ApiKeyRegex();
 }

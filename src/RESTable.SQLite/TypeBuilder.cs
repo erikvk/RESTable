@@ -30,7 +30,7 @@ internal static class TypeBuilder
         return MakeType(resource.Name, baseType);
     }
 
-    private static Type? MakeType(string name, Type baseType)
+    private static Type MakeType(string name, Type baseType)
     {
         return ModuleBuilder
             .DefineType(name, Class | Public | Sealed, baseType)

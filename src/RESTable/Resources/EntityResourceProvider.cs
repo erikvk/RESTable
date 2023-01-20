@@ -464,8 +464,8 @@ public abstract class EntityResourceProvider<TBase> : IEntityResourceProviderInt
     static EntityResourceProvider()
     {
         var methods = typeof(EntityResourceProvider<TBase>).GetMethods(Instance | NonPublic);
-        InsertResourceMethod = methods.First(m => m.Name == nameof(_InsertResource) && m.IsGenericMethod);
-        InsertResourceWrappedMethod = methods.First(m => m.Name == nameof(_InsertWrapperResource) && m.IsGenericMethod);
+        InsertResourceMethod = methods.First(m => m is { Name: nameof(_InsertResource), IsGenericMethod: true });
+        InsertResourceWrappedMethod = methods.First(m => m is { Name: nameof(_InsertWrapperResource), IsGenericMethod: true });
     }
 
     private IEntityResource _InsertResource(Type type, string? fullName = null, RESTableAttribute? attribute = null)

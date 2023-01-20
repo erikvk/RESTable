@@ -1,9 +1,7 @@
 ﻿using System;
+using System.Buffers;
 using System.Globalization;
 using System.Text.Json;
-#if !NETSTANDARD2_0
-using System.Buffers;
-#endif
 
 namespace RESTable.Json;
 
@@ -35,13 +33,6 @@ internal static class ExtensionMethods
                                            $"to an instance of '{typeof(T).GetRESTableTypeName()}'");
         }
 
-#if NETSTANDARD2_0
-        T? reserialize()
-        {
-            var json = JsonSerializer.SerializeToUtf8Bytes(element, options);
-            return JsonSerializer.Deserialize<T>(json, options);
-        }
-#else
         T? reserialize()
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
@@ -51,7 +42,7 @@ internal static class ExtensionMethods
             }
             return JsonSerializer.Deserialize<T>(bufferWriter.WrittenSpan, options);
         }
-#endif
+
         var typeCode = Type.GetTypeCode(typeof(T));
 
         return element.ValueKind switch
@@ -102,13 +93,6 @@ internal static class ExtensionMethods
                                            $"to an instance of '{targetType.GetRESTableTypeName()}'");
         }
 
-#if NETSTANDARD2_0
-        object? reserialize()
-        {
-            var json = JsonSerializer.SerializeToUtf8Bytes(element, options);
-            return JsonSerializer.Deserialize(json, targetType, options);
-        }
-#else
         object? reserialize()
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
@@ -118,7 +102,6 @@ internal static class ExtensionMethods
             }
             return JsonSerializer.Deserialize(bufferWriter.WrittenSpan, targetType, options);
         }
-#endif
 
         var typeCode = Type.GetTypeCode(targetType);
 

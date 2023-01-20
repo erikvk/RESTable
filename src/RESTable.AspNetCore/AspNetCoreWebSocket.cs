@@ -38,11 +38,7 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         try
         {
             var buffer = Encoding.UTF8.GetBytes(data);
-#if NETSTANDARD2_0
-            var byteData = new ArraySegment<byte>(buffer);
-#else
             var byteData = buffer.AsMemory();
-#endif
             await WebSocket!.SendAsync(byteData, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -56,12 +52,7 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         await SendMessageSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-#if NETSTANDARD2_0
-            var segment = new ArraySegment<byte>(data.ToArray());
-            await WebSocket!.SendAsync(segment, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
-#else
             await WebSocket!.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
-#endif
         }
         finally
         {
@@ -82,23 +73,14 @@ internal abstract class AspNetCoreWebSocket : WebSocket
 
     protected abstract override Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken);
 
-#if NETSTANDARD2_0
-    private static readonly ArraySegment<byte> EmptyBuffer = new(Array.Empty<byte>());
-#endif
-
     private static async ValueTask<(WebSocketMessageType messageType, bool endOfMessage, int byteCount)> GetInitial
     (
         System.Net.WebSockets.WebSocket webSocket,
         CancellationToken cancellationToken
     )
     {
-#if NETSTANDARD2_0
-        var initial = await webSocket.ReceiveAsync(EmptyBuffer, cancellationToken).ConfigureAwait(false);
-        return (initial.MessageType, initial.EndOfMessage, initial.Count);
-#else
         var initial = await webSocket.ReceiveAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
         return (initial.MessageType, initial.EndOfMessage, initial.Count);
-#endif
     }
 
     protected override async Task InitMessageReceiveListener(CancellationToken cancellationToken)

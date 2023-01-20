@@ -70,7 +70,7 @@ public sealed class AvailableResource : ISelector<AvailableResource>
     {
         if (request is null) throw new ArgumentNullException(nameof(request));
         return request.Context.Client.AccessRights.Keys
-            .Where(r => r.IsGlobal && !r.IsInnerResource)
+            .Where(r => r is { IsGlobal: true, IsInnerResource: false })
             .OrderBy(r => r.Name)
             .Select(r => Make(r, request));
     }
@@ -116,11 +116,11 @@ public sealed class AvailableResource : ISelector<AvailableResource>
                     @namespace += ".";
             if (@namespace is null)
                 return request.Context.Client.AccessRights.Keys
-                    .Where(r => r.IsGlobal && !r.IsInnerResource)
+                    .Where(r => r is { IsGlobal: true, IsInnerResource: false })
                     .OrderBy(r => r.Name)
                     .Select(r => Make(r, request));
             return request.Context.Client.AccessRights.Keys
-                .Where(r => r.IsGlobal && !r.IsInnerResource)
+                .Where(r => r is { IsGlobal: true, IsInnerResource: false })
                 .Where(r => r.Name.StartsWith(@namespace, StringComparison.OrdinalIgnoreCase))
                 .OrderBy(r => r.Name)
                 .Select(r => Make(r, request));

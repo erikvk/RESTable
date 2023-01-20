@@ -419,7 +419,7 @@ public readonly struct JsonWriter
     {
         Utf8JsonWriter.WritePropertyName(propertyName);
     }
-#if NET6_0_OR_GREATER
+
     public void WriteRawValue(string json, bool skipInputValidation = false)
     {
         Utf8JsonWriter.WriteRawValue(json, skipInputValidation);
@@ -434,7 +434,7 @@ public readonly struct JsonWriter
     {
         Utf8JsonWriter.WriteRawValue(json, skipInputValidation);
     }
-#endif
+
     public void WriteStartArray()
     {
         Utf8JsonWriter.WriteStartArray();

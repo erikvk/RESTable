@@ -251,7 +251,7 @@ public class MockelyMock : Terminal
         }
         var combinedTerminals = Services
             .GetRequiredService<ITerminalCollection<FileSenderConnection>>()
-            .Where(c => !c.Deactivated && c.Status == "Started")
+            .Where(c => c is { Deactivated: false, Status: "Started" })
             .Combine();
 
         if (combinedTerminals.Count == 0)

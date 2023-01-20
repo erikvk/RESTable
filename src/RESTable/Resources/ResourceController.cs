@@ -12,7 +12,7 @@ using RESTable.Resources.Operations;
 
 namespace RESTable.Resources;
 
-/// <inheritdoc cref="RESTable.Resources.Operations.ISelector{T}" />
+/// <inheritdoc cref="ISelector{T}" />
 /// <inheritdoc cref="IAsyncInserter{T}" />
 /// <inheritdoc cref="IAsyncUpdater{T}" />
 /// <inheritdoc cref="IAsyncDeleter{T}" />
@@ -23,7 +23,7 @@ namespace RESTable.Resources;
 /// </summary>
 /// <typeparam name="TProvider"></typeparam>
 /// <typeparam name="TController"></typeparam>
-public abstract class ResourceController<TController, TProvider> :
+public abstract partial class ResourceController<TController, TProvider> :
     Resource,
     ISelector<TController>,
     IAsyncInserter<TController>,
@@ -47,7 +47,7 @@ public abstract class ResourceController<TController, TProvider> :
     {
         switch (name)
         {
-            case var _ when !Regex.IsMatch(name, RegEx.DynamicResourceName):
+            case var _ when !DynamicResourceNameRegex().IsMatch(name):
                 throw new Exception($"Resource name '{name}' contains invalid characters. Letters, nu" +
                                     "mbers and underscores are valid in resource names. Dots can be used " +
                                     "to organize resources into namespaces. No other characters can be used.");
@@ -163,6 +163,9 @@ public abstract class ResourceController<TController, TProvider> :
         }
         return i;
     }
+
+    [GeneratedRegex("^[a-zA-Z0-9_\\.]+$")]
+    private static partial Regex DynamicResourceNameRegex();
 
     #endregion
 }

@@ -101,7 +101,6 @@ public static class ExtensionMethods
         return request;
     }
 
-#if !NETSTANDARD2_0
     /// <summary>
     ///     Sets the given conditions to the request, and returns the request
     /// </summary>
@@ -112,7 +111,6 @@ public static class ExtensionMethods
         request.MetaConditions.Limit = limit;
         return request;
     }
-#endif
 
     /// <summary>
     ///     Sets the given conditions to the request, and returns the request
