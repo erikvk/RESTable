@@ -148,9 +148,14 @@ internal abstract class AspNetCoreWebSocket : WebSocket
 
     protected override async Task TryClose(string description, CancellationToken cancellationToken)
     {
-        if (WebSocket?.State is WebSocketState.Open or WebSocketState.CloseReceived or WebSocketState.CloseSent)
+        if (WebSocket is null)
+            return;
+        using (WebSocket)
         {
-            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
+            if (WebSocket?.State is WebSocketState.Open or WebSocketState.CloseReceived or WebSocketState.CloseSent)
+            {
+                await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 }

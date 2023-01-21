@@ -114,9 +114,11 @@ public class ClientWebSocketBuilder : IProtocolHolder
             throw new InvalidOperationException("Missing or invalid Uri");
 
         var clientWebSocket = new ClientWebSocket();
-        foreach (var (key, value) in Headers) clientWebSocket.Options.SetRequestHeader(key, value);
+        foreach (var (key, value) in Headers) 
+            clientWebSocket.Options.SetRequestHeader(key, value);
         // Auth headers are masked in enumeration
-        if (Headers.Authorization is string authHeader) clientWebSocket.Options.SetRequestHeader("Authorization", authHeader);
+        if (Headers.Authorization is string authHeader) 
+            clientWebSocket.Options.SetRequestHeader("Authorization", authHeader);
 
         var aspNetCoreWebSocket = new AspNetCoreClientWebSocket
         (
@@ -152,12 +154,14 @@ public class ClientWebSocketBuilder : IProtocolHolder
 
         public async ValueTask DisposeAsync()
         {
-            if (ClientWebSocketBuilder.DisposeHandler is { } handler) await handler(WebSocket).ConfigureAwait(false);
+            if (ClientWebSocketBuilder.DisposeHandler is { } handler) 
+                await handler(WebSocket).ConfigureAwait(false);
         }
 
         protected override async Task Open(CancellationToken cancellationToken)
         {
-            if (ClientWebSocketBuilder.OpenHandler is { } handler) await handler(WebSocket, cancellationToken).ConfigureAwait(false);
+            if (ClientWebSocketBuilder.OpenHandler is { } handler) 
+                await handler(WebSocket, cancellationToken).ConfigureAwait(false);
         }
 
         public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
