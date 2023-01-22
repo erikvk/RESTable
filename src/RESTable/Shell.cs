@@ -12,7 +12,6 @@ using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
-using RESTable.WebSockets;
 using static RESTable.ErrorCodes;
 using static RESTable.Method;
 using Error = RESTable.Results.Error;

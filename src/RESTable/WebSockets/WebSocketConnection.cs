@@ -44,6 +44,7 @@ internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     public RESTableContext Context { get; private set; }
 
     public CancellationToken WebSocketAborted => WebSocket.WebSocketAborted;
+    public string CloseDescription => WebSocket.CloseDescription;
 
     public async ValueTask DisposeAsync()
     {

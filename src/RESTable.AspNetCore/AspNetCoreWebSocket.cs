@@ -5,6 +5,8 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RESTable.Requests;
 using static System.Net.WebSockets.WebSocketMessageType;
 using WebSocket = RESTable.WebSockets.WebSocket;
@@ -85,6 +87,7 @@ internal abstract class AspNetCoreWebSocket : WebSocket
 
     protected override async Task InitMessageReceiveListener(CancellationToken cancellationToken)
     {
+        var logger = this.GetService<ILogger<WebSocket>>();
         try
         {
             try
@@ -92,34 +95,19 @@ internal abstract class AspNetCoreWebSocket : WebSocket
                 while (!WebSocket!.CloseStatus.HasValue)
                 {
                     var (messageType, endOfMessage, byteCount) = await GetInitial(WebSocket, cancellationToken).ConfigureAwait(false);
-                    switch (messageType)
+                    var nextMessage = new AspNetCoreInputMessageStream(
+                        WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken
+                    );
+                    await using var nextMessageDisposable = nextMessage.ConfigureAwait(false);
+                    if (messageType is Binary)
                     {
-                        case Binary:
-                        {
-                            var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize,
-                                cancellationToken);
-                            await using (nextMessage.ConfigureAwait(false))
-                            {
-                                await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
-                            }
-                            break;
-                        }
-                        case Text:
-                        {
-                            var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize,
-                                cancellationToken);
-                            Task handleTask;
-                            await using (nextMessage.ConfigureAwait(false))
-                            {
-                                using (var reader = new StreamReader(nextMessage, Encoding.Default, true, WebSocketBufferSize, true))
-                                {
-                                    var stringMessage = await reader.ReadToEndAsync().ConfigureAwait(false);
-                                    handleTask = HandleTextInput(stringMessage, cancellationToken);
-                                }
-                            }
-                            await handleTask.ConfigureAwait(false);
-                            break;
-                        }
+                        await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        using var reader = new StreamReader(nextMessage, Encoding.Default, true, WebSocketBufferSize, true);
+                        var stringMessage = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                        await HandleTextInput(stringMessage, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
@@ -134,6 +122,7 @@ internal abstract class AspNetCoreWebSocket : WebSocket
                 // from the lifetimetask.
                 var error = exception.AsError();
                 CloseDescription = await error.GetLogMessage().ConfigureAwait(false);
+                logger?.LogError(exception, "An error occured while handling a WebSocket message");
             }
             finally
             {
@@ -142,7 +131,6 @@ internal abstract class AspNetCoreWebSocket : WebSocket
             }
         }
         // Catch cancellation exceptions before returning
-        catch (TaskCanceledException) { }
         catch (OperationCanceledException) { }
     }
 

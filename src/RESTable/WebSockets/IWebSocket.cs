@@ -28,6 +28,11 @@ public interface IWebSocket : ITraceable, IProtocolHolder, IAsyncDisposable
     WebSocketStatus Status { get; }
 
     /// <summary>
+    ///     A description of why the WebSocket is closing (or empty string if not closing)
+    /// </summary>
+    string CloseDescription { get; }
+
+    /// <summary>
     ///     A cancellation token that is cancelled when the the WebSocket has been aborted
     /// </summary>
     CancellationToken WebSocketAborted { get; }

@@ -391,7 +391,8 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
                 await ConnectUnderlyingWebSocket(cancellationToken).ConfigureAwait(false);
                 Status = WebSocketStatus.Open;
                 OpenedAt = DateTime.Now;
-                if (TerminalConnection?.Resource?.Name != Console.TypeName) await Console.Log(Context, new WebSocketEvent(MessageType.WebSocketOpen, this)).ConfigureAwait(false);
+                if (TerminalConnection?.Resource?.Name != Console.TypeName)
+                    await Console.Log(Context, new WebSocketEvent(MessageType.WebSocketOpen, this)).ConfigureAwait(false);
                 break;
             }
             default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");

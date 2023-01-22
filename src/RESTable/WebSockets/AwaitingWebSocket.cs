@@ -38,6 +38,7 @@ internal class AwaitingWebSocket : IWebSocket, IWebSocketInternal
     public IContentTypeProvider InputContentTypeProvider => WebSocket.InputContentTypeProvider;
     public IContentTypeProvider OutputContentTypeProvider => WebSocket.OutputContentTypeProvider;
     public CancellationToken WebSocketAborted => WebSocket.WebSocketAborted;
+    public string CloseDescription => WebSocket.CloseDescription;
 
     public async Task SendText(string d, CancellationToken cancellationToken = new())
     {
