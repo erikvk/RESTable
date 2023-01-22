@@ -626,8 +626,7 @@ public sealed class Shell : Terminal, IAsyncDisposable
     private async Task Close(CancellationToken cancellationToken = new())
     {
         await WebSocket.SendText("### Closing the RESTable WebSocket shell... ###", cancellationToken).ConfigureAwait(false);
-        var connection = (WebSocketConnection) WebSocket;
-        await connection.WebSocket.DisposeAsync().ConfigureAwait(false);
+        await CloseConnection();
     }
 
     #region Private

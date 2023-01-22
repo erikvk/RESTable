@@ -87,6 +87,15 @@ public abstract class Terminal
     }
 
     /// <summary>
+    ///     Closes the underlying WebSocket connection
+    /// </summary>
+    protected async Task CloseConnection()
+    {
+        var connection = (WebSocketConnection) WebSocket;
+        await connection.WebSocket.DisposeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
     ///     Performs an action on string input
     /// </summary>
     [MethodNotImplemented]
