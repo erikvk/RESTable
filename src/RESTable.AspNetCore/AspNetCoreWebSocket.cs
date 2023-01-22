@@ -115,7 +115,7 @@ internal abstract class AspNetCoreWebSocket : WebSocket
             {
                 // Client closed without completing close handshake
             }
-            catch (Exception exception)
+            catch (Exception exception) when (exception is not OperationCanceledException)
             {
                 // An exception was thrown from the terminal, or when handling websocket messages. Let's 
                 // collect some information about the error and set the close description, before returning 

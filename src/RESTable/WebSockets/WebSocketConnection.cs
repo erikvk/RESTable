@@ -15,7 +15,7 @@ namespace RESTable.WebSockets;
 internal class WebSocketConnection : IWebSocket, IAsyncDisposable
 {
     private IWebSocketInternal? _duringSuspend;
-    private IWebSocketInternal _webSocket;
+    private IWebSocketInternal? _webSocket;
 
     internal WebSocketConnection(WebSocket webSocket, Terminal terminal)
     {
@@ -32,7 +32,11 @@ internal class WebSocketConnection : IWebSocket, IAsyncDisposable
 
     internal IWebSocketInternal WebSocket
     {
-        get => _webSocket ?? throw new WebSocketNotConnectedException();
+        get
+        {
+            _webSocket?.WebSocketAborted.ThrowIfCancellationRequested();
+            return _webSocket ?? throw new WebSocketNotConnectedException();
+        }
         private set => _webSocket = value;
     }
 
@@ -57,7 +61,6 @@ internal class WebSocketConnection : IWebSocket, IAsyncDisposable
                 disposable.Dispose();
                 break;
         }
-        WebSocket = null!;
         Terminal = null!;
         Context = null!;
     }
