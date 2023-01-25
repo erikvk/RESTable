@@ -114,7 +114,8 @@ internal sealed class Console : FeedTerminal
                 case ConsoleFormat.Line:
                 {
                     var requestStub = await GetLogLineStub(logable).ConfigureAwait(false);
-                    foreach (var console in @group) await console.PrintLine(new StringBuilder(requestStub), logable).ConfigureAwait(false);
+                    foreach (var console in @group)
+                        await console.PrintLine(new StringBuilder(requestStub), logable).ConfigureAwait(false);
                     break;
                 }
                 case ConsoleFormat.JSON:

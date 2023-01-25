@@ -407,7 +407,7 @@ public class ChatRoom : Terminal, IAsyncDisposable
         {
             var name = GetUniqueName(value);
             if (Initiated)
-                SendToAll($"# {_name} has changed name to \"{name}\"").Wait();
+                SendToOthers($"# {_name} has changed name to \"{name}\"").Wait();
             _name = name;
         }
     }
@@ -424,13 +424,13 @@ public class ChatRoom : Terminal, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await SendToAll($"# {Name} left the chat room.");
+        await SendToOthers($"# {Name} left the chat room.");
     }
 
     protected override async Task Open(CancellationToken cancellationToken)
     {
         Name = GetUniqueName(Name);
-        await SendToAll($"# {Name} has joined the chat room.", cancellationToken);
+        await SendToOthers($"# {Name} has joined the chat room.", cancellationToken);
         await WebSocket.SendText(
             $"# Welcome to the chat room! Your name is \"{Name}\" (type QUIT to return to the shell)", cancellationToken);
         Initiated = true;
@@ -459,14 +459,17 @@ public class ChatRoom : Terminal, IAsyncDisposable
             return;
         if (string.Equals(input, "quit", OrdinalIgnoreCase))
             await WebSocket.DirectToShell(cancellationToken: cancellationToken);
+        await SendToOthers($"> {Name}: {input}", cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task SendToAll(string message, CancellationToken cancellationToken = new())
+    private async Task SendToOthers(string message, CancellationToken cancellationToken = new())
     {
         await Terminals
+            .Where(t => t != this)
             .Combine()
             .CombinedWebSocket
-            .SendText(message, cancellationToken);
+            .SendText(message, cancellationToken)
+            .ConfigureAwait(false);
     }
 }
 
