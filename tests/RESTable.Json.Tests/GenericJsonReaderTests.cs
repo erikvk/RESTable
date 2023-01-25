@@ -168,7 +168,7 @@ public class GenericJsonReaderTests : RESTableTestBase
             First = "First thing",
             Second = new Holder<DateTime, List<int>>
             {
-                First = DateTime.Now,
+                First = DateTime.UtcNow,
                 Second = new List<int> { 1, 2, 3 }
             }
         };

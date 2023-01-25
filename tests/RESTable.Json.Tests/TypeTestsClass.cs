@@ -26,7 +26,7 @@ public class TypeTestsClass
     {
         return new()
         {
-            DateTime = DateTime.Now,
+            DateTime = DateTime.UtcNow,
             Char = 'X',
             Bool = true,
             Null = null,

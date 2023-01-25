@@ -37,7 +37,7 @@ public class ParameterizedConstructorTests : RESTableTestBase
     [Fact]
     public void InvokeDictionaryParameterizedConstructor()
     {
-        var item = new ParameterizedConstructorTestClass("Str", 100, DateTime.Now, new Holder<int> { Item = 200 });
+        var item = new ParameterizedConstructorTestClass("Str", 100, DateTime.UtcNow, new Holder<int> { Item = 200 });
         var json = JsonProvider.SerializeToUtf8Bytes(item);
         var reader = new Utf8JsonReader(json);
         var jsonReader = JsonProvider.GetJsonReader();
@@ -54,7 +54,7 @@ public class ParameterizedConstructorTests : RESTableTestBase
     [Fact]
     public void InvokeComplexParameterizedConstructor()
     {
-        var item = new ParameterizedConstructorTestClass("Str", 100, DateTime.Now, new Holder<int> { Item = 200 });
+        var item = new ParameterizedConstructorTestClass("Str", 100, DateTime.UtcNow, new Holder<int> { Item = 200 });
         var json = JsonProvider.SerializeToUtf8Bytes(item);
         var reader = new Utf8JsonReader(json);
         var jsonReader = JsonProvider.GetJsonReader();
@@ -86,13 +86,13 @@ public class ParameterizedConstructorTests : RESTableTestBase
     [Fact]
     public void InvokeComplexParameterizedOptionalsConstructor()
     {
-        var item1 = new ParameterizedConstructorOptionalsTestClass(100, DateTime.Now, new Holder<int> { Item = 200 }, "Str");
+        var item1 = new ParameterizedConstructorOptionalsTestClass(100, DateTime.UtcNow, new Holder<int> { Item = 200 }, "Str");
         InvokeComplexParameterizedOptionalsConstructorInternal(item1);
-        var item2 = new ParameterizedConstructorOptionalsTestClass(100, DateTime.Now);
+        var item2 = new ParameterizedConstructorOptionalsTestClass(100, DateTime.UtcNow);
         InvokeComplexParameterizedOptionalsConstructorInternal(item2);
-        var item3 = new ParameterizedConstructorOptionalsTestClass(100, DateTime.Now, str: "Foo");
+        var item3 = new ParameterizedConstructorOptionalsTestClass(100, DateTime.UtcNow, str: "Foo");
         InvokeComplexParameterizedOptionalsConstructorInternal(item3);
-        var item4 = new ParameterizedConstructorOptionalsTestClass(100, DateTime.Now, new Holder<int> { Item = 421 });
+        var item4 = new ParameterizedConstructorOptionalsTestClass(100, DateTime.UtcNow, new Holder<int> { Item = 421 });
         InvokeComplexParameterizedOptionalsConstructorInternal(item4);
     }
 }
