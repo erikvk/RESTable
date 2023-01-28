@@ -559,7 +559,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
     internal async Task HandleBinaryInputInternal(Stream binaryData, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (TerminalConnection is null) return;
+        if (TerminalConnection?.Terminal is null) return;
         if (!TerminalConnection.Terminal.SupportsBinaryInput)
         {
             await SendResult
