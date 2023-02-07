@@ -42,6 +42,7 @@ public class HttpRequestHandler
     public async Task HandleRequest(string rootUri, Method method, HttpContext aspNetCoreContext)
     {
         var cancellationToken = aspNetCoreContext.RequestAborted;
+        cancellationToken.ThrowIfCancellationRequested();
         var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(rootUri);
         var headers = new Headers(aspNetCoreContext.Request.Headers);
         if (!Authenticator.TryAuthenticate(ref uri, headers, out var accessRights))
@@ -93,7 +94,7 @@ public class HttpRequestHandler
             {
                 await using (webSocket.ConfigureAwait(false))
                 {
-                    await webSocket.LifetimeTask;
+                    await webSocket.LifetimeTask.ConfigureAwait(false);
                     break;
                 }
             }

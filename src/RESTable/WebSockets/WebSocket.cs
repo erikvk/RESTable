@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
 using RESTable.Internal.Logging;
@@ -30,7 +31,8 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         _closeDescription = "";
 
         Id = webSocketId;
-        WebSocketClosed = new CancellationTokenSource();
+        var applicationStopping = context.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
+        WebSocketClosingSource = CancellationTokenSource.CreateLinkedTokenSource(applicationStopping);
         Status = WebSocketStatus.Waiting;
         Context = context;
         JsonProvider = context.GetRequiredService<IJsonProvider>();
@@ -231,12 +233,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         return new(this);
     }
 
-    private CancellationTokenSource WebSocketClosed { get; }
-
-    protected void Cancel()
-    {
-        WebSocketClosed.Cancel();
-    }
+    protected CancellationTokenSource WebSocketClosingSource { get; }
 
     /// <summary>
     ///     The ID of the WebSocket
@@ -294,7 +291,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
     public Task LifetimeTask { get; private set; }
 
     /// <inheritdoc />
-    public CancellationToken WebSocketAborted => WebSocketClosed.Token;
+    public CancellationToken WebSocketClosing => WebSocketClosingSource.Token;
 
     #endregion
 
@@ -385,7 +382,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         {
             case WebSocketStatus.Waiting:
             {
-                var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosed.Token);
+                var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosing);
                 if (acceptIncomingMessages)
                     LifetimeTask = InitMessageReceiveListener(cancellationTokenSource.Token);
                 await ConnectUnderlyingWebSocket(cancellationToken).ConfigureAwait(false);
@@ -409,7 +406,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
             case WebSocketStatus.Waiting:
             {
                 await ConnectUnderlyingWebSocket(cancellationToken).ConfigureAwait(false);
-                var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosed.Token);
+                var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosing);
                 if (acceptIncomingMessages)
                     LifetimeTask = InitMessageReceiveListener(cancellationTokenSource.Token);
                 Status = WebSocketStatus.Open;
@@ -449,8 +446,8 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         Status = WebSocketStatus.PendingClose;
         var terminalName = TerminalConnection?.Resource?.Name;
         await ReleaseTerminal().ConfigureAwait(false);
-        WebSocketClosed.Cancel();
         await TryClose(CloseDescription, CancellationToken.None).ConfigureAwait(false);
+        WebSocketClosingSource.Cancel();
         Status = WebSocketStatus.Closed;
         ClosedAt = DateTime.Now;
         if (terminalName != Console.TypeName)

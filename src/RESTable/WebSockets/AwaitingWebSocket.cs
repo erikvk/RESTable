@@ -37,7 +37,7 @@ internal class AwaitingWebSocket : IWebSocket, IWebSocketInternal
     public ReadonlyCookies Cookies => WebSocket.Cookies;
     public IContentTypeProvider InputContentTypeProvider => WebSocket.InputContentTypeProvider;
     public IContentTypeProvider OutputContentTypeProvider => WebSocket.OutputContentTypeProvider;
-    public CancellationToken WebSocketAborted => WebSocket.WebSocketAborted;
+    public CancellationToken WebSocketClosing => WebSocket.WebSocketClosing;
     public string CloseDescription => WebSocket.CloseDescription;
 
     public async Task SendText(string d, CancellationToken cancellationToken = new())

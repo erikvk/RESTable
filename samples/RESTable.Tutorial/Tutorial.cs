@@ -8,11 +8,11 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using RESTable.AspNetCore;
 using RESTable.Linq;
 using RESTable.Requests;
@@ -52,31 +52,32 @@ public class Tutorial
         Configuration = configuration;
     }
 
+    private static readonly WebSocketOptions WebSocketOptions = new()
+    {
+        KeepAliveInterval = TimeSpan.FromSeconds(45)
+    };
+
     private IConfiguration Configuration { get; }
 
     public static Task Main(string[] args)
     {
-        return WebHost
+        return Host
             .CreateDefaultBuilder(args)
-            .UseStartup<Tutorial>()
+            .ConfigureWebHostDefaults(webHost => webHost.Configure(builder => builder
+                // We use WebSockets to host feeds
+                .UseWebSockets(WebSocketOptions)
+                // Sets up a public REST API at /api, creates endpoints etc.
+                .UseRESTableAspNetCore()))
+            .ConfigureServices(services => services
+                .AddRESTable()
+                .AddODataProvider()
+                .AddExcelProvider()
+                .AddHttpContextAccessor()
+                .Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(120))
+            )
+            .UseConsoleLifetime()
             .Build()
             .RunAsync();
-    }
-
-    public void ConfigureServices(IServiceCollection services)
-    {
-        services
-            .AddRESTable()
-            .AddODataProvider()
-            .AddExcelProvider()
-            .AddHttpContextAccessor();
-    }
-
-    public void Configure(IApplicationBuilder app)
-    {
-        app
-            .UseWebSockets()
-            .UseRESTableAspNetCore();
     }
 }
 

@@ -49,6 +49,11 @@ internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IA
         WebSocketCancelledToken.ThrowIfCancellationRequested();
         if (EndOfMessage) return 0;
         var result = await WebSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
+        if (result.MessageType is WebSocketMessageType.Close)
+        {
+            await WebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken).ConfigureAwait(false);
+            throw new OperationCanceledException();
+        }
         if (result.MessageType != MessageType)
             throw new InvalidOperationException($"Received frame with type '{result.MessageType}' when expecting '{MessageType}'");
         EndOfMessage = result.EndOfMessage;
@@ -67,7 +72,7 @@ internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IA
             while (!EndOfMessage)
             {
                 // Read the rest of the message
-                var _ = await ReadAsync(memory);
+                var _ = await ReadAsync(memory).ConfigureAwait(false);
             }
         }
         finally

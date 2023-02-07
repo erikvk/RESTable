@@ -97,7 +97,7 @@ internal class WebSocketCombination : IWebSocket, IAsyncDisposable
     public ReadonlyCookies Cookies => throw new NotSupportedException();
     IContentTypeProvider IContentTypeHolder.InputContentTypeProvider => throw new NotSupportedException();
     IContentTypeProvider IContentTypeHolder.OutputContentTypeProvider => throw new NotSupportedException();
-    public CancellationToken WebSocketAborted => throw new NotSupportedException();
+    public CancellationToken WebSocketClosing => throw new NotSupportedException();
     public string CloseDescription => throw new NotSupportedException();
 
     #endregion

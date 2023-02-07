@@ -35,7 +35,7 @@ public interface IWebSocket : ITraceable, IProtocolHolder, IAsyncDisposable
     /// <summary>
     ///     A cancellation token that is cancelled when the the WebSocket has been aborted
     /// </summary>
-    CancellationToken WebSocketAborted { get; }
+    CancellationToken WebSocketClosing { get; }
 
     /// <summary>
     ///     Sends the string data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent

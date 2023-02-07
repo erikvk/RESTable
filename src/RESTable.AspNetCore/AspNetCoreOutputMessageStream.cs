@@ -30,33 +30,35 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
     {
         if (IsDisposed)
             throw new InvalidOperationException("Cannot write to a closed WebSocket message stream");
+        if (WebSocket.State is not WebSocketState.Open)
+            throw new OperationCanceledException();
+        var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken).Token;
+        combinedToken.ThrowIfCancellationRequested();
         if (!SemaphoreOpen)
         {
-            var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken).Token;
             await WriteSemaphore.WaitAsync(combinedToken).ConfigureAwait(false);
             SemaphoreOpen = true;
         }
-        WebSocketCancelledToken.ThrowIfCancellationRequested();
         await WebSocket.SendAsync
         (
             buffer,
             MessageType,
             false,
-            cancellationToken
+            combinedToken
         ).ConfigureAwait(false);
         ByteCount += buffer.Length;
     }
 
     public override async ValueTask DisposeAsync()
     {
-        if (!SemaphoreOpen || IsDisposed) return;
-        switch (WebSocket.State)
+        if
+        (
+            !SemaphoreOpen ||
+            IsDisposed ||
+            WebSocket.State is not WebSocketState.Open
+        )
         {
-            case WebSocketState.None:
-            case WebSocketState.Connecting:
-            case WebSocketState.CloseSent:
-            case WebSocketState.Closed:
-            case WebSocketState.Aborted: return;
+            return;
         }
         try
         {
@@ -68,6 +70,10 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
                 WebSocketCancelledToken
             ).ConfigureAwait(false);
             IsDisposed = true;
+        }
+        catch (WebSocketException)
+        {
+            // Ignore WebSocket exceptions
         }
         finally
         {

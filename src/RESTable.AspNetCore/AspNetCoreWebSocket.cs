@@ -90,48 +90,49 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         var logger = this.GetService<ILogger<WebSocket>>();
         try
         {
-            try
+            while (!WebSocket!.CloseStatus.HasValue)
             {
-                while (!WebSocket!.CloseStatus.HasValue)
+                var (messageType, endOfMessage, byteCount) = await GetInitial(WebSocket, cancellationToken).ConfigureAwait(false);
+                if (messageType is Close)
                 {
-                    var (messageType, endOfMessage, byteCount) = await GetInitial(WebSocket, cancellationToken).ConfigureAwait(false);
-                    var nextMessage = new AspNetCoreInputMessageStream(
-                        WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken
-                    );
-                    await using var nextMessageDisposable = nextMessage.ConfigureAwait(false);
-                    if (messageType is Binary)
-                    {
-                        await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        using var reader = new StreamReader(nextMessage, Encoding.Default, true, WebSocketBufferSize, true);
-                        var stringMessage = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-                        await HandleTextInput(stringMessage, cancellationToken).ConfigureAwait(false);
-                    }
+                    await WebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+                var nextMessage = new AspNetCoreInputMessageStream(
+                    WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken
+                );
+                await using var nextMessageDisposable = nextMessage.ConfigureAwait(false);
+                if (messageType is Binary)
+                {
+                    await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    using var reader = new StreamReader(nextMessage, Encoding.Default, true, WebSocketBufferSize, true);
+                    var stringMessage = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                    await HandleTextInput(stringMessage, cancellationToken).ConfigureAwait(false);
                 }
             }
-            catch (WebSocketException)
-            {
-                // Client closed without completing close handshake
-            }
-            catch (Exception exception) when (exception is not OperationCanceledException)
-            {
-                // An exception was thrown from the terminal, or when handling websocket messages. Let's 
-                // collect some information about the error and set the close description, before returning 
-                // from the lifetimetask.
-                var error = exception.AsError();
-                CloseDescription = await error.GetLogMessage().ConfigureAwait(false);
-                logger?.LogError(exception, "An error occured while handling a WebSocket message");
-            }
-            finally
-            {
-                // WebSocket is closing, so we cancel all tasks depending on its cancellation token.
-                Cancel();
-            }
         }
-        // Catch cancellation exceptions before returning
-        catch (OperationCanceledException) { }
+        catch (WebSocketException)
+        {
+            // Client closed without completing close handshake
+        }
+        catch (Exception exception)
+        {
+            if (exception is OperationCanceledException)
+                return;
+            // An exception was thrown from the terminal, or when handling websocket messages. Let's 
+            // collect some information about the error and set the close description, before returning 
+            // from the lifetimetask.
+            var error = exception.AsError();
+            CloseDescription = await error.GetLogMessage().ConfigureAwait(false);
+            logger?.LogError(exception, "An error occured while handling a WebSocket message");
+        }
+        finally
+        {
+            WebSocketClosingSource.Cancel();
+        }
     }
 
     protected override async Task TryClose(string description, CancellationToken cancellationToken)
@@ -140,7 +141,7 @@ internal abstract class AspNetCoreWebSocket : WebSocket
             return;
         using (WebSocket)
         {
-            if (WebSocket?.State is WebSocketState.Open or WebSocketState.CloseReceived or WebSocketState.CloseSent)
+            if (WebSocket.State is WebSocketState.Open or WebSocketState.CloseReceived or WebSocketState.CloseSent)
             {
                 await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
             }

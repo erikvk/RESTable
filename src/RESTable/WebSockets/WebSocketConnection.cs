@@ -34,7 +34,7 @@ internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     {
         get
         {
-            _webSocket?.WebSocketAborted.ThrowIfCancellationRequested();
+            _webSocket?.WebSocketClosing.ThrowIfCancellationRequested();
             return _webSocket ?? throw new WebSocketNotConnectedException();
         }
         private set => _webSocket = value;
@@ -47,7 +47,7 @@ internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
     public RESTableContext Context { get; private set; }
 
-    public CancellationToken WebSocketAborted => WebSocket.WebSocketAborted;
+    public CancellationToken WebSocketClosing => WebSocket.WebSocketClosing;
     public string CloseDescription => WebSocket.CloseDescription;
 
     public async ValueTask DisposeAsync()

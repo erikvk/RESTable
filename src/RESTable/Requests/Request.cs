@@ -235,6 +235,10 @@ internal class Request<T> : IRequest, IRequest<T>, IEntityRequest<T>, ITraceable
                             await webSocket.OpenAndAttachServerSocketToTerminal(this, terminalResource, Conditions, cancellationToken).ConfigureAwait(false);
                             return new WebSocketUpgradeSuccessful(this, webSocket);
                         }
+                        catch (OperationCanceledException)
+                        {
+                            return new WebSocketUpgradeSuccessful(this, webSocket);
+                        }
                         catch (Exception exception)
                         {
                             return new WebSocketUpgradeFailed(exception.AsError().AsResultOf(this), webSocket);

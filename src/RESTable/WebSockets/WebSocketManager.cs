@@ -37,6 +37,7 @@ public class WebSocketManager
 
     public async Task HandleTextInput(string wsId, string textInput, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket) || webSocket is not WebSocket)
             throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
                                                   "application. Disconnecting...");
@@ -44,6 +45,7 @@ public class WebSocketManager
         if (webSocket.Terminal is not Terminal terminal)
         {
             await webSocket.DisposeAsync().ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             throw new Exception($"Cannot handle text input for WebSocket '{wsId}' with no attached terminal");
         }
 
@@ -137,6 +139,7 @@ public class WebSocketManager
 
     public Task HandleBinaryInput(string wsId, Stream binaryInput, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (!ConnectedWebSockets.TryGetValue(wsId, out var webSocket) || webSocket is not WebSocket)
             throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
                                                   "application. Disconnecting...");
