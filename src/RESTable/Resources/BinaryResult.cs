@@ -7,7 +7,14 @@ namespace RESTable.Resources;
 
 public class BinaryResult
 {
-    public BinaryResult(Func<Stream, CancellationToken, Task> writeToStream, ContentType contentType, long? contentLength = null, string? contentDisposition = null)
+    public BinaryResult
+    (
+        Func<Stream, CancellationToken, Task> writeToStream,
+        ContentType contentType,
+        long? contentLength = null,
+        string? contentDisposition = null,
+        string? etag = null
+    )
     {
         WriteToStream = writeToStream;
         ContentType = contentType;
@@ -19,4 +26,5 @@ public class BinaryResult
     public ContentType ContentType { get; }
     public long? ContentLength { get; }
     public string? ContentDisposition { get; }
+    public string? Etag { get; }
 }

@@ -15,6 +15,7 @@ public sealed class Binary : Content
         BinaryResult = binaryResult;
         if (binaryResult.ContentLength is long contentLength) Headers["Content-Length"] = contentLength.ToString();
         if (binaryResult.ContentDisposition is string contentDisposition) Headers["Content-Disposition"] = contentDisposition;
+        if (binaryResult.Etag is string etag) Headers["ETag"] = etag;
     }
 
     [RESTableMember(true)] public BinaryResult BinaryResult { get; }
