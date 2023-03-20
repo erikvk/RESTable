@@ -20,6 +20,7 @@ public class BinaryResult
         ContentType = contentType;
         ContentLength = contentLength;
         ContentDisposition = contentDisposition;
+        Etag = etag;
     }
 
     public Func<Stream, CancellationToken, Task> WriteToStream { get; }
