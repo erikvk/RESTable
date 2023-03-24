@@ -41,17 +41,20 @@ internal sealed partial class DefaultProtocolProvider : IProtocolProvider
     public IUriComponents GetUriComponents(string uriString, RESTableContext context)
     {
         var uri = new DefaultProtocolUriComponents(this);
-        var secondSlash = AllIndexesOf(uriString, '/').Skip(1).FirstOrDefault(int.MaxValue);
-        var firstQ = uriString.IndexOf('?');
-        if (firstQ is not -1 && firstQ < secondSlash)
+
+        var secondSlash = AllIndexesOf(uriString, '/').Skip(1).FirstOrDefault(short.MaxValue);
+        var sqIndex = uriString.IndexOf("/?", StringComparison.Ordinal);
+        if (sqIndex is not -1 && sqIndex == secondSlash)
+            uriString = string.Join('/', uriString[..sqIndex], uriString[(sqIndex + 2)..]);
+        else
         {
-            var parts = uriString.Split(new[] { '?' }, 2);
-            var part1 = parts[0].EndsWith('/') ? parts[0][..^1] : parts[0];
-            var part2 = parts.ElementAtOrDefault(1);
-            if (part2 is not null)
-                part2 = "/" + part2;
-            uriString = part1 + part2;
+            var firstQ = uriString.IndexOf('?', StringComparison.Ordinal);
+            if (firstQ is not -1 && firstQ < secondSlash)
+            {
+                uriString = string.Join("/", uriString[..firstQ], uriString[(firstQ + 1)..]);
+            }
         }
+
         var match = RequestUriRegex().Match(uriString);
         if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
         var resourceOrMacro = match.Groups["res"].Value.TrimStart('/');
