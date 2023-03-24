@@ -44,6 +44,10 @@ public class HttpRequestHandler
         var cancellationToken = aspNetCoreContext.RequestAborted;
         cancellationToken.ThrowIfCancellationRequested();
         var (_, uri) = aspNetCoreContext.Request.Path.Value.TupleSplit(rootUri);
+        if (aspNetCoreContext.Request.QueryString.HasValue)
+        {
+            uri += aspNetCoreContext.Request.QueryString.Value;
+        }
         var headers = new Headers(aspNetCoreContext.Request.Headers);
         if (!Authenticator.TryAuthenticate(ref uri, headers, out var accessRights))
         {

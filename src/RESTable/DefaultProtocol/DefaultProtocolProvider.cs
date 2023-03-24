@@ -41,6 +41,17 @@ internal sealed partial class DefaultProtocolProvider : IProtocolProvider
     public IUriComponents GetUriComponents(string uriString, RESTableContext context)
     {
         var uri = new DefaultProtocolUriComponents(this);
+        var secondSlash = AllIndexesOf(uriString, '/').Skip(1).FirstOrDefault(int.MaxValue);
+        var firstQ = uriString.IndexOf('?');
+        if (firstQ is not -1 && firstQ < secondSlash)
+        {
+            var parts = uriString.Split(new[] { '?' }, 2);
+            var part1 = parts[0].EndsWith('/') ? parts[0][..^1] : parts[0];
+            var part2 = parts.ElementAtOrDefault(1);
+            if (part2 is not null)
+                part2 = "/" + part2;
+            uriString = part1 + part2;
+        }
         var match = RequestUriRegex().Match(uriString);
         if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
         var resourceOrMacro = match.Groups["res"].Value.TrimStart('/');
@@ -389,9 +400,19 @@ internal sealed partial class DefaultProtocolProvider : IProtocolProvider
         toSerialize.EntityCount = counter;
     }
 
-    [GeneratedRegex("^(?<ignore>\\?[^/]*)?((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$")]
+    public static IEnumerable<int> AllIndexesOf(string str, char searchChar)
+    {
+        var minIndex = str.IndexOf(searchChar);
+        while (minIndex != -1)
+        {
+            yield return minIndex;
+            minIndex = str.IndexOf(searchChar, minIndex + 1);
+        }
+    }
+
+    [GeneratedRegex("""^(?<ignore>\?[^/]*)?((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$""")]
     private static partial Regex RequestUriRegex();
 
-    [GeneratedRegex("^(?<key>[^\\!=<>]*)(?<op>(=|\\!=|<=|>=|<|>))(?<val>.*)$")]
+    [GeneratedRegex("""^(?<key>[^\!=<>]*)(?<op>(=|\!=|<=|>=|<|>))(?<val>.*)$""")]
     private static partial Regex UriConditionRegex();
 }
