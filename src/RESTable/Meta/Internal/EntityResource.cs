@@ -32,7 +32,7 @@ internal class EntityResource<T> : IEntityResource<T>, IResourceInternal where T
         {
             IsInnerResource = true;
             var location = typeName.LastIndexOf('+');
-            ParentResourceName = typeName.Substring(0, location).Replace('+', '.');
+            ParentResourceName = typeName[..location].Replace('+', '.');
             Name = typeName.Replace('+', '.');
         }
         else

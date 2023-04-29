@@ -46,6 +46,13 @@ public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable, IServi
     private IOptionsMonitor<RESTableConfiguration> OptionsMonitor { get; }
     public RESTableConfiguration Configuration => OptionsMonitor.CurrentValue;
 
+    public bool CanAccess<T>(Method method) where T : class => CanAccess(typeof(T), method);
+
+    public bool CanAccess(Type resourceType, Method method) => this.GetRequiredService<ResourceCollection>().SafeGetResource(resourceType) is { } resource &&
+                                                               CanAccess(resource, method);
+
+    public bool CanAccess(IResource resource, Method method) => Client.AccessRights[resource] is { } methods && methods.Contains(method);
+
     /// <summary>
     ///     The websocket connected with this context
     /// </summary>

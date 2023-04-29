@@ -11,6 +11,18 @@ namespace RESTable.Linq;
 /// </summary>
 public static class Enumerable
 {
+    public static T2[] ToExactArray<T1, T2>(this IReadOnlyCollection<T1> source, Func<T1, T2> selector)
+    {
+        var target = new T2[source.Count];
+        var i = 0;
+        foreach (var item in source)
+        {
+            target[i] = selector(item);
+            i += 1;
+        }
+        return target;
+    }
+
     public static IAsyncEnumerable<T> ToAsyncSingleton<T>(this T item)
     {
         return AsyncEnumerable.Repeat(item, 1);

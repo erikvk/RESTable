@@ -59,7 +59,7 @@ public partial class SetOperations : Dictionary<string, object?>, IAsyncSelector
                 case { ValueKind: JsonValueKind.String } stringValue:
                     var argument = stringValue.GetString();
                     if (argument?.StartsWith("GET ") == true)
-                        argument = argument.Substring(4);
+                        argument = argument[4..];
                     switch (argument?.FirstOrDefault())
                     {
                         case null: throw new ArgumentException("Invalid operation expression. Expected string, found null");

@@ -46,7 +46,7 @@ internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResou
         {
             IsInnerResource = true;
             var location = typeName.LastIndexOf('+');
-            ParentResourceName = typeName.Substring(0, location).Replace('+', '.');
+            ParentResourceName = typeName[..location].Replace('+', '.');
             Name = typeName.Replace('+', '.');
         }
         else

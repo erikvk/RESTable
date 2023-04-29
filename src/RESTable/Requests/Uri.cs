@@ -60,7 +60,7 @@ internal partial class URI : IUriComponents
         var groups = ProtocolRegex().Match(uriString).Groups;
         var protocolString = groups["proto"].Value;
         if (protocolString.StartsWith("-"))
-            protocolString = protocolString.Substring(1);
+            protocolString = protocolString[1..];
         var tail = groups["tail"].Value;
         uri.ProtocolIdentifier = protocolString.ToLowerInvariant();
         var protocolProviderManager = context.GetRequiredService<ProtocolProviderManager>();

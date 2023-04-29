@@ -137,8 +137,8 @@ public class Error
             body: request.Body.ToString(),
             time: DateTime.UtcNow,
             errorCode: errorResult.ErrorCode,
-            stackTrace: stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
-            message: totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage
+            stackTrace: stackTrace.Length > MaxStringLength ? stackTrace[..MaxStringLength] : stackTrace,
+            message: totalMessage.Length > MaxStringLength ? totalMessage[..MaxStringLength] : totalMessage
         );
         var _ = InMemoryOperations<Error>.Insert(error).ToList();
         return error;

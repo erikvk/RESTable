@@ -191,7 +191,7 @@ public partial class ODataProtocolProvider : IProtocolProvider
             switch (optionKey)
             {
                 case var system when optionKey[0] == '$':
-                    if (!Enum.TryParse(system.Substring(1), out QueryOptions option) || option == none)
+                    if (!Enum.TryParse(system[1..], out QueryOptions option) || option == none)
                         throw new FeatureNotImplemented($"Unknown or not implemented query option '{system}'");
                     switch (option)
                     {

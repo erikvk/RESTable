@@ -493,11 +493,11 @@ public static class ExtensionMethods
         var typeName = providerType.Name;
         if (typeName is null) throw new ArgumentNullException();
         if (typeName.EndsWith("entityresourceprovider", InvariantCultureIgnoreCase))
-            typeName = typeName.Substring(0, typeName.Length - 22);
+            typeName = typeName[..^22];
         else if (typeName.EndsWith("resourceprovider", InvariantCultureIgnoreCase))
-            typeName = typeName.Substring(0, typeName.Length - 16);
+            typeName = typeName[..^16];
         else if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
-            typeName = typeName.Substring(0, typeName.Length - 8);
+            typeName = typeName[..^8];
         return typeName;
     }
 
@@ -1146,7 +1146,7 @@ public static class ExtensionMethods
         }
 
         replaced = true;
-        return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
+        return $"{text[..pos]}{replace}{text[(pos + search.Length)..]}";
     }
 
     internal static List<InvalidMember> ToInvalidMembers(this IEnumerable<ParameterInfo> missingParameters, Type owner)

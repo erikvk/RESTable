@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.ContentTypeProviders;
+using RESTable.Linq;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
@@ -32,8 +33,9 @@ public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator
     {
         var template = await request.Expecting
         (
-            async r => await r.Body.DeserializeAsyncEnumerable<Aggregator>(cancellationToken).FirstAsync(cancellationToken).ConfigureAwait(false),
-            "Expected an aggregator template as request body"
+            selector: async r => await r.Body.DeserializeAsyncEnumerable<Aggregator>(cancellationToken).FirstAsync(cancellationToken).ConfigureAwait(false),
+            errorMessage: "Expected an aggregator template as request body"
+            //
         ).ConfigureAwait(false);
 
         var jsonProvider = request.GetRequiredService<IJsonProvider>();
@@ -43,34 +45,33 @@ public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator
             switch (node)
             {
                 case Aggregator aggregator:
-                    foreach (var (key, obj) in aggregator.ToList())
+                    var populatorTasks = aggregator.ToExactArray(async kvp =>
                     {
-                        var value = await Populator(obj!).ConfigureAwait(false);
-                        switch (key)
+                        var newValue = await Populator(kvp.Value!).ConfigureAwait(false);
+                        switch (kvp.Key)
                         {
-                            case "$add" when IsNumberArray(value, out var terms): return terms.Sum();
-                            case "$sub" when IsNumberArray(value, out var terms): return terms.Aggregate((x, y) => x - y);
-                            case "$mul" when IsNumberArray(value, out var terms): return terms.Aggregate((x, y) => x * y);
-                            case "$mod" when IsNumberArray(value, out var terms, 2): return terms[0] % terms[1];
+                            case "$add" when IsNumberArray(newValue, out var terms): return terms.Sum();
+                            case "$sub" when IsNumberArray(newValue, out var terms): return terms.Aggregate((x, y) => x - y);
+                            case "$mul" when IsNumberArray(newValue, out var terms): return terms.Aggregate((x, y) => x * y);
+                            case "$mod" when IsNumberArray(newValue, out var terms, 2): return terms[0] % terms[1];
 
                             case "$add":
                             case "$sub":
-                            case "$mul": throw GetArithmeticException(key);
-                            case "$mod": throw GetArithmeticException(key, "For $mod, the integer list must have a length of exactly 2");
+                            case "$mul": throw GetArithmeticException(kvp.Key);
+                            case "$mod": throw GetArithmeticException(kvp.Key, "For $mod, the integer list must have a length of exactly 2");
                         }
-                        aggregator[key] = value;
-                    }
+                        return aggregator[kvp.Key] = newValue;
+                    });
+                    await Task.WhenAll(populatorTasks).ConfigureAwait(false);
                     return aggregator;
                 case JsonElement { ValueKind: JsonValueKind.Array } array:
                 {
-                    var list = new List<object>();
-                    foreach (var item in array.EnumerateArray())
+                    var tasks = array.EnumerateArray().Select(async item =>
                     {
                         var obj = jsonProvider.ToObject<object>(item);
-                        var populated = await Populator(obj!).ConfigureAwait(false);
-                        list.Add(populated);
-                    }
-                    return list;
+                        return await Populator(obj!).ConfigureAwait(false);
+                    });
+                    return await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
                 case JsonElement { ValueKind: JsonValueKind.Object } obj:
                 {
@@ -87,12 +88,12 @@ public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator
                     if (stringValue.StartsWith("GET ", OrdinalIgnoreCase))
                     {
                         method = Method.GET;
-                        uri = stringValue.Substring(4);
+                        uri = stringValue[4..];
                     }
                     else if (stringValue.StartsWith("REPORT ", OrdinalIgnoreCase))
                     {
                         method = Method.REPORT;
-                        uri = stringValue.Substring(7);
+                        uri = stringValue[7..];
                     }
                     else
                     {
@@ -108,8 +109,8 @@ public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator
                     {
                         Error error => throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}"),
                         Report report => report.Count,
-                        IEntities<object> entities => entities.ToEnumerable(),
-                        var other => throw new Exception($"Unexpected result from {method.ToString()} request inside " + $"Aggregator: {await other.GetLogMessage()}")
+                        IEntities<object> entities => await entities.ToListAsync(cancellationToken).ConfigureAwait(false),
+                        var other => throw new Exception($"Unexpected result from {method.ToString()} request inside Aggregator: {await other.GetLogMessage()}")
                     };
                 }
                 case var other: return other;
