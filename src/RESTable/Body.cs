@@ -30,6 +30,28 @@ public class Body : Stream, IDisposable, IAsyncDisposable
         ? ProtocolHolder.InputContentTypeProvider
         : ProtocolHolder.OutputContentTypeProvider;
 
+    public override bool CanTimeout => Stream.CanTimeout;
+
+    public override int ReadTimeout
+    {
+        get
+        {
+            try
+            {
+                return Stream.ReadTimeout;
+            }
+            catch (NotImplementedException)
+            {
+                return int.MaxValue;
+            }
+            catch (InvalidOperationException)
+            {
+                return int.MaxValue;
+            }
+        }
+        set => Stream.ReadTimeout = value;
+    }
+
     /// <summary>
     ///     Serializes the given result object to this body, using the appropriate content type
     ///     provider assigned to the request or response that this body belongs to.
@@ -270,18 +292,6 @@ public class Body : Stream, IDisposable, IAsyncDisposable
 
     #region Stream
 
-    public override int ReadTimeout
-    {
-        get => Stream.ReadTimeout;
-        set => Stream.ReadTimeout = value;
-    }
-
-    public override int WriteTimeout
-    {
-        get => Stream.WriteTimeout;
-        set => Stream.WriteTimeout = value;
-    }
-
     public override long Position
     {
         get => Stream.Position;
@@ -293,16 +303,6 @@ public class Body : Stream, IDisposable, IAsyncDisposable
         return Stream.CopyToAsync(destination, bufferSize, cancellationToken);
     }
 
-    public override int EndRead(IAsyncResult asyncResult)
-    {
-        return Stream.EndRead(asyncResult);
-    }
-
-    public override void EndWrite(IAsyncResult asyncResult)
-    {
-        Stream.EndWrite(asyncResult);
-    }
-
     public override Task FlushAsync(CancellationToken cancellationToken)
     {
         return Stream.FlushAsync(cancellationToken);
@@ -312,18 +312,6 @@ public class Body : Stream, IDisposable, IAsyncDisposable
     {
         return Stream.ReadAsync(buffer, offset, count, cancellationToken);
     }
-
-    public override int ReadByte()
-    {
-        return Stream.ReadByte();
-    }
-
-    public override void WriteByte(byte value)
-    {
-        Stream.WriteByte(value);
-    }
-
-    public override bool CanTimeout => Stream.CanTimeout;
 
     public override void Flush()
     {

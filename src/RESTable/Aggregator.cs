@@ -107,7 +107,12 @@ public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator
                         .ConfigureAwait(false);
                     return result switch
                     {
-                        Error error => throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}"),
+                        Error error => new Dictionary<string, object>
+                        {
+                            ["StatusCode"] = (int) error.StatusCode,
+                            ["StatusDescription"] = error.StatusDescription,
+                            ["Message"] = error.Message
+                        },
                         Report report => report.Count,
                         IEntities<object> entities => await entities.ToListAsync(cancellationToken).ConfigureAwait(false),
                         var other => throw new Exception($"Unexpected result from {method.ToString()} request inside Aggregator: {await other.GetLogMessage()}")

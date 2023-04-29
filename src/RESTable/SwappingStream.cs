@@ -95,24 +95,11 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
     public override bool CanSeek => Stream.CanSeek;
     public override bool CanWrite => Stream.CanWrite;
     public override long Length => Stream.Length;
-    public override bool CanTimeout => Stream.CanTimeout;
 
     public override long Position
     {
         get => Stream.Position;
         set => Stream.Position = value;
-    }
-
-    public override int ReadTimeout
-    {
-        get => Stream.ReadTimeout;
-        set => Stream.ReadTimeout = value;
-    }
-
-    public override int WriteTimeout
-    {
-        get => Stream.WriteTimeout;
-        set => Stream.WriteTimeout = value;
     }
 
     private bool CheckShouldSwap(int bytesToWrite)
@@ -127,26 +114,6 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
     }
 
     #region Synchronous IO
-
-    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-    {
-        return Stream.BeginRead(buffer, offset, count, callback, state);
-    }
-
-    public override int EndRead(IAsyncResult asyncResult)
-    {
-        return Stream.EndRead(asyncResult);
-    }
-
-    public override void EndWrite(IAsyncResult asyncResult)
-    {
-        Stream.EndWrite(asyncResult);
-    }
-
-    public override int ReadByte()
-    {
-        return Stream.ReadByte();
-    }
 
     public override void Flush()
     {
@@ -166,20 +133,6 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
     public override int Read(byte[] buffer, int offset, int count)
     {
         return Stream.Read(buffer, offset, count);
-    }
-
-    public override void WriteByte(byte value)
-    {
-        if (CheckShouldSwap(1))
-            Swap().Wait();
-        Stream.WriteByte(value);
-    }
-
-    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-    {
-        if (CheckShouldSwap(count))
-            Swap().Wait();
-        return Stream.BeginWrite(buffer, offset, count, callback, state);
     }
 
     public override void Write(byte[] buffer, int offset, int count)
@@ -217,6 +170,28 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
     }
 
     #endregion
+
+    public override bool CanTimeout => Stream.CanTimeout;
+
+    public override int ReadTimeout
+    {
+        get
+        {
+            try
+            {
+                return Stream.ReadTimeout;
+            }
+            catch (NotImplementedException)
+            {
+                return int.MaxValue;
+            }
+            catch (InvalidOperationException)
+            {
+                return int.MaxValue;
+            }
+        }
+        set => Stream.ReadTimeout = value;
+    }
 
     public override void CopyTo(Stream destination, int bufferSize)
     {
