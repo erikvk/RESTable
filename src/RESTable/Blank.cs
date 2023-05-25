@@ -18,9 +18,9 @@ public class Blank : ISelector<Blank>, IInserter<Blank>, IUpdater<Blank>, IDelet
     private const string description = "A test and debug entity resource that is just an empty set of entities with no properties";
 
     /// <inheritdoc />
-    public int Delete(IRequest<Blank> request)
+    public IEnumerable<Blank> Select(IRequest<Blank> request)
     {
-        return 0;
+        yield break;
     }
 
     /// <inheritdoc />
@@ -30,14 +30,14 @@ public class Blank : ISelector<Blank>, IInserter<Blank>, IUpdater<Blank>, IDelet
     }
 
     /// <inheritdoc />
-    public IEnumerable<Blank> Select(IRequest<Blank> request)
+    public IEnumerable<Blank> Update(IRequest<Blank> request)
     {
         yield break;
     }
 
     /// <inheritdoc />
-    public IEnumerable<Blank> Update(IRequest<Blank> request)
+    public int Delete(IRequest<Blank> request)
     {
-        yield break;
+        return 0;
     }
 }

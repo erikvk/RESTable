@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,16 +29,16 @@ public static class ApplicationBuilderExtensions
 
             foreach (var method in EnumMember<Method>.Values)
             {
-                router.MapVerb(method.ToString(), template, hc =>
+                router.MapVerb(method.ToString(), template, async hc =>
                 {
                     try
                     {
                         handler ??= ActivatorUtilities.CreateInstance<HttpRequestHandler>(builder.ApplicationServices);
-                        return handler.HandleRequest(rootUri, method, hc);
+                        await handler.HandleRequest(rootUri, method, hc).ConfigureAwait(false);
                     }
-                    catch (OperationCanceledException)
+                    catch (OperationCanceledException) when (hc.RequestAborted.IsCancellationRequested)
                     {
-                        return Task.FromCanceled(hc.RequestAborted);
+                        // Ignore
                     }
                 });
             }
