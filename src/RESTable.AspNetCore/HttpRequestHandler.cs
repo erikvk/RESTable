@@ -14,14 +14,14 @@ namespace RESTable.AspNetCore;
 
 public class HttpRequestHandler
 {
+    private ILogger<HttpRequestHandler> Logger { get; }
+    private IRequestAuthenticator Authenticator { get; }
+
     public HttpRequestHandler(ILogger<HttpRequestHandler> logger, IRequestAuthenticator authenticator)
     {
         Logger = logger;
         Authenticator = authenticator;
     }
-
-    private ILogger<HttpRequestHandler> Logger { get; }
-    private IRequestAuthenticator Authenticator { get; }
 
     public async Task HandleOptionsRequest(string rootUri, HttpContext aspNetCoreContext)
     {

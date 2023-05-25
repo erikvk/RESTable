@@ -19,21 +19,14 @@ public static class ApplicationBuilderExtensions
         var template = rootUri + "/{resource?}/{conditions?}/{metaconditions?}";
         builder.UseRouter(router =>
         {
-            HttpRequestHandler? handler = null;
-
-            router.MapVerb("OPTIONS", template, context =>
-            {
-                handler ??= ActivatorUtilities.CreateInstance<HttpRequestHandler>(builder.ApplicationServices);
-                return handler.HandleOptionsRequest(rootUri, context);
-            });
-
+            var handler = ActivatorUtilities.CreateInstance<HttpRequestHandler>(builder.ApplicationServices);
+            router.MapVerb("OPTIONS", template, context => handler.HandleOptionsRequest(rootUri, context));
             foreach (var method in EnumMember<Method>.Values)
             {
                 router.MapVerb(method.ToString(), template, async hc =>
                 {
                     try
                     {
-                        handler ??= ActivatorUtilities.CreateInstance<HttpRequestHandler>(builder.ApplicationServices);
                         await handler.HandleRequest(rootUri, method, hc).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException) when (hc.RequestAborted.IsCancellationRequested)
