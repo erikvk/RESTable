@@ -25,7 +25,7 @@ public class SerializedError : ISerializedError
 
     public string? MoreInfoAt => Error.Headers.Error;
 
-    public string TimeStamp => DateTime.UtcNow.ToString("O");
+    public string Timestamp => DateTime.UtcNow.ToString("O");
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Uri { get; }

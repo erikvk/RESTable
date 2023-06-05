@@ -10,6 +10,6 @@ public interface ISerializedError : ISerialized
     public ErrorCodes ErrorCode { get; }
     public string Message { get; }
     public string? MoreInfoAt { get; }
-    public string TimeStamp { get; }
+    public string Timestamp { get; }
     public string? Uri { get; }
 }
