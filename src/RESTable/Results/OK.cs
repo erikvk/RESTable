@@ -1,16 +1,15 @@
 ﻿using System.Net;
 using RESTable.Requests;
 
-namespace RESTable.Results
+namespace RESTable.Results;
+
+/// <inheritdoc />
+public abstract class OK : RequestSuccess
 {
     /// <inheritdoc />
-    public abstract class OK : RequestSuccess
+    protected OK(IRequest request) : base(request)
     {
-        /// <inheritdoc />
-        protected OK(IRequest request) : base(request)
-        {
-            StatusCode = HttpStatusCode.OK;
-            StatusDescription = "OK";
-        }
+        StatusCode = HttpStatusCode.OK;
+        StatusDescription = "OK";
     }
 }

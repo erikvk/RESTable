@@ -1,8 +1,12 @@
 <Project>
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.1;netstandard2.0;net5.0;net6.0</TargetFrameworks>
+        <TargetFramework>net7.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
         <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <NoWarn>CS8604;CS8601</NoWarn>
     </PropertyGroup>
 </Project>

@@ -8,33 +8,32 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 
-namespace RESTable.AspNetCore
-{
-    [RESTable(Method.GET)]
-    public class Route : ISelector<Route>
-    {
-        public string? Name { get; set; }
-        public string? Template { get; set; }
-        public string[]? MethodRestrictions { get; set; }
+namespace RESTable.AspNetCore;
 
-        public IEnumerable<Route> Select(IRequest<Route> request)
+[RESTable(Method.GET)]
+public class Route : ISelector<Route>
+{
+    public string? Name { get; set; }
+    public string? Template { get; set; }
+    public string[]? MethodRestrictions { get; set; }
+
+    public IEnumerable<Route> Select(IRequest<Route> request)
+    {
+        var routeData = request.GetRequiredService<IHttpContextAccessor>()
+            .HttpContext.GetRouteData();
+        var routeCollection = routeData
+            .Routers.OfType<RouteCollection>()
+            .First();
+        for (var i = 0; i < routeCollection.Count; i += 1)
         {
-            var routeData = request.GetRequiredService<IHttpContextAccessor>()
-                .HttpContext.GetRouteData();
-            var routeCollection = routeData
-                .Routers.OfType<RouteCollection>()
-                .First();
-            for (var i = 0; i < routeCollection.Count; i += 1)
+            var aspNetCoreRoute = (Microsoft.AspNetCore.Routing.Route) routeCollection[i];
+            var methodConstraint = (HttpMethodRouteConstraint?) aspNetCoreRoute.Constraints.SafeGet("httpMethod");
+            yield return new Route
             {
-                var aspNetCoreRoute = (Microsoft.AspNetCore.Routing.Route) routeCollection[i];
-                var methodConstraint = (HttpMethodRouteConstraint?) aspNetCoreRoute.Constraints.SafeGet("httpMethod");
-                yield return new Route
-                {
-                    Name = aspNetCoreRoute.Name,
-                    Template = aspNetCoreRoute.RouteTemplate,
-                    MethodRestrictions = methodConstraint?.AllowedMethods.ToArray()
-                };
-            }
+                Name = aspNetCoreRoute.Name,
+                Template = aspNetCoreRoute.RouteTemplate,
+                MethodRestrictions = methodConstraint?.AllowedMethods.ToArray()
+            };
         }
     }
 }

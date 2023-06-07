@@ -1,5 +1,4 @@
-﻿#if !NETSTANDARD2_0
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 
 namespace RESTable.Requests
@@ -15,10 +14,12 @@ namespace RESTable.Requests
             ContinueOnCapturedContext = continueOnCapturedContext;
         }
 
-        public ConfiguredValueTaskAwaitable<ReadOnlyMemory<T>>.ConfiguredValueTaskAwaiter GetAwaiter() => BufferTask
-            .AsReadOnlyMemoryAsync()
-            .ConfigureAwait(ContinueOnCapturedContext)
-            .GetAwaiter();
+        public ConfiguredValueTaskAwaitable<ReadOnlyMemory<T>>.ConfiguredValueTaskAwaiter GetAwaiter()
+        {
+            return BufferTask
+                .AsReadOnlyMemoryAsync()
+                .ConfigureAwait(ContinueOnCapturedContext)
+                .GetAwaiter();
+        }
     }
 }
-#endif

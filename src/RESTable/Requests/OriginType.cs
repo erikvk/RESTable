@@ -1,18 +1,17 @@
-﻿namespace RESTable.Requests
+﻿namespace RESTable.Requests;
+
+/// <summary>
+///     Describes the origin type of a request
+/// </summary>
+public enum OriginType
 {
     /// <summary>
-    /// Describes the origin type of a request
+    ///     The request originated from within the RESTable application
     /// </summary>
-    public enum OriginType
-    {
-        /// <summary>
-        /// The request originated from within the RESTable application
-        /// </summary>
-        Internal,
+    Internal,
 
-        /// <summary>
-        /// The request originated from outside the RESTable application
-        /// </summary>
-        External
-    }
+    /// <summary>
+    ///     The request originated from outside the RESTable application
+    /// </summary>
+    External
 }

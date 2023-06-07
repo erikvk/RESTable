@@ -1,4 +1,3 @@
-namespace RESTable.Meta.Internal
-{
-    internal interface IResourceWrapper { }
-}
+namespace RESTable.Meta.Internal;
+
+internal interface IResourceWrapper { }

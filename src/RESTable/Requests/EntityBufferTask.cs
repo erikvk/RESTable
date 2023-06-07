@@ -1,5 +1,4 @@
-﻿#if !NETSTANDARD2_0
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -9,41 +8,40 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using RESTable.Meta;
 using RESTable.Results;
-using Enumerable = System.Linq.Enumerable;
 
 namespace RESTable.Requests
 {
     /// <summary>
-    /// Represents the task of buffering the result of a RESTable request for {T}. Operations are available to
-    /// configure the buffer that will be generated, and when awaited, the buffer is generated and returned as
-    /// a ReadOnlyMemory{T}.
+    ///     Represents the task of buffering the result of a RESTable request for {T}. Operations are available to
+    ///     configure the buffer that will be generated, and when awaited, the buffer is generated and returned as
+    ///     a ReadOnlyMemory{T}.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public readonly struct EntityBufferTask<T> where T : class
     {
         /// <summary>
-        /// The underlying request used to generate the entities. Shared among all subtasks. Its state is
-        /// always overwritten when used.
+        ///     The underlying request used to generate the entities. Shared among all subtasks. Its state is
+        ///     always overwritten when used.
         /// </summary>
         private readonly IRequest<T> Request;
 
         /// <summary>
-        /// The offset within the entities enumeration, from which to generate the buffer
+        ///     The offset within the entities enumeration, from which to generate the buffer
         /// </summary>
         private readonly int Offset;
 
         /// <summary>
-        /// The length/limit of the buffer
+        ///     The length/limit of the buffer
         /// </summary>
         private readonly int Limit;
 
         /// <summary>
-        /// Conditions used to filter the entities ahead of generating the buffer
+        ///     Conditions used to filter the entities ahead of generating the buffer
         /// </summary>
         private readonly ImmutableList<Condition<T>> Conditions;
 
         /// <summary>
-        /// The entities currently selected by this buffer, which would be read into a buffer on await
+        ///     The entities currently selected by this buffer, which would be read into a buffer on await
         /// </summary>
         public IAsyncEnumerable<T> Entities
         {
@@ -60,7 +58,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Patches the resource of this buffer task with an updated buffer
+        ///     Patches the resource of this buffer task with an updated buffer
         /// </summary>
         private async ValueTask<ReadOnlyMemory<T>> InsertInternal(IEnumerable<T> toInsert)
         {
@@ -76,7 +74,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Patches the resource of this buffer task with an updated buffer
+        ///     Patches the resource of this buffer task with an updated buffer
         /// </summary>
         private async ValueTask<ReadOnlyMemory<T>> PatchInternal(IEnumerable<T> updatedBuffer)
         {
@@ -92,7 +90,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Patches the resource of this buffer task with an updated buffer
+        ///     Patches the resource of this buffer task with an updated buffer
         /// </summary>
         private async ValueTask<long> DeleteInternal()
         {
@@ -108,80 +106,95 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Generates a buffer of all elements
+        ///     Generates a buffer of all elements
         /// </summary>
         public ValueTask<ReadOnlyMemory<T>> All => AsReadOnlyMemoryAsync();
 
         /// <summary>
-        /// Gets the first element selected by this buffer task
+        ///     Gets the first element selected by this buffer task
         /// </summary>
         public ValueTask<T> First => Entities.FirstAsync();
 
         /// <summary>
-        /// Gets the last element selected by this buffer task
+        ///     Gets the last element selected by this buffer task
         /// </summary>
         public ValueTask<T> Last => Entities.LastAsync();
 
         /// <summary>
-        /// Gets a raw memory buffer from this buffer task, possibly containing nulls
-        /// if the selection limit is greater than the returned entity count.
+        ///     Gets a raw memory buffer from this buffer task, possibly containing nulls
+        ///     if the selection limit is greater than the returned entity count.
         /// </summary>
         public ValueTask<Memory<T?>> Raw => AsRawMemoryAsync();
 
         /// <summary>
-        /// Gets the first element selected by this buffer task
+        ///     Gets the first element selected by this buffer task
         /// </summary>
         public ValueTask<T?> TryFirst => Entities.FirstOrDefaultAsync();
 
         /// <summary>
-        /// Gets the last element selected by this buffer task
+        ///     Gets the last element selected by this buffer task
         /// </summary>
         public ValueTask<T?> TryLast => Entities.LastOrDefaultAsync();
 
         /// <summary>
-        /// Generates a buffer of all the elements within the given range
+        ///     Generates a buffer of all the elements within the given range
         /// </summary>
-        public ValueTask<ReadOnlyMemory<T>> Within(Range range) => Slice(range).AsReadOnlyMemoryAsync();
+        public ValueTask<ReadOnlyMemory<T>> Within(Range range)
+        {
+            return Slice(range).AsReadOnlyMemoryAsync();
+        }
 
         /// <summary>
-        /// Returns the entity at the given index
+        ///     Returns the entity at the given index
         /// </summary>
-        public ValueTask<T> At(int index) => Entities.ElementAtAsync(index);
+        public ValueTask<T> At(int index)
+        {
+            return Entities.ElementAtAsync(index);
+        }
 
         /// <summary>
-        /// Returns the entity at the given index
+        ///     Returns the entity at the given index
         /// </summary>
-        public ValueTask<T> At(Index index) => Single(index).At(0);
+        public ValueTask<T> At(Index index)
+        {
+            return Single(index).At(0);
+        }
 
         /// <summary>
-        /// Slices this buffer to a new one with a given range
+        ///     Slices this buffer to a new one with a given range
         /// </summary>
         public EntityBufferTask<T> this[Range range] => Slice(range);
 
         /// <summary>
-        /// Slices this buffer to a new one with a given start and length
+        ///     Slices this buffer to a new one with a given start and length
         /// </summary>
         public EntityBufferTask<T> this[int start, int length] => Slice(start, length);
 
         /// <summary>
-        /// Returns the entity at the given index
+        ///     Returns the entity at the given index
         /// </summary>
         public ValueTask<T> this[int index] => At(index);
 
         /// <summary>
-        /// Returns the entity at the given index
+        ///     Returns the entity at the given index
         /// </summary>
         public ValueTask<T> this[Index index] => At(index);
 
         /// <summary>
-        /// Returns the entity at the given index, or default if there is no such entity
+        ///     Returns the entity at the given index, or default if there is no such entity
         /// </summary>
-        public ValueTask<T?> TryAt(int index) => Entities.ElementAtOrDefaultAsync(index);
+        public ValueTask<T?> TryAt(int index)
+        {
+            return Entities.ElementAtOrDefaultAsync(index);
+        }
 
         /// <summary>
-        /// Returns the entity at the given index, or default if there is no such entity
+        ///     Returns the entity at the given index, or default if there is no such entity
         /// </summary>
-        public ValueTask<T?> TryAt(Index index) => Single(index).TryAt(0);
+        public ValueTask<T?> TryAt(Index index)
+        {
+            return Single(index).TryAt(0);
+        }
 
         internal EntityBufferTask(IRequest<T> request)
         {
@@ -202,8 +215,8 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Creates a raw memory buffer from this buffer task, possibly containing nulls if the
-        /// selection limit is greater than the returned entity count.
+        ///     Creates a raw memory buffer from this buffer task, possibly containing nulls if the
+        ///     selection limit is greater than the returned entity count.
         /// </summary>
         /// <returns></returns>
         public async ValueTask<Memory<T?>> AsRawMemoryAsync()
@@ -227,7 +240,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Creates a ReadOnlyMemory buffer from this buffer task
+        ///     Creates a ReadOnlyMemory buffer from this buffer task
         /// </summary>
         /// <returns></returns>
         public async ValueTask<ReadOnlyMemory<T>> AsReadOnlyMemoryAsync()
@@ -258,7 +271,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Clears all conditions from this buffer task
+        ///     Clears all conditions from this buffer task
         /// </summary>
         public EntityBufferTask<T> WithNoConditions()
         {
@@ -266,7 +279,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Adds a range of new conditions to this buffer task
+        ///     Adds a range of new conditions to this buffer task
         /// </summary>
         public EntityBufferTask<T> Where(params (string key, Operators op, object? value)[] conditions)
         {
@@ -279,9 +292,9 @@ namespace RESTable.Requests
                 var (key, op, value) = conditions[index];
                 converted[index] = new Condition<T>
                 (
-                    term: termFactory.MakeConditionTerm(target, key),
-                    op: op,
-                    value: value
+                    termFactory.MakeConditionTerm(target, key),
+                    op,
+                    value
                 );
             }
 
@@ -289,7 +302,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Adds a range of new conditions to this buffer task
+        ///     Adds a range of new conditions to this buffer task
         /// </summary>
         public EntityBufferTask<T> Where(IEnumerable<Condition<T>> conditions)
         {
@@ -297,7 +310,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Adds a new condition to this buffer task
+        ///     Adds a new condition to this buffer task
         /// </summary>
         public EntityBufferTask<T> Where(string key, Operators op, object? value)
         {
@@ -305,7 +318,7 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Adds a new condition to this buffer task
+        ///     Adds a new condition to this buffer task
         /// </summary>
         public EntityBufferTask<T> Where(Condition<T> condition)
         {
@@ -317,9 +330,9 @@ namespace RESTable.Requests
         #region Patch
 
         /// <summary>
-        /// Calls the resource Update() with the provided entity as input for the resources that
-        /// require Update() calls to mutate resource state, and returns true if and only if
-        /// the entity was updated.
+        ///     Calls the resource Update() with the provided entity as input for the resources that
+        ///     require Update() calls to mutate resource state, and returns true if and only if
+        ///     the entity was updated.
         /// </summary>
         public async ValueTask<bool> Patch(T updatedItem)
         {
@@ -328,42 +341,60 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Slices the buffer task to the given index, then calls the resource Update() with the provided entity as input for the resources that
-        /// require Update() calls to mutate resource state, and returns true if and only if the entity was updated.
+        ///     Slices the buffer task to the given index, then calls the resource Update() with the provided entity as input for
+        ///     the resources that
+        ///     require Update() calls to mutate resource state, and returns true if and only if the entity was updated.
         /// </summary>
-        public ValueTask<bool> Patch(Index index, T updatedItem) => Single(index).Patch(updatedItem);
+        public ValueTask<bool> Patch(Index index, T updatedItem)
+        {
+            return Single(index).Patch(updatedItem);
+        }
 
         /// <summary>
-        /// Calls the resource Update() with the provided entities as input for the resources that
-        /// require Update() calls to mutate resource state.
+        ///     Calls the resource Update() with the provided entities as input for the resources that
+        ///     require Update() calls to mutate resource state.
         /// </summary>
-        public ValueTask<ReadOnlyMemory<T>> Patch(ReadOnlySpan<T> updatedBuffer) => PatchInternal(updatedBuffer.ToArray());
+        public ValueTask<ReadOnlyMemory<T>> Patch(ReadOnlySpan<T> updatedBuffer)
+        {
+            return PatchInternal(updatedBuffer.ToArray());
+        }
 
         /// <summary>
-        /// Calls the resource Update() with the provided entities as input for the resources that
-        /// require Update() calls to mutate resource state.
+        ///     Calls the resource Update() with the provided entities as input for the resources that
+        ///     require Update() calls to mutate resource state.
         /// </summary>
-        public ValueTask<ReadOnlyMemory<T>> Patch(ReadOnlyMemory<T> updatedBuffer) => PatchInternal(MemoryMarshal.ToEnumerable(updatedBuffer));
+        public ValueTask<ReadOnlyMemory<T>> Patch(ReadOnlyMemory<T> updatedBuffer)
+        {
+            return PatchInternal(MemoryMarshal.ToEnumerable(updatedBuffer));
+        }
 
         /// <summary>
-        /// Slices the buffer task to the given range, then calls the resource Update() with the provided entities as input for the resources that
-        /// require Update() calls to mutate resource state.
+        ///     Slices the buffer task to the given range, then calls the resource Update() with the provided entities as input for
+        ///     the resources that
+        ///     require Update() calls to mutate resource state.
         /// </summary>
-        public ValueTask<ReadOnlyMemory<T>> Patch(Range range, ReadOnlySpan<T> updatedBuffer) => Slice(range).PatchInternal(updatedBuffer.ToArray());
+        public ValueTask<ReadOnlyMemory<T>> Patch(Range range, ReadOnlySpan<T> updatedBuffer)
+        {
+            return Slice(range).PatchInternal(updatedBuffer.ToArray());
+        }
 
         /// <summary>
-        /// Slices the buffer task to the given range, then calls the resource Update() with the provided entities as input for the resources that
-        /// require Update() calls to mutate resource state.
+        ///     Slices the buffer task to the given range, then calls the resource Update() with the provided entities as input for
+        ///     the resources that
+        ///     require Update() calls to mutate resource state.
         /// </summary>
-        public ValueTask<ReadOnlyMemory<T>> Patch(Range range, ReadOnlyMemory<T> updatedBuffer) => Slice(range).PatchInternal(updatedBuffer.ToArray());
+        public ValueTask<ReadOnlyMemory<T>> Patch(Range range, ReadOnlyMemory<T> updatedBuffer)
+        {
+            return Slice(range).PatchInternal(updatedBuffer.ToArray());
+        }
 
         #endregion
 
         #region Put
 
         /// <summary>
-        /// Inserts the entity if there is no existing entity in the resource at the place specified by this buffer task,
-        /// or otherwise updates it to match the item provided. Returns true if and only if the resource is updated.
+        ///     Inserts the entity if there is no existing entity in the resource at the place specified by this buffer task,
+        ///     or otherwise updates it to match the item provided. Returns true if and only if the resource is updated.
         /// </summary>
         public async ValueTask<bool> Put(T item)
         {
@@ -373,18 +404,21 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Slices the buffer task to the given index, then inserts the entity if there is no existing entity in the
-        /// resource at the place specified by that buffer task, or otherwise updates it to match the item provided.
-        /// Returns true if and only if the resource is updated.
+        ///     Slices the buffer task to the given index, then inserts the entity if there is no existing entity in the
+        ///     resource at the place specified by that buffer task, or otherwise updates it to match the item provided.
+        ///     Returns true if and only if the resource is updated.
         /// </summary>
-        public ValueTask<bool> Put(Index index, T item) => Single(index).Put(item);
+        public ValueTask<bool> Put(Index index, T item)
+        {
+            return Single(index).Put(item);
+        }
 
         #endregion
 
         #region Insert
 
         /// <summary>
-        /// Inserts the given entity into the resource and returns wether or not it was inserted successfully
+        ///     Inserts the given entity into the resource and returns wether or not it was inserted successfully
         /// </summary>
         public async ValueTask<bool> Insert(T item)
         {
@@ -393,46 +427,70 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Inserts the given entities into the resource and returns a buffer of updated entities
+        ///     Inserts the given entities into the resource and returns a buffer of updated entities
         /// </summary>
-        public ValueTask<ReadOnlyMemory<T>> Insert(params T[] items) => InsertInternal(items);
+        public ValueTask<ReadOnlyMemory<T>> Insert(params T[] items)
+        {
+            return InsertInternal(items);
+        }
 
         /// <summary>
-        /// Inserts the given buffer of entities into the resource and return a buffer containing the inserted items
+        ///     Inserts the given buffer of entities into the resource and return a buffer containing the inserted items
         /// </summary>
-        public ValueTask<ReadOnlyMemory<T>> Insert(ReadOnlyMemory<T> buffer) => InsertInternal(MemoryMarshal.ToEnumerable(buffer));
+        public ValueTask<ReadOnlyMemory<T>> Insert(ReadOnlyMemory<T> buffer)
+        {
+            return InsertInternal(MemoryMarshal.ToEnumerable(buffer));
+        }
 
         /// <summary>
-        /// Inserts the given buffer of entities into the resource and return a buffer containing the inserted items
+        ///     Inserts the given buffer of entities into the resource and return a buffer containing the inserted items
         /// </summary>
-        public ValueTask<ReadOnlyMemory<T>> Insert(ReadOnlySpan<T> buffer) => InsertInternal(buffer.ToArray());
+        public ValueTask<ReadOnlyMemory<T>> Insert(ReadOnlySpan<T> buffer)
+        {
+            return InsertInternal(buffer.ToArray());
+        }
 
         #endregion
 
         #region Delete
 
         /// <summary>
-        /// Deletes the entities selected by this buffer task
+        ///     Deletes the entities selected by this buffer task
         /// </summary>
-        public ValueTask<long> Delete() => DeleteInternal();
+        public ValueTask<long> Delete()
+        {
+            return DeleteInternal();
+        }
 
         /// <summary>
-        /// Deletes the entity at the given index
+        ///     Deletes the entity at the given index
         /// </summary>
-        public ValueTask<long> Delete(Index index) => Single(index).DeleteInternal();
+        public ValueTask<long> Delete(Index index)
+        {
+            return Single(index).DeleteInternal();
+        }
 
         /// <summary>
-        /// Slices the buffer task to the range and then deletes the entities selected by that buffer task
+        ///     Slices the buffer task to the range and then deletes the entities selected by that buffer task
         /// </summary>
-        public ValueTask<long> Delete(Range range) => Slice(range).DeleteInternal();
+        public ValueTask<long> Delete(Range range)
+        {
+            return Slice(range).DeleteInternal();
+        }
 
         #endregion
 
         #region Slice
 
-        public EntityBufferTask<T> Slice(int offset) => Slice(offset..);
+        public EntityBufferTask<T> Slice(int offset)
+        {
+            return Slice(offset..);
+        }
 
-        public EntityBufferTask<T> Slice(int offset, int length) => Slice(offset..(offset + length));
+        public EntityBufferTask<T> Slice(int offset, int length)
+        {
+            return Slice(offset..(offset + length));
+        }
 
         public EntityBufferTask<T> Single(Index index)
         {
@@ -449,9 +507,14 @@ namespace RESTable.Requests
 
         #endregion
 
-        public ValueTaskAwaiter<ReadOnlyMemory<T>> GetAwaiter() => AsReadOnlyMemoryAsync().GetAwaiter();
+        public ValueTaskAwaiter<ReadOnlyMemory<T>> GetAwaiter()
+        {
+            return AsReadOnlyMemoryAsync().GetAwaiter();
+        }
 
-        public ConfiguredEntityBufferTask<T> ConfigureAwait(bool continueOnCapturedContext) => new(this, continueOnCapturedContext);
+        public ConfiguredEntityBufferTask<T> ConfigureAwait(bool continueOnCapturedContext)
+        {
+            return new(this, continueOnCapturedContext);
+        }
     }
 }
-#endif

@@ -1,7 +1,6 @@
-﻿namespace RESTable.Results
+﻿namespace RESTable.Results;
+
+internal class UnknownEvent : NotFound
 {
-    internal class UnknownEvent : NotFound
-    {
-        internal UnknownEvent(string info) : base(ErrorCodes.UnknownEventType, info) { }
-    }
+    internal UnknownEvent(string info) : base(ErrorCodes.UnknownEventType, info) { }
 }

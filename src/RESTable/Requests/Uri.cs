@@ -5,95 +5,99 @@ using Microsoft.Extensions.DependencyInjection;
 using RESTable.Internal;
 using RESTable.Results;
 
-namespace RESTable.Requests
+namespace RESTable.Requests;
+
+/// <inheritdoc />
+/// <summary>
+///     Encodes a URI that is used in a request
+/// </summary>
+internal partial class URI : IUriComponents
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// Encodes a URI that is used in a request
-    /// </summary>
-    internal class URI : IUriComponents
+    private URI()
     {
-        public string ProtocolIdentifier { get; private set; }
+        Conditions = new List<IUriCondition>();
+        MetaConditions = new List<IUriCondition>();
+        ProtocolIdentifier = null!;
+        ProtocolProvider = null!;
+    }
 
-        /// <inheritdoc />
-        public string? ResourceSpecifier { get; private set; }
+    internal URI(string resourceSpecifier, string? viewName) : this()
+    {
+        ResourceSpecifier = resourceSpecifier;
+        ViewName = viewName;
+    }
 
-        /// <inheritdoc />
-        public string? ViewName { get; private set; }
+    internal Exception? Error { get; private set; }
+    internal bool HasError => Error is not null;
+    public string ProtocolIdentifier { get; private set; }
 
-        /// <inheritdoc />
-        public IReadOnlyCollection<IUriCondition> Conditions { get; private set; }
+    /// <inheritdoc />
+    public string? ResourceSpecifier { get; private set; }
 
-        /// <inheritdoc />
-        public IReadOnlyCollection<IUriCondition> MetaConditions { get; private set; }
+    /// <inheritdoc />
+    public string? ViewName { get; private set; }
 
-        public IMacro? Macro { get; private set; }
+    /// <inheritdoc />
+    public IReadOnlyCollection<IUriCondition> Conditions { get; private set; }
 
-        internal Exception? Error { get; private set; }
-        internal bool HasError => Error is not null;
+    /// <inheritdoc />
+    public IReadOnlyCollection<IUriCondition> MetaConditions { get; private set; }
 
-        public IProtocolProvider ProtocolProvider { get; set; }
+    public IMacro? Macro { get; private set; }
 
-        internal static URI ParseInternal
-        (
-            string uriString,
-            bool percentCharsEscaped,
-            RESTableContext context,
-            out CachedProtocolProvider cachedProtocolProvider
-        )
+    public IProtocolProvider ProtocolProvider { get; set; }
+
+    internal static URI ParseInternal
+    (
+        string uriString,
+        bool percentCharsEscaped,
+        RESTableContext context,
+        out CachedProtocolProvider cachedProtocolProvider
+    )
+    {
+        var uri = new URI();
+        if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
+        var groups = ProtocolRegex().Match(uriString).Groups;
+        var protocolString = groups["proto"].Value;
+        if (protocolString.StartsWith("-"))
+            protocolString = protocolString[1..];
+        var tail = groups["tail"].Value;
+        uri.ProtocolIdentifier = protocolString.ToLowerInvariant();
+        var protocolProviderManager = context.GetRequiredService<ProtocolProviderManager>();
+        if (!protocolProviderManager.CachedProtocolProviders.TryGetValue(protocolString, out var _cachedProtocolProvider))
         {
-            var uri = new URI();
-            if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
-            var groups = Regex.Match(uriString, RegEx.Protocol).Groups;
-            var protocolString = groups["proto"].Value;
-            if (protocolString.StartsWith("-"))
-                protocolString = protocolString.Substring(1);
-            var tail = groups["tail"].Value;
-            uri.ProtocolIdentifier = protocolString.ToLowerInvariant();
-            var protocolProviderManager = context.GetRequiredService<ProtocolProviderManager>();
-            if (!protocolProviderManager.CachedProtocolProviders.TryGetValue(protocolString, out var _cachedProtocolProvider))
-            {
-                uri.Error = new UnknownProtocol(protocolString);
-                cachedProtocolProvider = protocolProviderManager.DefaultProtocolProvider;
-                return uri;
-            }
-            cachedProtocolProvider = _cachedProtocolProvider!;
-            uri.ProtocolProvider = cachedProtocolProvider!.ProtocolProvider;
-            try
-            {
-                uri.Populate(cachedProtocolProvider.ProtocolProvider.GetUriComponents(tail, context));
-            }
-            catch (Exception e)
-            {
-                uri.Error = e;
-            }
+            uri.Error = new UnknownProtocol(protocolString);
+            cachedProtocolProvider = protocolProviderManager.DefaultProtocolProvider;
             return uri;
         }
-
-        private void Populate(IUriComponents components)
+        cachedProtocolProvider = _cachedProtocolProvider;
+        uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
+        try
         {
-            ResourceSpecifier = components.ResourceSpecifier;
-            ViewName = components.ViewName;
-            Conditions = components.Conditions;
-            MetaConditions = components.MetaConditions;
-            Macro = components.Macro;
+            uri.Populate(cachedProtocolProvider.ProtocolProvider.GetUriComponents(tail, context));
         }
-
-        private URI()
+        catch (Exception e)
         {
-            Conditions = new List<IUriCondition>();
-            MetaConditions = new List<IUriCondition>();
-            ProtocolIdentifier = null!;
-            ProtocolProvider = null!;
+            uri.Error = e;
         }
-
-        internal URI(string resourceSpecifier, string? viewName) : this()
-        {
-            ResourceSpecifier = resourceSpecifier;
-            ViewName = viewName;
-        }
-
-        /// <inheritdoc />
-        public override string ToString() => this.ToUriString();
+        return uri;
     }
+
+    private void Populate(IUriComponents components)
+    {
+        ResourceSpecifier = components.ResourceSpecifier;
+        ViewName = components.ViewName;
+        Conditions = components.Conditions;
+        MetaConditions = components.MetaConditions;
+        Macro = components.Macro;
+    }
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return this.ToUriString();
+    }
+
+    [GeneratedRegex("^(?<proto>-[^\\?/\\(]*)?(?<tail>.*)")]
+    private static partial Regex ProtocolRegex();
 }

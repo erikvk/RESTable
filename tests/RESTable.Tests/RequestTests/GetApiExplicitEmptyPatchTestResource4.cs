@@ -3,70 +3,59 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 
-namespace RESTable.Tests.RequestTests
+namespace RESTable.Tests.RequestTests;
+
+[RESTable]
+public class GetApiExplicitEmptyPatchTestResource4 : ISelector<GetApiExplicitEmptyPatchTestResource4>, IInserter<GetApiExplicitEmptyPatchTestResource4>,
+    IUpdater<GetApiExplicitEmptyPatchTestResource4>, IDeleter<GetApiExplicitEmptyPatchTestResource4>
 {
-    [RESTable]
-    public class GetApiExplicitEmptyPatchTestResource4 : ISelector<GetApiExplicitEmptyPatchTestResource4>, IInserter<GetApiExplicitEmptyPatchTestResource4>,
-        IUpdater<GetApiExplicitEmptyPatchTestResource4>, IDeleter<GetApiExplicitEmptyPatchTestResource4>
+    public GetApiExplicitEmptyPatchTestResource4(int id)
     {
-        public int Id { get; }
-        public int ActualNumber { get; set; }
+        Id = id;
+        ActualNumber = id;
+        Number = id;
+    }
 
-        public int Number { get; set; }
+    public int Id { get; }
+    public int ActualNumber { get; set; }
 
-        public GetApiExplicitEmptyPatchTestResource4(int id)
+    public int Number { get; set; }
+
+    public static Dictionary<int, GetApiExplicitEmptyPatchTestResource4> Data { get; } = new();
+
+    public int Delete(IRequest<GetApiExplicitEmptyPatchTestResource4> request)
+    {
+        var i = 0;
+        foreach (var entity in request.GetInputEntities())
+            if (Data.Remove(entity.Id))
+                i += 1;
+        return i;
+    }
+
+    public IEnumerable<GetApiExplicitEmptyPatchTestResource4> Insert(IRequest<GetApiExplicitEmptyPatchTestResource4> request)
+    {
+        foreach (var entity in request.GetInputEntities())
         {
-            Id = id;
-            ActualNumber = id;
-            Number = id;
+            Data.Add(entity.Id, entity);
+            yield return entity;
         }
+    }
 
-        public static Dictionary<int, GetApiExplicitEmptyPatchTestResource4> Data { get; } = new();
+    public IEnumerable<GetApiExplicitEmptyPatchTestResource4> Select(IRequest<GetApiExplicitEmptyPatchTestResource4> request)
+    {
+        return Data.Values;
+    }
 
-        public IEnumerable<GetApiExplicitEmptyPatchTestResource4> Select(IRequest<GetApiExplicitEmptyPatchTestResource4> request)
-        {
-            return Data.Values;
-        }
-
-        public IEnumerable<GetApiExplicitEmptyPatchTestResource4> Insert(IRequest<GetApiExplicitEmptyPatchTestResource4> request)
-        {
-            foreach (var entity in request.GetInputEntities())
+    public IEnumerable<GetApiExplicitEmptyPatchTestResource4> Update(IRequest<GetApiExplicitEmptyPatchTestResource4> request)
+    {
+        foreach (var item in request.GetInputEntities())
+            if (Data.TryGetValue(item.Id, out var existing))
             {
-                Data.Add(entity.Id, entity);
-                yield return entity;
+                if (existing.ActualNumber == item.Number)
+                    // No update
+                    continue;
+                existing.ActualNumber = item.Number;
+                yield return existing;
             }
-        }
-
-        public IEnumerable<GetApiExplicitEmptyPatchTestResource4> Update(IRequest<GetApiExplicitEmptyPatchTestResource4> request)
-        {
-            foreach (var item in request.GetInputEntities())
-            {
-                if (Data.TryGetValue(item.Id, out var existing))
-                {
-                    if (existing!.ActualNumber == item.Number)
-                    {
-                        // No update
-                        continue;
-                    }
-                    existing.ActualNumber = item.Number;
-                    yield return existing;
-                }
-                else
-                {
-                    // Skip unknowns
-                }
-            }
-        }
-
-        public int Delete(IRequest<GetApiExplicitEmptyPatchTestResource4> request)
-        {
-            var i = 0;
-            foreach (var entity in request.GetInputEntities())
-            {
-                if (Data.Remove(entity.Id))
-                    i += 1;
-            }
-            return i;
-        }
     }
 }

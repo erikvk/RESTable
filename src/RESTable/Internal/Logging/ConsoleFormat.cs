@@ -1,8 +1,7 @@
-﻿namespace RESTable.Internal.Logging
+﻿namespace RESTable.Internal.Logging;
+
+internal enum ConsoleFormat
 {
-    internal enum ConsoleFormat
-    {
-        Line,
-        JSON
-    }
+    Line,
+    JSON
 }

@@ -1,10 +1,9 @@
-namespace RESTable.Resources.Operations
+namespace RESTable.Resources.Operations;
+
+internal enum RESTableOperations
 {
-    internal enum RESTableOperations
-    {
-        Select,
-        Insert,
-        Update,
-        Delete
-    }
+    Select,
+    Insert,
+    Update,
+    Delete
 }

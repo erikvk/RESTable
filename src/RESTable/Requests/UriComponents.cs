@@ -1,74 +1,76 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace RESTable.Requests
+namespace RESTable.Requests;
+
+/// <inheritdoc />
+/// <summary>
+///     Encodes read and writable URI components
+/// </summary>
+public class UriComponents : IUriComponents
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// Encodes read and writable URI components
-    /// </summary>
-    public class UriComponents : IUriComponents
+    public UriComponents
+    (
+        IProtocolProvider protocolProvider,
+        string resourceSpecifier,
+        string? viewName,
+        IEnumerable<IUriCondition> conditions,
+        IEnumerable<IUriCondition> metaConditions,
+        IMacro? macro
+    )
     {
-        public string ProtocolIdentifier { get; }
+        ProtocolIdentifier = protocolProvider.ProtocolIdentifier;
+        ProtocolProvider = protocolProvider;
+        ResourceSpecifier = resourceSpecifier;
+        ViewName = viewName;
+        Conditions = conditions.ToList();
+        MetaConditions = metaConditions.ToList();
+        Macro = macro;
+    }
 
-        /// <inheritdoc />
-        public string? ResourceSpecifier { get; }
+    internal UriComponents(IUriComponents existing)
+    {
+        ProtocolProvider = null!;
+        ProtocolIdentifier = existing.ProtocolIdentifier;
+        ResourceSpecifier = existing.ResourceSpecifier;
+        ViewName = existing.ViewName;
+        Conditions = existing.Conditions.ToList();
+        MetaConditions = existing.MetaConditions.ToList();
+        Macro = existing.Macro;
+    }
 
-        /// <inheritdoc />
-        public string? ViewName { get; }
+    /// <summary>
+    ///     The read and writable conditions list
+    /// </summary>
+    public List<IUriCondition> Conditions { get; }
 
-        /// <summary>
-        /// The read and writable conditions list
-        /// </summary>
-        public List<IUriCondition> Conditions { get; }
+    /// <summary>
+    ///     The read and writable meta-conditions list
+    /// </summary>
+    public List<IUriCondition> MetaConditions { get; }
 
-        /// <summary>
-        /// The read and writable meta-conditions list
-        /// </summary>
-        public List<IUriCondition> MetaConditions { get; }
+    public string ProtocolIdentifier { get; }
 
-        /// <inheritdoc />
-        public IMacro? Macro { get; }
+    /// <inheritdoc />
+    public string? ResourceSpecifier { get; }
 
-        public IProtocolProvider ProtocolProvider { get; }
+    /// <inheritdoc />
+    public string? ViewName { get; }
 
-        /// <inheritdoc />
-        IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
+    /// <inheritdoc />
+    public IMacro? Macro { get; }
 
-        /// <inheritdoc />
-        IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
+    public IProtocolProvider ProtocolProvider { get; }
 
-        public UriComponents
-        (
-            IProtocolProvider protocolProvider,
-            string resourceSpecifier,
-            string? viewName,
-            IEnumerable<IUriCondition> conditions,
-            IEnumerable<IUriCondition> metaConditions,
-            IMacro? macro
-        )
-        {
-            ProtocolIdentifier = protocolProvider.ProtocolIdentifier;
-            ProtocolProvider = protocolProvider;
-            ResourceSpecifier = resourceSpecifier;
-            ViewName = viewName;
-            Conditions = conditions.ToList();
-            MetaConditions = metaConditions.ToList();
-            Macro = macro;
-        }
+    /// <inheritdoc />
+    IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
 
-        internal UriComponents(IUriComponents existing)
-        {
-            ProtocolProvider = null!;
-            ProtocolIdentifier = existing.ProtocolIdentifier;
-            ResourceSpecifier = existing.ResourceSpecifier;
-            ViewName = existing.ViewName;
-            Conditions = existing.Conditions.ToList();
-            MetaConditions = existing.MetaConditions.ToList();
-            Macro = existing.Macro;
-        }
+    /// <inheritdoc />
+    IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
 
-        /// <inheritdoc />
-        public override string ToString() => this.ToUriString();
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return this.ToUriString();
     }
 }

@@ -1,36 +1,35 @@
-﻿namespace RESTable.Admin
+﻿namespace RESTable.Admin;
+
+/// <summary>
+///     Contains information about a column on which an index is registered.
+/// </summary>
+public class ColumnInfo
 {
     /// <summary>
-    /// Contains information about a column on which an index is registered.
+    ///     Creates a new ColumnInfo instance
     /// </summary>
-    public class ColumnInfo
+    public ColumnInfo(string name, bool descending)
     {
-        /// <summary>
-        /// The name of the column (property name)
-        /// </summary>
-        public string Name { get; }
+        Name = name.Trim();
+        Descending = descending;
+    }
 
-        /// <summary>
-        /// Is this index descending? (otherwise ascending)
-        /// </summary>
-        public bool Descending { get; }
+    /// <summary>
+    ///     The name of the column (property name)
+    /// </summary>
+    public string Name { get; }
 
-        /// <summary>
-        /// Creates a new ColumnInfo instance
-        /// </summary>
-        public ColumnInfo(string name, bool descending)
-        {
-            Name = name.Trim();
-            Descending = descending;
-        }
+    /// <summary>
+    ///     Is this index descending? (otherwise ascending)
+    /// </summary>
+    public bool Descending { get; }
 
-        /// <summary>
-        /// Creates a new ColumnInfo from a tuple describing a column name and direction
-        /// </summary>
-        /// <param name="column"></param>
-        public static implicit operator ColumnInfo((string Name, bool Descending) column)
-        {
-            return new(column.Name, column.Descending);
-        }
+    /// <summary>
+    ///     Creates a new ColumnInfo from a tuple describing a column name and direction
+    /// </summary>
+    /// <param name="column"></param>
+    public static implicit operator ColumnInfo((string Name, bool Descending) column)
+    {
+        return new ColumnInfo(column.Name, column.Descending);
     }
 }

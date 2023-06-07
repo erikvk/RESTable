@@ -1,6 +1,5 @@
 ﻿using System;
 
-namespace RESTable.Resources
-{
-    public class KeyAttribute : Attribute { }
-}
+namespace RESTable.Resources;
+
+public class KeyAttribute : Attribute { }

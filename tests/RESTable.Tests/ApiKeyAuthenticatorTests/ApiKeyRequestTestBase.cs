@@ -9,55 +9,54 @@ using RESTable.Requests;
 using RESTable.Xunit;
 using Xunit;
 
-namespace RESTable.Tests.ApiKeyAuthenticatorTests
+namespace RESTable.Tests.ApiKeyAuthenticatorTests;
+
+/// <summary>
+///     Helper for making requests
+/// </summary>
+public class ApiKeyRequestTestBase : IClassFixture<RESTableFixture>
 {
-    /// <summary>
-    /// Helper for making requests
-    /// </summary>
-    public class ApiKeyRequestTestBase : IClassFixture<RESTableFixture>
+    public ApiKeyRequestTestBase(RESTableFixture fixture)
     {
-        private RESTableFixture Fixture { get; }
+        Fixture = fixture;
 
-        public RESTableContext Context { get; }
-        public IRequestAuthenticator ApiKeyAuthenticator { get; }
-        public string ApiKey => "mysecureapikey";
-
-        public ApiKeyRequestTestBase(RESTableFixture fixture)
+        var config = new Dictionary<string, object>
         {
-            Fixture = fixture;
-
-            var config = new Dictionary<string, object>
+            ["RESTable.ApiKeys"] = new ApiKeys
             {
-                ["RESTable.ApiKeys"] = new ApiKeys
+                new()
                 {
-                    new()
+                    ApiKey = ApiKey,
+                    AllowAccess = new AllowAccess[]
                     {
-                        ApiKey = ApiKey,
-                        AllowAccess = new AllowAccess[]
+                        new()
                         {
-                            new()
-                            {
-                                Resources = new[] {"RESTable.Tests.*"},
-                                Methods = new[] {"*"}
-                            }
+                            Resources = new[] { "RESTable.Tests.*" },
+                            Methods = new[] { "*" }
                         }
                     }
                 }
-            };
+            }
+        };
 
-            var configJson = JsonConvert.SerializeObject(config);
-            using var configJsonStream = new MemoryStream(Encoding.ASCII.GetBytes(configJson));
-            var configuration = new ConfigurationBuilder()
-                .AddJsonStream(configJsonStream)
-                .Build();
-            fixture.AddSingleton<IConfiguration>(configuration);
-            fixture.AddApiKeys(configuration);
+        var configJson = JsonConvert.SerializeObject(config);
+        using var configJsonStream = new MemoryStream(Encoding.ASCII.GetBytes(configJson));
+        var configuration = new ConfigurationBuilder()
+            .AddJsonStream(configJsonStream)
+            .Build();
+        fixture.AddSingleton<IConfiguration>(configuration);
+        fixture.AddApiKeys(configuration);
 
-            fixture.Configure();
+        fixture.Configure();
 
-            Context = fixture.Context;
-            ApiKeyAuthenticator = fixture.GetRequiredService<IRequestAuthenticator>();
-            Assert.IsType<ApiKeyAuthenticator>(ApiKeyAuthenticator);
-        }
+        Context = fixture.Context;
+        ApiKeyAuthenticator = fixture.GetRequiredService<IRequestAuthenticator>();
+        Assert.IsType<ApiKeyAuthenticator>(ApiKeyAuthenticator);
     }
+
+    private RESTableFixture Fixture { get; }
+
+    public RESTableContext Context { get; }
+    public IRequestAuthenticator ApiKeyAuthenticator { get; }
+    public string ApiKey => "mysecureapikey";
 }

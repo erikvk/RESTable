@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace RESTable.Json
+namespace RESTable.Json;
+
+public interface IRegisteredGenericJsonConverterType
 {
-    public interface IRegisteredGenericJsonConverterType
-    {
-        bool CanConvert(Type toConvert);
-        Type GetConverterType(Type toConvert);
-    }
+    bool CanConvert(Type toConvert);
+    Type GetConverterType(Type toConvert);
 }

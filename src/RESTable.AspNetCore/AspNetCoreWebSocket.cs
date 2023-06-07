@@ -5,169 +5,146 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RESTable.Requests;
 using static System.Net.WebSockets.WebSocketMessageType;
+using WebSocket = RESTable.WebSockets.WebSocket;
 
-namespace RESTable.AspNetCore
+namespace RESTable.AspNetCore;
+
+internal abstract class AspNetCoreWebSocket : WebSocket
 {
-    internal abstract class AspNetCoreWebSocket : WebSockets.WebSocket
+    private const int MaxNumberOfConcurrentWriters = 1;
+
+    /// <summary>
+    ///     Ensures that at most one thread sends a message frame over this websocket at any one time, to
+    ///     avoid frame fragmentation.
+    /// </summary>
+    private SemaphoreSlim SendMessageSemaphore { get; }
+
+    protected System.Net.WebSockets.WebSocket? WebSocket { get; set; }
+    private ArrayPool<byte> ArrayPool { get; }
+    private int WebSocketBufferSize { get; }
+
+    protected AspNetCoreWebSocket(string webSocketId, RESTableContext context) : base(webSocketId, context)
     {
-        private const int MaxNumberOfConcurrentWriters = 1;
+        WebSocketBufferSize = context.Configuration.WebSocketBufferSize;
+        ArrayPool = ArrayPool<byte>.Create(WebSocketBufferSize, 32);
+        SendMessageSemaphore = new SemaphoreSlim(MaxNumberOfConcurrentWriters, MaxNumberOfConcurrentWriters);
+    }
 
-        /// <summary>
-        /// Ensures that at most one thread sends a message frame over this websocket at any one time, to
-        /// avoid frame fragmentation.
-        /// </summary>
-        private SemaphoreSlim SendMessageSemaphore { get; }
-
-        protected WebSocket? WebSocket { get; set; }
-        private ArrayPool<byte> ArrayPool { get; }
-        private int WebSocketBufferSize { get; }
-
-        protected AspNetCoreWebSocket(string webSocketId, RESTableContext context) : base(webSocketId, context)
+    protected override async Task SendBuffered(string data, bool asText, CancellationToken cancellationToken)
+    {
+        await SendMessageSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            WebSocketBufferSize = context.Configuration.WebSocketBufferSize;
-            ArrayPool = ArrayPool<byte>.Create(WebSocketBufferSize, 32);
-            SendMessageSemaphore = new SemaphoreSlim(MaxNumberOfConcurrentWriters, MaxNumberOfConcurrentWriters);
+            var buffer = Encoding.UTF8.GetBytes(data);
+            var byteData = buffer.AsMemory();
+            await WebSocket!.SendAsync(byteData, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
         }
-
-        protected override async Task SendBuffered(string data, bool asText, CancellationToken cancellationToken)
+        finally
         {
-            await SendMessageSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                var buffer = Encoding.UTF8.GetBytes(data);
-#if NETSTANDARD2_0
-                var byteData = new ArraySegment<byte>(buffer);
-#else
-                var byteData = buffer.AsMemory();
-#endif
-                await WebSocket!.SendAsync(byteData, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                SendMessageSemaphore.Release();
-            }
+            SendMessageSemaphore.Release();
         }
+    }
 
-        protected override async Task SendBuffered(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken)
+    protected override async Task SendBuffered(ReadOnlyMemory<byte> data, bool asText, CancellationToken cancellationToken)
+    {
+        await SendMessageSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            await SendMessageSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-#if NETSTANDARD2_0
-                var segment = new ArraySegment<byte>(data.ToArray());
-                await WebSocket!.SendAsync(segment, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
-#else
-                await WebSocket!.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
-#endif
-            }
-            finally
-            {
-                SendMessageSemaphore.Release();
-            }
+            await WebSocket!.SendAsync(data, asText ? Text : Binary, true, cancellationToken).ConfigureAwait(false);
         }
-
-        protected override Stream GetOutgoingMessageStream(bool asText, CancellationToken cancellationToken)
+        finally
         {
-            return new AspNetCoreOutputMessageStream
-            (
-                webSocket: WebSocket!,
-                messageType: asText ? Text : Binary,
-                SendMessageSemaphore,
-                webSocketCancelledToken: cancellationToken
-            );
+            SendMessageSemaphore.Release();
         }
+    }
 
-        protected override bool IsConnected => WebSocket?.State == WebSocketState.Open;
-
-        protected abstract override Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken);
-
-#if NETSTANDARD2_0
-        private static readonly ArraySegment<byte> EmptyBuffer = new(Array.Empty<byte>());
-#endif
-
-        private static async ValueTask<(WebSocketMessageType messageType, bool endOfMessage, int byteCount)> GetInitial
+    protected override Stream GetOutgoingMessageStream(bool asText, CancellationToken cancellationToken)
+    {
+        return new AspNetCoreOutputMessageStream
         (
-            WebSocket webSocket,
-            CancellationToken cancellationToken
-        )
-        {
-#if NETSTANDARD2_0
-            var initial = await webSocket.ReceiveAsync(EmptyBuffer, cancellationToken).ConfigureAwait(false);
-            return (initial.MessageType, initial.EndOfMessage, initial.Count);
-#else
-            var initial = await webSocket.ReceiveAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
-            return (initial.MessageType, initial.EndOfMessage, initial.Count);
-#endif
-        }
+            WebSocket!,
+            asText ? Text : Binary,
+            SendMessageSemaphore,
+            cancellationToken
+        );
+    }
 
-        protected override async Task InitMessageReceiveListener(CancellationToken cancellationToken)
+    protected abstract override Task ConnectUnderlyingWebSocket(CancellationToken cancellationToken);
+
+    private static async ValueTask<(WebSocketMessageType messageType, bool endOfMessage, int byteCount)> GetInitial
+    (
+        System.Net.WebSockets.WebSocket webSocket,
+        CancellationToken cancellationToken
+    )
+    {
+        var initial = await webSocket.ReceiveAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+        return (initial.MessageType, initial.EndOfMessage, initial.Count);
+    }
+
+    protected override async Task InitMessageReceiveListener(CancellationToken cancellationToken)
+    {
+        var logger = this.GetService<ILogger<WebSocket>>();
+        try
         {
-            try
+            while (!WebSocket!.CloseStatus.HasValue)
             {
-                try
+                var (messageType, endOfMessage, byteCount) = await GetInitial(WebSocket, cancellationToken).ConfigureAwait(false);
+                if (messageType is Close)
                 {
-                    while (!WebSocket!.CloseStatus.HasValue)
-                    {
-                        var (messageType, endOfMessage, byteCount) = await GetInitial(WebSocket, cancellationToken).ConfigureAwait(false);
-                        switch (messageType)
-                        {
-                            case Binary:
-                            {
-                                var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize,
-                                    cancellationToken);
-                                await using (nextMessage.ConfigureAwait(false))
-                                {
-                                    await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
-                                }
-                                break;
-                            }
-                            case Text:
-                            {
-                                var nextMessage = new AspNetCoreInputMessageStream(WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize,
-                                    cancellationToken);
-                                Task handleTask;
-                                await using (nextMessage.ConfigureAwait(false))
-                                {
-                                    using (var reader = new StreamReader(nextMessage, Encoding.Default, true, WebSocketBufferSize, leaveOpen: true))
-                                    {
-                                        var stringMessage = await reader.ReadToEndAsync().ConfigureAwait(false);
-                                        handleTask = HandleTextInput(stringMessage, cancellationToken);
-                                    }
-                                }
-                                await handleTask.ConfigureAwait(false);
-                                break;
-                            }
-                        }
-                    }
+                    await WebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken).ConfigureAwait(false);
+                    return;
                 }
-                catch (WebSocketException)
+                var nextMessage = new AspNetCoreInputMessageStream(
+                    WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken
+                );
+                await using var nextMessageDisposable = nextMessage.ConfigureAwait(false);
+                if (messageType is Binary)
                 {
-                    // Client closed without completing close handshake
+                    await HandleBinaryInput(nextMessage, cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception exception)
+                else
                 {
-                    // An exception was thrown from the terminal, or when handling websocket messages. Let's 
-                    // collect some information about the error and set the close description, before returning 
-                    // from the lifetimetask.
-                    var error = exception.AsError();
-                    CloseDescription = await error.GetLogMessage().ConfigureAwait(false);
-                }
-                finally
-                {
-                    // WebSocket is closing, so we cancel all tasks depending on its cancellation token.
-                    Cancel();
+                    using var reader = new StreamReader(nextMessage, Encoding.Default, true, WebSocketBufferSize, true);
+                    var stringMessage = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                    await HandleTextInput(stringMessage, cancellationToken).ConfigureAwait(false);
                 }
             }
-            // Catch cancellation exceptions before returning
-            catch (TaskCanceledException) { }
-            catch (OperationCanceledException) { }
         }
-
-        protected override async Task Close(string description, CancellationToken cancellationToken)
+        catch (WebSocketException)
         {
-            await WebSocket!.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
+            // Client closed without completing close handshake
+        }
+        catch (Exception exception)
+        {
+            if (exception is OperationCanceledException)
+                return;
+            // An exception was thrown from the terminal, or when handling websocket messages. Let's 
+            // collect some information about the error and set the close description, before returning 
+            // from the lifetimetask.
+            var error = exception.AsError();
+            CloseDescription = await error.GetLogMessage().ConfigureAwait(false);
+            logger?.LogError(exception, "An error occured while handling a WebSocket message");
+        }
+        finally
+        {
+            WebSocketClosingSource.Cancel();
+        }
+    }
+
+    protected override async Task TryClose(string description, CancellationToken cancellationToken)
+    {
+        if (WebSocket is null)
+            return;
+        using (WebSocket)
+        {
+            if (WebSocket.State is WebSocketState.Open or WebSocketState.CloseReceived or WebSocketState.CloseSent)
+            {
+                await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 }

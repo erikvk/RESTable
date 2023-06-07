@@ -1,30 +1,29 @@
 ﻿using System;
 
-namespace RESTable.Requests
+namespace RESTable.Requests;
+
+/// <summary>
+///     A common interface for URI conditions in RESTable
+/// </summary>
+public interface IUriCondition
 {
     /// <summary>
-    /// A common interface for URI conditions in RESTable
+    ///     The key of the condition
     /// </summary>
-    public interface IUriCondition
-    {
-        /// <summary>
-        /// The key of the condition
-        /// </summary>
-        string Key { get; }
+    string Key { get; }
 
-        /// <summary>
-        /// The operator of the condition
-        /// </summary>
-        Operators Operator { get; }
+    /// <summary>
+    ///     The operator of the condition
+    /// </summary>
+    Operators Operator { get; }
 
-        /// <summary>
-        /// A string describing the value encoded in the condition
-        /// </summary>
-        string ValueLiteral { get; }
+    /// <summary>
+    ///     A string describing the value encoded in the condition
+    /// </summary>
+    string ValueLiteral { get; }
 
-        /// <summary>
-        /// A TypeCode describing the type of the condition value (if known)
-        /// </summary>
-        TypeCode ValueTypeCode { get; }
-    }
+    /// <summary>
+    ///     A TypeCode describing the type of the condition value (if known)
+    /// </summary>
+    TypeCode ValueTypeCode { get; }
 }

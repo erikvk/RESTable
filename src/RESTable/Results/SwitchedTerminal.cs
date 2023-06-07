@@ -1,14 +1,13 @@
 ﻿using System.Net;
 using RESTable.Requests;
 
-namespace RESTable.Results
+namespace RESTable.Results;
+
+internal class SwitchedTerminal : OK
 {
-    internal class SwitchedTerminal : OK
+    internal SwitchedTerminal(IRequest request) : base(request)
     {
-        internal SwitchedTerminal(IRequest request) : base(request)
-        {
-            StatusCode = HttpStatusCode.OK;
-            StatusDescription = "Switched terminal";
-        }
+        StatusCode = HttpStatusCode.OK;
+        StatusDescription = "Switched terminal";
     }
 }

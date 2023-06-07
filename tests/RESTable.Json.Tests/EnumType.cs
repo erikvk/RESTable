@@ -1,9 +1,8 @@
-﻿namespace RESTable.Json.Tests
+﻿namespace RESTable.Json.Tests;
+
+public enum EnumType
 {
-    public enum EnumType
-    {
-        A,
-        B,
-        C
-    };
+    A,
+    B,
+    C
 }

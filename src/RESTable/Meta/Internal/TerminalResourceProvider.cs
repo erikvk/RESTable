@@ -4,36 +4,38 @@ using System.Linq;
 using System.Reflection;
 using RESTable.Resources;
 
-namespace RESTable.Meta.Internal
+namespace RESTable.Meta.Internal;
+
+public class TerminalResourceProvider
 {
-    public class TerminalResourceProvider
+    public TerminalResourceProvider(TypeCache typeCache, ResourceCollection resourceCollection)
     {
-        private MethodInfo? BuildTerminalMethod { get; }
-        private TypeCache TypeCache { get; }
-        private ResourceCollection ResourceCollection { get; }
+        BuildTerminalMethod = typeof(TerminalResourceProvider).GetMethod
+        (
+            nameof(MakeTerminalResource),
+            BindingFlags.Instance | BindingFlags.NonPublic
+        );
+        TypeCache = typeCache;
+        ResourceCollection = resourceCollection;
+    }
 
-        public TerminalResourceProvider(TypeCache typeCache, ResourceCollection resourceCollection)
+    private MethodInfo? BuildTerminalMethod { get; }
+    private TypeCache TypeCache { get; }
+    private ResourceCollection ResourceCollection { get; }
+
+    public void RegisterTerminalTypes(List<Type> terminalTypes)
+    {
+        foreach (var type in terminalTypes.OrderBy(t => t.GetRESTableTypeName()))
         {
-            BuildTerminalMethod = typeof(TerminalResourceProvider).GetMethod
-            (
-                name: nameof(MakeTerminalResource),
-                bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic
-            );
-            TypeCache = typeCache;
-            ResourceCollection = resourceCollection;
+            var resource = (IResource?) BuildTerminalMethod?.MakeGenericMethod(type).Invoke(this, null);
+            if (resource is null)
+                throw new Exception($"Could not construct terminal resource for type {type}");
+            ResourceCollection.AddResource(resource);
         }
+    }
 
-        public void RegisterTerminalTypes(List<Type> terminalTypes)
-        {
-            foreach (var type in terminalTypes.OrderBy(t => t.GetRESTableTypeName()))
-            {
-                var resource = (IResource?) BuildTerminalMethod?.MakeGenericMethod(type).Invoke(this, null);
-                if (resource is null)
-                    throw new Exception($"Could not construct terminal resource for type {type}");
-                ResourceCollection.AddResource(resource!);
-            }
-        }
-
-        private IResource MakeTerminalResource<T>() where T : Terminal => new TerminalResource<T>(TypeCache);
+    private IResource MakeTerminalResource<T>() where T : Terminal
+    {
+        return new TerminalResource<T>(TypeCache);
     }
 }

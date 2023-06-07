@@ -1,41 +1,40 @@
-﻿namespace RESTable.Sqlite
+﻿namespace RESTable.Sqlite;
+
+/// <summary>
+///     Allowed CLR data types for mapping with Sqlite tables
+/// </summary>
+public enum ClrDataType
 {
-    /// <summary>
-    /// Allowed CLR data types for mapping with Sqlite tables
-    /// </summary>
-    public enum ClrDataType
-    {
-        /// <summary />
-        Unsupported = 0,
+    /// <summary />
+    Unsupported = 0,
 
-        /// <summary />
-        Int16,
+    /// <summary />
+    Int16,
 
-        /// <summary />
-        Int32,
+    /// <summary />
+    Int32,
 
-        /// <summary />
-        Int64,
+    /// <summary />
+    Int64,
 
-        /// <summary />
-        Single,
+    /// <summary />
+    Single,
 
-        /// <summary />
-        Double,
+    /// <summary />
+    Double,
 
-        /// <summary />
-        Decimal,
+    /// <summary />
+    Decimal,
 
-        /// <summary />
-        Byte,
+    /// <summary />
+    Byte,
 
-        /// <summary />
-        String,
+    /// <summary />
+    String,
 
-        /// <summary />
-        Boolean,
+    /// <summary />
+    Boolean,
 
-        /// <summary />
-        DateTime
-    }
+    /// <summary />
+    DateTime
 }

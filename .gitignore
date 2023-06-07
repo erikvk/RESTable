@@ -345,3 +345,7 @@ healthchecksdb
 *.sqlite
 *.xlsx
 publish.bat
+*.DS_Store
+.vscode/
+pack.sh
+publish.sh

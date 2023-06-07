@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
 using RESTable.Meta;
 
-namespace RESTable.Auth
+namespace RESTable.Auth;
+
+/// <summary>
+///     Access rights describing no access, i.e. access to no resources
+/// </summary>
+public class NoAccess : AccessRights
 {
-    /// <summary>
-    /// Access rights describing no access, i.e. access to no resources
-    /// </summary>
-    public class NoAccess : AccessRights
-    {
-        public NoAccess() : base(null, null, new Dictionary<IResource, Method[]>()) { }
-    }
+    public NoAccess() : base(null, null, new Dictionary<IResource, Method[]>()) { }
 }

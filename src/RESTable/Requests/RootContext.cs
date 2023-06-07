@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace RESTable.Requests
+namespace RESTable.Requests;
+
+/// <summary>
+///     The root context, capable of creating requests to all resources
+/// </summary>
+public class RootContext : RESTableContext
 {
-    /// <summary>
-    /// The root context, capable of creating requests to all resources
-    /// </summary>
-    public class RootContext : RESTableContext
-    {
-        public RootContext(RootClient rootClient, IServiceProvider services) : base(rootClient, services) { }
-    }
+    public RootContext(RootClient rootClient, IServiceProvider services) : base(rootClient, services) { }
 }

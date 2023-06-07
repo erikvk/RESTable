@@ -1,8 +1,7 @@
-﻿namespace RESTable.ContentTypeProviders
+﻿namespace RESTable.ContentTypeProviders;
+
+public interface IContentTypeHolder
 {
-    public interface IContentTypeHolder
-    {
-        IContentTypeProvider InputContentTypeProvider { get; }
-        IContentTypeProvider OutputContentTypeProvider { get; }
-    }
+    IContentTypeProvider InputContentTypeProvider { get; }
+    IContentTypeProvider OutputContentTypeProvider { get; }
 }

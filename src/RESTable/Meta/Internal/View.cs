@@ -6,68 +6,85 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
 
-namespace RESTable.Meta.Internal
+namespace RESTable.Meta.Internal;
+
+/// <inheritdoc cref="IView" />
+/// <summary>
+///     Represents a RESTable resource view
+/// </summary>
+internal class View<TResource> : IView, ITarget<TResource> where TResource : class
 {
-    /// <inheritdoc cref="IView" />
-    /// <summary>
-    /// Represents a RESTable resource view
-    /// </summary>
-    internal class View<TResource> : IView, ITarget<TResource> where TResource : class
+    internal View(Type viewType, TypeCache typeCache)
     {
-        /// <inheritdoc />
-        /// <summary>
-        /// The binding rule to use when binding conditions to this view
-        /// </summary>
-        public TermBindingRule ConditionBindingRule { get; }
+        EntityResource = null!; // Set later
 
-        /// <inheritdoc />
-        public string Name { get; }
+        var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
+        Type = viewType;
+        Name = viewAttribute!.CustomName ?? viewType.Name;
+        ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType)!;
+        AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType)!;
+        Members = typeCache.GetDeclaredProperties(viewType);
+        Description = viewAttribute.Description;
+        ConditionBindingRule = viewAttribute.AllowDynamicConditions
+            ? TermBindingRule.DeclaredWithDynamicFallback
+            : TermBindingRule.OnlyDeclared;
+    }
 
-        /// <inheritdoc />
-        public string? Description { get; }
+    private AsyncViewSelector<TResource> AsyncViewSelector { get; }
+    private ViewSelector<TResource> ViewSelector { get; }
 
-        /// <inheritdoc />
-        public Type Type { get; }
+    public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request, CancellationToken cancellationToken)
+    {
+        return AsyncViewSelector(request, cancellationToken);
+    }
 
-        private AsyncViewSelector<TResource> AsyncViewSelector { get; }
-        private ViewSelector<TResource> ViewSelector { get; }
+    /// <inheritdoc />
+    /// <summary>
+    ///     The binding rule to use when binding conditions to this view
+    /// </summary>
+    public TermBindingRule ConditionBindingRule { get; }
 
-        public IEnumerable<TResource> Select(IRequest<TResource> request) => ViewSelector(request);
+    /// <inheritdoc />
+    public string Name { get; }
 
-        public IAsyncEnumerable<TResource> SelectAsync(IRequest<TResource> request, CancellationToken cancellationToken) => AsyncViewSelector(request, cancellationToken);
+    /// <inheritdoc />
+    public string? Description { get; }
 
-        /// <inheritdoc />
-        [RESTableMember(hide: true)]
-        public IEntityResource EntityResource { get; private set; }
+    /// <inheritdoc />
+    public Type Type { get; }
 
-        public void SetEntityResource(IEntityResource resource) => EntityResource = resource;
+    /// <inheritdoc />
+    [RESTableMember(hide: true)]
+    public IEntityResource EntityResource { get; private set; }
 
-        /// <inheritdoc />
-        public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
+    /// <inheritdoc />
+    public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
 
-        internal View(Type viewType, TypeCache typeCache)
-        {
-            EntityResource = null!; // Set later
+    public IEnumerable<TResource> Select(IRequest<TResource> request)
+    {
+        return ViewSelector(request);
+    }
 
-            var viewAttribute = viewType.GetCustomAttribute<RESTableViewAttribute>();
-            Type = viewType;
-            Name = viewAttribute!.CustomName ?? viewType.Name;
-            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType)!;
-            AsyncViewSelector = DelegateMaker.GetDelegate<AsyncViewSelector<TResource>>(viewType)!;
-            Members = typeCache.GetDeclaredProperties(viewType);
-            Description = viewAttribute.Description;
-            ConditionBindingRule = viewAttribute.AllowDynamicConditions
-                ? TermBindingRule.DeclaredWithDynamicFallback
-                : TermBindingRule.OnlyDeclared;
-        }
+    public void SetEntityResource(IEntityResource resource)
+    {
+        EntityResource = resource;
+    }
 
-        /// <inheritdoc />
-        public override string ToString() => $"{EntityResource.Name}-{Name}";
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return $"{EntityResource.Name}-{Name}";
+    }
 
-        /// <inheritdoc />
-        public override bool Equals(object? obj) => obj is View<TResource> view && view.Name == Name;
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        return obj is View<TResource> view && view.Name == Name;
+    }
 
-        /// <inheritdoc />
-        public override int GetHashCode() => Name.GetHashCode();
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return Name.GetHashCode();
     }
 }

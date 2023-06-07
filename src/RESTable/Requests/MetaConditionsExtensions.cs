@@ -1,10 +1,12 @@
 ﻿using System;
 
-namespace RESTable.Requests
+namespace RESTable.Requests;
+
+internal static class MetaConditionsExtensions
 {
-    internal static class MetaConditionsExtensions
+    internal static Type GetExpectedType(this RESTableMetaCondition condition)
     {
-        internal static Type GetExpectedType(this RESTableMetaCondition condition) => condition switch
+        return condition switch
         {
             RESTableMetaCondition.Unsafe => typeof(bool),
             RESTableMetaCondition.Limit => typeof(int),

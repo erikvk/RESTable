@@ -1,12 +1,16 @@
 using System;
 using RESTable.Resources;
 
-namespace RESTable.Meta.Internal
+namespace RESTable.Meta.Internal;
+
+public class VirtualResourceProvider : EntityResourceProvider<object>
 {
-    public class VirtualResourceProvider : EntityResourceProvider<object>
+    protected override Type AttributeType => null!;
+
+    protected override bool Include(Type type)
     {
-        protected override bool Include(Type type) => !type.HasResourceProviderAttribute();
-        protected override void Validate() { }
-        protected override Type AttributeType => null!;
+        return !type.HasResourceProviderAttribute();
     }
+
+    protected override void Validate() { }
 }

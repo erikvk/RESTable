@@ -1,26 +1,31 @@
 ﻿using System;
 
-namespace RESTable
+namespace RESTable;
+
+public readonly struct PopulateSource
 {
-    public readonly struct PopulateSource
+    private IValueProvider ValueProvider { get; }
+
+    public SourceKind SourceKind { get; }
+
+    public object? GetValue(Type targetType)
     {
-        private IValueProvider ValueProvider { get; }
+        return ValueProvider.GetValue(targetType);
+    }
 
-        public SourceKind SourceKind { get; }
+    public T? GetValue<T>()
+    {
+        return ValueProvider.GetValue<T>();
+    }
 
-        public object? GetValue(Type targetType) => ValueProvider.GetValue(targetType);
+    public (string?, PopulateSource)[] Properties { get; }
 
-        public T? GetValue<T>() => ValueProvider.GetValue<T>();
-
-        public (string?, PopulateSource)[] Properties { get; }
-
-        public PopulateSource(SourceKind sourceKind, IValueProvider valueProvider, (string, PopulateSource)[]? properties = null)
-        {
-            SourceKind = sourceKind;
-            ValueProvider = valueProvider;
-            if (properties is null)
-                Properties = Array.Empty<(string?, PopulateSource)>();
-            else Properties = properties!;
-        }
+    public PopulateSource(SourceKind sourceKind, IValueProvider valueProvider, (string, PopulateSource)[]? properties = null)
+    {
+        SourceKind = sourceKind;
+        ValueProvider = valueProvider;
+        if (properties is null)
+            Properties = Array.Empty<(string?, PopulateSource)>();
+        else Properties = properties!;
     }
 }

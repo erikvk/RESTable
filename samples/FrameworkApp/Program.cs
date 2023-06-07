@@ -9,77 +9,76 @@ using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
 
-namespace FrameworkApp
+namespace FrameworkApp;
+
+[RESTable, InMemory]
+public class Person
 {
-    [RESTable, InMemory]
-    public class Person
+    private static int Counter;
+
+    public int Id { get; }
+    public string? Name { get; set; }
+    public int? FavoriteNumber { get; set; }
+    public Dictionary<string, object?> Properties { get; }
+    public int? BestFriendId { get; set; }
+
+    public Person? BestFriend => InMemoryOperations<Person>
+        .Select(item => item.Id == BestFriendId)
+        .FirstOrDefault();
+
+    public Person()
     {
-        private static int Counter;
-
-        public int Id { get; }
-        public string? Name { get; set; }
-        public int? FavoriteNumber { get; set; }
-        public Dictionary<string, object?> Properties { get; }
-        public int? BestFriendId { get; set; }
-
-        public Person? BestFriend => InMemoryOperations<Person>
-            .Select(item => item.Id == BestFriendId)
-            .FirstOrDefault();
-
-        public Person()
-        {
-            Counter += 1;
-            Id = Counter;
-            Properties = new Dictionary<string, object?>();
-        }
+        Counter += 1;
+        Id = Counter;
+        Properties = new Dictionary<string, object?>();
     }
+}
 
-    /// <summary>
-    /// This app is just to show how RESTable can run in a console app on .NET Framework. In this case 4.6.1, since
-    /// it's the earliest version to support .NET Standard 2.0.
-    /// </summary>
-    public class Program
+/// <summary>
+/// This app is just to show how RESTable can run in a console app on .NET Framework. In this case 4.6.1, since
+/// it's the earliest version to support .NET Standard 2.0.
+/// </summary>
+public class Program
+{
+    public static async Task Main()
     {
-        public static async Task Main()
+        // Build services
+        await using var services = new ServiceCollection()
+            .AddRESTable()
+            .BuildServiceProvider();
+        var context = services.GetRequiredService<RootContext>();
+
+        // Welcome
+        Console.WriteLine("App is running...");
+        Console.WriteLine("Enter a request like so: <METHOD> <URI> [<BODY>], e.g. POST /person {'Name': 'Jane'}");
+
+        // Handle input loop
+        while (true)
         {
-            // Build services
-            await using var services = new ServiceCollection()
-                .AddRESTable()
-                .BuildServiceProvider();
-            var context = services.GetRequiredService<RootContext>();
+            // Handle input
+            var input = (await Console.In.ReadLineAsync())?.TrimStart();
+            if (string.IsNullOrWhiteSpace(input))
+                continue;
+            var args = input!.Split(new[] {' '}, 3);
+            var method = (Method) Enum.Parse(typeof(Method), args[0], ignoreCase: true);
+            var uri = args[1];
+            var body = args.ElementAtOrDefault(2);
 
-            // Welcome
-            Console.WriteLine("App is running...");
-            Console.WriteLine("Enter a request like so: <METHOD> <URI> [<BODY>], e.g. POST /person {'Name': 'Jane'}");
+            // Make request
+            var request = context.CreateRequest(method, uri, body: body);
+            await using var result = await request.GetResult();
+            await using var serializedResult = await result.Serialize();
 
-            // Handle input loop
-            while (true)
-            {
-                // Handle input
-                var input = (await Console.In.ReadLineAsync())?.TrimStart();
-                if (string.IsNullOrWhiteSpace(input))
-                    continue;
-                var args = input!.Split(new[] {' '}, 3);
-                var method = (Method) Enum.Parse(typeof(Method), args[0], ignoreCase: true);
-                var uri = args[1];
-                var body = args.ElementAtOrDefault(2);
-
-                // Make request
-                var request = context.CreateRequest(method, uri, body: body);
-                await using var result = await request.GetResult();
-                await using var serializedResult = await result.Serialize();
-
-                // Write output
-                Console.WriteLine($"=> {await request.GetLogMessage()} {await request.GetLogContent()}");
-                Console.WriteLine($"<= {await result.GetLogMessage()}");
-                foreach (var (key, value) in result.Headers)
-                    Console.WriteLine($"{key}: {value}");
-                using var streamReader = new StreamReader(serializedResult.Body);
-                var resultBody = await streamReader.ReadToEndAsync();
-                if (!string.IsNullOrWhiteSpace(resultBody))
-                    Console.WriteLine(resultBody);
-                Console.WriteLine("- - - - - - - - - - - - - - - - -");
-            }
+            // Write output
+            Console.WriteLine($"=> {await request.GetLogMessage()} {await request.GetLogContent()}");
+            Console.WriteLine($"<= {await result.GetLogMessage()}");
+            foreach (var (key, value) in result.Headers)
+                Console.WriteLine($"{key}: {value}");
+            using var streamReader = new StreamReader(serializedResult.Body);
+            var resultBody = await streamReader.ReadToEndAsync();
+            if (!string.IsNullOrWhiteSpace(resultBody))
+                Console.WriteLine(resultBody);
+            Console.WriteLine("- - - - - - - - - - - - - - - - -");
         }
     }
 }
