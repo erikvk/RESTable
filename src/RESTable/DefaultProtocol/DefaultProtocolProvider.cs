@@ -312,7 +312,7 @@ internal sealed partial class DefaultProtocolProvider : IProtocolProvider
         {
             if (single)
             {
-                var singleItem = await entities.SingleAsync(cancellationToken).ConfigureAwait(false);
+                var singleItem = await entities.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
                 toSerialize.EntityCount = 1;
                 await jsonProvider.SerializeAsync(toSerialize.Body, singleItem, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
@@ -339,8 +339,8 @@ internal sealed partial class DefaultProtocolProvider : IProtocolProvider
         {
             if (single)
             {
-                var singleItem = change.Entities.Single();
-                toSerialize.EntityCount = 1;
+                var singleItem = change.Entities.FirstOrDefault();
+                toSerialize.EntityCount = singleItem is null ? 0 : 1;
                 return jsonProvider.SerializeAsync(toSerialize.Body, singleItem, cancellationToken: cancellationToken);
             }
             toSerialize.EntityCount = change.Count;
