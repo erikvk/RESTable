@@ -348,3 +348,4 @@ healthchecksdb
 .vscode/
 pack.sh
 publish.sh
+push.sh
