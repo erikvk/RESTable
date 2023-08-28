@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <Version>2.0.44</Version>
+        <Version>2.0.45</Version>
         <Authors>Erik von Krusenstierna</Authors>
         <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/erikvk/RESTable</RepositoryUrl>

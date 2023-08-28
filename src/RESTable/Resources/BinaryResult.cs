@@ -45,6 +45,27 @@ public class BinaryResult
 
     public BinaryResult
     (
+        FileInfo fileInfo,
+        string contentType = "text/plain"
+    ) : this
+    (
+        writeToStream: async (stream, ct) =>
+        {
+            var fileStream = fileInfo.OpenRead();
+            await using (fileStream.ConfigureAwait(false))
+            {
+                await fileStream.CopyToAsync(stream, ct).ConfigureAwait(false);
+            }
+        },
+        contentType: contentType,
+        contentLength: fileInfo.Length,
+        contentDisposition: $"attachment;filename={fileInfo.Name}",
+        etag: Convert.ToBase64String(Encoding.UTF8.GetBytes(fileInfo.FullName))
+    ) { }
+
+
+    public BinaryResult
+    (
         Func<Stream, CancellationToken, Task> writeToStream,
         ContentType contentType,
         long? contentLength = null,
