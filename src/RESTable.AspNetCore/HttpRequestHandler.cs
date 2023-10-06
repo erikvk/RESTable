@@ -75,20 +75,23 @@ public class HttpRequestHandler
             {
                 // An error occured during the upgrade process
                 var webSocket = wuf.WebSocket;
-                if (webSocket.Status == WebSocketStatus.Open)
+                if (webSocket is not null)
                 {
-                    Logger.LogError("A WebSocket upgrade request has failed after the WebSocket '{WebSocketId}' was opened. RESTable is sending the error message " +
-                                    "as status description, and starting the close handshake. {Message}", webSocket.Context.TraceId, await wuf.Error.GetLogMessage());
-                    // We're already open. Set the close description and close the websocket.
-                    await using (webSocket.ConfigureAwait(false))
+                    if (webSocket.Status == WebSocketStatus.Open)
                     {
-                        webSocket.CloseDescription = await wuf.Error.GetLogMessage().ConfigureAwait(false);
-                        break;
+                        Logger.LogError("A WebSocket upgrade request has failed after the WebSocket '{WebSocketId}' was opened. RESTable is sending the error message " +
+                                        "as status description, and starting the close handshake. {Message}", webSocket.Context.TraceId, await wuf.Error.GetLogMessage());
+                        // We're already open. Set the close description and close the websocket.
+                        await using (webSocket.ConfigureAwait(false))
+                        {
+                            webSocket.CloseDescription = await wuf.Error.GetLogMessage().ConfigureAwait(false);
+                            break;
+                        }
                     }
+                    Logger.LogError("A WebSocket upgrade request has failed before the WebSocket '{WebSocketId}' was opened. RESTable is sending the error message " +
+                                    "as HTTP response to the initial WebSocket upgrade request. {Message}", webSocket.Context.TraceId, await wuf.Error.GetLogMessage());
+                    await webSocket.DisposeAsync().ConfigureAwait(false);
                 }
-                Logger.LogError("A WebSocket upgrade request has failed before the WebSocket '{WebSocketId}' was opened. RESTable is sending the error message " +
-                                "as HTTP response to the initial WebSocket upgrade request. {Message}", webSocket.Context.TraceId, await wuf.Error.GetLogMessage());
-                await webSocket.DisposeAsync().ConfigureAwait(false);
                 // We're not open yet. Respond with a regular HTTP error response
                 WriteResponse(wuf.Error, aspNetCoreContext);
                 await WriteResponseBody(wuf.Error, aspNetCoreContext, cancellationToken).ConfigureAwait(false);

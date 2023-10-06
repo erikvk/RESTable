@@ -166,12 +166,18 @@ public class ClientWebSocketBuilder : IProtocolHolder
 
         public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
         {
-            await ClientWebSocketBuilder.TextInputHandler!(WebSocket, input, cancellationToken).ConfigureAwait(false);
+            if (ClientWebSocketBuilder.TextInputHandler is not null)
+            {
+                await ClientWebSocketBuilder.TextInputHandler(WebSocket, input, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public override async Task HandleBinaryInput(Stream input, CancellationToken cancellationToken)
         {
-            await ClientWebSocketBuilder.BinaryInputHandler!(WebSocket, input, cancellationToken).ConfigureAwait(false);
+            if (ClientWebSocketBuilder.BinaryInputHandler is not null)
+            {
+                await ClientWebSocketBuilder.BinaryInputHandler(WebSocket, input, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 }
