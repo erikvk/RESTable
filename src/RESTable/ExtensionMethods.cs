@@ -947,12 +947,12 @@ public static class ExtensionMethods
             {
                 if (property.Type == typeof(DateTimeOffset))
                 {
-                    if (DateTimeOffset.TryParse(valueLiteral, null, AssumeUniversal, out var dateTimeOffset))
+                    if (DateTimeOffset.TryParseExact(valueLiteral, PartialIsoFormats, CultureInfo.InvariantCulture, AssumeUniversal, out var dateTimeOffset))
                         return dateTimeOffset.ToUniversalTime();
                 }
                 if (property.IsDateTime)
                 {
-                    if (DateTime.TryParse(valueLiteral, null, AssumeUniversal, out var dateTime))
+                    if (DateTime.TryParseExact(valueLiteral, PartialIsoFormats, CultureInfo.InvariantCulture, AssumeUniversal, out var dateTime))
                         return dateTime.ToUniversalTime();
                     throw new Exception();
                 }
@@ -986,11 +986,19 @@ public static class ExtensionMethods
                 return i;
             if (decimal.TryParse(valueLiteral, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
                 return d;
-            if (DateTime.TryParse(valueLiteral, null, AssumeUniversal, out var dateTime))
+            if (DateTime.TryParseExact(valueLiteral, PartialIsoFormats, CultureInfo.InvariantCulture, AssumeUniversal, out var dateTime))
                 return dateTime.ToUniversalTime();
         }
         return valueLiteral;
     }
+
+    private static readonly string[] PartialIsoFormats =
+    {
+        "yyyy-MM-ddTHH:mm:ss.fffffffK", // Complete with fractions of a second
+        "yyyy-MM-ddTHH:mm:ssK", // Complete without fractions of a second
+        "yyyy-MM-ddTHH:mmK", // Up to minutes
+        "yyyy-MM-dd" // Only date
+    };
 
     #endregion
 
