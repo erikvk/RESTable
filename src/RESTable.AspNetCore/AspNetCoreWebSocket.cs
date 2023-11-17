@@ -131,7 +131,7 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         }
         finally
         {
-            WebSocketClosingSource.Cancel();
+            await WebSocketClosingSource.CancelAsync().ConfigureAwait(false);
         }
     }
 

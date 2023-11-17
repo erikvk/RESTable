@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using System.Text;
+﻿using System.Text;
 using RESTable.ContentTypeProviders;
 using RESTable.Excel;
 

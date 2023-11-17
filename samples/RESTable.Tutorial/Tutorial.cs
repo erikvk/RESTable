@@ -59,26 +59,23 @@ public class Tutorial
 
     private IConfiguration Configuration { get; }
 
-    public static Task Main(string[] args)
-    {
-        return Host
-            .CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webHost => webHost.Configure(builder => builder
-                // We use WebSockets to host feeds
-                .UseWebSockets(WebSocketOptions)
-                // Sets up a public REST API at /api, creates endpoints etc.
-                .UseRESTableAspNetCore()))
-            .ConfigureServices(services => services
-                .AddRESTable()
-                .AddODataProvider()
-                .AddExcelProvider()
-                .AddHttpContextAccessor()
-                .Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(120))
-            )
-            .UseConsoleLifetime()
-            .Build()
-            .RunAsync();
-    }
+    public static Task Main(string[] args) => Host
+        .CreateDefaultBuilder(args)
+        .ConfigureWebHostDefaults(webHost => webHost.Configure(builder => builder
+            // We use WebSockets to host feeds
+            .UseWebSockets(WebSocketOptions)
+            // Sets up a public REST API at /api, creates endpoints etc.
+            .UseRESTableAspNetCore()))
+        .ConfigureServices(services => services
+            .AddRESTable()
+            .AddODataProvider()
+            .AddExcelProvider()
+            .AddHttpContextAccessor()
+            .Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(120))
+        )
+        .UseConsoleLifetime()
+        .Build()
+        .RunAsync();
 }
 
 [RESTable(GET)]
@@ -148,7 +145,7 @@ public class MySomDict : ResourceWrapper<SomeDict>, IAsyncSelector<SomeDict>, IA
     }
 }
 
-public class SomeDict : Dictionary<string, string> { }
+public class SomeDict : Dictionary<string, string>;
 
 [RESTable(GET, HEAD)]
 public class MyBinary : IBinary<MyBinary>

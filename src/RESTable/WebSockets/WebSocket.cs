@@ -447,7 +447,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         var terminalName = TerminalConnection?.Resource?.Name;
         await ReleaseTerminal().ConfigureAwait(false);
         await TryClose(CloseDescription, CancellationToken.None).ConfigureAwait(false);
-        WebSocketClosingSource.Cancel();
+        await WebSocketClosingSource.CancelAsync().ConfigureAwait(false);
         Status = WebSocketStatus.Closed;
         ClosedAt = DateTime.Now;
         if (terminalName != Console.TypeName)
