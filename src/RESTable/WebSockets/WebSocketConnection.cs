@@ -62,7 +62,6 @@ internal class WebSocketConnection : IWebSocket, IAsyncDisposable
                 break;
         }
         Terminal = null!;
-        Context = null!;
     }
 
     internal async Task Suspend()

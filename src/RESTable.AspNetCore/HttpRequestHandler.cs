@@ -97,11 +97,14 @@ public class HttpRequestHandler
                 await WriteResponseBody(wuf.Error, aspNetCoreContext, cancellationToken).ConfigureAwait(false);
                 break;
             }
-            case WebSocketUpgradeSuccessful { WebSocket: var webSocket }:
+            case WebSocketUpgradeSuccessful { WebSocket: WebSocket webSocket }:
             {
                 await using (webSocket.ConfigureAwait(false))
                 {
-                    await webSocket.LifetimeTask.ConfigureAwait(false);
+                    if (webSocket.LifetimeTask is not null)
+                    {
+                        await webSocket.LifetimeTask.ConfigureAwait(false);
+                    }
                     break;
                 }
             }
