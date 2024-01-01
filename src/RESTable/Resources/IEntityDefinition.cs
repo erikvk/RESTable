@@ -6,4 +6,4 @@
 ///     we can define the members that RESTable will recognize for any type implementing it,
 ///     without changing the actual definition of that type.
 /// </summary>
-public interface IEntityDefinition { }
+public interface IEntityDefinition;

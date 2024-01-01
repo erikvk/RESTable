@@ -11,7 +11,7 @@ using RESTable.WebSockets;
 
 namespace RESTable.Auth;
 
-public interface IApiKeyAuthenticator : IRequestAuthenticator { }
+public interface IApiKeyAuthenticator : IRequestAuthenticator;
 
 /// <summary>
 ///     Handles authorization and authentication of clients using Api keys in either uris or headers, and

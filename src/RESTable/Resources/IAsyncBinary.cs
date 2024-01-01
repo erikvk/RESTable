@@ -4,7 +4,7 @@ using RESTable.Requests;
 
 namespace RESTable.Resources;
 
-public interface IBinaryInternal { }
+public interface IBinaryInternal;
 
 /// <summary>
 ///     Defines the operations of a binary resource

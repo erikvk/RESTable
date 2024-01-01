@@ -6,4 +6,4 @@ namespace RESTable.Resources;
 /// <summary>
 ///     Make a subclass for this type when implementing custom resource providers
 /// </summary>
-public abstract class EntityResourceProviderAttribute : Attribute { }
+public abstract class EntityResourceProviderAttribute : Attribute;

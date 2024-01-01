@@ -2,7 +2,7 @@
 
 namespace RESTable.Auth;
 
-public interface IAllowAllAuthenticator : IRequestAuthenticator { }
+public interface IAllowAllAuthenticator : IRequestAuthenticator;
 
 /// <summary>
 ///     Assigns root access to all requests. This is the default request authenticator.

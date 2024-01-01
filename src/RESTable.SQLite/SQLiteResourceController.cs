@@ -69,5 +69,5 @@ public abstract class SqliteResourceController<TController, TBaseType> : Resourc
     ///     The ElasticSQLiteTableController used for retreiving and modifying the table definition
     ///     of generated procedural SQLite resources
     /// </summary>
-    public class TableDefinition : ElasticSqliteTableController<TableDefinition, TBaseType> { }
+    public class TableDefinition : ElasticSqliteTableController<TableDefinition, TBaseType>;
 }

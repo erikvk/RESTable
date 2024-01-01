@@ -3,4 +3,4 @@
 namespace RESTable.Resources;
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-internal class MethodNotImplementedAttribute : Attribute { }
+internal class MethodNotImplementedAttribute : Attribute;

@@ -7,4 +7,4 @@ namespace RESTable.Resources;
 ///     in RESTable
 /// </summary>
 [AttributeUsage(AttributeTargets.Constructor)]
-public sealed class RESTableConstructorAttribute : Attribute { }
+public sealed class RESTableConstructorAttribute : Attribute;

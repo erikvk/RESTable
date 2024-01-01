@@ -15,9 +15,9 @@ public class TerminalSubjectAccessor
     internal ISubject<Terminal> Subject { get; }
 }
 
-public interface ITerminalObservable : IObservable<Terminal> { }
+public interface ITerminalObservable : IObservable<Terminal>;
 
-public interface ITerminalObservable<out T> : IObservable<T> where T : Terminal { }
+public interface ITerminalObservable<out T> : IObservable<T> where T : Terminal;
 
 public class TerminalObservable : ITerminalObservable
 {

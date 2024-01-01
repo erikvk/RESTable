@@ -2,4 +2,4 @@
 
 namespace RESTable;
 
-public interface IApplicationServiceProvider : IServiceProvider { }
+public interface IApplicationServiceProvider : IServiceProvider;

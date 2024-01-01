@@ -6,4 +6,4 @@
 ///     other defining properties. In that case, the state change has taken place before
 ///     the handler can be called.
 /// </summary>
-public struct UnknownValue { }
+public struct UnknownValue;

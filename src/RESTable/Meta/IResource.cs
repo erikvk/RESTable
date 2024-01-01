@@ -58,4 +58,4 @@ public interface IResource : ITarget, IEqualityComparer<IResource>, IComparable<
 /// <summary>
 ///     The common generic interface for all resources used by RESTable
 /// </summary>
-public interface IResource<T> : IResource, ITarget<T> where T : class { }
+public interface IResource<T> : IResource, ITarget<T> where T : class;
