@@ -52,8 +52,7 @@ public class BodyTests : RESTableTestBase
         var sequence = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes(StringData));
         await EvaluateAndCompareBody(sequence);
 
-        var str = StringData;
-        await EvaluateAndCompareBody(str);
+        await EvaluateAndCompareBody(StringData);
 
         var arraySegment = new ArraySegment<byte>(Encoding.UTF8.GetBytes(StringData));
         await EvaluateAndCompareBody(arraySegment);

@@ -45,7 +45,7 @@ internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     private TaskCompletionSource<byte> SuspendTaskSource { get; set; }
 
     private bool IsSuspended => !SuspendTaskSource.Task.IsCompleted;
-    public RESTableContext Context { get; private set; }
+    public RESTableContext Context { get; }
 
     public CancellationToken WebSocketClosing => WebSocket.WebSocketClosing;
     public string CloseDescription => WebSocket.CloseDescription;

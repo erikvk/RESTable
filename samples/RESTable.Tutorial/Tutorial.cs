@@ -214,8 +214,7 @@ public class TerminalTester : Terminal, IAsyncDisposable
 
     public override async Task HandleTextInput(string input, CancellationToken cancellationToken)
     {
-        var tasks = new Task[10];
-        var text = "Text";
+        const string text = "Text";
         var binary = Encoding.UTF8.GetBytes("Binary bananas are the best!");
 
         Task fragmentedTask;
@@ -257,7 +256,7 @@ public class MyTerminalTest : Terminal
     {
         using var streamReader = new StreamReader(input);
 
-        var str = await streamReader.ReadToEndAsync();
+        _ = await streamReader.ReadToEndAsync(cancellationToken);
     }
 }
 
@@ -328,9 +327,7 @@ public class Test2 : IAsyncSelector<Test2>
 
     public async IAsyncEnumerable<Test2> SelectAsync(IRequest<Test2> request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var val = request.Conditions.HasParameter(nameof(Count), out int v);
-
-
+        _ = request.Conditions.HasParameter(nameof(Count), out int _);
         var number = (int) (request.Conditions.Pop(nameof(Number), Operators.EQUALS)?.Value ?? 0);
         for (var i = 0; i < number; i += 1) await BufferBlock.SendAsync(Count += 1, cancellationToken);
         yield break;

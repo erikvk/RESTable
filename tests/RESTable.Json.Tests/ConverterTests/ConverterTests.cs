@@ -74,6 +74,6 @@ public class ConverterTests : RESTableTestBase
         var genericConverterAddedProperty = element.EnumerateObject().FirstOrDefault(p => p.NameEquals("GenericConverter"));
         Assert.NotNull(genericConverterAddedProperty.Name);
 
-        var str = genericConverterAddedProperty.Value.GetString();
+        _ = genericConverterAddedProperty.Value.GetString();
     }
 }

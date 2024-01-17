@@ -17,9 +17,9 @@ public class VersionConverterTests : RESTableTestBase
     public void ReadVersionFromString()
     {
         var jsonProvider = Fixture.GetRequiredService<IJsonProvider>();
-        var versionString = "12.1.2.3";
+        const string versionString = "12.1.2.3";
         var version = new Version(versionString);
-        var jsonString = $"{{\"Item\":\"{versionString}\"}}";
+        const string jsonString = $"{{\"Item\":\"{versionString}\"}}";
         var versionHolder = jsonProvider.Deserialize<Holder<Version>>(jsonString);
         Assert.NotNull(versionHolder?.Item);
         Assert.Equal(version, versionHolder?.Item);
@@ -29,9 +29,9 @@ public class VersionConverterTests : RESTableTestBase
     public void WriteVersionToString()
     {
         var jsonProvider = Fixture.GetRequiredService<IJsonProvider>();
-        var versionString = "12.1.2.3";
+        const string versionString = "12.1.2.3";
         var version = new Version(versionString);
-        var jsonString = $"{{\"Item\":\"{versionString}\"}}";
+        const string jsonString = $"{{\"Item\":\"{versionString}\"}}";
         var versionHolder = new Holder<Version> { Item = version };
         var str = jsonProvider.Serialize(versionHolder, false);
         Assert.Equal(jsonString, str);

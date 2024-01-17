@@ -552,7 +552,7 @@ public static class ExtensionMethods
         dict[pair.key] = pair.value;
     }
 
-    internal static Dictionary<TKey, T> SafeToDictionary<T, TKey>
+    public static Dictionary<TKey, T> SafeToDictionary<T, TKey>
     (
         this IEnumerable<T> source,
         Func<T, TKey> keySelector,
@@ -561,7 +561,58 @@ public static class ExtensionMethods
         where TKey : notnull
     {
         var dictionary = new Dictionary<TKey, T>(equalityComparer);
-        foreach (var item in source) dictionary[keySelector(item)] = item;
+        foreach (var item in source)
+        {
+            dictionary[keySelector(item)] = item;
+        }
+        return dictionary;
+    }
+
+    public static Dictionary<TKey, T> SafeToDictionary<T, TKey>
+    (
+        this IEnumerable<T> source,
+        Func<T, TKey> keySelector
+    )
+        where TKey : notnull
+    {
+        var dictionary = new Dictionary<TKey, T>();
+        foreach (var item in source)
+        {
+            dictionary[keySelector(item)] = item;
+        }
+        return dictionary;
+    }
+
+    public static Dictionary<TKey, TValue> SafeToDictionary<T, TKey, TValue>
+    (
+        this IEnumerable<T> source,
+        Func<T, TKey> keySelector,
+        Func<T, TValue> valueSelector
+    )
+        where TKey : notnull
+    {
+        var dictionary = new Dictionary<TKey, TValue>();
+        foreach (var item in source)
+        {
+            dictionary[keySelector(item)] = valueSelector(item);
+        }
+        return dictionary;
+    }
+
+    public static Dictionary<TKey, TValue> SafeToDictionary<T, TKey, TValue>
+    (
+        this IEnumerable<T> source,
+        Func<T, TKey> keySelector,
+        Func<T, TValue> valueSelector,
+        IEqualityComparer<TKey> equalityComparer
+    )
+        where TKey : notnull
+    {
+        var dictionary = new Dictionary<TKey, TValue>(equalityComparer);
+        foreach (var item in source)
+        {
+            dictionary[keySelector(item)] = valueSelector(item);
+        }
         return dictionary;
     }
 
