@@ -218,7 +218,7 @@ public class RESTableContext : IDisposable, IAsyncDisposable, ITraceable, IServi
             return false;
         }
         resource = parameters.IResource;
-        IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
+        using IRequest request = DynamicCreateRequest((dynamic) resource, parameters);
         if (!request.IsValid)
         {
             var resultTask = request.GetResult();

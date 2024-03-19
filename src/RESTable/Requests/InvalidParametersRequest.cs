@@ -51,15 +51,8 @@ internal class InvalidParametersRequest : IRequest
         return new ValueTask<IRequest>(new InvalidParametersRequest(Parameters));
     }
 
-    public void Dispose()
-    {
-        Body.Dispose();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await Body.DisposeAsync().ConfigureAwait(false);
-    }
+    public void Dispose() => Body.Dispose();
+    public ValueTask DisposeAsync() => Body.DisposeAsync();
 
     #region Logable
 
