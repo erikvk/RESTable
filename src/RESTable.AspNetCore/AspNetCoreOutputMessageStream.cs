@@ -2,6 +2,8 @@
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using RESTable.WebSockets;
+using WebSocket = System.Net.WebSockets.WebSocket;
 
 namespace RESTable.AspNetCore;
 
@@ -10,8 +12,8 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
     public override bool CanRead => false;
     public override bool CanWrite => true;
 
+    private WebSocketMessageStreamMode Mode { get; }
     private SemaphoreSlim WriteSemaphore { get; }
-
     private bool SemaphoreOpen { get; set; }
 
     public override long Position
@@ -20,10 +22,18 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
         set => throw new NotSupportedException();
     }
 
-    public AspNetCoreOutputMessageStream(WebSocket webSocket, WebSocketMessageType messageType, SemaphoreSlim writeSemaphore, CancellationToken webSocketCancelledToken)
+    public AspNetCoreOutputMessageStream
+    (
+        WebSocket webSocket,
+        WebSocketMessageStreamMode mode,
+        WebSocketMessageType messageType,
+        SemaphoreSlim writeSemaphore,
+        CancellationToken webSocketCancelledToken
+    )
         : base(webSocket, messageType, webSocketCancelledToken)
     {
         WriteSemaphore = writeSemaphore;
+        Mode = mode;
     }
 
     public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
@@ -31,8 +41,13 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
         if (IsDisposed)
             throw new InvalidOperationException("Cannot write to a closed WebSocket message stream");
         if (WebSocket.State is not WebSocketState.Open)
-            throw new OperationCanceledException();
-        var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken).Token;
+        {
+            if (Mode is WebSocketMessageStreamMode.Strict)
+                throw new OperationCanceledException();
+            return;
+        }
+        using var combindTokenSource = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken);
+        var combinedToken = combindTokenSource.Token;
         combinedToken.ThrowIfCancellationRequested();
         if (!SemaphoreOpen)
         {
@@ -82,7 +97,7 @@ internal sealed class AspNetCoreOutputMessageStream : AspNetCoreMessageStream, I
         }
     }
 
-    public override void Write(ReadOnlySpan<byte> buffer) => WriteAsync(buffer.ToArray(), CancellationToken.None).AsTask().Wait();
+    public override void Write(ReadOnlySpan<byte> buffer) => WriteAsync(buffer.ToArray(), WebSocketCancelledToken).AsTask().Wait();
 
     public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
 

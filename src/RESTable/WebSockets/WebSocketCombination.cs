@@ -48,14 +48,19 @@ internal class WebSocketCombination : IWebSocket, IAsyncDisposable
         return DoForAll(ws => ws.DirectToShell(assignments, cancellationToken));
     }
 
-    public async ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
+    public async ValueTask<Stream> GetMessageStream(bool asText, WebSocketMessageStreamMode mode, CancellationToken cancellationToken = new CancellationToken())
     {
         var streams = new Stream[WebSockets.Length];
         for (var i = 0; i < WebSockets.Length; i += 1)
         {
-            streams[i] = await WebSockets[i].GetMessageStream(asText, cancellationToken).ConfigureAwait(false);
+            streams[i] = await WebSockets[i].GetMessageStream(asText, mode, cancellationToken).ConfigureAwait(false);
         }
         return new CombinedWebSocketsMessageStream(streams, asText, cancellationToken);
+    }
+
+    public ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
+    {
+        return GetMessageStream(asText, WebSocketMessageStreamMode.Strict, cancellationToken);
     }
 
     public Task DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>>? assignments = null, CancellationToken cancellationToken = new())

@@ -52,6 +52,12 @@ public interface IWebSocket : ITraceable, IProtocolHolder, IAsyncDisposable
     ///     Returns a stream that, when written to, writes data over the websocket over a single message until the stream is
     ///     disposed
     /// </summary>
+    ValueTask<Stream> GetMessageStream(bool asText, WebSocketMessageStreamMode mode, CancellationToken cancellationToken = new());
+
+    /// <summary>
+    ///     Returns a stream that, when written to, writes data over the websocket over a single message until the stream is
+    ///     disposed. Uses the scrict mode.
+    /// </summary>
     ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new());
 
     /// <summary>

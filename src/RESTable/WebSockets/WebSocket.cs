@@ -33,6 +33,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         Id = webSocketId;
         var applicationStopping = context.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
         WebSocketClosingSource = CancellationTokenSource.CreateLinkedTokenSource(applicationStopping);
+        WebSocketClosing = WebSocketClosingSource.Token;
         Status = WebSocketStatus.Waiting;
         Context = context;
         JsonProvider = context.GetRequiredService<IJsonProvider>();
@@ -66,9 +67,14 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         return SendBufferedInternal(data, asText, cancellationToken);
     }
 
-    public ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken)
+    public ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new CancellationToken())
     {
-        return new ValueTask<Stream>(GetOutgoingMessageStream(asText, cancellationToken));
+        return GetMessageStream(asText, WebSocketMessageStreamMode.Strict, cancellationToken);
+    }
+
+    public ValueTask<Stream> GetMessageStream(bool asText, WebSocketMessageStreamMode mode, CancellationToken cancellationToken)
+    {
+        return new ValueTask<Stream>(GetOutgoingMessageStream(asText, mode, cancellationToken));
     }
 
     /// <inheritdoc />
@@ -235,6 +241,9 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
 
     protected CancellationTokenSource WebSocketClosingSource { get; }
 
+    /// <inheritdoc />
+    public CancellationToken WebSocketClosing { get; }
+
     /// <summary>
     ///     The ID of the WebSocket
     /// </summary>
@@ -289,9 +298,6 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
     ///     A task representing the lifetime of this WebSocket comnection
     /// </summary>
     public Task LifetimeTask { get; private set; }
-
-    /// <inheritdoc />
-    public CancellationToken WebSocketClosing => WebSocketClosingSource.Token;
 
     #endregion
 
@@ -382,7 +388,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         {
             case WebSocketStatus.Waiting:
             {
-                var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosing);
+                using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosing);
                 if (acceptIncomingMessages)
                     LifetimeTask = InitMessageReceiveListener(cancellationTokenSource.Token);
                 await ConnectUnderlyingWebSocket(cancellationToken).ConfigureAwait(false);
@@ -406,7 +412,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
             case WebSocketStatus.Waiting:
             {
                 await ConnectUnderlyingWebSocket(cancellationToken).ConfigureAwait(false);
-                var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosing);
+                using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, WebSocketClosing);
                 if (acceptIncomingMessages)
                     LifetimeTask = InitMessageReceiveListener(cancellationTokenSource.Token);
                 Status = WebSocketStatus.Open;
@@ -447,7 +453,9 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
         var terminalName = TerminalConnection?.Resource?.Name;
         await ReleaseTerminal().ConfigureAwait(false);
         await TryClose(CloseDescription, CancellationToken.None).ConfigureAwait(false);
-        await WebSocketClosingSource.CancelAsync().ConfigureAwait(false);
+        try { await WebSocketClosingSource.CancelAsync().ConfigureAwait(false); }
+        catch (ObjectDisposedException) { }
+        WebSocketClosingSource.Dispose();
         Status = WebSocketStatus.Closed;
         ClosedAt = DateTime.Now;
         if (terminalName != Console.TypeName)
@@ -498,7 +506,7 @@ public abstract class WebSocket : IWebSocket, IWebSocketInternal, IServiceProvid
     ///     Returns a stream that, when written to, writes data over the websocket as a single
     ///     message until dispose, as either binary or text.
     /// </summary>
-    protected abstract Stream GetOutgoingMessageStream(bool asText, CancellationToken cancellationToken);
+    protected abstract Stream GetOutgoingMessageStream(bool asText, WebSocketMessageStreamMode mode, CancellationToken cancellationToken);
 
     /// <summary>
     ///     Sends the WebSocket upgrade and initiates the actual underlying WebSocket connection

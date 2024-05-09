@@ -16,7 +16,7 @@ namespace RESTable.Resources.Templates;
 /// </summary>
 public abstract class CommandTerminal : Terminal
 {
-    public CommandTerminal()
+    protected CommandTerminal()
     {
         Commands = new Dictionary<string, Command>(StringComparer.OrdinalIgnoreCase);
     }

@@ -97,6 +97,12 @@ internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public ValueTask<Stream> GetMessageStream(bool asText, WebSocketMessageStreamMode mode, CancellationToken cancellationToken = new CancellationToken())
+    {
+        return WebSocket.GetMessageStream(asText, mode, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
     {
         return WebSocket.GetMessageStream(asText, cancellationToken);

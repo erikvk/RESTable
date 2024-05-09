@@ -176,7 +176,8 @@ public sealed class Shell : Terminal, IAsyncDisposable
                         if (!string.IsNullOrWhiteSpace(tail) && double.TryParse(tail, out var timeOutSeconds))
                             timeoutCancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(timeOutSeconds));
                         else timeoutCancellationTokenSource = new CancellationTokenSource();
-                        var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
+                        using var _ = timeoutCancellationTokenSource;
+                        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
                         var _cancellationToken = cancellationTokenSource.Token;
                         var acceptProvider = WebSocket.GetOutputContentTypeProvider();
 

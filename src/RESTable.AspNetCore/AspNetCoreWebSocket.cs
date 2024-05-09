@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RESTable.Requests;
+using RESTable.WebSockets;
 using static System.Net.WebSockets.WebSocketMessageType;
 using WebSocket = RESTable.WebSockets.WebSocket;
 
@@ -62,11 +63,12 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         }
     }
 
-    protected override Stream GetOutgoingMessageStream(bool asText, CancellationToken cancellationToken)
+    protected override Stream GetOutgoingMessageStream(bool asText, WebSocketMessageStreamMode mode, CancellationToken cancellationToken)
     {
         return new AspNetCoreOutputMessageStream
         (
             WebSocket!,
+            mode,
             asText ? Text : Binary,
             SendMessageSemaphore,
             cancellationToken
@@ -98,8 +100,15 @@ internal abstract class AspNetCoreWebSocket : WebSocket
                     await WebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken).ConfigureAwait(false);
                     return;
                 }
-                var nextMessage = new AspNetCoreInputMessageStream(
-                    WebSocket, messageType, endOfMessage, byteCount, ArrayPool, WebSocketBufferSize, cancellationToken
+                var nextMessage = new AspNetCoreInputMessageStream
+                (
+                    webSocket: WebSocket,
+                    messageType: messageType,
+                    endOfMessage: endOfMessage,
+                    initialByteCount: byteCount,
+                    arrayPool: ArrayPool,
+                    bufferSize: WebSocketBufferSize,
+                    webSocketCancelledToken: cancellationToken
                 );
                 await using var nextMessageDisposable = nextMessage.ConfigureAwait(false);
                 if (messageType is Binary)
@@ -131,7 +140,8 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         }
         finally
         {
-            await WebSocketClosingSource.CancelAsync().ConfigureAwait(false);
+            try { await WebSocketClosingSource.CancelAsync().ConfigureAwait(false); }
+            catch (ObjectDisposedException) { }
         }
     }
 
@@ -143,7 +153,44 @@ internal abstract class AspNetCoreWebSocket : WebSocket
         {
             if (WebSocket.State is WebSocketState.Open or WebSocketState.CloseReceived or WebSocketState.CloseSent)
             {
-                await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationToken).ConfigureAwait(false);
+                using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var closeTask = WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, description, cancellationTokenSource.Token);
+                var delayTask = Task.Delay(TimeSpan.FromSeconds(20), cancellationTokenSource.Token);
+                var completedTask = await Task.WhenAny(closeTask, delayTask).ConfigureAwait(false);
+                if (completedTask == delayTask)
+                {
+                    // Cancel the closeTask and abort the WebSocket.
+                    await delayTask.ConfigureAwait(false);
+                    await cancellationTokenSource.CancelAsync().ConfigureAwait(false);
+                    try
+                    {
+                        await closeTask.ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // The close task was cancelled
+                    }
+                    WebSocket.Abort();
+                }
+                else
+                {
+                    // Closed properly
+                    await closeTask.ConfigureAwait(false);
+                    await cancellationTokenSource.CancelAsync().ConfigureAwait(false);
+                    try
+                    {
+                        await delayTask.ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // The delay task was cancelled
+                    }
+                }
+            }
+            else
+            {
+                // If the WebSocket is not in a state that allows graceful closure, abort directly.
+                WebSocket.Abort();
             }
         }
     }

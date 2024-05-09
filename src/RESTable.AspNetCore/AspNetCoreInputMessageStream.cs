@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using WebSocket = System.Net.WebSockets.WebSocket;
 
 namespace RESTable.AspNetCore;
 
@@ -46,12 +47,12 @@ internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IA
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
     {
-        WebSocketCancelledToken.ThrowIfCancellationRequested();
+        using var combinedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(WebSocketCancelledToken, cancellationToken);
+        combinedTokenSource.Token.ThrowIfCancellationRequested();
         if (EndOfMessage) return 0;
-        var result = await WebSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
+        var result = await WebSocket.ReceiveAsync(buffer, combinedTokenSource.Token).ConfigureAwait(false);
         if (result.MessageType is WebSocketMessageType.Close)
         {
-            await WebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken).ConfigureAwait(false);
             throw new OperationCanceledException();
         }
         if (result.MessageType != MessageType)
@@ -72,7 +73,7 @@ internal sealed class AspNetCoreInputMessageStream : AspNetCoreMessageStream, IA
             while (!EndOfMessage)
             {
                 // Read the rest of the message
-                var _ = await ReadAsync(memory).ConfigureAwait(false);
+                var _ = await ReadAsync(memory, WebSocketCancelledToken).ConfigureAwait(false);
             }
         }
         finally

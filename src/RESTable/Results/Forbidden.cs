@@ -9,7 +9,7 @@ namespace RESTable.Results;
 /// </summary>
 public abstract class Forbidden : Error
 {
-    public Forbidden(ErrorCodes code, string info) : base(code, info)
+    protected Forbidden(ErrorCodes code, string info) : base(code, info)
     {
         StatusCode = HttpStatusCode.Forbidden;
         StatusDescription = "Forbidden";

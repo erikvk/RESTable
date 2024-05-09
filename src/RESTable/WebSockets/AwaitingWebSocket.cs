@@ -52,10 +52,16 @@ internal class AwaitingWebSocket : IWebSocket, IWebSocketInternal
         await WebSocket.Send(data, asText, cancellationToken).ConfigureAwait(false);
     }
 
-    public async ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new())
+    public async ValueTask<Stream> GetMessageStream(bool asText, CancellationToken cancellationToken = new CancellationToken())
     {
         await WaitTask.ConfigureAwait(false);
         return await WebSocket.GetMessageStream(asText, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async ValueTask<Stream> GetMessageStream(bool asText, WebSocketMessageStreamMode mode, CancellationToken cancellationToken = new())
+    {
+        await WaitTask.ConfigureAwait(false);
+        return await WebSocket.GetMessageStream(asText, mode, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task SendException(Exception exception, CancellationToken cancellationToken = new())

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net.WebSockets;
 using System.Threading;
+using WebSocket = System.Net.WebSockets.WebSocket;
 
 namespace RESTable.AspNetCore;
 

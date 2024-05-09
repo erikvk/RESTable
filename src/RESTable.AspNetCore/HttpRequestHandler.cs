@@ -105,8 +105,8 @@ public class HttpRequestHandler
                     {
                         await webSocket.LifetimeTask.ConfigureAwait(false);
                     }
-                    break;
                 }
+                break;
             }
             default:
             {
