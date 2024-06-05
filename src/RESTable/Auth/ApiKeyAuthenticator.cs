@@ -121,7 +121,7 @@ public partial class ApiKeyAuthenticator : IApiKeyAuthenticator, IRequestAuthent
             throw new Exception("An API key contained invalid characters. Must be a non-empty string, not containing " +
                                 "whitespace, and only containing ASCII characters 33 through 126");
         var keyHash = ComputeHash(apiKey);
-        var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess ?? Array.Empty<AllowAccess>(), ResourceCollection);
+        var assignments = AccessRights.CreateAssignments(apiKeyItem.AllowAccess ?? [], ResourceCollection);
         var accessRights = new AccessRights(this, keyHash, assignments);
 
         if (ApiKeys.TryGetValue(keyHash, out var existing))

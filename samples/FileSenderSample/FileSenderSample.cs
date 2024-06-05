@@ -271,13 +271,10 @@ public class MockelyMock : Terminal
         foreach (var terminal in combinedTerminals) await terminal.NotifyFileSent(file.Name, file.Length);
     }
 
-    public static List<string> GetAllFilePaths()
-    {
-        return new List<string>
-        {
-            "C:/SampleFiles/Sample1.txt",
-            "C:/SampleFiles/Sample2.txt",
-            "C:/SampleFiles/Sample3.txt"
-        };
-    }
+    public static List<string> GetAllFilePaths() =>
+    [
+        "C:/SampleFiles/Sample1.txt",
+        "C:/SampleFiles/Sample2.txt",
+        "C:/SampleFiles/Sample3.txt"
+    ];
 }

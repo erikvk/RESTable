@@ -35,7 +35,7 @@ public sealed class ContentTypes : List<ContentType>
     /// <param name="contentType"></param>
     public static implicit operator ContentTypes(ContentType contentType)
     {
-        return new() { contentType };
+        return [contentType];
     }
 
     /// <summary>

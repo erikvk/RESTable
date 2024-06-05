@@ -27,14 +27,14 @@ public class ApiKeyRequestTestBase : IClassFixture<RESTableFixture>
                 new()
                 {
                     ApiKey = ApiKey,
-                    AllowAccess = new AllowAccess[]
-                    {
+                    AllowAccess =
+                    [
                         new()
                         {
-                            Resources = new[] { "RESTable.Tests.*" },
-                            Methods = new[] { "*" }
+                            Resources = ["RESTable.Tests.*"],
+                            Methods = ["*"]
                         }
-                    }
+                    ]
                 }
             }
         };

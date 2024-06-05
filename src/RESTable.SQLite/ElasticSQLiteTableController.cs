@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -81,7 +80,7 @@ public class ElasticSqliteTableController<TController, TTable> : IAsyncSelector<
                 Columns = mapping.ColumnMappings!.Values.ToDictionary(
                     columnMapping => columnMapping.ClrProperty.Name,
                     columnMapping => columnMapping.ClrProperty.Type),
-                DroppedColumns = Array.Empty<string>()
+                DroppedColumns = []
             });
     }
 

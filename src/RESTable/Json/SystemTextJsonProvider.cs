@@ -48,7 +48,7 @@ public class SystemTextJsonProvider : IJsonProvider, IContentTypeProvider
     public bool CanRead => true;
     public bool CanWrite => true;
     public string ContentDispositionFileExtension => ".json";
-    public string[] MatchStrings => new[] { JsonMimeType, RESTableSpecific, Brief, TextPlain };
+    public string[] MatchStrings => [JsonMimeType, RESTableSpecific, Brief, TextPlain];
 
     byte[] IContentTypeProvider.SerializeToBytes<T>(T item)
     {

@@ -75,10 +75,10 @@ public class ResourceCollection : ICollection<IResource>
         {
             switch (resource)
             {
-                case var _ when resource.IsInternal: return new[] { resource.Name };
+                case var _ when resource.IsInternal: return [resource.Name];
                 case var _ when resource.IsInnerResource:
                     var dots = resource.Name.Count('.');
-                    return resource.Name.Split(new[] { '.' }, dots);
+                    return resource.Name.Split(['.'], dots);
                 default: return resource.Name.Split('.');
             }
         }
@@ -210,8 +210,8 @@ public class ResourceCollection : ICollection<IResource>
         {
             case 0:
                 if (TryFindResource(searchString, out var resource, out _))
-                    return new[] { resource! };
-                return Array.Empty<IResource>();
+                    return [resource!];
+                return [];
             case 1 when searchString.Last() != '*':
                 throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
             case 1:

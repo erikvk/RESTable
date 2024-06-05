@@ -59,7 +59,7 @@ public abstract partial class ResourceController<TController, TProvider> :
             if (name.StartsWith($"{BaseNamespace}.", StringComparison.OrdinalIgnoreCase))
             {
                 var nrOfDots = name.Count(c => c == '.') + 2;
-                name = $"{BaseNamespace}.{name.Split(new[] { '.' }, nrOfDots).Last()}";
+                name = $"{BaseNamespace}.{name.Split(['.'], nrOfDots).Last()}";
             }
             else
             {

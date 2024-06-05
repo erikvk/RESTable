@@ -18,7 +18,7 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
 
     public byte[] GetBytes()
     {
-        if (!Stream.CanRead) return Array.Empty<byte>();
+        if (!Stream.CanRead) return [];
         try
         {
             return Stream.ToByteArray();
@@ -31,7 +31,7 @@ public class SwappingStream : Stream, IDisposable, IAsyncDisposable
 
     public async Task<byte[]> GetBytesAsync()
     {
-        if (!Stream.CanRead) return Array.Empty<byte>();
+        if (!Stream.CanRead) return [];
         try
         {
             return await Stream.ToByteArrayAsync().ConfigureAwait(false);

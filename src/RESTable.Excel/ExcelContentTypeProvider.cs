@@ -37,7 +37,7 @@ internal class ExcelContentTypeProvider : IContentTypeProvider
 
     public string Name => "Microsoft Excel";
     public ContentType ContentType => ExcelMimeType;
-    public string[] MatchStrings => new[] { ExcelMimeType, RESTableSpecific, Brief };
+    public string[] MatchStrings => [ExcelMimeType, RESTableSpecific, Brief];
     public bool CanRead => true;
     public bool CanWrite => true;
     public string ContentDispositionFileExtension => ".xlsx";

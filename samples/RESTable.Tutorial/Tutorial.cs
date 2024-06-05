@@ -132,7 +132,7 @@ public interface IMyTest
 [RESTable(GET, PATCH)]
 public class MySomDict : ResourceWrapper<SomeDict>, IAsyncSelector<SomeDict>, IAsyncUpdater<SomeDict>
 {
-    private static HashSet<SomeDict> Things { get; } = new() { new SomeDict { ["Foo"] = "Bar" } };
+    private static HashSet<SomeDict> Things { get; } = [new SomeDict { ["Foo"] = "Bar" }];
 
     public IAsyncEnumerable<SomeDict> SelectAsync(IRequest<SomeDict> request, CancellationToken cancellationToken)
     {

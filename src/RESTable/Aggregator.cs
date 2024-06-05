@@ -148,7 +148,7 @@ public class Aggregator : Dictionary<string, object?>, IAsyncSelector<Aggregator
         }
         catch (InvalidCastException)
         {
-            array = Array.Empty<long>();
+            array = [];
             return false;
         }
     }

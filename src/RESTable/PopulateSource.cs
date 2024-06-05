@@ -25,7 +25,7 @@ public readonly struct PopulateSource
         SourceKind = sourceKind;
         ValueProvider = valueProvider;
         if (properties is null)
-            Properties = Array.Empty<(string?, PopulateSource)>();
+            Properties = [];
         else Properties = properties!;
     }
 }

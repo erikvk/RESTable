@@ -67,7 +67,7 @@ public class AccessRights : ReadOnlyDictionary<IResource, Method[]>
                 assignments[resource] = methods.Union(new[] { GET, REPORT, HEAD })
                     .OrderBy(i => i, MethodComparer.Instance)
                     .ToArray();
-            else assignments[resource] = new[] { GET, REPORT, HEAD };
+            else assignments[resource] = [GET, REPORT, HEAD];
 
         return assignments;
     }

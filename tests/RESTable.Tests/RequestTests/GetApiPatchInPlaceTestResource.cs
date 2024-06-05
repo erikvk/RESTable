@@ -10,14 +10,14 @@ public class GetApiPatchInPlaceTestResource : ISelector<GetApiPatchInPlaceTestRe
 {
     public int Number { get; set; }
 
-    private static List<GetApiPatchInPlaceTestResource> List { get; } = new()
-    {
+    private static List<GetApiPatchInPlaceTestResource> List { get; } =
+    [
         new GetApiPatchInPlaceTestResource { Number = 1 },
         new GetApiPatchInPlaceTestResource { Number = 2 },
         new GetApiPatchInPlaceTestResource { Number = 3 },
         new GetApiPatchInPlaceTestResource { Number = 4 },
         new GetApiPatchInPlaceTestResource { Number = 5 }
-    };
+    ];
 
     public IEnumerable<GetApiPatchInPlaceTestResource> Select(IRequest<GetApiPatchInPlaceTestResource> request)
     {

@@ -83,11 +83,11 @@ public sealed class AvailableResource : ISelector<AvailableResource>
             trace.Context.Client.AccessRights
                 .SafeGet(iresource)?
                 .Intersect(iresource.AvailableMethods)
-                .ToArray() ?? Array.Empty<Method>(),
+                .ToArray() ?? [],
             iresource.ResourceKind,
             iresource is IEntityResource er
                 ? er.Views.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
-                : Array.Empty<ViewInfo>(),
+                : [],
             ((IResourceInternal) iresource)
             .GetInnerResources()
             .Select(r => Make(r, trace))

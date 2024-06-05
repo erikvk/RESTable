@@ -108,7 +108,7 @@ public class Resource : ISelector<Resource>
             Type = iresource.Type,
             Views = entityResource is not null
                 ? entityResource.Views.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
-                : Array.Empty<ViewInfo>(),
+                : [],
             IResource = iresource,
             Provider = entityResource?.Provider ?? (iresource is IBinaryResource ? "Binary" : "Terminal"),
             Kind = iresource.ResourceKind,

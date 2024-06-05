@@ -39,7 +39,7 @@ public class ProceduralResource : SqliteTable, IProceduralEntityResource
     /// </summary>
     public Method[] Methods
     {
-        get => AvailableMethodsString?.ToMethodsArray() ?? Array.Empty<Method>();
+        get => AvailableMethodsString?.ToMethodsArray() ?? [];
         set => AvailableMethodsString = value.ToMethodsString();
     }
 

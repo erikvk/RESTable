@@ -60,7 +60,7 @@ internal static class ExtensionMethods
 
     internal static Method[] ToMethodsArray(this string methodsString)
     {
-        if (methodsString.Trim() == "*") return new[] { GET, POST, PATCH, PUT, DELETE, REPORT, HEAD };
+        if (methodsString.Trim() == "*") return [GET, POST, PATCH, PUT, DELETE, REPORT, HEAD];
         return methodsString.Split(',')
             .Where(s => s != "")
             .Select(s => (Method) Enum.Parse(typeof(Method), s))

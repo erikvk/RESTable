@@ -471,14 +471,14 @@ public abstract class EntityResourceProvider<TBase> : IEntityResourceProviderInt
     private IEntityResource _InsertResource(Type type, string? fullName = null, RESTableAttribute? attribute = null)
     {
         var method = InsertResourceMethod.MakeGenericMethod(type);
-        var entityResource = (IEntityResource?) method.Invoke(this, new object?[] { fullName, attribute, null });
+        var entityResource = (IEntityResource?) method.Invoke(this, [fullName, attribute, null]);
         return entityResource!;
     }
 
     private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string? fullName = null, RESTableAttribute? attribute = null)
     {
         var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
-        var entityResource = (IEntityResource?) method.Invoke(this, new object?[] { fullName, attribute, null });
+        var entityResource = (IEntityResource?) method.Invoke(this, [fullName, attribute, null]);
         return entityResource!;
     }
 

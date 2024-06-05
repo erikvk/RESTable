@@ -45,7 +45,7 @@ public class PopulateTests : RESTableTestBase
     {
         var instance = new Holder<string[]>
         {
-            Item = new[] { "1", "2", "3" }
+            Item = ["1", "2", "3"]
         };
         var json = JsonProvider.Serialize(new { Item = new[] { "2", "3", "4" } });
         var populator = JsonProvider.GetPopulator<Holder<string[]>>(json);
@@ -59,7 +59,7 @@ public class PopulateTests : RESTableTestBase
     {
         var instance = new Dictionary<string, string[]>
         {
-            ["Item"] = new[] { "1", "2", "3" }
+            ["Item"] = ["1", "2", "3"]
         };
         var json = JsonProvider.Serialize(new { Item = new[] { "2", "3", "4" } });
         var populator = JsonProvider.GetPopulator<Dictionary<string, string[]>>(json);

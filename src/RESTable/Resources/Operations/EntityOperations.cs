@@ -400,7 +400,7 @@ internal class EntityOperations<T> where T : class
                 entityList.Add(item);
             count += 1;
         }
-        var changedEntitiesArray = count <= maxNumberOfChangedEntities ? entityList.ToArray() : Array.Empty<T>();
+        var changedEntitiesArray = count <= maxNumberOfChangedEntities ? entityList.ToArray() : [];
         return (count, changedEntitiesArray);
     }
 
@@ -428,7 +428,7 @@ internal class EntityOperations<T> where T : class
             insertedCount += 1;
             totalCount += 1;
         }
-        var changedEntitiesArray = totalCount <= maxNumberOfChangedEntities ? buffer.ToArray() : Array.Empty<T>();
+        var changedEntitiesArray = totalCount <= maxNumberOfChangedEntities ? buffer.ToArray() : [];
         return (updatedCount, insertedCount, changedEntitiesArray);
     }
 

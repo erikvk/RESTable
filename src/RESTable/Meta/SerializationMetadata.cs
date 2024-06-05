@@ -65,7 +65,7 @@ internal class SerializationMetadata<T> : ISerializationMetadata<T>
         else
         {
             UsesParameterizedConstructor = false;
-            CustomParameterizedConstructorParameters = Array.Empty<ParameterInfo>();
+            CustomParameterizedConstructorParameters = [];
         }
     }
 
