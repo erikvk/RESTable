@@ -5,18 +5,18 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Csharp" Version="4.7.0"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0"/>
         <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1"/>
-        <PackageReference Include="System.Collections.Immutable" Version="9.0.0" />
+        <PackageReference Include="System.Collections.Immutable" Version="9.0.0"/>
         <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0"/>
         <PackageReference Include="System.Linq.Async" Version="6.0.1"/>
-        <PackageReference Include="System.Text.Json" Version="9.0.0" />
-        <PackageReference Include="System.Memory" Version="4.6.0" />
-        <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0" />
-        <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" />
+        <PackageReference Include="System.Text.Json" Version="9.0.0"/>
+        <PackageReference Include="System.Memory" Version="4.6.0"/>
+        <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0"/>
+        <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0"/>
         <PackageReference Include="System.Reactive" Version="6.0.1"/>
     </ItemGroup>
 

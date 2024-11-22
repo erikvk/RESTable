@@ -237,7 +237,8 @@ SQLite.Interop
 
 RESTable.SQLite registers a RESTable resource `RESTable.SQLite.Meta.TableMapping` that can be used to read the current
 table mappings, which is useful when debugging and testing mappings. There is also a
-RESTable [terminal resource](https://develop.mopedo.com/RESTable/Consuming%20a%20RESTable%20API/Consuming%20terminal%20resources/) `RESTable.SQLite.Meta.TableMapping.Options`
+RESTable [terminal resource](https://develop.mopedo.com/RESTable/Consuming%20a%20RESTable%20API/Consuming%20terminal%20resources/)
+`RESTable.SQLite.Meta.TableMapping.Options`
 that allows you to update the mappings during runtime – which is needed if changes are made to the SQLite database while
 the RESTable application is running.
 

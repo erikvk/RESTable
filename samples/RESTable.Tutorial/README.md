@@ -381,7 +381,8 @@ Postman, set the `Accept` header and click the arrow to the right of the **Send*
 This concludes the tutorial. Hopefully you found some of it interesting and will continue by reading
 the [specification](https://develop.mopedo.com/RESTable) and keep exploring what RESTable can do. If not, at least it's
 over
-now! [`¯\_(ツ)_/¯`](https://www.google.se/search?dcr=0&tbm=vid&ei=SvJ6Wt-KK4efsAG3rqjgCA&q=I+just+read+a+boring+tutorial%2C+can+I+have+some+cat+videos+or+something%3F&oq=I+just+read+a+boring+tutorial%2C+can+I+have+some+cat+videos+or+something%3F)
+now! [
+`¯\_(ツ)_/¯`](https://www.google.se/search?dcr=0&tbm=vid&ei=SvJ6Wt-KK4efsAG3rqjgCA&q=I+just+read+a+boring+tutorial%2C+can+I+have+some+cat+videos+or+something%3F&oq=I+just+read+a+boring+tutorial%2C+can+I+have+some+cat+videos+or+something%3F)
 
 ## Links
 
