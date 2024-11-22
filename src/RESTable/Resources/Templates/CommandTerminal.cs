@@ -54,7 +54,7 @@ public abstract class CommandTerminal : Terminal
                 await WebSocket.DirectToShell(cancellationToken: cancellationToken).ConfigureAwait(false);
                 break;
             case var _ when Commands.TryGetValue(name, out var command):
-                var argsArray = args?.Split(new[] { ' ' }, command.MaxArgumentCount, StringSplitOptions.RemoveEmptyEntries) ?? [];
+                var argsArray = args?.Split([' '], command.MaxArgumentCount, StringSplitOptions.RemoveEmptyEntries) ?? [];
                 try
                 {
                     await command.Action(argsArray, cancellationToken).ConfigureAwait(false);

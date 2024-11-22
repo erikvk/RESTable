@@ -17,7 +17,7 @@ internal class TerminalResource<T> : IResource<T>, IResourceInternal, ITerminalR
     {
         Name = typeof(T).GetRESTableTypeName();
         Type = typeof(T);
-        AvailableMethods = new[] { Method.GET };
+        AvailableMethods = [Method.GET];
         IsInternal = false;
         IsGlobal = true;
         InnerResources = new List<IResource>();

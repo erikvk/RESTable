@@ -333,7 +333,7 @@ public static class ExtensionMethods
     /// </summary>
     public static (string, string?) TupleSplit(this string str, char separator, bool trim = false)
     {
-        var split = str.Split(new[] { separator }, 2, StringSplitOptions.RemoveEmptyEntries);
+        var split = str.Split([separator], 2, StringSplitOptions.RemoveEmptyEntries);
         return trim switch
         {
             false => split.Length switch

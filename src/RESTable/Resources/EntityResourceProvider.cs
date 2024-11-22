@@ -39,7 +39,7 @@ public abstract class EntityResourceProvider<TBase> : IEntityResourceProviderInt
         validator.ValidateRuntimeInsertion(type, resource.Name, attribute);
         validator.Validate(type);
         var inserted = _InsertResource(type, resource.Name, attribute);
-        ReceiveClaimed(new[] { inserted });
+        ReceiveClaimed([inserted]);
     }
 
     private bool RemoveProceduralResource(Type resourceType)

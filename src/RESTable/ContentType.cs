@@ -89,7 +89,7 @@ public readonly struct ContentType
         if (string.IsNullOrWhiteSpace(headerValue))
             throw new ArgumentException("Cannot be null or whitespace", nameof(headerValue));
         return new ContentTypes(headerValue
-            .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .Split([','], StringSplitOptions.RemoveEmptyEntries)
             .Select(s => new ContentType(s))
             .OrderByDescending(m => m.Q)
             .ToArray()
